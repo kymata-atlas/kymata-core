@@ -1,0 +1,30 @@
+Neurokymography toolbox version 6
+
+Changes from 6
+
+Move most preprocessing to Python
+Clean up
+
+Changes from 5
+
+Formalised event saving
+Does preprocessing
+Tabula/Expression plot only output.
+
+
+Changes from 4.2
+
+Formalised event saving
+Does preprocessing
+Tabula/Expression plot only output.
+
+Changes from 4.1
+
+Added in ICA
+Changed creating the STCs to python.
+Better visualisation options.
+
+Changes from 4.0
+
+Improved averages of repition epoches in subjects.
+Bug fixes

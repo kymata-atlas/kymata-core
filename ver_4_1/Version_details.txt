@@ -1,0 +1,6 @@
+Neurokymography toolbox version 4.1
+
+Changes from 4.0
+
+Improved averages of repition epoches in subjects.
+Bug fixes

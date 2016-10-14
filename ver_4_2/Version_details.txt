@@ -1,0 +1,13 @@
+Neurokymography toolbox version 4.2
+
+
+Changes from 4.1
+
+Added in ICA
+Changed creating the STCs to python.
+Better visualisation options.
+
+Changes from 4.0
+
+Improved averages of repition epoches in subjects.
+Bug fixes

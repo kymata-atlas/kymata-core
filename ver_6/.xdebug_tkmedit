@@ -1,0 +1,10 @@
+tkmedit started: Tue Jul  8 21:02:34 2014
+
+	/imaging/local/software/freesurfer/latest/x86_64/tktools/tkmedit.bin 0213 brainmask.mgz -aux T1.mgz 
+
+$Id: tkmedit.c,v 1.343 2011/03/01 01:41:22 nicks Exp $ $Name: stable5 $
+Set user home dir to /imaging/at03/NKG_Code/Version5
+Set subject home dir to /imaging/at03/NKG_Data_Sets/DATASET_1-01_visual-only/mne_subjects_dir//0213
+Using interface file /imaging/local/software/freesurfer/latest/x86_64/tktools/tkmedit.tcl
+Tcl: Successfully parsed tkmedit.tcl
+Tcl: Successfully parsed tkm_functional.tcl

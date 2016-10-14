@@ -1,0 +1,10 @@
+tkmedit started: Thu Jul  9 23:24:18 2015
+
+	/imaging/local/software/freesurfer/latest/x86_64/tktools/tkmedit.bin 0195 T1.mgz -tcl /imaging/local/software/mne/mne_2.7.3/x86_64/MNE-2.7.3-3268-Linux-x86_64//share/mne/mne_analyze/tkmedit_startup.tcl 
+
+$Id: tkmedit.c,v 1.343 2011/03/01 01:41:22 nicks Exp $ $Name: stable5 $
+Set user home dir to /imaging/at03/NKG_Code/Version6_tactile
+Set subject home dir to /imaging/at03/NKG_Data_Sets/DATASET_1-01_visual-only/mne_subjects_dir/0195
+Using interface file /imaging/local/software/freesurfer/latest/x86_64/tktools/tkmedit.tcl
+Tcl: Successfully parsed tkmedit.tcl
+Tcl: Successfully parsed tkm_functional.tcl
