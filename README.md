@@ -1,6 +1,6 @@
 # Kymata Toolbox Readme
 
-Maintained by the Kymata Research Group (UCL & University of Cambridge).
+Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
 
 //Add citation
 
