@@ -7,12 +7,16 @@ import copy
 import numpy as np
 from itertools import cycle
 import seaborn as sns
+from statistics import NormalDist
 
 def plot_expression_plot():
     '''Generates an expression plot'''
 
     y_limit = pow(10, -100)
-    alpha = pow(10, -13)
+    timepoints = 201
+    number_of_hexels = 200000
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      # 5-sigma
+    bonferroni_corrected_alpha = 1-(pow((1-alpha),(1/(2*timepoints*number_of_hexels))));
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Filtering functions.{Style.RESET_ALL}")
 
@@ -152,13 +156,13 @@ def plot_expression_plot():
 
         # left
         x_left, y_left = zip(*my_function['left']['best_pairings'])
-        left_color = np.where(np.array(y_left) <= alpha, color, 'black')
+        left_color = np.where(np.array(y_left) <= bonferroni_corrected_alpha, color, 'black')
         left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
         left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
         # right
         x_right, y_right = zip(*my_function['right']['best_pairings'])
-        right_color = np.where(np.array(y_right) <= alpha, color, 'black')
+        right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color, 'black')
         right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=left_color)
         right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
 
@@ -171,9 +175,9 @@ def plot_expression_plot():
         plot.set_xlim(-200, 800)
         plot.set_ylim(1, y_limit)
         plot.axvline(x=0, color='k', linestyle='dotted')
-        plot.axhline(y=alpha, color='k', linestyle='dotted')
-        plot.text(-100, alpha, 'α*', bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.text(600, alpha, 'α*', bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
+        plot.axhline(y=bonferroni_corrected_alpha, color='k', linestyle='dotted')
+        plot.text(-100, bonferroni_corrected_alpha, 'α*', bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
+        plot.text(600, bonferroni_corrected_alpha, 'α*', bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         plot.set_yticks([1, pow(10,-50), pow(10,-100)])
 
     # format one-off axis qualities
@@ -197,4 +201,4 @@ def plot_expression_plot():
     print(f"...saving expression plot")
 
 def lognuniform(low=0, high=1, size=None, base=np.e):
-        return np.random.uniform(low, high, size) / 100000000000
+        return np.random.uniform(low, high, size) / 1000000000000
