@@ -25,19 +25,19 @@ def plot_expression_plot():
                 'github_commit': 'N/A',
                 'left' : {
                     'latencies': np.arange(-200, 805, 5).tolist(),
-                    'pvalues': [ np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201) ]
+                    'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80)]
                     },
                 'right': {
                     'latencies': np.arange(-200, 800, 5).tolist(),
-                    'pvalues': [ np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201),
-                                 np.random.randint(0, 400, 201) ]
+                    'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80),
+                                lognuniform(low=0, high=1, size=201, base=-80)]
                 }
         },
         'CIECAM02-a': {
@@ -46,19 +46,19 @@ def plot_expression_plot():
             'github_commit': 'N/A',
             'left': {
                 'latencies': np.arange(-200, 805, 5).tolist(),
-                'pvalues': [np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201)]
+                'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80)]
             },
             'right': {
                 'latencies': np.arange(-200, 800, 5).tolist(),
-                'pvalues': [np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201)]
+                'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80)]
             }
         },
         'CIECAM02-b': {
@@ -67,19 +67,19 @@ def plot_expression_plot():
             'github_commit': 'N/A',
             'left': {
                 'latencies': np.arange(-200, 805, 5).tolist(),
-                'pvalues': [np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201)]
+                'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80)]
             },
             'right': {
                 'latencies': np.arange(-200, 800, 5).tolist(),
-                'pvalues': [np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201),
-                            np.random.default_rng().uniform(0,1,201)]
+                'pvalues': [lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80),
+                            lognuniform(low=0, high=1, size=201, base=-80)]
             }
         }
     }
@@ -130,6 +130,7 @@ def plot_expression_plot():
 
     fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(nrows=2, ncols=1, figsize=(12, 7))
     fig.subplots_adjust(hspace=0)
+    fig.subplots_adjust(right=0.84, left=0.08)
 
     print(f"...print and color stems")
 
@@ -178,7 +179,7 @@ def plot_expression_plot():
     left_hem_expression_plot.text(-180, y_limit * 10000000, 'left hemisphere', style='italic', verticalalignment='center')
     right_hem_expression_plot.text(-180, y_limit * 10000000, 'right hemisphere', style='italic', verticalalignment='center')
     left_hem_expression_plot.text(-275, 1, 'p-value', verticalalignment='center',rotation='vertical')
-    right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'black', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
+    right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
 
     print(f"...saving")
@@ -193,3 +194,6 @@ def plot_expression_plot():
     #xxx
 
     print(f"...saving expression plot")
+
+def lognuniform(low=0, high=1, size=None, base=np.e):
+        return np.random.uniform(low, high, size) / 100000000000
