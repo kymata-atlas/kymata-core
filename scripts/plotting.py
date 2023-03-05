@@ -16,7 +16,7 @@ def plot_expression_plot():
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Filtering functions.{Style.RESET_ALL}")
 
-    functions_to_include_in_model_selection = ['Combined Overall Loudness', 'CIECAM02-a']
+    functions_to_include_in_model_selection = ['Combined Overall Loudness', 'CIECAM02-a', 'CIECAM02-b']
     functions_to_plot = ['Combined Overall Loudness', 'CIECAM02-a']
     hexel_expression = {
         'combined-overall-loudness': {
@@ -87,7 +87,10 @@ def plot_expression_plot():
     print('Listing all available functions to plot:')
     for key, my_function in hexel_expression.items():
         print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
+
+    # apply tests
     # test to confirm all xxx have the same number of hexels as pavlues
+    # check to make sure all have save sized hexels
 
     hexel_expression_plotting = copy.deepcopy(hexel_expression)
 
@@ -108,8 +111,11 @@ def plot_expression_plot():
                 my_function[hemi]['best_pairings'].append([best_latency, best_pvalue])
             print(my_function[hemi]['best_pairings'])
 
-    #   for each hemisphere
-    #       for each hexel
+
+    print("...applying model selection.")
+    #for hemi in ['left','right']:
+    #    for each hexel in len hexels
+    #       for key, my_function in hexel_expression_plotting.items():
     #           go to xxx and find the best one.
     #           add to best_acrross_allmodels_pairins []
 
@@ -187,11 +193,6 @@ def plot_expression_plot():
     plt.savefig('data/output-graphs/expression_plot.png')
     plt.show()
     plt.close()
-    
-    # 
-    #for each function in xxx
-    #    color based on function
-    #xxx
 
     print(f"...saving expression plot")
 
