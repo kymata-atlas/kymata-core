@@ -1,10 +1,14 @@
 # Kymata Toolbox Readme
 
-Year: 2023. Author: Andrew Thwaites
+Maintained by the Kymata Research Group (UCL & University of Cambridge).
+
+//Add citation
 
 ## Description
 
 This package forms part of the Kymata Atlas codebase.
+
+//Add pictures
 
 ## Setting up to run with Poetry
 
