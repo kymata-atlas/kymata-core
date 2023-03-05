@@ -188,7 +188,8 @@ def plot_expression_plot():
     right_hem_expression_plot.invert_yaxis()
     left_hem_expression_plot.text(-180, y_limit * 10000000, 'left hemisphere', style='italic', verticalalignment='center')
     right_hem_expression_plot.text(-180, y_limit * 10000000, 'right hemisphere', style='italic', verticalalignment='center')
-    left_hem_expression_plot.text(-275, 1, 'p-value', verticalalignment='center',rotation='vertical')
+    y_axis_label = f'p-value (with α at 5-sigma, Bonferroni corrected)'
+    left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center',rotation='vertical')
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
 
