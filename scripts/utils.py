@@ -26,13 +26,13 @@ def load_config_parameters(file_location):
 
 
 
-def data_integrety_checks():
+def data_integrety_checks(list_of_participants: str):
     '''Runs data integrety checks before starting pipeline.'''
 
-    Check raw files are there?
+    #Check raw files are there?
 
-    Check create x4 bad channel .txt files?
+    #Check create x4 bad channel .txt files?
 
-    CHeckincluding empty room data for the covarience matrix.
+    #CHeckincluding empty room data for the covarience matrix.
 
-    CHeck T1 and FLASH XXX
+    #CHeck T1 and FLASH XXX
