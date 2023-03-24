@@ -9,10 +9,17 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
     print(f"{Fore.GREEN}{Style.BRIGHT}Loading Raw data...{Style.RESET_ALL}")
 
     raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part1_raw.fif")
-    mne.viz.plot_raw(raw_fif_data)
+
+    response = input(
+        f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
+    if response == "y":
+        print(f"...Plotting Raw data.")
+        mne.viz.plot_raw(raw_fif_data)
+    else:
+        print(f"{Fore.RED}{Style.BRIGHT}[y] not pressed. Assuming you want to continue without looking at the raw data.{Style.RESET_ALL}")
 
     # Set bad channels (manual and automatic)
-    print(f"{Fore.GREEN}{Style.BRIGHT}Setting bad Channel...{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}{Style.BRIGHT}Setting bad channels...{Style.RESET_ALL}")
 
 #    manual
 
