@@ -12,7 +12,7 @@ def main():
     utils.display_welcome_message_to_terminal()
 
     # Load parameters
-    config = utils.load_config_parameters('configs/dataset4_config_file.yaml')
+    config = utils.load_config_parameters('data/configs/dataset4_config_file.yaml')
 
     list_of_participants = config['list_of_participants']
     input_stream = config['input_stream']
