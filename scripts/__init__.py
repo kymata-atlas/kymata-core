@@ -1,8 +1,8 @@
 import utils
 import preprocessing
-#import BEM
-#import hexel_current_estimation
-#import BIDs
+import bem
+import hexel_current_estimation
+import bids
 
 def main():
 
@@ -24,23 +24,25 @@ def main():
     preprocessing.run_preprocessing(list_of_participants = list_of_participants, input_stream = input_stream)
 
     # Save sensor level data, epoched by trial
-#    create sensor-level trails(list_of_participants = list_of_participants,
-#                                input_stream = input_stream)
+    preprocessing.create_trials(list_of_participants = list_of_participants, input_stream = input_stream)
     
-    # Create Bondary Element Models
-#    Create BEMS
+    # Create Boundary Element Models
+    bem.create_boundary_element_model(list_of_participants = list_of_participants, input_stream = input_stream)
+
+    # Create forward model and inverse solution
+    hexel_current_estimation.create_forward_model_and_inverse_solution(list_of_participants = list_of_participants, input_stream = input_stream)
 
     # Create the hexel current reconstructions, epoched by trial
-#    Do hexel current reconstructions
+    hexel_current_estimation.create_hexel_current_files(list_of_participants=list_of_participants, input_stream=input_stream)
 
     # Average the hexel current reconstructions into a single participant
-#    Do hexel current reconstructions
+    hexel_current_estimation.average_participants_hexel_currents(list_of_participants=list_of_participants, input_stream=input_stream)
 
     # Export data ready for BIDS format  
-#    ready for BIDS output
+    bids.export_for_sharing()
 
     # Run Kymata
-#    XYZ
+    #XYZ
 
     # End code with cleanup
     utils.run_cleanup()

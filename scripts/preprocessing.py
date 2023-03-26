@@ -8,8 +8,8 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
     # Load data
     print(f"{Fore.GREEN}{Style.BRIGHT}Loading Raw data...{Style.RESET_ALL}")
 
-    raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part1_raw.fif")
-    head_pos = mne.chpi.read_head_pos('data/raw/meg15_0045_part1_raw_hpi_movecomp.pos')
+    raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part2_raw.fif")
+    head_pos = mne.chpi.read_head_pos('data/raw/meg15_0045_part2_raw_hpi_movecomp.pos')
 
     response = input(
         f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
@@ -108,12 +108,6 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
     else:
         print(f"{Fore.RED}{Style.BRIGHT}[y] not pressed. Assuming you want to continue without looking at the raw data.{Style.RESET_ALL}")
 
-
-#    # Apply maxwell filtering to the empty room
-#
-#    .maxwell_filter_prepare_emptyroom,
-#    .maxwell_filter
-#
 #    # Remove AC mainline from MEG
 #
 #    meg_picks = mne.pick_types(raw.info, meg=True)
@@ -134,7 +128,6 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
 #    # Use common average reference, not the nose reference.
 #
 #    https://mne.tools/stable/auto_tutorials/preprocessing/55_setting_eeg_reference.html
-#
 #
 #    #remove very slow drift
 #    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html

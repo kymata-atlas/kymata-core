@@ -1,6 +1,6 @@
-ready for BIDS output
+#ready for BIDS output
 
-anonomise
+#anonomise
 
-particpants,
-Data
+#particpants,
+#Data
