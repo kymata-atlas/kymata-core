@@ -8,6 +8,7 @@
 
 #NKG_make_averaged_meshes; (use FS average?)
 
+#Remember not to use the medial wall (etc) Surface
 
 #for each participant
 #NKG_make_labels.sh (needed to remove later)
