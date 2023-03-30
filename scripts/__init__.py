@@ -16,12 +16,17 @@ def main():
 
     list_of_participants = config['list_of_participants']
     input_stream = config['input_stream']
+    remove_ECG = config['remove_ECG']
+    remove_VEOH_and_HEOG = config['remove_VEOH_and_HEOG']
 
     # Ensure we have all the data we need
-    utils.data_integrety_checks(list_of_participants = list_of_participants)
+    utils.data_integrety_checks(list_of_participants=list_of_participants)
 
     # Preprocess EMEG raw data
-    preprocessing.run_preprocessing(list_of_participants = list_of_participants, input_stream = input_stream)
+    preprocessing.run_preprocessing(list_of_participants=list_of_participants,
+                                    input_stream=input_stream,
+                                    remove_ECG=remove_ECG,
+                                    remove_VEOH_and_HEOG=remove_VEOH_and_HEOG)
 
     # Save sensor level data, epoched by trial
 #    preprocessing.create_trials(list_of_participants = list_of_participants, input_stream = input_stream)

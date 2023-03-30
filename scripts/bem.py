@@ -1,5 +1,10 @@
 #BEMS
 
+
+#PLot eeg an MEG locations for Sanity checks
+#https://mne.tools/stable/auto_examples/visualization/eeg_on_scalp.html#ex-eeg-on-scalp
+#https://mne.tools/stable/auto_examples/visualization/meg_sensors.html#ex-plot-meg-sensors
+
 #% One-offs
 #NKG_make_morph_maps;
 

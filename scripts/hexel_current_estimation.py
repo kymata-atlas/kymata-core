@@ -1,7 +1,7 @@
 #source stuff
 
 
-#    # Apply maxwell filtering to the empty room
+#    # Apply maxwell filtering (and everything else, such as filtering) to the empty room
 #
 #    .maxwell_filter_prepare_emptyroom,
 #    .maxwell_filter

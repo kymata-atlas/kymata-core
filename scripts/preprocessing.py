@@ -1,23 +1,27 @@
 from colorama import Fore
 from colorama import Style
+import matplotlib.pyplot as plt
 import mne
+import sklearn
 
-def run_preprocessing(list_of_participants: str, input_stream: str):
+def run_preprocessing(list_of_participants: str, input_stream: str,
+                      remove_ECG: bool,
+                      remove_VEOH_and_HEOG: bool):
     '''Runs Preprocessing'''
 
     # Load data
     print(f"{Fore.GREEN}{Style.BRIGHT}Loading Raw data...{Style.RESET_ALL}")
 
-    raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part2_raw.fif")
+    raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part1_raw.fif", preload=True)
     head_pos = mne.chpi.read_head_pos('data/raw/meg15_0045_part2_raw_hpi_movecomp.pos')
 
     response = input(
         f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
     if response == "y":
         print(f"...Plotting Raw data.")
-        mne.viz.plot_raw(raw_fif_data)
+        mne.viz.plot_raw(raw_fif_data, scalings='auto')
     else:
-        print(f"{Fore.RED}{Style.BRIGHT}[y] not pressed. Assuming you want to continue without looking at the raw data.{Style.RESET_ALL}")
+        print(f"...assuming you want to continue without looking at the raw data.")
 
     # Set bad channels (manual and automatic)
     print(f"{Fore.GREEN}{Style.BRIGHT}Setting bad channels...{Style.RESET_ALL}")
@@ -81,6 +85,10 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
         detection.Simply replace the word “noisy” with “flat”, and replace
         vmin=np.nanmin(limits) with vmax=np.nanmax(limits).'''
 
+    # plot EEG positions
+
+    plot_eeg_sensor_positions(raw_fif_data)
+
     # Apply SSS and movement compensation
     print(f"{Fore.GREEN}{Style.BRIGHT}Applying SSS and movement compensation...{Style.RESET_ALL}")
 
@@ -108,132 +116,115 @@ def run_preprocessing(list_of_participants: str, input_stream: str):
     else:
         print(f"{Fore.RED}{Style.BRIGHT}[y] not pressed. Assuming you want to continue without looking at the raw data.{Style.RESET_ALL}")
 
-#    # Remove AC mainline from MEG
-#
-#    meg_picks = mne.pick_types(raw.info, meg=True)
-#    freqs = (50, 100, 150, 200)
-#    raw_notch = raw.copy().notch_filter(freqs=freqs, picks=meg_picks)
-#
-#    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
-#
-#    #MEG and EEG channel interpolation
-#
-# Notice that channels marked as “bad” have been effectively repaired by SSS, eliminating the need to perform interpolation. The heartbeat artifact has also been substantially reduced.
-#
-#    Compute interpolation (also works with Raw and Epochs objects)
-#
-# evoked_interp = evoked.copy().interpolate_bads(reset_bads=True)
-# evoked_interp.plot(exclude=[], picks=('grad', 'eeg'))
-#
-#    # Use common average reference, not the nose reference.
-#
-#    https://mne.tools/stable/auto_tutorials/preprocessing/55_setting_eeg_reference.html
-#
-#    #remove very slow drift
-#    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
-#     raw.filter(l_freq=None, h_freq=100, picks=None) (higher??)
-#
-#    # Remove ECG
-#
-#    preprocessing.
-#
-#    # Remove VEOH, HEOG eyeblinks
-    print(f"{Fore.GREEN}{Style.BRIGHT}Starting ECG and EOG removal...{Style.RESET_ALL}")
-    print(f"...Starting ECG and EOG removal.")
-#
-#    if request of :
-#        preprocessing.
-#    else remove these trials with eyeblinks:
+    # Remove AC mainline from MEG
 
-        filt_raw = raw.copy().filter(l_freq=1., h_freq=None)
+    print(f"{Fore.GREEN}{Style.BRIGHT}Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
 
-        ica = mne.preprocessing.ICA(n_components=30, method='picard', max_iter='auto', random_state=97)
+    raw_fif_data.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
+
+    # note that EEG and MEG do not have the same frequncies, so we remove them seperately
+    meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
+    meg_freqs = (50, 100, 150, 200, 250, 300)
+    raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+    eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+    eeg_freqs = (50, 150, 250, 300)
+    raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+
+
+    # EEG channel interpolation
+    print(f"{Fore.GREEN}{Style.BRIGHT}Interpolating EEG...{Style.RESET_ALL}")
+
+    # Channels marked as “bad” have been effectively repaired by SSS,
+    # eliminating the need to perform MEG interpolation.
+
+    raw_fif_data = raw_fif_data.interpolate_bads(reset_bads=True)
+
+    # Use common average reference, not the nose reference.
+    print(f"{Fore.GREEN}{Style.BRIGHT}Use common average EEG reference...{Style.RESET_ALL}")
+
+    raw_fif_data = raw_fif_data.set_eeg_reference(ref_channels='average')
+
+    # remove very slow drift
+    print(f"{Fore.GREEN}{Style.BRIGHT}Removing slow drift...{Style.RESET_ALL}")
+    raw_fif_data = raw_fif_data.filter(l_freq=0.1, h_freq=None, picks=None)
+
+    # Remove ECG, VEOH and
+
+    if remove_ECG or remove_VEOH_and_HEOG:
+
+        # remove both frequencies faster than 100Hz and slow drift less than 1hz
+        filt_raw = raw_fif_data.copy().filter(l_freq=1., h_freq=100)
+
+        ica = mne.preprocessing.ICA(n_components=30, method='fastica', max_iter='auto', random_state=97)
         ica.fit(filt_raw)
-        ica
 
-        # remove ECG
-        print(f"...Starting ECG removal.")
-
-        ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
-        ecg_evoked.apply_baseline(baseline=(None, -0.2))
-        ecg_evoked.plot_joint()
-
-        # find which ICs match the EOG pattern
-        eog_indices, eog_scores = ica.find_bads_eog(raw)
-        ica.exclude = eog_indices
-
-        # barplot of ICA component "EOG match" scores
-        ica.plot_scores(eog_scores)
-
-        # plot diagnostics
-        ica.plot_properties(raw, picks=eog_indices)
-
-        # plot ICs applied to raw data, with EOG matches highlighted
-        ica.plot_sources(raw, show_scrollbars=False)
-
-        # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
-        ica.plot_sources(eog_evoked)
-
-        # blinks
-        ica.plot_overlay(raw, exclude=[0], picks='eeg')
-        # heartbeats
-        ica.plot_overlay(raw, exclude=[1], picks='mag')
-
-        Apply it.
-
-        # clean up memory before moving on
-        del raw, ica, new_ica
-
-
-        # remove EOG
-
-        print(f"...Starting EOG removal.")
-
-        eog_epochs = mne.preprocessing.create_eog_epochs(raw_fif_data_sss_movecomp_tr, baseline=(-0.5, -0.2))
-        eog_epochs.plot_image(combine='mean')
-        eog_epochs.average().plot_joint()
-
-        eog_evoked = mne.preprocessing.create_eog_epochs(raw_fif_data_sss_movecomp_tr).average()
-        eog_evoked.apply_baseline(baseline=(None, -0.2))
-        eog_evoked.plot_joint()
-
-        # note  seperate this into components!!!!!
-        explained_var_ratio = ica.get_explained_variance_ratio(filt_raw, method='correlation',
-                                                threshold='auto') # note can seperate this into components
+        explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
         for channel_type, ratio in explained_var_ratio.items():
             print(
-            f'Fraction of {channel_type} variance explained by all components: '
-            f'{ratio}'
-        )
+                f'Fraction of {channel_type} variance explained by all components: '
+                f'{ratio}'
+            )
+
         ica.exclude = []
-        # find which ICs match the EOG pattern
-        eog_indices, eog_scores = ica.find_bads_eog(filt_raw, method='correlation',
-                                                threshold='auto')
-        ica.exclude = eog_indices
 
-        # barplot of ICA component "EOG match" scores
-        ica.plot_scores(eog_scores)
+        if remove_ECG:
+            print(f"{Fore.GREEN}{Style.BRIGHT}Starting ECG removal...{Style.RESET_ALL}")
 
-        # plot diagnostics
-        ica.plot_properties(raw, picks=eog_indices)
+            ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
+            ecg_evoked.apply_baseline(baseline=(None, -0.2))
+            ecg_evoked.plot_joint()
 
-        # plot ICs applied to raw data, with EOG matches highlighted
-        ica.plot_sources(raw, show_scrollbars=False)
+            # find which ICs match the ECG pattern
+            ecg_indices, ecg_scores = ica.find_bads_ecg(raw_fif_data)
+            ica.exclude = ecg_indices
 
-        # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
-        ica.plot_sources(eog_evoked)
+            # plot ICs applied to raw data, with ECG matches highlighted
+            ica.plot_sources(filt_raw, show_scrollbars=True)
 
-        # blinks
-        ica.plot_overlay(raw, exclude=[0], picks='eeg')
-        # heartbeats
-        ica.plot_overlay(raw, exclude=[1], picks='mag')
+            # barplot of ICA component "ECG match" scores
+            ica.plot_scores(ecg_scores)
 
+            # plot diagnostics
+            ica.plot_properties(filt_raw, picks=ecg_indices)
 
-        Apply it.
+            # plot ICs applied to the averaged ECG epochs, with ECG matches highlighted
+            ica.plot_sources(ecg_evoked)
 
-        # clean up memory before moving on
-        del raw, ica, new_ica
-#
+            # heartbeats
+            ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
+
+        if remove_VEOH_and_HEOG:
+
+            print(f"...Starting EOG removal.")
+
+            eog_evoked = mne.preprocessing.create_eog_epochs(filt_raw).average()
+            eog_evoked.apply_baseline(baseline=(None, -0.2))
+            eog_evoked.plot_joint()
+
+            # find which ICs match the EOG pattern
+            eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
+            ica.exclude = eog_indices
+
+            # plot ICs applied to raw data, with EOG matches highlighted
+            ica.plot_sources(filt_raw, show_scrollbars=True)
+
+            # barplot of ICA component "EOG match" scores
+            ica.plot_scores(eog_scores)
+    
+            # plot diagnostics
+            ica.plot_properties(filt_raw, picks=eog_indices)
+
+            # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
+            ica.plot_sources(eog_evoked)
+    
+            # blinks
+            ica.plot_overlay(filt_raw, exclude=[0], picks='eeg')
+
+        ica.apply(raw_fif_data)
+        mne.viz.plot_raw(raw_fif_data)
+        raw_fif_data.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
+
 #    # Downsample if required
 #    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
 
@@ -345,3 +336,10 @@ def create_trials(list_of_participants: [str],
         print >> f, item
     f.close()
 '''
+def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
+    fig = plt.figure()
+    ax2d = fig.add_subplot(121)
+    ax3d = fig.add_subplot(122, projection='3d')
+    raw_fif.plot_sensors(ch_type='eeg', axes=ax2d)
+    raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
+    ax3d.view_init(azim=70, elev=15)
