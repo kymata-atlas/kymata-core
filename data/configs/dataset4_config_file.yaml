@@ -6,4 +6,4 @@ input_stream: "auditory" # auditory | visual
 
 # preprocessing pipeline
 remove_VEOH_and_HEOG: True
-remove_ECG: False
+remove_ECG: True

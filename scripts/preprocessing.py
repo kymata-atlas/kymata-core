@@ -120,16 +120,16 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
 
-    raw_fif_data.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
+    raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
 
     # note that EEG and MEG do not have the same frequncies, so we remove them seperately
-    meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
+    meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
     meg_freqs = (50, 100, 150, 200, 250, 300)
-    raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
-    eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+    eeg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, eeg=True)
     eeg_freqs = (50, 150, 250, 300)
-    raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
 
     # EEG channel interpolation
@@ -138,23 +138,23 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
     # Channels marked as “bad” have been effectively repaired by SSS,
     # eliminating the need to perform MEG interpolation.
 
-    raw_fif_data = raw_fif_data.interpolate_bads(reset_bads=True)
+    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.interpolate_bads(reset_bads=True)
 
     # Use common average reference, not the nose reference.
     print(f"{Fore.GREEN}{Style.BRIGHT}Use common average EEG reference...{Style.RESET_ALL}")
 
-    raw_fif_data = raw_fif_data.set_eeg_reference(ref_channels='average')
+    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
     # remove very slow drift
     print(f"{Fore.GREEN}{Style.BRIGHT}Removing slow drift...{Style.RESET_ALL}")
-    raw_fif_data = raw_fif_data.filter(l_freq=0.1, h_freq=None, picks=None)
+    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
-    # Remove ECG, VEOH and
+    # Remove ECG, VEOH and HEOG
 
     if remove_ECG or remove_VEOH_and_HEOG:
 
         # remove both frequencies faster than 100Hz and slow drift less than 1hz
-        filt_raw = raw_fif_data.copy().filter(l_freq=1., h_freq=100)
+        filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(l_freq=1., h_freq=100)
 
         ica = mne.preprocessing.ICA(n_components=30, method='fastica', max_iter='auto', random_state=97)
         ica.fit(filt_raw)
@@ -176,7 +176,7 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
             ecg_evoked.plot_joint()
 
             # find which ICs match the ECG pattern
-            ecg_indices, ecg_scores = ica.find_bads_ecg(raw_fif_data)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
             ica.exclude = ecg_indices
 
             # plot ICs applied to raw data, with ECG matches highlighted
@@ -204,7 +204,7 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
 
             # find which ICs match the EOG pattern
             eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-            ica.exclude = eog_indices
+            ica.exclude += eog_indices
 
             # plot ICs applied to raw data, with EOG matches highlighted
             ica.plot_sources(filt_raw, show_scrollbars=True)
@@ -219,11 +219,11 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
             ica.plot_sources(eog_evoked)
     
             # blinks
-            ica.plot_overlay(filt_raw, exclude=[0], picks='eeg')
+            ica.plot_overlay(filt_raw, exclude=eog_indices, picks='eeg')
 
-        ica.apply(raw_fif_data)
-        mne.viz.plot_raw(raw_fif_data)
-        raw_fif_data.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
+        ica.apply(raw_fif_data_sss_movecomp_tr)
+        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+        raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
 
 #    # Downsample if required
 #    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
