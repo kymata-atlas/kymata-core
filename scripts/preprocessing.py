@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import mne
 import sklearn
 
-def run_preprocessing(list_of_participants: str, input_stream: str,
+def run_preprocessing(list_of_participants: str,
+                      input_stream: str,
                       remove_ECG: bool,
                       remove_VEOH_and_HEOG: bool):
     '''Runs Preprocessing'''
@@ -12,8 +13,8 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
     # Load data
     print(f"{Fore.GREEN}{Style.BRIGHT}Loading Raw data...{Style.RESET_ALL}")
 
-    raw_fif_data = mne.io.Raw("data/raw/meg15_0045_part1_raw.fif", preload=True)
-    head_pos = mne.chpi.read_head_pos('data/raw/meg15_0045_part2_raw_hpi_movecomp.pos')
+    raw_fif_data = mne.io.Raw("data/raw/meg15_0051_part1_raw.fif", preload=True)
+    head_pos = mne.chpi.read_head_pos('data/raw/meg15_0051_part1_raw_hpi_movecomp.pos')
 
     response = input(
         f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
@@ -86,7 +87,6 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
         vmin=np.nanmin(limits) with vmax=np.nanmax(limits).'''
 
     # plot EEG positions
-
     plot_eeg_sensor_positions(raw_fif_data)
 
     # Apply SSS and movement compensation
@@ -114,21 +114,24 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
         print(f"...Plotting Raw data.")
         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
     else:
-        print(f"{Fore.RED}{Style.BRIGHT}[y] not pressed. Assuming you want to continue without looking at the raw data.{Style.RESET_ALL}")
+        print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
     # Remove AC mainline from MEG
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
 
-    raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
+    raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
-    # note that EEG and MEG do not have the same frequncies, so we remove them seperately
+    raw_fif_data_sss_movecomp_tr.save('data/out/meg15_0045_part1_raw_fif_raw_sss.fif')
+    #raw_fif_data_sss_movecomp_tr = mne.io.Raw('data/raw/meg15_0045_part1_raw_fif_raw_sss.fif', preload=True)
+
+    # note that EEG and MEG do not have the same frequencies, so we remove them seperately
     meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
-    meg_freqs = (50, 100, 150, 200, 250, 300)
+    meg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 293, 307, 314, 321, 328) # 293, 307, 314, 321, 328 are HPI coil frequencies
     raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
     eeg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, eeg=True)
-    eeg_freqs = (50, 150, 250, 300)
+    eeg_freqs = (50, 150, 250, 300, 350, 400, 450, 293, 307, 314, 321, 328)
     raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
 
@@ -223,7 +226,6 @@ def run_preprocessing(list_of_participants: str, input_stream: str,
 
         ica.apply(raw_fif_data_sss_movecomp_tr)
         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
-        raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=300, average='mean').plot()
 
 #    # Downsample if required
 #    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
