@@ -1,9 +1,12 @@
 
 # Config file for Kymata Dataset 4.00
 
-list_of_participants: ["meg15_0045"] # List of Participants
-input_stream: "auditory" # auditory | visual
+list_of_participants: ["meg15_0045",
+                       "meg15_0051"] # list of Participants
+input_stream: "auditory"             # auditory | visual
+number_of_runs: 2                    # number of runs
 
 # preprocessing pipeline
 remove_VEOH_and_HEOG: True
 remove_ECG: True
+automatic_bad_channel_detection_requested: False

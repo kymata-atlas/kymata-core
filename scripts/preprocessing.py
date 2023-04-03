@@ -3,237 +3,204 @@ from colorama import Style
 import matplotlib.pyplot as plt
 import mne
 import sklearn
+import seaborn as sns
+import numpy as np
+
+import utils
+
 
 def run_preprocessing(list_of_participants: str,
+                      number_of_runs: int,
                       input_stream: str,
                       remove_ECG: bool,
-                      remove_VEOH_and_HEOG: bool):
+                      remove_VEOH_and_HEOG: bool,
+                      automatic_bad_channel_detection_requested: bool):
+
     '''Runs Preprocessing'''
 
-    # Load data
-    print(f"{Fore.GREEN}{Style.BRIGHT}Loading Raw data...{Style.RESET_ALL}")
+    for participant in list_of_participants:
 
-    raw_fif_data = mne.io.Raw("data/raw/meg15_0051_part1_raw.fif", preload=True)
-    head_pos = mne.chpi.read_head_pos('data/raw/meg15_0051_part1_raw_hpi_movecomp.pos')
+        for run in range(1, number_of_runs+1):
 
-    response = input(
-        f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
-    if response == "y":
-        print(f"...Plotting Raw data.")
-        mne.viz.plot_raw(raw_fif_data, scalings='auto')
-    else:
-        print(f"...assuming you want to continue without looking at the raw data.")
+            # Preprocessing Participant and run info
+            print(f"{Fore.GREEN}{Style.BRIGHT}Loading participant {participant} [{Fore.LIGHTYELLOW_EX}Run {str(run)}{Fore.GREEN}]...{Style.RESET_ALL}")
 
-    # Set bad channels (manual and automatic)
-    print(f"{Fore.GREEN}{Style.BRIGHT}Setting bad channels...{Style.RESET_ALL}")
-    '''
-    print(f"{Fore.GREEN}{Style.BRIGHT}...manual{Style.RESET_ALL}")
-    raw_fif_data.info['bads'] = xxxx()
+            # Load data
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
-    print(f"{Fore.GREEN}{Style.BRIGHT}...automatic{Style.RESET_ALL}")
+            raw_fif_data = mne.io.Raw("data/raw/" + participant + "_part" + str(run) + "_raw.fif", preload=True)
+            head_pos = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
 
-    raw_check = raw_fif_data.copy()
-    auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(
-        raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
-        return_scores=True, verbose=True)
-    print(auto_noisy_chs)  # we should find them!
-    print(auto_flat_chs)  # none for this dataset
+            # Set bad channels (manual and automatic)
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Setting bad channels...{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}{Style.BRIGHT}   ...manual{Style.RESET_ALL}")
 
-    bads = raw.info['bads'] + auto_noisy_chs + auto_flat_chs
-    raw.info['bads'] = bads
+            bads_config = utils.load_bad_channels('data/raw/' + participant + '_EMEG_bad_channels.yaml')
+            raw_fif_data.info['bads'] = bads_config['bad_channels']
 
-    # Only select the data for gradiometer channels.
-    ch_type = 'grad'
-    ch_subset = auto_scores['ch_types'] == ch_type
-    ch_names = auto_scores['ch_names'][ch_subset]
-    scores = auto_scores['scores_noisy'][ch_subset]
-    limits = auto_scores['limits_noisy'][ch_subset]
-    bins = auto_scores['bins']  # The the windows that were evaluated.
-    # We will label each segment by its start and stop time, with up to 3
-    # digits before and 3 digits after the decimal place (1 ms precision).
-    bin_labels = [f'{start:3.3f} – {stop:3.3f}'
-                  for start, stop in bins]
+            if automatic_bad_channel_detection_requested:
 
-    # We store the data in a Pandas DataFrame. The seaborn heatmap function
-    # we will call below will then be able to automatically assign the correct
-    # labels to all axes.
-    data_to_plot = pd.DataFrame(data=scores,
-                                columns=pd.Index(bin_labels, name='Time (s)'),
-                                index=pd.Index(ch_names, name='Channel'))
+                print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
+                raw_fif_data = apply_automatic_bad_channel_detection()
 
-    # First, plot the "raw" scores.
-    fig, ax = plt.subplots(1, 2, figsize=(12, 8))
-    fig.suptitle(f'Automated noisy channel detection: {ch_type}',
-                 fontsize=16, fontweight='bold')
-    sns.heatmap(data=data_to_plot, cmap='Reds', cbar_kws=dict(label='Score'),
-                ax=ax[0])
-    [ax[0].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
-     for x in range(1, len(bins))]
-    ax[0].set_title('All Scores', fontweight='bold')
-
-    # Now, adjust the color range to highlight segments that exceeded the limit.
-    sns.heatmap(data=data_to_plot,
-                vmin=np.nanmin(limits),  # bads in input data have NaN limits
-                cmap='Reds', cbar_kws=dict(label='Score'), ax=ax[1])
-    [ax[1].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
-     for x in range(1, len(bins))]
-    ax[1].set_title('Scores > Limit', fontweight='bold')
-
-    # The figure title should not overlap with the subplots.
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-    You can use the very same code as above to produce figures for flat channel
-        detection.Simply replace the word “noisy” with “flat”, and replace
-        vmin=np.nanmin(limits) with vmax=np.nanmax(limits).'''
-
-    # plot EEG positions
-    plot_eeg_sensor_positions(raw_fif_data)
-
-    # Apply SSS and movement compensation
-    print(f"{Fore.GREEN}{Style.BRIGHT}Applying SSS and movement compensation...{Style.RESET_ALL}")
-
-    fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
-    crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
-
-    mne.viz.plot_head_positions(
-        head_pos, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
-
-    raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
-                                    raw_fif_data,
-                                    cross_talk=crosstalk_file,
-                                    calibration=fine_cal_file,
-                                    head_pos=head_pos,
-                                    st_correlation=0.980,
-                                    st_duration=10,
-                                    destination=(0, 0, 0.04),
-                                    verbose=True)
-
-    response = input(
-        f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
-    if response == "y":
-        print(f"...Plotting Raw data.")
-        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
-    else:
-        print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
-
-    # Remove AC mainline from MEG
-
-    print(f"{Fore.GREEN}{Style.BRIGHT}Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
-
-    raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
-
-    raw_fif_data_sss_movecomp_tr.save('data/out/meg15_0045_part1_raw_fif_raw_sss.fif')
-    #raw_fif_data_sss_movecomp_tr = mne.io.Raw('data/raw/meg15_0045_part1_raw_fif_raw_sss.fif', preload=True)
-
-    # note that EEG and MEG do not have the same frequencies, so we remove them seperately
-    meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
-    meg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 293, 307, 314, 321, 328) # 293, 307, 314, 321, 328 are HPI coil frequencies
-    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
-
-    eeg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, eeg=True)
-    eeg_freqs = (50, 150, 250, 300, 350, 400, 450, 293, 307, 314, 321, 328)
-    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+            response = input(
+                f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
+            if response == "y":
+                print(f"...Plotting Raw data.")
+                mne.viz.plot_raw(raw_fif_data, scalings='auto')
+            else:
+                print(f"...assuming you want to continue without looking at the raw data.")
 
 
-    # EEG channel interpolation
-    print(f"{Fore.GREEN}{Style.BRIGHT}Interpolating EEG...{Style.RESET_ALL}")
+            # plot EEG positions
+            plot_eeg_sensor_positions(raw_fif_data)
 
-    # Channels marked as “bad” have been effectively repaired by SSS,
-    # eliminating the need to perform MEG interpolation.
+            # Apply SSS and movement compensation
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
 
-    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.interpolate_bads(reset_bads=True)
+            fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
+            crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
 
-    # Use common average reference, not the nose reference.
-    print(f"{Fore.GREEN}{Style.BRIGHT}Use common average EEG reference...{Style.RESET_ALL}")
+            mne.viz.plot_head_positions(
+                head_pos, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
-    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+            raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
+                                            raw_fif_data,
+                                            cross_talk=crosstalk_file,
+                                            calibration=fine_cal_file,
+                                            head_pos=head_pos,
+                                            st_correlation=0.980,
+                                            st_duration=10,
+                                            destination=(0, 0, 0.04),
+                                            verbose=True)
 
-    # remove very slow drift
-    print(f"{Fore.GREEN}{Style.BRIGHT}Removing slow drift...{Style.RESET_ALL}")
-    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
+            response = input(
+                f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
+            if response == "y":
+                print(f"...Plotting Raw data.")
+                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+            else:
+                print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
-    # Remove ECG, VEOH and HEOG
+            # Remove AC mainline from MEG
 
-    if remove_ECG or remove_VEOH_and_HEOG:
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
 
-        # remove both frequencies faster than 100Hz and slow drift less than 1hz
-        filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(l_freq=1., h_freq=100)
+            raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
-        ica = mne.preprocessing.ICA(n_components=30, method='fastica', max_iter='auto', random_state=97)
-        ica.fit(filt_raw)
+            #raw_fif_data_sss_movecomp_tr.save('data/out/" + participant + "_part" + str(run) + '_raw_sss.fif')
+            #raw_fif_data_sss_movecomp_tr = mne.io.Raw('data/out/' + participant + "_part" + str(run) + '_raw_sss.fif', preload=True)
 
-        explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
-        for channel_type, ratio in explained_var_ratio.items():
-            print(
-                f'Fraction of {channel_type} variance explained by all components: '
-                f'{ratio}'
-            )
+            # note that EEG and MEG do not have the same frequencies, so we remove them seperately
+            meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
+            meg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 293, 307, 314, 321, 328) # 293, 307, 314, 321, 328 are HPI coil frequencies
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
-        ica.exclude = []
+            eeg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, eeg=True)
+            eeg_freqs = (50, 150, 250, 300, 350, 400, 450, 293, 307, 314, 321, 328)
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-        if remove_ECG:
-            print(f"{Fore.GREEN}{Style.BRIGHT}Starting ECG removal...{Style.RESET_ALL}")
 
-            ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
-            ecg_evoked.apply_baseline(baseline=(None, -0.2))
-            ecg_evoked.plot_joint()
+            # EEG channel interpolation
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Interpolating EEG...{Style.RESET_ALL}")
 
-            # find which ICs match the ECG pattern
-            ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
-            ica.exclude = ecg_indices
+            # Channels marked as “bad” have been effectively repaired by SSS,
+            # eliminating the need to perform MEG interpolation.
 
-            # plot ICs applied to raw data, with ECG matches highlighted
-            ica.plot_sources(filt_raw, show_scrollbars=True)
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.interpolate_bads(reset_bads=True)
 
-            # barplot of ICA component "ECG match" scores
-            ica.plot_scores(ecg_scores)
+            # Use common average reference, not the nose reference.
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Use common average EEG reference...{Style.RESET_ALL}")
 
-            # plot diagnostics
-            ica.plot_properties(filt_raw, picks=ecg_indices)
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
-            # plot ICs applied to the averaged ECG epochs, with ECG matches highlighted
-            ica.plot_sources(ecg_evoked)
+            # remove very slow drift
+            print(f"{Fore.GREEN}{Style.BRIGHT}   Removing slow drift...{Style.RESET_ALL}")
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
-            # heartbeats
-            ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
+            # Remove ECG, VEOH and HEOG
 
-        if remove_VEOH_and_HEOG:
+            if remove_ECG or remove_VEOH_and_HEOG:
 
-            print(f"...Starting EOG removal.")
+                # remove both frequencies faster than 100Hz and slow drift less than 1hz
+                filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(l_freq=1., h_freq=100)
 
-            eog_evoked = mne.preprocessing.create_eog_epochs(filt_raw).average()
-            eog_evoked.apply_baseline(baseline=(None, -0.2))
-            eog_evoked.plot_joint()
+                ica = mne.preprocessing.ICA(n_components=30, method='fastica', max_iter='auto', random_state=97)
+                ica.fit(filt_raw)
 
-            # find which ICs match the EOG pattern
-            eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-            ica.exclude += eog_indices
+                explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
+                for channel_type, ratio in explained_var_ratio.items():
+                    print(
+                        f'   Fraction of {channel_type} variance explained by all components: '
+                        f'   {ratio}'
+                    )
 
-            # plot ICs applied to raw data, with EOG matches highlighted
-            ica.plot_sources(filt_raw, show_scrollbars=True)
+                ica.exclude = []
 
-            # barplot of ICA component "EOG match" scores
-            ica.plot_scores(eog_scores)
-    
-            # plot diagnostics
-            ica.plot_properties(filt_raw, picks=eog_indices)
+                if remove_ECG:
+                    print(f"{Fore.GREEN}{Style.BRIGHT}   Starting ECG removal...{Style.RESET_ALL}")
 
-            # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
-            ica.plot_sources(eog_evoked)
-    
-            # blinks
-            ica.plot_overlay(filt_raw, exclude=eog_indices, picks='eeg')
+                    ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
+                    ecg_evoked.apply_baseline(baseline=(None, -0.2))
+                    ecg_evoked.plot_joint()
 
-        ica.apply(raw_fif_data_sss_movecomp_tr)
-        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+                    # find which ICs match the ECG pattern
+                    ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
+                    ica.exclude = ecg_indices
 
-#    # Downsample if required
-#    https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html
+                    # plot ICs applied to raw data, with ECG matches highlighted
+                    ica.plot_sources(filt_raw, show_scrollbars=True)
 
-'''
+                    # barplot of ICA component "ECG match" scores
+                    ica.plot_scores(ecg_scores)
+
+                    # plot diagnostics
+                    ica.plot_properties(filt_raw, picks=ecg_indices)
+
+                    # plot ICs applied to the averaged ECG epochs, with ECG matches highlighted
+                    ica.plot_sources(ecg_evoked)
+
+                    # heartbeats
+                    ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
+
+                if remove_VEOH_and_HEOG:
+
+                    print(f"   ...Starting EOG removal.")
+
+                    eog_evoked = mne.preprocessing.create_eog_epochs(filt_raw).average()
+                    eog_evoked.apply_baseline(baseline=(None, -0.2))
+                    eog_evoked.plot_joint()
+
+                    # find which ICs match the EOG pattern
+                    eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
+                    ica.exclude += eog_indices
+
+                    # plot ICs applied to raw data, with EOG matches highlighted
+                    ica.plot_sources(filt_raw, show_scrollbars=True)
+
+                    # barplot of ICA component "EOG match" scores
+                    ica.plot_scores(eog_scores)
+
+                    # plot diagnostics
+                    ica.plot_properties(filt_raw, picks=eog_indices)
+
+                    # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
+                    ica.plot_sources(eog_evoked)
+
+                    # blinks
+                    ica.plot_overlay(filt_raw, exclude=eog_indices, picks='eeg')
+
+                ica.apply(raw_fif_data_sss_movecomp_tr)
+                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+
+            raw_fif_data_sss_movecomp_tr.save('data/out/' + participant + "_part" + str(run) + '_cleaned_raw.fif')
+
+
 def create_trials(list_of_participants: [str],
                   input_stream: str):
+    """Create trials objects from the raw data files (still in sensor space)"""
 
+    '''
     # Set Configs
     mne.set_config(xxx='MNE_STIM_CHANNEL', xxx='STI101')
     #
@@ -339,9 +306,72 @@ def create_trials(list_of_participants: [str],
     f.close()
 '''
 def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
+    '''Plot Sensor positions'''
     fig = plt.figure()
     ax2d = fig.add_subplot(121)
     ax3d = fig.add_subplot(122, projection='3d')
     raw_fif.plot_sensors(ch_type='eeg', axes=ax2d)
     raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
     ax3d.view_init(azim=70, elev=15)
+
+
+def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw):
+    '''Apply Automatic Bad Channel Detection'''
+    raw_check = raw_fif_data.copy()
+
+    fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
+    crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
+
+    auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(
+        raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
+        return_scores=True, verbose=True)
+    print(auto_noisy_chs)
+    print(auto_flat_chs)
+
+    bads = raw_fif_data.info['bads'] + auto_noisy_chs + auto_flat_chs
+    raw_fif_data.info['bads'] = bads
+
+    # Only select the data for gradiometer channels.
+    ch_type = 'grad'
+    ch_subset = auto_scores['ch_types'] == ch_type
+    ch_names = auto_scores['ch_names'][ch_subset]
+    scores = auto_scores['scores_noisy'][ch_subset]
+    limits = auto_scores['limits_noisy'][ch_subset]
+    bins = auto_scores['bins']  # The the windows that were evaluated.
+    # We will label each segment by its start and stop time, with up to 3
+    # digits before and 3 digits after the decimal place (1 ms precision).
+    bin_labels = [f'{start:3.3f} – {stop:3.3f}'
+                  for start, stop in bins]
+
+    # We store the data in a Pandas DataFrame. The seaborn heatmap function
+    # we will call below will then be able to automatically assign the correct
+    # labels to all axes.
+    data_to_plot = pd.DataFrame(data=scores,
+                                columns=pd.Index(bin_labels, name='Time (s)'),
+                                index=pd.Index(ch_names, name='Channel'))
+
+    # First, plot the "raw" scores.
+    fig, ax = plt.subplots(1, 2, figsize=(12, 8))
+    fig.suptitle(f'Automated noisy channel detection: {ch_type}',
+                 fontsize=16, fontweight='bold')
+    sns.heatmap(data=data_to_plot, cmap='Reds', cbar_kws=dict(label='Score'),
+                ax=ax[0])
+    [ax[0].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
+     for x in range(1, len(bins))]
+    ax[0].set_title('All Scores', fontweight='bold')
+
+    # Now, adjust the color range to highlight segments that exceeded the limit.
+    sns.heatmap(data=data_to_plot,
+                vmin=np.nanmin(limits),  # bads in input data have NaN limits
+                cmap='Reds', cbar_kws=dict(label='Score'), ax=ax[1])
+    [ax[1].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
+     for x in range(1, len(bins))]
+    ax[1].set_title('Scores > Limit', fontweight='bold')
+
+    # The figure title should not overlap with the subplots.
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    # Replace the word “noisy” with “flat”, and replace
+    # vmin=np.nanmin(limits) with vmax=np.nanmax(limits) to print flat channels
+
+    return raw_fif_data

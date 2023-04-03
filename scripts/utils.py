@@ -24,9 +24,17 @@ def load_config_parameters(file_location):
         except yaml.YAMLError as exc:
             print(exc)
 
+def load_bad_channels(file_location: str):
+    '''Loads EMEG bad channels from yaml suitable YAML file'''
+
+    with open(file_location, "r") as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
 
-def data_integrety_checks(list_of_participants: str):
+def data_integrety_checks(list_of_participants: str, number_of_runs: int):
     '''Runs data integrety checks before starting pipeline.'''
 
     #Check raw files are there?

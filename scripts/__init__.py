@@ -15,18 +15,22 @@ def main():
     config = utils.load_config_parameters('data/configs/dataset4_config_file.yaml')
 
     list_of_participants = config['list_of_participants']
+    number_of_runs = config['number_of_runs']
     input_stream = config['input_stream']
     remove_ECG = config['remove_ECG']
     remove_VEOH_and_HEOG = config['remove_VEOH_and_HEOG']
+    automatic_bad_channel_detection_requested = config['automatic_bad_channel_detection_requested']
 
     # Ensure we have all the data we need
-    utils.data_integrety_checks(list_of_participants=list_of_participants)
+    utils.data_integrety_checks(list_of_participants=list_of_participants, number_of_runs=number_of_runs)
 
     # Preprocess EMEG raw data
     preprocessing.run_preprocessing(list_of_participants=list_of_participants,
+                                    number_of_runs=number_of_runs,
                                     input_stream=input_stream,
                                     remove_ECG=remove_ECG,
-                                    remove_VEOH_and_HEOG=remove_VEOH_and_HEOG)
+                                    remove_VEOH_and_HEOG=remove_VEOH_and_HEOG,
+                                    automatic_bad_channel_detection_requested=automatic_bad_channel_detection_requested)
 
     # Save sensor level data, epoched by trial
 #    preprocessing.create_trials(list_of_participants = list_of_participants, input_stream = input_stream)
