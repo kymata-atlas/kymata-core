@@ -117,7 +117,10 @@ def plot_expression_plot():
 
 
     print("...applying model selection.")
-    #for hemi in ['left','right']:
+    #for hemi in ['left', 'right']:
+        #for hexel in hemi.length():
+            #[name-of-function] unzip find_name_of_best_function_at_hexel(hexel, hexel_expression_plotting)
+
     #    for each hexel in len hexels
     #       for key, my_function in hexel_expression_plotting.items():
     #           go to xxx and find the best one.

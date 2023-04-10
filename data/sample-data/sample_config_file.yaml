@@ -1,0 +1,12 @@
+
+# Sample config file for Kymata Dataset 4.00
+
+neurophysiology_data_file_directory: "data/sample-data/dentritic_current_stc_data"
+hexel_expression_master_filename: ""
+is_sensor_esimation: False
+is_debug_mode: True
+
+inputstream: 'audio'
+functions_to_apply_gridsearch: []
+functions_to_use_in_model_selection: []
+functions_to_be_plotted: []

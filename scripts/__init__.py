@@ -10,27 +10,28 @@ def main():
 
     # Load parameters
     
-    #config = load_data.load_config_parameters('data/dataset4_config_file.yaml')
+    config = load_data.load_config_parameters('data/sample-data/sample_config_file.yaml')
     
-    #neurophysiology_data_file_directory = config['neurophysiology_data_file_directory']
-    #hexel_expression_master_filename = config['neurophysiology_data_file_direcotry']
-    #is_sensor_esimation = config['is_sensor_esimation']
-    #is_debug_mode = config['is_debug_mode']
-    #functions_to_apply_gridsearch = config['functions_to_apply_gridsearch']
-    #functions_to_be_plotted = config['functions_to_be_plotted']
-    #force_overwrite_hexel_expression_master = config['force_overwrite_hexel_expression_master ']
-    #overwrite_hexel_expression_master_file = config['force_overwrite_hexel_expression_master ']
+    neurophysiology_data_file_directory = config['neurophysiology_data_file_directory']
+    predicted_function_outputs_data = config[]
+    hexel_expression_master_filename = config['hexel_expression_master_filename']
+    is_sensor_esimation = config['is_sensor_esimation']
+    is_debug_mode = config['is_debug_mode']
+    functions_to_apply_gridsearch = config['functions_to_apply_gridsearch']
+    functions_to_use_in_model_selection = config['functions_to_use_in_model_selection']
+    functions_to_be_plotted = config['functions_to_be_plotted']
+    inputstream = config['inputstream']
 
-    #print(paramenters for viewer)
+    print(config)
     
     # Load data
 
-    #neurophysiology_data = load_data.load_neurophysiology_data(neurophysiology_data_file_direcotry = neurophysiology_data_file_direcotry)
+    #neurophysiology_data = load_data.hexel_expression_master(hexel_expression_master_filename = hexel_expression_master_filename)
     #predicted_function_outputs_data = load_data.load_predicted_function_outputs(neurophysiology_data_file_direcotry = neurophysiology_data_file_direcotry)
 
     # Run search for function output
     
-    #hexel_expression = gridsearch.xxxdo(neurophysiology_data, predicted_function_outputs_data, hexel_expression, functions_to_apply_gridsearch)
+    hexel_expression = gridsearch.do_gridsearch(neurophysiology_data_file_directory, predicted_function_outputs_data, hexel_expression, functions_to_apply_gridsearch)
     #hexel_expression merge flipped together
 
     # save hexel
