@@ -2,6 +2,7 @@ from colorama import Fore
 from colorama import Style
 import matplotlib.pyplot as plt
 import mne
+import os.path
 import sklearn
 import seaborn as sns
 import numpy as np
@@ -9,12 +10,14 @@ import numpy as np
 import utils
 
 
-def run_preprocessing(list_of_participants: str,
-                      number_of_runs: int,
-                      input_stream: str,
-                      remove_ECG: bool,
-                      remove_VEOH_and_HEOG: bool,
-                      automatic_bad_channel_detection_requested: bool):
+def run_preprocessing(config: dict):
+
+    list_of_participants = config['list_of_participants']
+    number_of_runs = config['number_of_runs']
+    remove_ECG = config['remove_ECG']
+    skip_maxfilter_if_previous_runs_exist = config['skip_maxfilter_if_previous_runs_exist']
+    remove_VEOH_and_HEOG = config['remove_VEOH_and_HEOG']
+    automatic_bad_channel_detection_requested = config['automatic_bad_channel_detection_requested']
 
     '''Runs Preprocessing'''
 
@@ -28,54 +31,75 @@ def run_preprocessing(list_of_participants: str,
             # Load data
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
-            raw_fif_data = mne.io.Raw("data/raw/" + participant + "_part" + str(run) + "_raw.fif", preload=True)
-            head_pos = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
+            saved_maxfiltered_filename = 'data/out/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif'
 
-            # Set bad channels (manual and automatic)
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Setting bad channels...{Style.RESET_ALL}")
-            print(f"{Fore.GREEN}{Style.BRIGHT}   ...manual{Style.RESET_ALL}")
+            if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
+                raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
-            bads_config = utils.load_bad_channels('data/raw/' + participant + '_EMEG_bad_channels.yaml')
-            raw_fif_data.info['bads'] = bads_config['bad_channels']
-
-            if automatic_bad_channel_detection_requested:
-
-                print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
-                raw_fif_data = apply_automatic_bad_channel_detection()
-
-            response = input(
-                f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
-            if response == "y":
-                print(f"...Plotting Raw data.")
-                mne.viz.plot_raw(raw_fif_data, scalings='auto')
             else:
-                print(f"...assuming you want to continue without looking at the raw data.")
+                raw_fif_data = mne.io.Raw("data/raw/" + participant + "_part" + str(run) + "_raw.fif", preload=True)
+                head_pos = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
 
+                # Rename any channels that require it, and their type
+                recording_config = utils.load_recording_config('data/raw/' + participant + '_recording_config.yaml')
+                ecg_and_eog_channel_name_and_type_overwrites = recording_config['ECG_and_EOG_channel_name_and_type_overwrites']
 
-            # plot EEG positions
-            plot_eeg_sensor_positions(raw_fif_data)
+                # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
+                ecg_and_eog_channel_type_overwrites = {}
+                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                    ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
+                raw_fif_data.set_channel_types(ecg_and_eog_channel_type_overwrites, verbose=None)
 
-            # Apply SSS and movement compensation
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
+                # Set EOG and ECG names for clarity
+                ecg_and_eog_channel_name_overwrites = {}
+                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                    ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
+                raw_fif_data.rename_channels(ecg_and_eog_channel_name_overwrites, allow_duplicates=False)
 
-            fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
-            crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
+                # Set bad channels (manual and automatic)
+                print(f"{Fore.GREEN}{Style.BRIGHT}   Setting bad channels...{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}{Style.BRIGHT}   ...manual{Style.RESET_ALL}")
 
-            mne.viz.plot_head_positions(
-                head_pos, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
+                raw_fif_data.info['bads'] = recording_config['bad_channels']
 
-            raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
-                                            raw_fif_data,
-                                            cross_talk=crosstalk_file,
-                                            calibration=fine_cal_file,
-                                            head_pos=head_pos,
-                                            st_correlation=0.980,
-                                            st_duration=10,
-                                            destination=(0, 0, 0.04),
-                                            verbose=True)
+                if automatic_bad_channel_detection_requested:
 
-            response = input(
-                f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
+                    print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
+                    raw_fif_data = apply_automatic_bad_channel_detection()
+
+                response = input(
+                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
+                if response == "y":
+                    print(f"...Plotting Raw data.")
+                    mne.viz.plot_raw(raw_fif_data, scalings='auto')
+                else:
+                    print(f"...assuming you want to continue without looking at the raw data.")
+
+                # plot EEG positions
+                plot_eeg_sensor_positions(raw_fif_data)
+
+                # Apply SSS and movement compensation
+                print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
+
+                fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
+                crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
+
+                mne.viz.plot_head_positions(
+                    head_pos, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
+
+                raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
+                    raw_fif_data,
+                    cross_talk=crosstalk_file,
+                    calibration=fine_cal_file,
+                    head_pos=head_pos,
+                    st_correlation=0.980,
+                    st_duration=10,
+                    destination=(0, 0, 0.04),
+                    verbose=True)
+
+                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename)
+
+            response = input(f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
             if response == "y":
                 print(f"...Plotting Raw data.")
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
@@ -87,9 +111,6 @@ def run_preprocessing(list_of_participants: str,
             print(f"{Fore.GREEN}{Style.BRIGHT}   Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
 
             raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
-
-            #raw_fif_data_sss_movecomp_tr.save('data/out/" + participant + "_part" + str(run) + '_raw_sss.fif')
-            #raw_fif_data_sss_movecomp_tr = mne.io.Raw('data/out/' + participant + "_part" + str(run) + '_raw_sss.fif', preload=True)
 
             # note that EEG and MEG do not have the same frequencies, so we remove them seperately
             meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
@@ -193,45 +214,42 @@ def run_preprocessing(list_of_participants: str,
                 ica.apply(raw_fif_data_sss_movecomp_tr)
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
-            raw_fif_data_sss_movecomp_tr.save('data/out/' + participant + "_part" + str(run) + '_cleaned_raw.fif')
+            raw_fif_data_sss_movecomp_tr.save('data/out/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif', overwrite=True)
 
 
-def create_trials(list_of_participants: [str],
-                  input_stream: str):
+def create_trials(config):
     """Create trials objects from the raw data files (still in sensor space)"""
+'''
+    eeg_thresh = config[]
+    grad_thresh = config[]
+    mag_thresh = config[]
 
-    '''
-    # Set Configs
-    mne.set_config(xxx='MNE_STIM_CHANNEL', xxx='STI101')
-    #
-    # Set parameters
-    audio_delivery_latency = 16;  # in milliseconds
-    visual_delivery_latency = 34;  # in milliseconds
-    tactile_delivery_latency = 0;  # in milliseconds
-    data_path = '/imaging/at03/NKG_Code_output/Version5/DATASET_3-01_visual-and-auditory'
-    tmin, tmax = -0.2, 1.8
-    numtrials = 400
+    visual_delivery_latency  = config[]
+    audio_delivery_latency  = config[]
 
-    eeg_thresh, grad_thresh, mag_thresh = 200e-6, 4000e-13, 4e-12
+    tmin = -0.2  = config[]
+    tmax = -1.8  = config[]
 
+    global_droplog = []
 
-    # Inititialise global variables
-    global_droplog = [];
-
-    # Main Script
+    print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
     for p in list_of_participants:
 
-        #	Setup filenames
-        raw_fname_part1 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part1_raw_sss_movecomp_tr.fif'
-        raw_fname_part2 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part2_raw_sss_movecomp_tr.fif'
+        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatonating trials{Style.RESET_ALL}")
 
-        #   	Read raw data
-        raw = io.Raw(raw_fname_part1, preload=True)
-        raw2 = io.Raw(raw_fname_part2)
+        for run in runs:
+
+            #	Setup filenames
+            raw_fname_part1 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part1_raw_sss_movecomp_tr.fif'
+            raw_fname_part2 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part2_raw_sss_movecomp_tr.fif'
+
+            #   	Read raw data
+            raw = io.Raw(raw_fname_part1, preload=True)
+            raw2 = io.Raw(raw_fname_part2)
+
 
         raw = io.concatenate_raws(raws=[raw, raw2], preload=True)
-        confirm no jump btewwn two (shoul dhave been sort aout by movecomp)?
 
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
@@ -239,38 +257,41 @@ def create_trials(list_of_participants: [str],
         raw_events = mne.event.shift_time_events(raw_events, [2], visual_delivery_latency, 1)
         raw_events = mne.event.shift_time_events(raw_events, [3], audio_delivery_latency, 1)
 
+        print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+
         #	Extract visual events
-        events_viz = mne.pick_events(raw_events, include=2)
-        itemname = 1;
-        for item in events_viz:
-            item[2] = itemname  # rename as '1,2,3 ...400' etc
-            if itemname == 400:
-                itemname = 1
+        visual_events = mne.pick_events(raw_events, include=2)
+        trigger_name = 1;
+        for trigger in visual_events:
+            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
+            if trigger_name == 400:
+                trigger_name = 1
             else:
-                itemname = itemname + 1
+                trigger_name = trigger_name + 1
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
 
         #	Extract audio events
-        events_audio_raw = mne.pick_events(raw_events, include=3)
-        events_audio = np.zeros((len(events_audio_raw) * 400, 3), dtype=int)
-        for i, item in enumerate(events_audio_raw):
+        audio_events_raw = mne.pick_events(raw_events, include=3)
+        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
+        for i, item in enumerate(audio_events_raw):
             for ii in xrange(400):
-                events_audio[((i * 400) + (ii + 1)) - 1][0] = item[0] + (ii * 1000)
-                events_audio[((i * 400) + (ii + 1)) - 1][1] = 0
-                events_audio[((i * 400) + (ii + 1)) - 1][2] = ii + 1
-
-        ##   	Plot raw data
-        # fig = raw.plot(events=events)
+                audio_events[((i * 400) + (ii + 1)) - 1][0] = item[0] + (ii * 1000)
+                audio_events[((i * 400) + (ii + 1)) - 1][1] = 0
+                audio_events[((i * 400) + (ii + 1)) - 1][2] = ii + 1
 
         #	Denote picks
         include = []  # MISC05, trigger channels etc, if needed
         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads')
 
+        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
+
         for domain in ['audio', 'visual']:
 
             if domain == 'audio':
-                events = events_audio
+                events = audio_events
             else:
-                events = events_viz
+                events = visual_events
 
             #	Extract trial instances ('epochs')
             epochs = mne.Epochs(raw, events, None, tmin, tmax, picks=picks,
@@ -278,8 +299,8 @@ def create_trials(list_of_participants: [str],
                                 preload=True)
 
             # 	Log which channels are worst
-            # dropfig = epochs.plot_drop_log(subject = p)
-            # dropfig.savefig(data_path + '/3-sensor-data/logs/drop-log_' + p + '.jpg')
+            dropfig = epochs.plot_drop_log(subject = p)
+            dropfig.savefig(data_path + '/3-sensor-data/logs/drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + domain + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -291,10 +312,14 @@ def create_trials(list_of_participants: [str],
                 evoked.save(data_path + '/3-sensor-data/fif-out/' + domain + '/' + p + '_item' + str(i) + '-ave.fif')
 
         # save grand average
+        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
+
         evoked_grandaverage = epochs.average()
         evoked_grandaverage.save(data_path + '/3-sensor-data/fif-out/' + p + '-grandave.fif')
 
         # save grand covs
+        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covarience matrix{Style.RESET_ALL}")
+
         cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
         cov.save(data_path + '/3-sensor-data/covariance-files/' + p + '-auto-gcov.fif')
 
@@ -305,6 +330,7 @@ def create_trials(list_of_participants: [str],
         print >> f, item
     f.close()
 '''
+
 def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     '''Plot Sensor positions'''
     fig = plt.figure()

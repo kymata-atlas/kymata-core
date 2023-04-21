@@ -6,7 +6,19 @@ list_of_participants: ["meg15_0045",
 input_stream: "auditory"             # auditory | visual
 number_of_runs: 2                    # number of runs
 
-# preprocessing pipeline
+# Preprocessing pipeline
+skip_maxfilter_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
+
+# Creation of evoked trial pipeline
+audio_delivery_latency: 16          # in milliseconds
+visual_delivery_latency: 34         # in milliseconds
+tactile_delivery_latency: 0       # in milliseconds
+tmin: -0.2
+tmax: -1.8
+
+eeg_thresh: 200e-6
+grad_thresh: 4000e-13
+mag_thresh: 4e-12
