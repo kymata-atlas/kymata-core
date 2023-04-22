@@ -5,6 +5,7 @@ list_of_participants: ["meg15_0045",
                        "meg15_0051"] # list of Participants
 input_stream: "auditory"             # auditory | visual
 number_of_runs: 2                    # number of runs
+number_of_trials: 400                # number of trials
 
 # Preprocessing pipeline
 skip_maxfilter_if_previous_runs_exist: True
@@ -17,8 +18,8 @@ audio_delivery_latency: 16          # in milliseconds
 visual_delivery_latency: 34         # in milliseconds
 tactile_delivery_latency: 0       # in milliseconds
 tmin: -0.2
-tmax: -1.8
+tmax: 1.8
 
-eeg_thresh: 200e-6
-grad_thresh: 4000e-13
-mag_thresh: 4e-12
+eeg_thresh: 1 #200e-6
+grad_thresh: 1 #4000e-13
+mag_thresh: 1 #4e-12

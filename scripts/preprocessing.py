@@ -217,18 +217,22 @@ def run_preprocessing(config: dict):
             raw_fif_data_sss_movecomp_tr.save('data/out/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif', overwrite=True)
 
 
-def create_trials(config):
+def create_trials(config:dict):
     """Create trials objects from the raw data files (still in sensor space)"""
-'''
-    eeg_thresh = config[]
-    grad_thresh = config[]
-    mag_thresh = config[]
 
-    visual_delivery_latency  = config[]
-    audio_delivery_latency  = config[]
+    list_of_participants = config['list_of_participants']
+    number_of_runs = config['number_of_runs']
+    number_of_trials = config['number_of_trials']
 
-    tmin = -0.2  = config[]
-    tmax = -1.8  = config[]
+    eeg_thresh = float(config['eeg_thresh'])
+    grad_thresh = float(config['grad_thresh'])
+    mag_thresh = float(config['mag_thresh'])
+
+    visual_delivery_latency = config['visual_delivery_latency']
+    audio_delivery_latency = config['audio_delivery_latency']
+
+    tmin = config['tmin']
+    tmax = config['tmax']
 
     global_droplog = []
 
@@ -236,20 +240,17 @@ def create_trials(config):
 
     for p in list_of_participants:
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatonating trials{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
-        for run in runs:
+        cleaned_raws = []
 
-            #	Setup filenames
-            raw_fname_part1 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part1_raw_sss_movecomp_tr.fif'
-            raw_fname_part2 = data_path + '/1-preprosessing/sss/' + p + '_nkg_part2_raw_sss_movecomp_tr.fif'
+        for run in range(1, number_of_runs+1):
 
-            #   	Read raw data
-            raw = io.Raw(raw_fname_part1, preload=True)
-            raw2 = io.Raw(raw_fname_part2)
+            raw_fname = 'data/out/2_cleaned/' + p + '_part' + str(run) + '_cleaned_raw.fif'
+            raw = mne.io.Raw(raw_fname, preload=True)
+            cleaned_raws.append(raw)
 
-
-        raw = io.concatenate_raws(raws=[raw, raw2], preload=True)
+        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
@@ -274,11 +275,11 @@ def create_trials(config):
         #	Extract audio events
         audio_events_raw = mne.pick_events(raw_events, include=3)
         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
-        for i, item in enumerate(audio_events_raw):
-            for ii in xrange(400):
-                audio_events[((i * 400) + (ii + 1)) - 1][0] = item[0] + (ii * 1000)
-                audio_events[((i * 400) + (ii + 1)) - 1][1] = 0
-                audio_events[((i * 400) + (ii + 1)) - 1][2] = ii + 1
+        for run, item in enumerate(audio_events_raw):
+            for trial in range(1, number_of_trials + 1):
+                audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + (trial * 1000)
+                audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
+                audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
 
         #	Denote picks
         include = []  # MISC05, trigger channels etc, if needed
@@ -286,9 +287,9 @@ def create_trials(config):
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        for domain in ['audio', 'visual']:
+        for input_stream in ['auditory', 'visual']:
 
-            if domain == 'audio':
+            if input_stream == 'auditory':
                 events = audio_events
             else:
                 events = visual_events
@@ -300,36 +301,34 @@ def create_trials(config):
 
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject = p)
-            dropfig.savefig(data_path + '/3-sensor-data/logs/drop-log_' + p + '.jpg')
+            dropfig.savefig('data/out/3_evoked_sensor_data/logs/' + input_stream +'_drop-log_' + p + '.jpg')
 
-            global_droplog.append('[' + domain + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
+            global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
             #	Make and save trials as evoked data
-            for i in range(1, numtrials + 1):
+            for i in range(1, number_of_trials + 1):
                 # evoked_one.plot() #(on top of each other)
                 # evoked_one.plot_image() #(side-by-side)
                 evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
-                evoked.save(data_path + '/3-sensor-data/fif-out/' + domain + '/' + p + '_item' + str(i) + '-ave.fif')
+                evoked.save('data/out/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(i) + '-ave.fif', overwrite=True)
 
         # save grand average
         print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
 
         evoked_grandaverage = epochs.average()
-        evoked_grandaverage.save(data_path + '/3-sensor-data/fif-out/' + p + '-grandave.fif')
+        evoked_grandaverage.save('data/out/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif')
 
         # save grand covs
-        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covarience matrix{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
 
         cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
-        cov.save(data_path + '/3-sensor-data/covariance-files/' + p + '-auto-gcov.fif')
+        cov.save('data/out/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
 
     #	Save global droplog
-    f = open(data_path + '/3-sensor-data/logs/drop-log.txt', 'w')
-    print >> f, 'Average drop rate for each participant\n'
-    for item in global_droplog:
-        print >> f, item
-    f.close()
-'''
+    with open('data/out/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
+        file.write('Average drop rate for each participant\n')
+        for item in global_droplog:
+            file.write( item + '/n')
 
 def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     '''Plot Sensor positions'''
