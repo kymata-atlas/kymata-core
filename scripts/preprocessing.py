@@ -31,7 +31,8 @@ def run_preprocessing(config: dict):
             # Load data
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
-            saved_maxfiltered_filename = 'data/out/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif'
+            # set filename. (Use .fif.gz extension to use gzip to compress)
+            saved_maxfiltered_filename = 'data/out/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif.gz'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
@@ -68,7 +69,7 @@ def run_preprocessing(config: dict):
                     raw_fif_data = apply_automatic_bad_channel_detection()
 
                 response = input(
-                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? (y/n){Style.RESET_ALL}")
+                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? Recommended if you want to mark further EEG bads (y/n){Style.RESET_ALL}")
                 if response == "y":
                     print(f"...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings='auto')
@@ -214,7 +215,7 @@ def run_preprocessing(config: dict):
                 ica.apply(raw_fif_data_sss_movecomp_tr)
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
-            raw_fif_data_sss_movecomp_tr.save('data/out/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif', overwrite=True)
+            raw_fif_data_sss_movecomp_tr.save('data/out/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif.gz', overwrite=True)
 
 
 def create_trials(config:dict):
@@ -246,7 +247,7 @@ def create_trials(config:dict):
 
         for run in range(1, number_of_runs+1):
 
-            raw_fname = 'data/out/2_cleaned/' + p + '_part' + str(run) + '_cleaned_raw.fif'
+            raw_fname = 'data/out/2_cleaned/' + p + '_part' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
