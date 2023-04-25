@@ -21,10 +21,10 @@ def main():
     preprocessing.run_preprocessing(config=config)
 
     # Save sensor level data, epoched by trial
-    preprocessing.create_trials(config=config)
+    #preprocessing.create_trials(config=config)
     
     # Create Boundary Element Models
-#    bem.create_boundary_element_model(list_of_participants = list_of_participants, input_stream = input_stream)
+#    bem.create_boundary_element_model(config=config)
 
     # Create forward model and inverse solution
 #    hexel_current_estimation.create_forward_model_and_inverse_solution(list_of_participants = list_of_participants, input_stream = input_stream)

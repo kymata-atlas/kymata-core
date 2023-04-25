@@ -69,10 +69,12 @@ def run_preprocessing(config: dict):
                     raw_fif_data = apply_automatic_bad_channel_detection()
 
                 response = input(
-                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? Recommended if you want to mark further EEG bads (y/n){Style.RESET_ALL}")
+                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? Recommended if you want to confirm"
+                    f" ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                    f" (y/n){Style.RESET_ALL}")
                 if response == "y":
                     print(f"...Plotting Raw data.")
-                    mne.viz.plot_raw(raw_fif_data, scalings='auto')
+                    mne.viz.plot_raw(raw_fif_data, scalings='auto', block=True)
                 else:
                     print(f"...assuming you want to continue without looking at the raw data.")
 
@@ -216,7 +218,6 @@ def run_preprocessing(config: dict):
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
             raw_fif_data_sss_movecomp_tr.save('data/out/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif.gz', overwrite=True)
-
 
 def create_trials(config:dict):
     """Create trials objects from the raw data files (still in sensor space)"""
