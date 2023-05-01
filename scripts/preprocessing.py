@@ -32,7 +32,7 @@ def run_preprocessing(config: dict):
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = 'data/out/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif.gz'
+            saved_maxfiltered_filename = 'data/out/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
@@ -95,12 +95,13 @@ def run_preprocessing(config: dict):
                     cross_talk=crosstalk_file,
                     calibration=fine_cal_file,
                     head_pos=head_pos,
+                    coord_frame='head',
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
                     verbose=True)
 
-                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename)
+                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
             response = input(f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
             if response == "y":
@@ -289,7 +290,7 @@ def create_trials(config:dict):
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        for input_stream in ['auditory', 'visual']:
+        for input_stream in ['auditory']:
 
             if input_stream == 'auditory':
                 events = audio_events
@@ -318,13 +319,13 @@ def create_trials(config:dict):
         print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
 
         evoked_grandaverage = epochs.average()
-        evoked_grandaverage.save('data/out/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif')
+        evoked_grandaverage.save('data/out/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif', overwrite=True)
 
         # save grand covs
-        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
+        #print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
 
-        cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
-        cov.save('data/out/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
+        #cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
+        #cov.save('data/out/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
 
     #	Save global droplog
     with open('data/out/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:

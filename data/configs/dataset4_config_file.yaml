@@ -15,7 +15,8 @@ list_of_participants: [ "meg15_0045",
                         "meg15_0072",
                         "meg15_0079",
                         "meg15_0081",
-                        "meg15_0082" ]
+                        "meg15_0082"
+                        ]
 
 input_stream: "auditory"             # auditory | visual
 number_of_runs: 2                    # number of runs
@@ -36,4 +37,4 @@ tmax: 1.8
 
 eeg_thresh: 1 #200e-6
 grad_thresh: 1 #4000e-13
-mag_thresh: 1 #4e-12
+mag_thresh: 1 #4000e-15
