@@ -1,6 +1,6 @@
 # kymata-hpc Readme
 
-Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
+Maintained by the [Kymata Research Group](https://kymata.org) (UCL / University of Cambridge / Tsinghua).
 
 ## Description
 
