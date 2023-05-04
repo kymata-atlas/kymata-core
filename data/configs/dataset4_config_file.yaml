@@ -30,8 +30,8 @@ automatic_bad_channel_detection_requested: False
 
 # Creation of evoked trial pipeline
 audio_delivery_latency: 16          # in milliseconds
-visual_delivery_latency: 34         # in milliseconds
-tactile_delivery_latency: 0       # in milliseconds
+visual_delivery_latency: 16.67      # in milliseconds
+tactile_delivery_latency: 0         # in milliseconds
 tmin: -0.2
 tmax: 1.8
 
