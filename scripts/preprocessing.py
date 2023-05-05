@@ -39,7 +39,7 @@ def run_preprocessing(config: dict):
 
             else:
                 raw_fif_data = mne.io.Raw("data/raw/" + participant + "_part" + str(run) + "_raw.fif", preload=True)
-                head_pos = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
+                head_pos_data = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
 
                 # Rename any channels that require it, and their type
                 recording_config = utils.load_recording_config('data/raw/' + participant + '_recording_config.yaml')
@@ -88,13 +88,13 @@ def run_preprocessing(config: dict):
                 crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
 
                 mne.viz.plot_head_positions(
-                    head_pos, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
+                    head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
                 raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
                     raw_fif_data,
                     cross_talk=crosstalk_file,
                     calibration=fine_cal_file,
-                    head_pos=head_pos,
+                    head_pos=head_pos_data,
                     coord_frame='head',
                     st_correlation=0.980,
                     st_duration=10,
