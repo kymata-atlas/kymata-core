@@ -8,23 +8,22 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "attrs"
-version = "22.2.0"
+version = "23.1.0"
 description = "Classes Without Boilerplate"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.extras]
-cov = ["attrs", "coverage-enable-subprocess", "coverage[toml] (>=5.3)"]
-dev = ["attrs"]
-docs = ["furo", "sphinx", "myst-parser", "zope.interface", "sphinx-notfound-page", "sphinxcontrib-towncrier", "towncrier"]
-tests = ["attrs", "zope.interface"]
-tests-no-zope = ["hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist", "cloudpickle", "mypy (>=0.971,<0.990)", "pytest-mypy-plugins"]
-tests_no_zope = ["hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist", "cloudpickle", "mypy (>=0.971,<0.990)", "pytest-mypy-plugins"]
+cov = ["attrs", "coverage[toml] (>=5.3)"]
+dev = ["attrs", "pre-commit"]
+docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-towncrier", "towncrier", "zope-interface"]
+tests = ["attrs", "zope-interface"]
+tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pytest-mypy-plugins", "pytest-xdist", "pytest (>=4.3.0)"]
 
 [[package]]
 name = "certifi"
-version = "2022.12.7"
+version = "2023.5.7"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -48,7 +47,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7
 
 [[package]]
 name = "contourpy"
-version = "1.0.7"
+version = "1.1.0"
 description = "Python library for calculating contours of 2D quadrilateral grids"
 category = "main"
 optional = false
@@ -58,11 +57,11 @@ python-versions = ">=3.8"
 numpy = ">=1.16"
 
 [package.extras]
-bokeh = ["bokeh", "chromedriver", "selenium"]
 docs = ["furo", "sphinx-copybutton"]
-mypy = ["contourpy", "docutils-stubs", "mypy (==0.991)", "types-pillow"]
-test = ["matplotlib", "pillow", "pytest"]
-test-no-images = ["pytest"]
+bokeh = ["bokeh", "selenium"]
+mypy = ["contourpy", "docutils-stubs", "mypy (==1.2.0)", "types-pillow"]
+test = ["contourpy", "matplotlib", "pillow"]
+test-no-images = ["pytest", "pytest-cov", "wurlitzer"]
 
 [[package]]
 name = "cycler"
@@ -82,7 +81,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "fonttools"
-version = "4.39.2"
+version = "4.40.0"
 description = "Tools to manipulate font files"
 category = "main"
 optional = false
@@ -157,7 +156,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "markupsafe"
-version = "2.1.2"
+version = "2.1.3"
 description = "Safely add untrusted strings to HTML/XML markup."
 category = "main"
 optional = false
@@ -186,25 +185,26 @@ setuptools_scm = ">=7"
 
 [[package]]
 name = "mne"
-version = "1.3.1"
+version = "1.4.2"
 description = "MNE-Python project for MEG and EEG data analysis."
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 
 [package.dependencies]
 decorator = "*"
+importlib-resources = {version = ">=5.10.2", markers = "python_version < \"3.9\""}
 jinja2 = "*"
-matplotlib = "*"
+matplotlib = ">=3.4.0"
 numpy = ">=1.15.4"
 packaging = "*"
 pooch = ">=1.5"
-scipy = ">=1.1.0"
+scipy = ">=1.6.3"
 tqdm = "*"
 
 [package.extras]
 hdf5 = ["h5io", "pymatreader"]
-test = ["pytest", "pytest-cov", "pytest-timeout", "pytest-harvest", "flake8", "flake8-array-spacing", "numpydoc", "codespell", "pydocstyle", "check-manifest", "twine", "wheel", "nitime", "nbclient", "sphinx-gallery", "eeglabio", "edflib-python", "pybv", "imageio-ffmpeg"]
+test = ["pytest", "pytest-cov", "pytest-timeout", "pytest-harvest", "ruff", "numpydoc", "codespell", "check-manifest", "twine", "wheel", "pre-commit", "black", "nitime", "nbclient", "sphinx-gallery", "eeglabio", "edflib-python", "pybv", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "tomli"]
 
 [[package]]
 name = "more-itertools"
@@ -216,7 +216,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "numpy"
-version = "1.24.2"
+version = "1.24.3"
 description = "Fundamental package for array computing in Python"
 category = "main"
 optional = false
@@ -224,7 +224,7 @@ python-versions = ">=3.8"
 
 [[package]]
 name = "packaging"
-version = "23.0"
+version = "23.1"
 description = "Core utilities for Python packages"
 category = "main"
 optional = false
@@ -232,7 +232,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "pandas"
-version = "2.0.0"
+version = "2.0.2"
 description = "Powerful data structures for data analysis, time series, and statistics"
 category = "main"
 optional = false
@@ -269,27 +269,27 @@ xml = ["lxml (>=4.6.3)"]
 
 [[package]]
 name = "pillow"
-version = "9.4.0"
+version = "9.5.0"
 description = "Python Imaging Library (Fork)"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.extras]
-docs = ["furo", "olefile", "sphinx (>=2.4)", "sphinx-copybutton", "sphinx-inline-tabs", "sphinx-issues (>=3.0.1)", "sphinx-removed-in", "sphinxext-opengraph"]
+docs = ["furo", "olefile", "sphinx (>=2.4)", "sphinx-copybutton", "sphinx-inline-tabs", "sphinx-removed-in", "sphinxext-opengraph"]
 tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "packaging", "pyroma", "pytest", "pytest-cov", "pytest-timeout"]
 
 [[package]]
 name = "platformdirs"
-version = "3.1.1"
+version = "3.8.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)", "sphinx (>=6.1.3)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "pytest (>=7.2.1)"]
+docs = ["furo (>=2023.5.20)", "proselint (>=0.13)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)", "sphinx (>=7.0.1)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "pytest (>=7.3.1)"]
 
 [[package]]
 name = "pluggy"
@@ -330,7 +330,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "pyparsing"
-version = "3.0.9"
+version = "3.1.0"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 category = "main"
 optional = false
@@ -390,17 +390,17 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "requests"
-version = "2.28.2"
+version = "2.31.0"
 description = "Python HTTP for Humans."
 category = "main"
 optional = false
-python-versions = ">=3.7, <4"
+python-versions = ">=3.7"
 
 [package.dependencies]
 certifi = ">=2017.4.17"
 charset-normalizer = ">=2,<4"
 idna = ">=2.5,<4"
-urllib3 = ">=1.21.1,<1.27"
+urllib3 = ">=1.21.1,<3"
 
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
@@ -520,7 +520,7 @@ telegram = ["requests"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.5.0"
+version = "4.6.3"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "main"
 optional = false
@@ -536,16 +536,17 @@ python-versions = ">=2"
 
 [[package]]
 name = "urllib3"
-version = "1.26.15"
+version = "2.0.3"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+python-versions = ">=3.7"
 
 [package.extras]
-brotli = ["brotlicffi (>=0.8.0)", "brotli (>=1.0.9)", "brotlipy (>=0.6.0)"]
-secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "urllib3-secure-extra", "ipaddress"]
-socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
+brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)"]
+secure = ["certifi", "cryptography (>=1.9)", "idna (>=2.0.0)", "pyopenssl (>=17.1.0)", "urllib3-secure-extra"]
+socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
+zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "wcwidth"
@@ -570,7 +571,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8.9"
-content-hash = "9c84f690c650e690972cac3b904de3c469d5ddaec23857abd6d2530b084299d6"
+content-hash = "3b951463f008fd70fa0c2d62d5389e8b51a04d124961015b15acfee6b4a5a7f7"
 
 [metadata.files]
 atomicwrites = []

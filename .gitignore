@@ -2,4 +2,4 @@
 .DS_Store
 data/raw/
 *.pyc
-data/out/*
+data/intrim_preprocessing_files/*
