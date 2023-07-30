@@ -18,10 +18,10 @@ def main():
     utils.data_integrety_checks(config=config)
 
     # Preprocess EMEG raw data
-    preprocessing.run_preprocessing(config=config)
+    #preprocessing.run_preprocessing(config=config)
 
     # Save sensor level data, epoched by trial
-    #preprocessing.create_trials(config=config)
+    preprocessing.create_trials(config=config)
     
     # Create Boundary Element Models
 #    bem.create_boundary_element_model(config=config)

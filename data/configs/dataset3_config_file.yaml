@@ -1,11 +1,25 @@
 
 # Config file for Kymata Dataset 4.00
 
-list_of_participants: [ "pilot_2"
+list_of_participants: [ "meg15_0045",
+                        "meg15_0051",
+                        "meg15_0054",
+                        "meg15_0055",
+                        "meg15_0056",
+                        "meg15_0058",
+                        "meg15_0060",
+                        "meg15_0065",
+                        "meg15_0066",
+                        "meg15_0070",
+                        "meg15_0071",
+                        "meg15_0072",
+                        "meg15_0079",
+                        "meg15_0081",
+                        "meg15_0082"
                         ]
 
 input_stream: "auditory"             # auditory | visual
-number_of_runs: 4                    # number of runs
+number_of_runs: 2                    # number of runs
 number_of_trials: 400                # number of trials
 
 # Preprocessing pipeline
