@@ -257,14 +257,14 @@ def create_trials(config:dict):
 
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
-        #	Correct for equiptment latency error
-        raw_events = mne.event.shift_time_events(raw_events, [2], visual_delivery_latency, 1)
-        raw_events = mne.event.shift_time_events(raw_events, [3], audio_delivery_latency, 1)
-
         print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
 
         #	Extract visual events
         visual_events = mne.pick_events(raw_events, include=[2, 3])
+
+        #	Correct for visual equiptment latency error
+        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+
         trigger_name = 1;
         for trigger in visual_events:
             trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
@@ -280,6 +280,10 @@ def create_trials(config:dict):
 
         #	Extract audio events
         audio_events_raw = mne.pick_events(raw_events, include=3)
+
+        #	Correct for audio latency error
+        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+
         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
             for trial in range(1, number_of_trials + 1):
