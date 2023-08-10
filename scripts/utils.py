@@ -7,6 +7,11 @@ def display_welcome_message_to_terminal():
     print(f"{Fore.BLUE}{Style.BRIGHT}----------------------------------{Style.RESET_ALL}")
     print("")
 
+
+def save_hexel_expression_master():
+    check
+    input(y/n if want to save)
+
 def run_cleanup():
     '''Runs clean up'''
 

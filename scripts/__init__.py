@@ -13,7 +13,7 @@ def main():
     config = load_data.load_config_parameters('data/sample-data/sample_config_file.yaml')
     
     neurophysiology_data_file_directory = config['neurophysiology_data_file_directory']
-    predicted_function_outputs_data = config[]
+#    predicted_function_outputs_data = config[]
     hexel_expression_master_filename = config['hexel_expression_master_filename']
     is_sensor_esimation = config['is_sensor_esimation']
     is_debug_mode = config['is_debug_mode']
@@ -26,15 +26,17 @@ def main():
     
     # Load data
 
-    #neurophysiology_data = load_data.hexel_expression_master(hexel_expression_master_filename = hexel_expression_master_filename)
+    #hexel_expression_master = load_data.hexel_expression_master(hexel_expression_master_filename = hexel_expression_master_filename)
     #predicted_function_outputs_data = load_data.load_predicted_function_outputs(neurophysiology_data_file_direcotry = neurophysiology_data_file_direcotry)
 
     # Run search for function output
-    
-    hexel_expression = gridsearch.do_gridsearch(neurophysiology_data_file_directory, predicted_function_outputs_data, hexel_expression, functions_to_apply_gridsearch)
-    #hexel_expression merge flipped together
+    #hexel_expression_master = gridsearch.do_gridsearch(neurophysiology_data_file_directory,
+    #                                            predicted_function_outputs_data,
+    #                                            hexel_expression_master,
+    #                                            functions_to_apply_gridsearch)
 
-    # save hexel
+    # save hexel_expression_master
+    #utils.save_hexel_expression_master(hexel_expression_master)
     
     # hexel_expression = utils.xxxdo()
     # save for kymata atlas encoded = utils.xxx()

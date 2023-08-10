@@ -2,7 +2,10 @@ from colorama import Fore
 from colorama import Style
 
 
-def do_gridsearch():
+def do_gridsearch(neurophysiology_data_file_directory,
+                    predicted_function_outputs_data,
+                    hexel_expression_master,
+                    functions_to_apply_gridsearch):
     '''Do the Kymata gridsearch over all hexels for all latencies'''
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting gridsearch{Style.RESET_ALL}")
@@ -42,7 +45,7 @@ def do_gridsearch():
 
                 print(f"   ...for {polaritiy}")
 
-                do gridsearch_for_polarity()
+                do gridsearch_for_polarity() #??? do we need this at all and just use the two tailness?
 
             print(f"   ...merging polarities")
 
@@ -144,14 +147,13 @@ def do_gridsearch_for_polarity(polarity:String) -> STC file:
 
         clear shuffledMEGdata;
 
-        % -------------------------------
-        % Transform populations with fisher - z
-        % -------------------------------
+        # Transform populations with fisher-z
 
-        # eliviates rounding of - 0.999999 causing problems with log() in fisher-z transform.
+        # First eliviate rounding of - 0.999999 causing problems with log() in fisher-z transform.
         allcorrs(allcorrs < -0.999999) = -0.999999;
         allcorrs(allcorrs > 0.999999) = 0.999999;
 
+        # Transform fisher-z
         allcorrs = 0.5 * log((1 + allcorrs). / (1 - allcorrs));
 
         truewordsCorr = reshape(allcorrs(:, 1,:), nVertices, nWords, 1);
@@ -161,7 +163,7 @@ def do_gridsearch_for_polarity(polarity:String) -> STC file:
                 # lillefor test for Guassianism
                 vertexnumber = 2444;
                 h = lillietest(randwordsCorr(vertexnumber,:));
-                histfit(randwordsCorr(vertexnumber,:), 40); % plot
+                histfit(randwordsCorr(vertexnumber,:), 40); # plot
                 histfit(truewordsCorr(vertexnumber,:), 40);
                 h = findobj(gca, 'Type', 'patch');
                 display(h);
@@ -172,11 +174,13 @@ def do_gridsearch_for_polarity(polarity:String) -> STC file:
         # Do population test on signals
 
         pvalues = zeros(1, nVertices);
-        for vertex = 1:nVertices
+        for vertex = 1:nVertices:
             truepopulation = truewordsCorr(vertex,:);
             randpopulation = randwordsCorr(vertex,:);
 
             # 2-sample t-test
+
+            - Can we do 2 tails to do polarities?
 
             [h, p, ci, stats] = ttest2(truepopulation, randpopulation,
                                        1 - ((1 - f_alpha) ^ (1 / (2 * length(latencies) * nVertices))), 'right', 'unequal');
@@ -187,3 +191,19 @@ def do_gridsearch_for_polarity(polarity:String) -> STC file:
 
             clear MEGdata wordsignalstrueDownsampled MEGdataDownsampled R  randwordsGuassian truewordsGuassian  truewords randwords;
 
+
+
+def do_ad_hoc_power_calculation_on_XYZ(n_samples, alpha, power_val)
+    'This works out the power needed on ZYX'
+
+    n_samples = 15000
+    h number of samples per group
+    alpha = 0.0000005  # significance level
+    power_val = 0.8  # desired power
+    standard_deviation = xyz
+    ratio = n_samples1/n_samples2
+
+    # calculate the minimum detectable effect size
+    meff = power.tt_ind_solve_power(alpha=alpha, power=power_val, nobs1=n_samples, ratio=ratio, alternative='larger', sd = sd)
+
+    print(f"Minimum detectable effect size: {meff:.3f}")
