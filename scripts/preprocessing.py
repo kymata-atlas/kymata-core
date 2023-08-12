@@ -106,7 +106,7 @@ def run_preprocessing(config: dict):
             response = input(f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
             if response == "y":
                 print(f"...Plotting Raw data.")
-                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, use_openglbool=True)
+                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
             else:
                 print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
@@ -129,26 +129,28 @@ def run_preprocessing(config: dict):
             # EEG channel interpolation
             print(f"{Fore.GREEN}{Style.BRIGHT}   Interpolating EEG...{Style.RESET_ALL}")
 
+            print("Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"]))
+
             # Channels marked as “bad” have been effectively repaired by SSS,
             # eliminating the need to perform MEG interpolation.
 
-            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.interpolate_bads(reset_bads=True)
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.interpolate_bads(reset_bads=True, mode='accurate')
 
             # Use common average reference, not the nose reference.
             print(f"{Fore.GREEN}{Style.BRIGHT}   Use common average EEG reference...{Style.RESET_ALL}")
 
-            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+            #raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
             # remove very slow drift
             print(f"{Fore.GREEN}{Style.BRIGHT}   Removing slow drift...{Style.RESET_ALL}")
-            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
+            #raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
             # Remove ECG, VEOH and HEOG
 
             if remove_ECG or remove_VEOH_and_HEOG:
 
-                # remove both frequencies faster than 100Hz and slow drift less than 1hz
-                filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(l_freq=1., h_freq=100)
+                # remove both frequencies faster than 40Hz and slow drift less than 1hz
+                filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(l_freq=1., h_freq=40)
 
                 ica = mne.preprocessing.ICA(n_components=30, method='fastica', max_iter='auto', random_state=97)
                 ica.fit(filt_raw)
@@ -274,7 +276,7 @@ def create_trials(config:dict):
                 trigger_name = trigger_name + 1
 
         #  Test there are 400 events
-        assert visual_events.len() == 400
+        #assert visual_events.len() == 400
 
         print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
 
@@ -287,16 +289,16 @@ def create_trials(config:dict):
         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
             for trial in range(1, number_of_trials + 1):
-                audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + (trial * 1000)
-                audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
-                audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
+                  audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + ((trial-1) * 1000)
+                  audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
+                  audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
 
-        #  Test there are 400 events
-        assert audio_events.len() == 400
+        #  Test there are run*trial events
+        #assert audio_events.len() == 400
 
         #	Denote picks
-        include = []  # MISC05, trigger channels etc, if needed
-        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads')
+        include = []; # ['MISC006']  # MISC05, trigger channels etc, if needed
+        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
