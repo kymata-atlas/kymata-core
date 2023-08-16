@@ -7,170 +7,98 @@ from matplotlib.lines import Line2D
 from copy import deepcopy
 import numpy as np
 from typing import List, Dict, Tuple
+from collections import namedtuple
 
-class GraphBuilder(object):
+# convenient tuple/class to hold information about nodes.
+Node = namedtuple('Node', 'magnitude color position in_edges')
+
+class IPPMBuilder(object):
     """
-        A graphing class used to construct a directed graph (via Networkx) using denoised hexel spikes.
-        The Y-axis is based off latency while the X-axis partitions into classes (functions).
-        Each node is scaled by the magnitude of the spike.
+        A graphing class used to construct a dictionary that contains the nodes and all relevant
+        information to construct a nx.DiGraph.
     """
 
-    def draw(
-                self, 
-                hexels : Dict[str, Hexel], 
-                function_hier : Dict[str, List[str]], 
-                inputs : List[str], 
-                hemi : str, 
-                title : str, 
-                figheight : int=12, 
-                figwidth : int=15
-            ):
+    def build_graph(self,
+                    hexels: Dict[str, Hexel], 
+                    function_hier : Dict[str, List[str]], 
+                    inputs : List[str], 
+                    hemi : str) -> Dict[str, Node]:
         """
-            Draws the directed graph.
+            Builds a dictionary of nodes and information about the node. The information
+            is built out of namedtuple class Node, which contains magnitude, position, color, and
+            the incoming edges.
 
             Params
             ------
-                hexels : dictionary containing function names and Hexel objects with data in it.
-                function_hier : dictionary of the format (function_name : [children_functions])
-                inputs : list of input functions. function_hier contains the input functions, so we need this to distinguish between inputs and functoins.
-                hemi : leftHemisphere or rightHemisphere
-                title : title
-                figheight : height
-                figwidth : width
+            - hexels : dictionary containing function names and Hexel objects with data in it.
+            - function_hier : dictionary of the format (function_name : [children_functions])
+            - inputs : list of input functions. function_hier contains the input functions, so we need this to distinguish between inputs and functoins.
+            - hemi : leftHemisphere or rightHemisphere
+
+            Returns
+            -------
+            A dictionary of nodes with unique names where the keys are node objects with all
+            relevant information for plotting a nx.DiGraph.
         """
-
-        # filter only to functions in edges.
         functions = list(function_hier.keys())
+        # filter out functions that are unneccessary
         filtered = {func : hexels[func] for func in functions if func in hexels.keys()}
-        sorted = self._sort_by_latency(filtered, hemi) # sort by latency, so you can construct null edges.
+        # sort it so that the null edges go in the right order (from left to right along time axis)
+        sorted = self._sort_by_latency(filtered, hemi)
 
-        edges_2 = deepcopy(function_hier)           # we pop a function from edges_2 once plotted. Hence, copy.
-        
+        hier = deepcopy(function_hier) # we will modify function_hier so copy
         n_partitions = 1 / len(function_hier.keys()) # partition x -axis
         part_idx = 0
-        graph = nx.DiGraph()
-        pos = {} # holds positions of nodes. (x-axis, y-axis)
-        while len(edges_2.keys()) > 0:
-            # top level node = no outgoing edges (not a child of any curr function).
-            top_level = self._get_top_level_functions(edges_2)
-
+        colors = {f : color for f, color in zip(functions, sns.color_palette('bright', len(functions)).as_hex()) }
+        graph = {} # format: node_name : [magnitude, color, position, in_edges]
+        while len(hier.keys()) > 0:
+            top_level = self._get_top_level_functions(hier)
             for f in top_level:
                 if f in inputs:
-                    # input function, so no null edges.
-                    edges_2.pop(f)
-                    graph.add_node(f)
-                    #pos[f] = (1 - n_partitions * part_idx, 0)
-                    pos[f] = (0, 1 - n_partitions * part_idx)
+                    # input node default size is 100.
+                    hier.pop(f)
+                    graph[f] = Node(100, colors[f], (0, 1 - n_partitions * part_idx), [])
+                
                 else:
-                    children = edges_2[f]
-                    edges_2.pop(f)
+                    children = hier[f]
+                    hier.pop(f)
 
-                    # we need to add null edges to subsequent spikes.
                     best_pairings = (
                             sorted[f].left_best_pairings if hemi == 'leftHemisphere' else
                                 sorted[f].right_best_pairings
                         )
-
+                    
                     if len(best_pairings) == 0:
+                        # ignore functions with no spikes at all.
                         continue
 
                     for idx, pair in enumerate(best_pairings):
-                        # add an edge between best pairings, representing a null edge.
-                        latency, _ = pair
-                        name = f + '-' + str(idx)
-                        graph.add_node(name)
-                        if idx != 0:
-                            graph.add_edge(f + '-' + str(idx - 1), name)
-
-                        #pos[name] = (1 - n_partitions * part_idx, latency)
-                        pos[name] = (latency, 1 - n_partitions * part_idx)
+                        # add null edges to subsequent spikes in best_pairings.
+                        latency, magnitude = pair 
+                        graph[f + '-' + str(idx)] = Node(-10 * np.log10(magnitude),
+                                                        colors[f],
+                                                        (latency, 1 - n_partitions * part_idx),
+                                                        [f + '-' + str(idx - 1)] if idx != 0 else [])
+                    
                     part_idx += 1
-                    # add edges to children from the latest spike.
+
                     for child in children:
+                        # add edges coming from children to f.
                         if child in inputs:
-                            # input only have edge to input_0 (since there are no null edges for inputs).
-                            graph.add_edge(child, f + '-0')
+                            graph[f + '-0'].in_edges.append(child)
                         else:
                             children_pairings = (
-                                    sorted[child].left_best_pairings if hemi == 'leftHemisphere' else 
-                                        sorted[child].right_best_pairings
+                                sorted[child].left_best_pairings if hemi == 'leftHemisphere' else 
+                                    sorted[child].right_best_pairings
                                 )
-                                
+                            
                             if len(children_pairings) == 0:
-                                continue 
-                            # add an edge to the last spike of child class. I.e., the highest value in class column.
-                            # spike goes from child to current function.
-                            graph.add_edge(child + '-' + str(len(children_pairings) - 1), f + '-0')
-        
-        # Need to set up node sizes and colors.
-        # set up color scheme for nodes.
-        colors = sns.color_palette('bright', len(functions)).as_hex()
-        f_colors = {f: color for f, color in zip(function_hier.keys(), colors)}
-        node_sizes, color_map = self._set_node_attributes(graph, sorted, f_colors, hemi)
-        
-        fig, ax = plt.subplots()
-        fig.set_figheight(figheight)
-        fig.set_figwidth(figwidth)
-        nx.draw(graph, pos=pos, node_color=color_map, node_size=node_sizes, ax=ax)
-        limits = plt.axis('on')
-        ax.tick_params(bottom=True, labelbottom=True) # we want y-axis to be visible
-        ax.spines['top'].set_visible(False)       # remove borders around figure
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Time (ms)')
+                                # ignore this function
+                                continue
 
-        legend = []
-        for function in function_hier.keys():
-            # add legend to distinguish classes
-            color = f_colors[function]
-            legend.append(Line2D([0], [0], marker='o', color='w', label=function,markerfacecolor=color, markersize=15))
-
-        plt.legend(handles=legend, loc='upper left')
-        plt.title(title)
-        return graph
-        
-    def _set_node_attributes(self, 
-                            graph: nx.Graph, 
-                            sorted: Dict[str, Hexel], 
-                            f_colors: Dict[str, str], 
-                            hemi: str
-                        ) -> Tuple[List[float], List[str]]:
-        """
-            Use this to set the node size and color for each node in graph.
-
-            Params
-            ------
-                graph : networkx graph object. It contains nodes and edges.
-                sorted : dictionary of hexels but with sorted latencies.
-                f_colors : dictionary of function names as keys and colors (as hex) as values
-                hemi : leftHemisphere or rightHemisphere
-
-            Returns
-            -------
-                the node size and color for each node.
-        """
-        node_sizes = []
-        color_map = []
-        for node in graph.nodes:
-            if '-' in node:
-                # not input node.
-                func, idx = node[:node.index('-')], int(node[node.index('-') + 1:])
-                best_pairings = (
-                        sorted[func].left_best_pairings if hemi == 'leftHemisphere' else
-                            sorted[func].right_best_pairings
-                    )
-                # scale with size with spike. Smaller = better. Take log10 to get power. It is 
-                # negative so multiply by -1. To make size more noticeable, scale it by 10.
-                node_sizes.append(-10 * np.log10(best_pairings[idx][1]))
-            else:
-                # default size for input.
-                node_sizes.append(100)
-
-            function = node[:node.index('-')] if '-' in node else node
-            color_map.append(f_colors[function]) # save color from dict.
-
-        return (node_sizes, color_map)
-    
+                            # add an edge from the final spike of a function.
+                            graph[f + '-0'].in_edges.append(child + '-' + str(len(children_pairings) - 1))
+        return graph, colors
 
     def _get_top_level_functions(self, edges: Dict[str, List[str]]) -> set:
         """
@@ -208,3 +136,66 @@ class GraphBuilder(object):
                 hexels[key].right_best_pairings.sort(key=lambda x: x[0])
 
         return hexels
+    
+class IPPMPlotter(object):
+    """
+        Use this class to plot a nx.DiGraph. Run the IPPMBuilder class prior to obtain the prerequisite
+        dictionary of nodes, edges, sizes, colors, and positions. 
+    """
+
+    def plot(self, 
+            graph : Dict[str, Node], 
+            colors : Dict[str, str], 
+            title : str, 
+            figheight : int=12, 
+            figwidth : int=15) -> nx.DiGraph:
+        """
+            Plot a directed, acyclic graph representing the flow of information as specified by graph.
+
+            Params
+            ------
+            - graph : a dictionary containing all nodes and node information. Node has attributes magnitude, position, color, incoming_edges
+            - colors : a dictionary containing the color for each function
+            - title : title of plot
+            - figheight : figure height
+            - figwidth : figure width
+
+            Returns
+            -------
+            A nx.DiGraph object with all of the edges and nodes. Returned primarily for testing purposes.
+        """
+        nx_graph = nx.DiGraph()
+        pos = {}
+        for node, node_data in graph.items():
+            nx_graph.add_node(node)
+            pos[node] = node_data.position
+            for edge in node_data.in_edges:
+                nx_graph.add_edge(edge, node)
+
+        color_map = [_ for _ in range(len(nx_graph.nodes))]
+        size_map = [_ for _ in range(len(nx_graph.nodes))]
+        for i, node in enumerate(nx_graph.nodes):
+            # need to do it afterwards, so the ordering of colors/sizes lines up with
+            # the ordering of nodes.
+            color_map[i] = graph[node].color
+            size_map[i] = graph[node].magnitude
+        
+        fig, ax = plt.subplots()
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
+        nx.draw(nx_graph, pos=pos, node_color=color_map, node_size=size_map, ax=ax)
+        plt.axis('on')
+        ax.tick_params(bottom=True, labelbottom=True)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xlabel('Time (ms)')
+
+        legend = []
+        for f in colors.keys():
+            legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=colors[f], markersize=15))
+
+        plt.legend(handles=legend, loc='upper left')
+        plt.title(title)
+
+        return nx_graph
