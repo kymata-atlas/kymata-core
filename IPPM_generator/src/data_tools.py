@@ -98,11 +98,17 @@ def build_hexel_dict(dict_: Dict) -> Dict[str, Hexel]:
     
     return hexels
 
-def stem_plot(hexels: Dict[str, Hexel], title: str):
+def stem_plot(
+        hexels: Dict[str, Hexel], 
+        title: str, 
+        timepoints: int=201, 
+        y_limit: float=pow(10, -100),
+        number_of_hexels: int=200000,
+        figheight: int=7,
+        figwidth: int=12,
+        ):
     """
         Plots a stem plot using hexels. 
-
-        Potential TODOS: Add a parameter to use custom alpha? Custom fig size?
 
         Params
         ------
@@ -110,18 +116,15 @@ def stem_plot(hexels: Dict[str, Hexel], title: str):
             title : Title of plot.
     """
     # estimate significance parameter
-    y_limit = pow(10, -100)
-    timepoints = 201
-    number_of_hexels = 200000
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      # 5-sigma
     bonferroni_corrected_alpha = 1-(pow((1-alpha),(1/(2*timepoints*number_of_hexels))))
 
     # assign unique color to each function
-    cycol = cycle(sns.color_palette("hls", 8))
-    for func, hexel in hexels.items():
+    cycol = cycle(sns.color_palette("hls", len(hexels.keys())))
+    for _, hexel in hexels.items():
         hexel.color = matplotlib.colors.to_hex(next(cycol))
 
-    fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(nrows=2, ncols=1, figsize=(12, 7))
+    fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(nrows=2, ncols=1, figsize=(figwidth, figheight))
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 

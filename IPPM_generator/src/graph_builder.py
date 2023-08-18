@@ -8,9 +8,10 @@ from copy import deepcopy
 import numpy as np
 from typing import List, Dict, Tuple
 from collections import namedtuple
+from itertools import cycle
 
 # convenient tuple/class to hold information about nodes.
-Node = namedtuple('Node', 'magnitude color position in_edges')
+Node = namedtuple('Node', 'magnitude position in_edges')
 
 class IPPMBuilder(object):
     """
@@ -49,7 +50,6 @@ class IPPMBuilder(object):
         hier = deepcopy(function_hier) # we will modify function_hier so copy
         n_partitions = 1 / len(function_hier.keys()) # partition x -axis
         part_idx = 0
-        colors = {f : color for f, color in zip(functions, sns.color_palette('bright', len(functions)).as_hex()) }
         graph = {} # format: node_name : [magnitude, color, position, in_edges]
         while len(hier.keys()) > 0:
             top_level = self._get_top_level_functions(hier)
@@ -57,7 +57,7 @@ class IPPMBuilder(object):
                 if f in inputs:
                     # input node default size is 100.
                     hier.pop(f)
-                    graph[f] = Node(100, colors[f], (0, 1 - n_partitions * part_idx), [])
+                    graph[f] = Node(100, (0, 1 - n_partitions * part_idx), [])
                 
                 else:
                     children = hier[f]
@@ -76,7 +76,6 @@ class IPPMBuilder(object):
                         # add null edges to subsequent spikes in best_pairings.
                         latency, magnitude = pair 
                         graph[f + '-' + str(idx)] = Node(-10 * np.log10(magnitude),
-                                                        colors[f],
                                                         (latency, 1 - n_partitions * part_idx),
                                                         [f + '-' + str(idx - 1)] if idx != 0 else [])
                     
@@ -98,8 +97,8 @@ class IPPMBuilder(object):
 
                             # add an edge from the final spike of a function.
                             graph[f + '-0'].in_edges.append(child + '-' + str(len(children_pairings) - 1))
-        return graph, colors
-
+        return graph
+    
     def _get_top_level_functions(self, edges: Dict[str, List[str]]) -> set:
         """
             Returns the top-level function. A top-level function is at the highest level
@@ -147,6 +146,7 @@ class IPPMPlotter(object):
             graph : Dict[str, Node], 
             colors : Dict[str, str], 
             title : str, 
+            x_axis: str='Latency (ms)',
             figheight : int=12, 
             figwidth : int=15) -> nx.DiGraph:
         """
@@ -174,10 +174,19 @@ class IPPMPlotter(object):
 
         color_map = [_ for _ in range(len(nx_graph.nodes))]
         size_map = [_ for _ in range(len(nx_graph.nodes))]
+        rand_colors = cycle(sns.color_palette('bright', 100).as_hex())
         for i, node in enumerate(nx_graph.nodes):
             # need to do it afterwards, so the ordering of colors/sizes lines up with
             # the ordering of nodes.
-            color_map[i] = graph[node].color
+            color_map[i] = None
+            for function, color in colors.items():
+                if function in node:
+                    # function name is substring of node = found
+                    color_map[i] = color
+                    break
+            if color_map[i] is None:
+                color_map[i] = next(rand_colors)
+
             size_map[i] = graph[node].magnitude
         
         fig, ax = plt.subplots()
