@@ -9,7 +9,7 @@ class MaxPooler(object):
         A denoising strategy based off pooling the maximum spike out of a cluster of spikes.
     """
 
-    def denoise(self, hexels: Dict[str, Hexel], num_clusters=15, bin_sz=25, inplace=False) -> Dict[str, Hexel]:
+    def denoise(self, hexels: Dict[str, Hexel], num_clusters=15, bin_sz=25, inplace=False, merge=False) -> Dict[str, Hexel]:
         """
             Takes hexels as input and denoises them using Max Pooling. 
 
@@ -43,20 +43,26 @@ class MaxPooler(object):
         if not inplace:
             # do not overwrite hexels with denoised.
             hexels = deepcopy(hexels)
+        
+        hexels = self._sort_by_latency(hexels, merge=merge)
 
-        hexels = self._sort_by_latency(hexels) # arrange pairings by latency
         for function in hexels.keys():
-            if len(hexels[function].right_best_pairings) != 0:
-                denoised_pairings = self._pool(hexels[function].right_best_pairings, bonferroni_corrected_alpha, bin_sz, num_clusters)
-                hexels[function].right_best_pairings = denoised_pairings
+            if not merge:
+                if len(hexels[function].right_best_pairings) != 0:
+                    denoised_pairings = self._pool(hexels[function].right_best_pairings, bonferroni_corrected_alpha, bin_sz, num_clusters)
+                    hexels[function].right_best_pairings = denoised_pairings
+                
+                if len(hexels[function].left_best_pairings) != 0:
+                    denoised_pairings = self._pool(hexels[function].left_best_pairings, bonferroni_corrected_alpha, bin_sz, num_clusters)
+                    hexels[function].left_best_pairings = denoised_pairings
             
-            if len(hexels[function].left_best_pairings) != 0:
-                denoised_pairings = self._pool(hexels[function].left_best_pairings, bonferroni_corrected_alpha, bin_sz, num_clusters)
-                hexels[function].left_best_pairings = denoised_pairings
+            else:
+                # merge hemispheres and return
+                hexels[function].merged_best_pairings = self._pool(hexels[function].merged_best_pairings, bonferroni_corrected_alpha, bin_sz, num_clusters)
 
         return hexels
     
-    def _sort_by_latency(self, hexels: Dict[str, Hexel]):
+    def _sort_by_latency(self, hexels: Dict[str, Hexel], merge: bool=False):
         """
             Sort pairings by latency in increasing order inplace.
 
@@ -67,9 +73,15 @@ class MaxPooler(object):
             -------
                 sorted hexels.
         """
-        for function in hexels.keys():
-            hexels[function].right_best_pairings.sort(key=lambda x: x[0])
-            hexels[function].left_best_pairings.sort(key=lambda x: x[0])
+        if not merge:
+            for function in hexels.keys():
+                hexels[function].right_best_pairings.sort(key=lambda x: x[0])
+                hexels[function].left_best_pairings.sort(key=lambda x: x[0])
+        else:
+            for function in hexels.keys():
+                hexels[function].merged_best_pairings = hexels[function].right_best_pairings + hexels[function].left_best_pairings
+                hexels[function].merged_best_pairings.sort(key=lambda x: x[0])
+
         return hexels
     
     def _pool(self, pairings: List[Tuple[float, float]], alpha: float, bin_sz: int, num_clusters: int) -> List[Tuple[float, float]]:
