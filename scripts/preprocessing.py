@@ -78,12 +78,28 @@ def run_preprocessing(config: dict):
                 else:
                     print(f"...assuming you want to continue without looking at the raw data.")
 
-                # plot EEG positions
-                plot_eeg_sensor_positions(raw_fif_data)
+                # # Get the head positions
+                # todo - compare with maxfilter version
+                # chpi_picks = mne.pick_types(raw_fif_data.info, meg=False, chpi=True)
+                # assert len(chpi_picks) == 9
+                # head_pos, t = raw_fif_data[chpi_picks]
+                # # Add first_samp.
+                # t = t + raw_fif_data.first_samp / raw_fif_data.info['sfreq']
+                # # The head positions in the FIF file are all zero for invalid positions
+                # # so let's remove them, and then concatenate our times.
+                # mask = (head_pos != 0).any(axis=0)
+                # head_pos = np.concatenate((t[np.newaxis], head_pos)).T[mask]
+
+                # Apply SSS and movement compensation
+                print(f"{Fore.GREEN}{Style.BRIGHT}   Remove CHPI and Mainline ...{Style.RESET_ALL}")
+
+                # todo confirm this is the same as maxfilter
+                # mne.chpi.filter_chpi()
 
                 # Apply SSS and movement compensation
                 print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
 
+                # todo - choose when you are recording in the config (i.e post 2020)
                 fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
                 crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
 
@@ -106,7 +122,7 @@ def run_preprocessing(config: dict):
             response = input(f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
             if response == "y":
                 print(f"...Plotting Raw data.")
-                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
             else:
                 print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
