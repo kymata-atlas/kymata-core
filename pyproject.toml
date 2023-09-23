@@ -5,11 +5,12 @@ description = ""
 authors = ["Andrew Thwaites <acgt2@cam.ac.uk>"]
 
 [tool.poetry.dependencies]
-python = "~3.8.9"
+python = "~3.11"
 colorama = "^0.4.5"
 PyYAML = "^6.0"
 matplotlib = "^3.7.1"
 seaborn = "^0.12.2"
+scipy = "^1.11.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
