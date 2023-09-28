@@ -301,7 +301,6 @@ def create_trials(config:dict):
 
         #	Correct for audio latency error
         audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
-        audio_events_raw = audio_events_raw[0]
 
         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
