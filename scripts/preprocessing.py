@@ -3,7 +3,6 @@ from colorama import Style
 import matplotlib.pyplot as plt
 import mne
 import os.path
-import sklearn
 import seaborn as sns
 import numpy as np
 
@@ -32,14 +31,14 @@ def run_preprocessing(config: dict):
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = 'data/intrim_preprocessing_files/1_maxfiltered/' + participant + "_part" + str(run) + '_raw_sss.fif'
+            saved_maxfiltered_filename = 'data/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
             else:
-                raw_fif_data = mne.io.Raw("data/raw/" + participant + "_part" + str(run) + "_raw.fif", preload=True)
-                head_pos_data = mne.chpi.read_head_pos("data/raw/" + participant + "_part" + str(run) + '_raw_hpi_movecomp.pos')
+                raw_fif_data = mne.io.Raw("data/raw/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
+                head_pos_data = mne.chpi.read_head_pos("data/raw/" + participant + "_run" + str(run) + '_raw_hpi_movecomp.pos')
 
                 # Rename any channels that require it, and their type
                 recording_config = utils.load_recording_config('data/raw/' + participant + '_recording_config.yaml')
@@ -236,7 +235,7 @@ def run_preprocessing(config: dict):
                 ica.apply(raw_fif_data_sss_movecomp_tr)
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
-            raw_fif_data_sss_movecomp_tr.save('data/intrim_preprocessing_files/2_cleaned/' + participant + "_part" + str(run) + '_cleaned_raw.fif.gz', overwrite=True)
+            raw_fif_data_sss_movecomp_tr.save('data/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(run) + '_cleaned_raw.fif.gz', overwrite=True)
 
 def create_trials(config:dict):
     """Create trials objects from the raw data files (still in sensor space)"""
@@ -251,6 +250,7 @@ def create_trials(config:dict):
 
     visual_delivery_latency = config['visual_delivery_latency']
     audio_delivery_latency = config['audio_delivery_latency']
+    audio_delivery_shift_correction = config['audio_delivery_shift_correction']
 
     tmin = config['tmin']
     tmax = config['tmax']
@@ -267,7 +267,7 @@ def create_trials(config:dict):
 
         for run in range(1, number_of_runs+1):
 
-            raw_fname = 'data/intrim_preprocessing_files/2_cleaned/' + p + '_part' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = 'data/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -301,11 +301,12 @@ def create_trials(config:dict):
 
         #	Correct for audio latency error
         audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+        audio_events_raw = audio_events_raw[0]
 
         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
             for trial in range(1, number_of_trials + 1):
-                  audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + ((trial-1) * 1000)
+                  audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + ((trial-1) * (1000 + audio_delivery_shift_correction))
                   audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
                   audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
 
