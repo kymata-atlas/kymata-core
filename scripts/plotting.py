@@ -13,7 +13,7 @@ import seaborn as sns
 from statistics import NormalDist
 
 
-def plot_expression_plot(save_to: Optional[Path] = None):
+def plot_expression_plot(save_to: Optional[Path] = None, verbose: bool = False):
     '''Generates an expression plot'''
 
     y_limit = pow(10, -100)
@@ -22,7 +22,9 @@ def plot_expression_plot(save_to: Optional[Path] = None):
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      # 5-sigma
     bonferroni_corrected_alpha = 1-(pow((1-alpha),(1/(2*timepoints*number_of_hexels))));
 
-    print(f"{Fore.GREEN}{Style.BRIGHT}Filtering functions.{Style.RESET_ALL}")
+    # TODO: there's probably a better way to do this switch with the logging module
+    if verbose:
+        print(f"{Fore.GREEN}{Style.BRIGHT}Filtering functions.{Style.RESET_ALL}")
 
     functions_to_include_in_model_selection = ['Combined Overall Loudness', 'CIECAM02-a', 'CIECAM02-b']
     functions_to_plot = ['Combined Overall Loudness', 'CIECAM02-a']
@@ -92,9 +94,10 @@ def plot_expression_plot(save_to: Optional[Path] = None):
         }
     }
 
-    print('Listing all available functions to plot:')
-    for key, my_function in hexel_expression.items():
-        print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
+    if verbose:
+        print('Listing all available functions to plot:')
+        for key, my_function in hexel_expression.items():
+            print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
 
     # apply tests
     # test to confirm all xxx have the same number of hexels as pavlues
@@ -105,11 +108,14 @@ def plot_expression_plot(save_to: Optional[Path] = None):
     # filter to just the expression data we want in model selection
     # remove unwanted entries via requested_functions
 
-    print('Listing all requested functions to include in model selection:')
-    for key, my_function in hexel_expression_plotting.items():
-        print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
+    if verbose:
+        print('Listing all requested functions to include in model selection:')
+        for key, my_function in hexel_expression_plotting.items():
+            print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
 
-    print("...wrangling to retrieve only the pairing we are interested in.")
+    if verbose:
+        print("...wrangling to retrieve only the pairing we are interested in.")
+
     for key, my_function in hexel_expression_plotting.items():
         for hemi in ['left','right']:
             my_function[hemi]['best_pairings'] = []
@@ -117,10 +123,11 @@ def plot_expression_plot(save_to: Optional[Path] = None):
                 best_latency = my_function[hemi]['latencies'][np.argmin(hexel)]
                 best_pvalue = np.amin(hexel)
                 my_function[hemi]['best_pairings'].append([best_latency, best_pvalue])
-            print(my_function[hemi]['best_pairings'])
+            if verbose:
+                print(my_function[hemi]['best_pairings'])
 
-
-    print("...applying model selection.")
+    if verbose:
+        print("...applying model selection.")
     #for hemi in ['left', 'right']:
         #for hexel in hemi.length():
             #[name-of-function] unzip find_name_of_best_function_at_hexel(hexel, hexel_expression_plotting)
@@ -133,23 +140,26 @@ def plot_expression_plot(save_to: Optional[Path] = None):
     # remove some from ploting
     # check these are subset of model selection!
 
-    print('Listing all functions to plot:')
-    for key, my_function in hexel_expression_plotting.items():
-        print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
+    if verbose:
+        print('Listing all functions to plot:')
+        for key, my_function in hexel_expression_plotting.items():
+            print(f"{Fore.YELLOW}  {my_function['name']}{Style.RESET_ALL}")
 
-
-    print("...adding colors.")
+    if verbose:
+        print("...adding colors.")
     cycol = cycle(sns.color_palette("Set1"))
     for key, my_function in hexel_expression_plotting.items():
           my_function['color'] = matplotlib.colors.to_hex(next(cycol))
 
-    print(f"{Fore.GREEN}{Style.BRIGHT}Creating expression plots.{Style.RESET_ALL}")
+    if verbose:
+        print(f"{Fore.GREEN}{Style.BRIGHT}Creating expression plots.{Style.RESET_ALL}")
 
     fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(nrows=2, ncols=1, figsize=(12, 7))
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
-    print(f"...print and color stems")
+    if verbose:
+        print(f"...print and color stems")
 
     custom_handles = []
     custom_labels = []
@@ -173,7 +183,8 @@ def plot_expression_plot(save_to: Optional[Path] = None):
         right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=left_color)
         right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
 
-    print(f"...formatting")
+    if verbose:
+        print(f"...formatting")
 
     # format shared axis qualities
 
@@ -201,14 +212,14 @@ def plot_expression_plot(save_to: Optional[Path] = None):
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
 
     if save_to is not None:
-        print(f"...saving")
+        if verbose:
+            print(f"...saving")
         plt.rcParams['savefig.dpi'] = 300
         plt.savefig(Path(save_to))
 
     plt.show()
     plt.close()
 
-    print(f"...saving expression plot")
 
 def lognuniform(low=0, high=1, size=None, base=np.e):
         return np.random.uniform(low, high, size) / 1000000000000
