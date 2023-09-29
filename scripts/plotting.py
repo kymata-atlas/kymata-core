@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Optional
+
 import matplotlib.colors
 from colorama import Fore
 from colorama import Style
@@ -9,7 +12,8 @@ from itertools import cycle
 import seaborn as sns
 from statistics import NormalDist
 
-def plot_expression_plot():
+
+def plot_expression_plot(save_to: Optional[Path] = None):
     '''Generates an expression plot'''
 
     y_limit = pow(10, -100)
@@ -196,9 +200,11 @@ def plot_expression_plot():
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
 
-    print(f"...saving")
-    plt.rcParams['savefig.dpi'] = 300
-    plt.savefig('data/output-graphs/expression_plot.png')
+    if save_to is not None:
+        print(f"...saving")
+        plt.rcParams['savefig.dpi'] = 300
+        plt.savefig(Path(save_to))
+
     plt.show()
     plt.close()
 
