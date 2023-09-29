@@ -1,7 +1,7 @@
 
 # Config file for Kymata Dataset 4.00
 
-list_of_participants: [ "pilot_02"
+list_of_participants: [ "participant_03"
                         ]
 
 input_stream: "auditory"             # auditory | visual
@@ -18,7 +18,7 @@ automatic_bad_channel_detection_requested: False
 audio_delivery_latency:  26        # in milliseconds
 visual_delivery_latency: 17        # in milliseconds
 tactile_delivery_latency: 0        # in milliseconds
-audio_delivery_shift_correction: 0.6   # in milliseconds per second
+audio_delivery_shift_correction: 0.5375   # in milliseconds per second
 tmin: -0.2
 tmax: 1.8
 
