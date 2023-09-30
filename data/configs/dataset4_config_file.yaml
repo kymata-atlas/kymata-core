@@ -1,10 +1,15 @@
 
 # Config file for Kymata Dataset 4.00
 
-list_of_participants: [ "participant_03"
+list_of_participants: [ "pilot_02",
+                        "participant_01",
+                        "participant_02",
+                        "participant_03"
                         ]
 
-input_stream: "auditory"             # auditory | visual
+input_streams: [
+                    "auditory"
+                ]                    # auditory | visual
 number_of_runs: 4                    # number of runs
 number_of_trials: 400                # number of trials
 

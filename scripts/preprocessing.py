@@ -243,6 +243,7 @@ def create_trials(config:dict):
     list_of_participants = config['list_of_participants']
     number_of_runs = config['number_of_runs']
     number_of_trials = config['number_of_trials']
+    input_streams = config['input_streams']
 
     eeg_thresh = float(config['eeg_thresh'])
     grad_thresh = float(config['grad_thresh'])
@@ -261,105 +262,120 @@ def create_trials(config:dict):
 
     for p in list_of_participants:
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
+         print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
-        cleaned_raws = []
+         cleaned_raws = []
 
-        for run in range(1, number_of_runs+1):
+         for run in range(1, number_of_runs+1):
 
-            raw_fname = 'data/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
-            raw = mne.io.Raw(raw_fname, preload=True)
-            cleaned_raws.append(raw)
+             raw_fname = 'data/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+             raw = mne.io.Raw(raw_fname, preload=True)
+             cleaned_raws.append(raw)
 
-        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+         raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
-        raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
+         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+         #     print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
 
-        #	Extract visual events
-        visual_events = mne.pick_events(raw_events, include=[2, 3])
+         #	Extract visual events
+         visual_events = mne.pick_events(raw_events, include=[2, 3])
 
-        #	Correct for visual equiptment latency error
-        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+         #	Correct for visual equiptment latency error
+         visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
 
-        trigger_name = 1;
-        for trigger in visual_events:
-            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
-            if trigger_name == 400:
-                trigger_name = 1
-            else:
-                trigger_name = trigger_name + 1
+         trigger_name = 1;
+         for trigger in visual_events:
+             trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
+             if trigger_name == 400:
+                 trigger_name = 1
+             else:
+                 trigger_name = trigger_name + 1
 
-        #  Test there are 400 events
-        #assert visual_events.len() == 400
+         #  Test there are 400 events
+         #assert visual_events.len() == 400
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
+         print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
 
-        #	Extract audio events
-        audio_events_raw = mne.pick_events(raw_events, include=3)
+         #	Extract audio events
+         audio_events_raw = mne.pick_events(raw_events, include=3)
 
-        #	Correct for audio latency error
-        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+         #	Correct for audio latency error
+         audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
 
-        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
-        for run, item in enumerate(audio_events_raw):
-            for trial in range(1, number_of_trials + 1):
-                  audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + ((trial-1) * (1000 + audio_delivery_shift_correction))
-                  audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
-                  audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
+         audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
+         for run, item in enumerate(audio_events_raw):
+             for trial in range(1, number_of_trials + 1):
+                   audio_events[(trial+(number_of_trials * run)) - 1][0] = item[0] + round((trial-1) * (1000 + audio_delivery_shift_correction))
+                   audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
+                   audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
 
-        #  Test there are run*trial events
-        #assert audio_events.len() == 400
+         #  Test there are run*trial events
+         #assert audio_events.len() == 400
 
-        #	Denote picks
-        include = []; # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+         #	Denote picks
+         include = []; # ['MISC006']  # MISC05, trigger channels etc, if needed
+         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
+         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        for input_stream in ['auditory']:
+         for input_stream in input_streams:
 
-            if input_stream == 'auditory':
-                events = audio_events
-            else:
-                events = visual_events
+             if input_stream == 'auditory':
+                 events = audio_events
+             else:
+                 events = visual_events
 
-            #	Extract trial instances ('epochs')
-            epochs = mne.Epochs(raw, events, None, tmin, tmax, picks=picks,
-                                baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
-                                preload=True)
+             #	Extract trial instances ('epochs')
+             epochs = mne.Epochs(raw, events, None, tmin, tmax, picks=picks,
+                                 baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
+                                 preload=True)
 
-            # 	Log which channels are worst
-            dropfig = epochs.plot_drop_log(subject = p)
-            dropfig.savefig('data/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream +'_drop-log_' + p + '.jpg')
+             # 	Log which channels are worst
+             dropfig = epochs.plot_drop_log(subject = p)
+             dropfig.savefig('data/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream +'_drop-log_' + p + '.jpg')
 
-            global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
+             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
-            #	Make and save trials as evoked data
-            for i in range(1, number_of_trials + 1):
-                # evoked_one.plot() #(on top of each other)
-                # evoked_one.plot_image() #(side-by-side)
-                evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
-                evoked.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(i) + '-ave.fif', overwrite=True)
+             #	Make and save trials as evoked data
+             #for i in range(1, number_of_trials + 1):
+             #    # evoked_one.plot() #(on top of each other)
+             #    # evoked_one.plot_image() #(side-by-side)
+             #    evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
+             #    evoked.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(i) + '-ave.fif', overwrite=True)
 
-        # save grand average
-        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
+         # save grand average
+         print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
 
-        evoked_grandaverage = epochs.average()
-        evoked_grandaverage.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif', overwrite=True)
+         evoked_grandaverage = epochs.average()
+         evoked_grandaverage.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif', overwrite=True)
 
-        # save grand covs
-        #print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
+         # save grand covs
+         #print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
 
-        #cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
-        #cov.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
+         #cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
+         #cov.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
 
     #	Save global droplog
     with open('data/intrim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
         file.write('Average drop rate for each participant\n')
         for item in global_droplog:
             file.write( item + '/n')
+
+    # Create average participant EMEG
+
+    print(f"{Fore.GREEN}{Style.BRIGHT}... save participant average{Style.RESET_ALL}")
+
+    for input_stream in input_streams:
+        for trial in range(1, number_of_trials + 1):
+            evokeds_list = []
+            for p in list_of_participants:
+                individual_evoked = mne.read_evokeds('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(trial) + '-ave.fif', condition = str(trial))
+                evokeds_list.append(individual_evoked)
+
+            average_participant_evoked = mne.combine_evoked(evokeds_list, weights="nave")
+            average_participant_evoked.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(trial) + '-ave.fif', overwrite=True)
+
 
 def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     '''Plot Sensor positions'''
