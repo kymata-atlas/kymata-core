@@ -8,7 +8,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args
 
-from numpy import nan_to_num, minimum, ndarray
+from numpy import nan_to_num, minimum, int_, float_, str_, array
+from numpy.typing import NDArray
 import sparse
 from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
@@ -20,7 +21,7 @@ from kymata.io.matlab import load_mat
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
 Latency = float
 
-_InputDataArray = Union[ndarray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
+_InputDataArray = Union[NDArray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
 
 # Data dimension labels
 _HEXEL = "hexel"
@@ -30,6 +31,9 @@ _FUNCTION = "function"
 _LEFT = "left"
 _RIGHT = "right"
 
+_HexelType = int_
+_LatencyType = float_
+_FunctionNameType = str_
 
 class ExpressionSet:
     """
@@ -45,16 +49,21 @@ class ExpressionSet:
                  # In general, we will combine flipped and non-flipped versions
                  data_lh: _InputDataArray | Sequence[_InputDataArray],
                  data_rh: _InputDataArray | Sequence[_InputDataArray]):
+        # TODO: Docstring
 
         # Validate arguments
         if isinstance(functions, str):
-            assert isinstance(data_lh, get_args(_InputDataArray))
-            assert isinstance(data_rh, get_args(_InputDataArray))
+            assert isinstance(data_lh, get_args(_InputDataArray)), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
+            assert isinstance(data_rh, get_args(_InputDataArray)), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
             # Wrap into sequence
             functions = [functions]
             data_lh = [data_lh]
             data_rh = [data_rh]
-        assert len(functions) == len(data_lh) == len(data_rh)
+        assert len(functions) == len(data_lh) == len(data_rh), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
+
+        hexels = array(hexels, dtype=_HexelType)
+        latencies = array(latencies, dtype=_LatencyType)
+        functions = array(functions, dtype=_FunctionNameType)
 
         datasets = []
         for f, dl, dr in zip(functions, data_lh, data_rh):
@@ -89,17 +98,17 @@ class ExpressionSet:
         return data
 
     @property
-    def functions(self):
+    def functions(self) -> NDArray[_FunctionNameType]:
         """Function names."""
         return self._data.coords[_FUNCTION].values
 
     @property
-    def hexels(self):
+    def hexels(self) -> NDArray[_HexelType]:
         """Hexels, canonical ID."""
         return self._data.coords[_HEXEL].values
 
     @property
-    def latencies(self):
+    def latencies(self) -> NDArray[_LatencyType]:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
