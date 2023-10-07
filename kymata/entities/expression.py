@@ -36,11 +36,15 @@ _HexelType = int_
 _LatencyType = float_
 _FunctionNameType = str_
 
+
 class ExpressionSet:
     """
     Brain data associated with expression of a single function.
     Includes lh, rh, flipped, non-flipped.
     """
+
+    # Canonical order of dimensions
+    _dims = (_HEXEL, _LATENCY, _FUNCTION)
 
     def __init__(self,
                  functions: str | Sequence[str],
@@ -53,14 +57,17 @@ class ExpressionSet:
         # TODO: Docstring
 
         # Validate arguments
+        _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
+                                    "or equal-length sequences of the same.")
         if isinstance(functions, str):
-            assert isinstance(data_lh, get_args(_InputDataArray)), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
-            assert isinstance(data_rh, get_args(_InputDataArray)), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
+            assert isinstance(data_lh, get_args(_InputDataArray)), _length_mismatch_message
+            assert isinstance(data_rh, get_args(_InputDataArray)), _length_mismatch_message
             # Wrap into sequence
             functions = [functions]
             data_lh = [data_lh]
             data_rh = [data_rh]
-        assert len(functions) == len(data_lh) == len(data_rh), "Argument length mismatch, please supply one function name and accomanying data, or equal-lenth sequences of the same."
+        assert len(functions) == len(data_lh) == len(data_rh), _length_mismatch_message
+        assert len(functions) == len(set(functions)), "Duplicated functions in input"
 
         hexels = array(hexels, dtype=_HexelType)
         latencies = array(latencies, dtype=_LatencyType)
@@ -89,8 +96,6 @@ class ExpressionSet:
             )
         self._data: Dataset = concat(datasets, dim=_FUNCTION)
 
-        # TODO: verify coords and dims exist at dataset level
-
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> sparse.COO:
         """Prep data for ExpressionSet.__init__"""
@@ -113,27 +118,29 @@ class ExpressionSet:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
-    def __getitem__(self, item):
+    def __getitem__(self, functions):
         """
         Select data for specified function(s) only.
         Use a function name or list/array of function names
         """
         return ExpressionSet(
-            functions=item,
+            functions=functions,
             hexels=self.hexels,
             latencies=self.latencies,
-            data_lh=self._data[_LEFT].sel({_FUNCTION: item}),
-            data_rh=self._data[_RIGHT].sel({_FUNCTION: item})
+            data_lh=self._data[_LEFT].sel({_FUNCTION: functions}),
+            data_rh=self._data[_RIGHT].sel({_FUNCTION: functions})
         )
 
     def __copy__(self):
         return ExpressionSet(
             functions=self.functions.copy(),
-            hexels=self.hexels.copy(), latencies=self.latencies.copy(),
+            hexels=self.hexels.copy(),
+            latencies=self.latencies.copy(),
             data_lh=self._data[_LEFT].values.copy(),
             data_rh=self._data[_RIGHT].valuies.copy()
         )
 
+    # TODO: Or should this be __or__? Talk to Andy
     def __add__(self, other: ExpressionSet) -> ExpressionSet:
         assert self.hexels == other.hexels, "Hexels mismatch"
         assert self.latencies == other.latencies, "Latencies mismatch"
@@ -144,10 +151,6 @@ class ExpressionSet:
             data_lh=data[_LEFT], data_rh=data[_RIGHT]
         )
 
-    # TODO: plotting in here
-
-    # Public data access separated from data storage
-
     def best_function(self) -> DataFrame:
         """"""
         # sparse.COO doesn't implement argmin, so we have to do it in two steps:
@@ -157,8 +160,7 @@ class ExpressionSet:
         best_function = densify_dataset(p_at_best_latency).idxmin(dim=_FUNCTION)
         return best_function.to_dataframe()
 
-    # Canonical order of dimensions
-    _dims = (_HEXEL, _LATENCY, _FUNCTION)
+    # TODO: plotting in here
 
 
 def load_matab_expression_files(function_name: str,
