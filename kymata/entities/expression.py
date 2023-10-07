@@ -112,12 +112,6 @@ class ExpressionSet:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
-    def __contains__(self, function_name: str):
-        """
-        Whether a named function is in the ExpressionSet.
-        """
-        return function_name in self._data.coords[_FUNCTION]
-
     def __getitem__(self, item):
         """
         Select data for specified function(s) only.
