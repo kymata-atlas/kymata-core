@@ -31,6 +31,7 @@ _FUNCTION = "function"
 _LEFT = "left"
 _RIGHT = "right"
 
+# Set consistent dtypes
 _HexelType = int_
 _LatencyType = float_
 _FunctionNameType = str_
