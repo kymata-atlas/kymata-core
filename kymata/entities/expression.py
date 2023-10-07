@@ -2,86 +2,164 @@
 Classes and functions for storing expression information.
 """
 
+from __future__ import annotations
+
 from os import PathLike
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union, get_args
 
-from numpy import ndarray
-from scipy.sparse import sparray, dok_array
+from numpy import nan_to_num, minimum, ndarray
+import sparse
+from xarray import DataArray, Dataset, concat
+from pandas import DataFrame
 
 from kymata.entities.iterables import all_equal
+from kymata.entities.sparse import expand_dims, minimise_pmatrix, densify_dataset
 from kymata.io.matlab import load_mat
 
-_data_matrix_arg = sparray | ndarray
+Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
+Latency = float
+
+_InputDataArray = Union[ndarray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
+
+# Data dimension labels
+_HEXEL = "hexel"
+_LATENCY = "latency"
+_FUNCTION = "function"
+# Hemisphere
+_LEFT = "left"
+_RIGHT = "right"
 
 
-#  TODO: this should be able to contain arbitrary quantities of functions
-#  TODO: and have merge/split/slice functionality
 class ExpressionSet:
     """
     Brain data associated with expression of a single function.
     Includes lh, rh, flipped, non-flipped.
     """
+
     def __init__(self,
-                 function_name: str,
+                 functions: str | Sequence[str],
                  # Metadata
-                 hexels: Sequence[int],
-                 latencies: Sequence[float],  # Seconds
-                 # Underlying data
-                 lh_data: _data_matrix_arg,
-                 rh_data: _data_matrix_arg,
-                 lh_flipped_data: _data_matrix_arg,
-                 rh_flipped_data: _data_matrix_arg):
+                 hexels: Sequence[Hexel],
+                 latencies: Sequence[Latency],
+                 # In general, we will combine flipped and non-flipped versions
+                 data_lh: _InputDataArray | Sequence[_InputDataArray],
+                 data_rh: _InputDataArray | Sequence[_InputDataArray]):
 
-        self.function_name: str = function_name
+        # Validate arguments
+        if isinstance(functions, str):
+            assert isinstance(data_lh, get_args(_InputDataArray))
+            assert isinstance(data_rh, get_args(_InputDataArray))
+            # Wrap into sequence
+            functions = [functions]
+            data_lh = [data_lh]
+            data_rh = [data_rh]
+        assert len(functions) == len(data_lh) == len(data_rh)
 
-        self._data_lh_sparse: dok_array = dok_array(lh_data)
-        self._data_rh_sparse: dok_array = dok_array(rh_data)
-        self._data_flipped_lh_sparse: dok_array = dok_array(lh_flipped_data)
-        self._data_flipped_rh_sparse: dok_array = dok_array(rh_flipped_data)
-        assert all_equal(data.shape for data in (rh_data, lh_data, lh_flipped_data, rh_flipped_data))
+        datasets = []
+        for f, dl, dr in zip(functions, data_lh, data_rh):
+            # Check validity of input data dimensions
+            dl = self._init_prep_data(dl)
+            dr = self._init_prep_data(dr)
+            assert dl.shape == dr.shape
+            assert len(hexels) == dl.shape[0], f"Hexels mismatch for {f}"
+            assert len(latencies) == dl.shape[1], f"Latencies mismatch for {f}"
+            datasets.append(
+                Dataset({
+                    _LEFT: DataArray(
+                        data=dl,
+                        dims=ExpressionSet._dims,
+                    ),
+                    _RIGHT: DataArray(
+                        data=dr,
+                        dims=ExpressionSet._dims,
+                    )},
+                    coords={_HEXEL: hexels, _LATENCY: latencies, _FUNCTION: [f]},
+                )
+            )
+        self._data: Dataset = concat(datasets, dim=_FUNCTION)
 
-        self.hexels: Sequence[int] = hexels
-        self.latencies: Sequence[float] = latencies
+        # TODO: verify coords and dims exist at dataset level
 
-        self.n_vertices: int
-        self.n_timepoints: int
-        self.n_timepoints, self.n_vertices = lh_data.shape
-        assert self.n_timepoints == len(self.latencies) == lh_data.shape[0]
-        assert self.n_vertices == len(self.hexels) == lh_data.shape[1]
+    @classmethod
+    def _init_prep_data(cls, data: _InputDataArray) -> sparse.COO:
+        """Prep data for ExpressionSet.__init__"""
+        data = minimise_pmatrix(data, axis=1)
+        data = expand_dims(data, 2)
+        return data
+
+    @property
+    def functions(self):
+        """Function names."""
+        return self._data.coords[_FUNCTION].values
+
+    @property
+    def hexels(self):
+        """Hexels, canonical ID."""
+        return self._data.coords[_HEXEL].values
+
+    @property
+    def latencies(self):
+        """Latencies, in seconds."""
+        return self._data.coords[_LATENCY].values
+
+    def __contains__(self, function_name: str):
+        """
+        Whether a named function is in the ExpressionSet.
+        """
+        return function_name in self._data.coords[_FUNCTION]
+
+    def __getitem__(self, item):
+        """
+        Select data for specified function(s) only.
+        Use a function name or list/array of function names
+        """
+        return ExpressionSet(
+            functions=item,
+            hexels=self.hexels,
+            latencies=self.latencies,
+            data_lh=self._data[_LEFT].sel({_FUNCTION: item}),
+            data_rh=self._data[_RIGHT].sel({_FUNCTION: item})
+        )
+
+    def __copy__(self):
+        return ExpressionSet(
+            functions=self.functions.copy(),
+            hexels=self.hexels.copy(), latencies=self.latencies.copy(),
+            data_lh=self._data[_LEFT].values.copy(),
+            data_rh=self._data[_RIGHT].valuies.copy()
+        )
+
+    def __add__(self, other: ExpressionSet) -> ExpressionSet:
+        assert self.hexels == other.hexels, "Hexels mismatch"
+        assert self.latencies == other.latencies, "Latencies mismatch"
+        data = concat((self._data, other._data), dim=_FUNCTION)
+        return ExpressionSet(
+            functions=self.functions + other.functions,
+            hexels=self.hexels, latencies=self.latencies,
+            data_lh=data[_LEFT], data_rh=data[_RIGHT]
+        )
+
+    # TODO: plotting in here
 
     # Public data access separated from data storage
 
-    @property
-    def data_lh(self) -> sparray:
-        return self._data_lh_sparse
+    def best_function(self) -> DataFrame:
+        """"""
+        # sparse.COO doesn't implement argmin, so we have to do it in two steps:
+        # Get the best latency
+        p_at_best_latency = self._data.min(dim=_LATENCY)
+        # Then find the best function on the densified version (to get argmin support)
+        best_function = densify_dataset(p_at_best_latency).idxmin(dim=_FUNCTION)
+        return best_function.to_dataframe()
 
-    @property
-    def data_rh(self) -> sparray:
-        return self._data_rh_sparse
-
-    @property
-    def data_flipped_lh(self) -> sparray:
-        return self._data_flipped_lh_sparse
-
-    @property
-    def data_flipped_rh(self) -> sparray:
-        return self._data_flipped_rh_sparse
+    # Canonical order of dimensions
+    _dims = (_HEXEL, _LATENCY, _FUNCTION)
 
 
-def minimise_pmatrix(pmatrix: _data_matrix_arg) -> dok_array:
-    """
-    Converts a data matrix containing p-values into a sparse matrix
-    only storing the minimum value for each row.
-    """
-    # TODO
-    raise NotImplementedError()
-
-
-# TODO: don't in general need to store flipped, so this should be a specialised load_flipped function
-def load_from_matab_expression_files(function_name: str,
-                                     lh_file: PathLike, rh_file: PathLike,
-                                     flipped_lh_file: PathLike, flipped_rh_file: PathLike) -> ExpressionSet:
+def load_matab_expression_files(function_name: str,
+                                lh_file: PathLike, flipped_lh_file: PathLike,
+                                rh_file: PathLike, flipped_rh_file: PathLike) -> ExpressionSet:
     """Load from a set of MATLAB files."""
     lh_mat = load_mat(Path(lh_file))
     rh_mat = load_mat(Path(rh_file))
@@ -117,31 +195,45 @@ def load_from_matab_expression_files(function_name: str,
     else:
         downsample_ratio = 1
 
-    def _prep_data(data):
+    def _prep_matlab_data(data):
         return (
-            minimise_pmatrix(
-                _downsample_data(data, downsample_ratio)
-                [:len(lh_mat["latencies"]), :]
-        ))
+            # Some hexels are all nans because they're on the medial wall
+            # or otherwise intentionally excluded from the analysis;
+            # we replace those with p=1.0 to ignore
+            # TODO: could also delete
+            nan_to_num(
+                nan=1.0,
+                x=_downsample_data(data, downsample_ratio)
+                # Trim excess
+                [:len(lh_mat["latencies"]), :],
+            )
+        )
+
+    # Combine flipped and non-flipped
+    # TODO: verify theoretically that this is ok
+    pmatrix_lh = minimum(_prep_matlab_data(lh_mat["outputSTC"]["data"]), _prep_matlab_data(flipped_lh_mat["outputSTC"]["data"]))
+    pmatrix_rh = minimum(_prep_matlab_data(rh_mat["outputSTC"]["data"]), _prep_matlab_data(flipped_rh_mat["outputSTC"]["data"]))
 
     return ExpressionSet(
-        function_name=function_name,
+        functions=function_name,
         hexels=lh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,
-        lh_data=        _prep_data(lh_mat["outputSTC"]["data"]),
-        rh_data=        _prep_data(lh_mat["outputSTC"]["data"]),
-        lh_flipped_data=_prep_data(lh_mat["outputSTC"]["data"]),
-        rh_flipped_data=_prep_data(lh_mat["outputSTC"]["data"]),
+        data_lh=pmatrix_lh.T, data_rh=pmatrix_rh.T,
     )
 
 
 def _base_function_name(function_name: str) -> str:
-    """Removes extraneous metadata from function names."""
+    """
+    Removes extraneous metadata from function names.
+    """
     function_name = function_name.removesuffix("-flipped")
     return function_name
 
 
 def _downsample_data(data, ratio):
+    """
+    Subsample a numpy array in the first dimension.
+    """
     if ratio == 1:
         return data
     else:
@@ -150,10 +242,12 @@ def _downsample_data(data, ratio):
 
 if __name__ == '__main__':
     sample_data_dir = Path(Path(__file__).parent.parent.parent, "data", "sample-data")
-    expression_data = load_from_matab_expression_files(
+    expression_data = load_matab_expression_files(
         function_name="hornschunck_horizontalPosition",
         lh_file=Path(sample_data_dir, "hornschunck_horizontalPosition_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
         rh_file=Path(sample_data_dir, "hornschunck_horizontalPosition_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
         flipped_lh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
         flipped_rh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
     )
+    print(expression_data.best_function())
+    print("hornschunck_horizontalPosition" in expression_data)
