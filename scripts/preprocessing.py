@@ -241,6 +241,7 @@ def create_trials(config:dict):
     """Create trials objects from the raw data files (still in sensor space)"""
 
     list_of_participants = config['list_of_participants']
+    repetitions_per_runs = config['repetitions_per_runs']
     number_of_runs = config['number_of_runs']
     number_of_trials = config['number_of_trials']
     input_streams = config['input_streams']
@@ -299,6 +300,7 @@ def create_trials(config:dict):
 
          #	Extract audio events
          audio_events_raw = mne.pick_events(raw_events, include=3)
+         assert audio_events_raw.size == repetitions_per_runs*number_of_runs
 
          #	Correct for audio latency error
          audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
@@ -338,11 +340,11 @@ def create_trials(config:dict):
              global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
              #	Make and save trials as evoked data
-             #for i in range(1, number_of_trials + 1):
-             #    # evoked_one.plot() #(on top of each other)
-             #    # evoked_one.plot_image() #(side-by-side)
-             #    evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
-             #    evoked.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(i) + '-ave.fif', overwrite=True)
+             for i in range(1, number_of_trials + 1):
+                 # evoked_one.plot() #(on top of each other)
+                 # evoked_one.plot_image() #(side-by-side)
+                 evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
+                 evoked.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(i) + '-ave.fif', overwrite=True)
 
          # save grand average
          print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
