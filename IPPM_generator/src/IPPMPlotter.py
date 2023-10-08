@@ -2,12 +2,16 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.interpolate import splev
 import numpy as np
-from data_tools import Hexel
+from collections import namedtuple
 from typing import Dict, List, Tuple
+import seaborn as sns
+
+# convenient tuple/class to hold information about nodes.
+Node = namedtuple('Node', 'magnitude position in_edges')
 
 class IPPMPlotter(object):
     def draw(self, 
-            graph: Dict[str, Hexel], 
+            graph: Dict[str, Node], 
             colors: Dict[str, str], 
             title: str, 
             figheight: int=5, 
@@ -67,7 +71,7 @@ class IPPMPlotter(object):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Time (ms)')
+        ax.set_xlabel('Latency (ms)')
 
         legend = []
         for f in colors.keys():

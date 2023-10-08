@@ -140,23 +140,19 @@ def stem_plot(
 
         # left
         left = list(zip(*(my_function.left_best_pairings)))
-        if len(left) == 0:
-            print(f'Skipping left for {key}')
-            continue
-        x_left, y_left = left[0], left[1]
-        left_color = np.where(np.array(y_left) <= bonferroni_corrected_alpha, color, 'black') # set all insignificant spikes to black
-        left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
-        left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
+        if len(left) != 0:
+            x_left, y_left = left[0], left[1]
+            left_color = np.where(np.array(y_left) <= bonferroni_corrected_alpha, color, 'black') # set all insignificant spikes to black
+            left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
+            left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
         # right
         right = list(zip(*(my_function.right_best_pairings)))
-        if len(right) == 0:
-            print(f'Skipping right for {key}')
-            continue
-        x_right, y_right = right[0], right[1]
-        right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color, 'black') # set all insignificant spikes to black
-        right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
-        right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
+        if len(right) != 0:
+            x_right, y_right = right[0], right[1]
+            right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color, 'black') # set all insignificant spikes to black
+            right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
+            right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
 
     for plot in [right_hem_expression_plot, left_hem_expression_plot]:
         plot.set_yscale('log')
