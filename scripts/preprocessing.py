@@ -277,7 +277,7 @@ def create_trials(config:dict):
 
          raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
-         #     print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+         print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
 
          #	Extract visual events
          visual_events = mne.pick_events(raw_events, include=[2, 3])
@@ -293,14 +293,13 @@ def create_trials(config:dict):
              else:
                  trigger_name = trigger_name + 1
 
-         #  Test there are 400 events
-         #assert visual_events.len() == 400
+         #  Test there are the correct number of events
+         assert visual_events.shape[0] == repetitions_per_runs*number_of_runs*number_of_trials
 
          print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
 
          #	Extract audio events
          audio_events_raw = mne.pick_events(raw_events, include=3)
-         assert audio_events_raw.size == repetitions_per_runs*number_of_runs
 
          #	Correct for audio latency error
          audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
@@ -312,8 +311,8 @@ def create_trials(config:dict):
                    audio_events[(trial+(number_of_trials * run)) - 1][1] = 0
                    audio_events[(trial+(number_of_trials * run)) - 1][2] = trial
 
-         #  Test there are run*trial events
-         #assert audio_events.len() == 400
+         #  Test there are the correct number of events
+         assert audio_events.shape[0] == repetitions_per_runs*number_of_runs*number_of_trials
 
          #	Denote picks
          include = []; # ['MISC006']  # MISC05, trigger channels etc, if needed

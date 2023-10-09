@@ -2,7 +2,7 @@
 # Config file for Kymata Dataset 4.00
 
 list_of_participants: [
-                        "participant_03"
+                        "participant_04"
                         ]
 
 input_streams: [
