@@ -15,7 +15,7 @@ from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse import expand_dims, minimise_pmatrix, densify_dataset
+from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
 from kymata.io.matlab import load_mat
 
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
