@@ -9,7 +9,7 @@ import numpy as np
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import ExpressionSet, load_matab_expression_files
+from kymata.entities.expression import ExpressionSet
 
 
 def plot_expression_plot(

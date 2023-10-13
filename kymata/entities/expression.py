@@ -120,6 +120,16 @@ class ExpressionSet:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
+    @property
+    def left(self) -> DataArray:
+        """Left-hemisphere data."""
+        return self._data[_LEFT]
+
+    @property
+    def right(self) -> DataArray:
+        """Right-hemisphere data."""
+        return self._data[_RIGHT]
+
     def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
         """
         Select data for specified function(s) only.
@@ -218,10 +228,6 @@ class ExpressionSet:
         )
 
     # TODO: plotting in here?
-
-    # TODO: save/load
-
-    # TODO: read from API
 
 
 def load_matab_expression_files(function_name: str,
