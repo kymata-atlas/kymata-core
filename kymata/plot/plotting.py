@@ -14,6 +14,7 @@ from kymata.entities.expression import ExpressionSet, load_matab_expression_file
 
 def plot_expression_plot(
         expression_set: ExpressionSet,
+        # TODO: order of this arg gives front-to-back z-order
         include_functions: Optional[Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
@@ -81,6 +82,7 @@ def plot_expression_plot(
 
     for plot in [right_hem_expression_plot, left_hem_expression_plot]:
         plot.set_yscale('log')
+        # TODO: hard-coded?
         plot.set_xlim(-200, 800)
         plot.set_ylim((1, ylim))
         plot.axvline(x=0, color='k', linestyle='dotted')
@@ -122,7 +124,7 @@ def lognuniform(low=0, high=1, size=None, base=np.e):
 
 
 if __name__ == "__main__":
-    sample_data_dir = Path(Path(__file__).parent.parent, "data", "sample-data")
+    sample_data_dir = Path(Path(__file__).parent.parent.parent, "data", "sample-data")
     expression_data = load_matab_expression_files(
         function_name="hornschunck_horizontalPosition",
         lh_file=Path(sample_data_dir, "hornschunck_horizontalPosition_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
