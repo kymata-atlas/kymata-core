@@ -13,4 +13,5 @@ def load_mat(path):
 
 
 def load_mat_variable(path, variable_name: str):
+    """Loads a specified named variable from a matlab file"""
     return load_mat(path)[variable_name]
