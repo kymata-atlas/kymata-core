@@ -8,7 +8,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args
 
-from numpy import nan_to_num, minimum, int_, float_, str_, array
+from numpy import nan_to_num, minimum, int_, float_, str_, array, array_equal, ndarray
 from numpy.typing import NDArray
 import sparse
 from xarray import DataArray, Dataset, concat
@@ -21,7 +21,7 @@ from kymata.io.matlab import load_mat
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
 Latency = float
 
-_InputDataArray = Union[NDArray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
+_InputDataArray = Union[ndarray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
 
 # Data dimension labels
 _HEXEL = "hexel"
@@ -99,14 +99,17 @@ class ExpressionSet:
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> sparse.COO:
         """Prep data for ExpressionSet.__init__"""
-        data = minimise_pmatrix(data, axis=1)
+        if isinstance(data, ndarray):
+            data = minimise_pmatrix(data)
+        elif not isinstance(data, sparse.SparseArray):
+            raise NotImplementedError()
         data = expand_dims(data, 2)
         return data
 
     @property
-    def functions(self) -> NDArray[_FunctionNameType]:
+    def functions(self) -> list[_FunctionNameType]:
         """Function names."""
-        return self._data.coords[_FUNCTION].values
+        return self._data.coords[_FUNCTION].values.tolist()
 
     @property
     def hexels(self) -> NDArray[_HexelType]:
@@ -123,12 +126,15 @@ class ExpressionSet:
         Select data for specified function(s) only.
         Use a function name or list/array of function names
         """
+        for f in functions:
+            if f not in self.functions:
+                raise KeyError(f)
         return ExpressionSet(
             functions=functions,
             hexels=self.hexels,
             latencies=self.latencies,
             data_lh=self._data[_LEFT].sel({_FUNCTION: functions}),
-            data_rh=self._data[_RIGHT].sel({_FUNCTION: functions})
+            data_rh=self._data[_RIGHT].sel({_FUNCTION: functions}),
         )
 
     def __copy__(self):
@@ -137,18 +143,26 @@ class ExpressionSet:
             hexels=self.hexels.copy(),
             latencies=self.latencies.copy(),
             data_lh=self._data[_LEFT].values.copy(),
-            data_rh=self._data[_RIGHT].valuies.copy()
+            data_rh=self._data[_RIGHT].values.copy(),
         )
 
     # TODO: Or should this be __or__? Talk to Andy
     def __add__(self, other: ExpressionSet) -> ExpressionSet:
-        assert self.hexels == other.hexels, "Hexels mismatch"
-        assert self.latencies == other.latencies, "Latencies mismatch"
-        data = concat((self._data, other._data), dim=_FUNCTION)
+        assert array_equal(self.hexels, other.hexels), "Hexels mismatch"
+        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
+        # constructor expects a sequence of function names and sequences of 2d matrices
+        functions = []
+        data_lh = []
+        data_rh = []
+        for expr_set in [self, other]:
+            for i, function in enumerate(expr_set.functions):
+                functions.append(function)
+                data_lh.append(expr_set._data[_LEFT].data[:, :, i])
+                data_rh.append(expr_set._data[_RIGHT].data[:, :, i])
         return ExpressionSet(
-            functions=self.functions + other.functions,
+            functions=functions,
             hexels=self.hexels, latencies=self.latencies,
-            data_lh=data[_LEFT], data_rh=data[_RIGHT]
+            data_lh=data_lh, data_rh=data_rh,
         )
 
     def best_function(self) -> DataFrame:
@@ -160,7 +174,7 @@ class ExpressionSet:
         best_function = densify_dataset(p_at_best_latency).idxmin(dim=_FUNCTION)
         return best_function.to_dataframe()
 
-    # TODO: plotting in here
+    # TODO: plotting in here?
 
 
 def load_matab_expression_files(function_name: str,

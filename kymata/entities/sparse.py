@@ -27,21 +27,22 @@ def expand_dims(x: sparse.COO, axis=-1) -> sparse.COO:
     return x
 
 
-def minimise_pmatrix(pmatrix: ndarray, axis: int) -> sparse.COO:
+def minimise_pmatrix(pmatrix: ndarray) -> sparse.COO:
     """
-    Converts a data matrix containing p-values into a sparse matrix
-    only storing the minimum value for each of the specified dimension.
+    Converts a hexel-x-latency data matrix containing p-values into a sparse matrix
+    only storing the minimum (over latencies) p-value for each hexel.
     """
-    hexel_min = nanmin(pmatrix, axis=axis)
+    hexel_min = nanmin(pmatrix, axis=1)
+    hexel_min = expand_dims(hexel_min, axis=2)
     # Minimum p-val over all latencies for this hexel
-    pmatrix[greater(pmatrix.T, hexel_min).T] = 1.0
+    pmatrix[greater(pmatrix, hexel_min)] = 1.0
     return sparse.COO(pmatrix, fill_value=1.0)
 
 
 def densify_dataset(x: Dataset):
     """
     Converts data in an xarray.Dataset wrapping a sparse.COO matrix to a dense numpy array.
+    Operates in-place.
     """
     for var in x.data_vars.keys():
         x[var].data = x[var].data.todense()
-    return x
