@@ -4,7 +4,6 @@ Classes and functions for storing expression information.
 
 from __future__ import annotations
 
-from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple
 
@@ -121,11 +120,14 @@ class ExpressionSet:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
-    def __getitem__(self, functions):
+    def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
         """
         Select data for specified function(s) only.
         Use a function name or list/array of function names
         """
+        # Allow indexing by a single function
+        if isinstance(functions, str):
+            functions = [functions]
         for f in functions:
             if f not in self.functions:
                 raise KeyError(f)
@@ -133,8 +135,8 @@ class ExpressionSet:
             functions=functions,
             hexels=self.hexels,
             latencies=self.latencies,
-            data_lh=self._data[_LEFT].sel({_FUNCTION: functions}),
-            data_rh=self._data[_RIGHT].sel({_FUNCTION: functions}),
+            data_lh=[self._data[_LEFT].sel({_FUNCTION: function}).data for function in functions],
+            data_rh=[self._data[_RIGHT].sel({_FUNCTION: function}).data for function in functions],
         )
 
     def __copy__(self):
@@ -223,9 +225,14 @@ class ExpressionSet:
 
 
 def load_matab_expression_files(function_name: str,
-                                lh_file: PathLike, flipped_lh_file: PathLike,
-                                rh_file: PathLike, flipped_rh_file: PathLike) -> ExpressionSet:
+                                lh_file: Path | str, flipped_lh_file: Path | str,
+                                rh_file: Path | str, flipped_rh_file: Path | str) -> ExpressionSet:
     """Load from a set of MATLAB files."""
+
+    for p in [lh_file, rh_file, flipped_lh_file, flipped_rh_file]:
+        if not Path(p).exists():
+            raise FileNotFoundError(p)
+
     lh_mat = load_mat(Path(lh_file))
     rh_mat = load_mat(Path(rh_file))
     flipped_lh_mat = load_mat(Path(flipped_lh_file))
@@ -314,5 +321,11 @@ if __name__ == '__main__':
         flipped_lh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
         flipped_rh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
     )
-    print(expression_data.best_functions())
-    print("hornschunck_horizontalPosition" in expression_data)
+    expression_data += load_matab_expression_files(
+        function_name="ins_loudness",
+        lh_file=Path(sample_data_dir, "ins_loudness_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
+        rh_file=Path(sample_data_dir, "ins_loudness_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
+        flipped_lh_file=Path(sample_data_dir, "ins_loudness-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
+        flipped_rh_file=Path(sample_data_dir, "ins_loudness-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
+    )
+    expression_data = expression_data[["ins_loudness"]]
