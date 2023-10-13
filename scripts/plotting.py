@@ -13,7 +13,7 @@ from colorama import Fore
 from colorama import Style
 
 
-def plot_expression_plot(save_to: Optional[Path] = None, verbose: bool = False):
+def plot_expression_plot_script(save_to: Optional[Path] = None, verbose: bool = False):
     """Generates an expression plot"""
 
     y_limit = pow(10, -100)
