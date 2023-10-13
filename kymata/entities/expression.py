@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from os import PathLike
 from pathlib import Path
-from typing import Sequence, Union, get_args
+from typing import Sequence, Union, get_args, Tuple
 
 from numpy import nan_to_num, minimum, int_, float_, str_, array, array_equal, ndarray
 from numpy.typing import NDArray
@@ -146,7 +146,6 @@ class ExpressionSet:
             data_rh=self._data[_RIGHT].values.copy(),
         )
 
-    # TODO: Or should this be __or__? Talk to Andy
     def __add__(self, other: ExpressionSet) -> ExpressionSet:
         assert array_equal(self.hexels, other.hexels), "Hexels mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
@@ -165,16 +164,62 @@ class ExpressionSet:
             data_lh=data_lh, data_rh=data_rh,
         )
 
-    def best_function(self) -> DataFrame:
-        """"""
-        # sparse.COO doesn't implement argmin, so we have to do it in two steps:
-        # Get the best latency
-        p_at_best_latency = self._data.min(dim=_LATENCY)
-        # Then find the best function on the densified version (to get argmin support)
-        best_function = densify_dataset(p_at_best_latency).idxmin(dim=_FUNCTION)
-        return best_function.to_dataframe()
+    def best_functions(self) -> Tuple[DataFrame, DataFrame]:
+        """
+        Return a pair of DataFrames (left, right), containing:
+        for each hexel, the best function and latency for that hexel, and the associated p-value
+        """
+        # Want, for each hexel:
+        #  - The name, f, of the function which is best at any latency
+        #  - The latency, l, for which f is best
+        #  - The p-value, p, for f at l
+
+        # sparse.COO doesn't implement argmin, so we have to do it in a few steps
+
+        data = self._data.copy()
+        densify_dataset(data)
+
+        best_latency = data.idxmin(dim=_LATENCY)    # (hexel, function) → l, the best latency
+        p_at_best_latency = data.min(dim=_LATENCY)  # (hexel, function) → p of best latency for each function
+
+        p_at_best_function = p_at_best_latency.min(dim=_FUNCTION)  # (hexel) → p of best function (at best latency)
+        best_function = p_at_best_latency.idxmin(dim=_FUNCTION)    # (hexel) → f, the best function
+
+        # TODO: shame I have to break into the Left/Right structure here,
+        #  but I can't think of a better way to do it
+        p_vals_lh = p_at_best_function[_LEFT].data
+        p_vals_rh = p_at_best_function[_RIGHT].data
+
+        best_functions_lh = best_function[_LEFT].data
+        best_functions_rh = best_function[_RIGHT].data
+
+        best_latencies_lh = best_latency[_LEFT].sel({_HEXEL: self.hexels, _FUNCTION: best_function[_LEFT]}).data
+        best_latencies_rh = best_latency[_RIGHT].sel({_HEXEL: self.hexels, _FUNCTION: best_function[_RIGHT]}).data
+
+        # Cut out hexels which have a best p-val of 1
+        idxs_lh = p_vals_lh < 1
+        idxs_rh = p_vals_rh < 1
+
+        return (
+            DataFrame.from_dict({
+                _HEXEL: self.hexels[idxs_lh],
+                _FUNCTION: best_functions_lh[idxs_lh],
+                _LATENCY: best_latencies_lh[idxs_lh],
+                "value": p_vals_lh[idxs_lh],
+            }),
+            DataFrame.from_dict({
+                _HEXEL: self.hexels[idxs_rh],
+                _FUNCTION: best_functions_rh[idxs_rh],
+                _LATENCY: best_latencies_rh[idxs_rh],
+                "value": p_vals_rh[idxs_rh],
+            })
+        )
 
     # TODO: plotting in here?
+
+    # TODO: save/load
+
+    # TODO: read from API
 
 
 def load_matab_expression_files(function_name: str,
@@ -269,5 +314,5 @@ if __name__ == '__main__':
         flipped_lh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
         flipped_rh_file=Path(sample_data_dir, "hornschunck_horizontalPosition-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
     )
-    print(expression_data.best_function())
+    print(expression_data.best_functions())
     print("hornschunck_horizontalPosition" in expression_data)
