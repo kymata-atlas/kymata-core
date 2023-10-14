@@ -75,7 +75,7 @@ def plot_expression_plot(
         x_right = data_right["latency"].values * 1000
         y_right = data_right["value"].values
         right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color[function], 'black')
-        right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=left_color)
+        right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
         right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
 
     # format shared axis qualities
