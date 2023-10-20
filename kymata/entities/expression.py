@@ -194,14 +194,30 @@ class ExpressionSet:
         return True
 
     def save(self, to_path: Path | str, overwrite: bool = False):
+
+        # Format versioning of the saved file. Used to (eventually) ensure old saved files can always be loaded.
+        #
+        # - Increment MINOR versions when creating a breaking change, but only when we commit to indefinitely supporting
+        #   the new version.
+        # - Increment MAJOR version when creating a breaking change which makes the format fundamentally incompatible
+        #   with previous versions.
+        #
+        # All distinct versions should be documented.
+        #
+        # This value should be saved into file called /_metadata/format-version.txt within an archive.
+        _VERSION = "0.1"
+
         warn("Experimental function. "
              "The on-disk data format for ExpressionSet is not yet fixed. "
              "Files saved using .save should not (yet) be treated as stable or future-proof.")
+
         to_path = Path(to_path)
+
         if not overwrite and to_path.exists():
             raise FileExistsError(to_path)
 
         with ZipFile(to_path, "w") as zf:
+            zf.writestr("_metadata/format-version.txt", _VERSION)
             zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
             zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
             zf.writestr("/functions.txt", "\n".join(str(x) for x in self.functions))
