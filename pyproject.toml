@@ -16,6 +16,7 @@ PyYAML = "^6.0"
 seaborn = "^0.12.2"
 sparse = "^0.14.0"
 xarray = "^2023.9.0"
+requests = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
