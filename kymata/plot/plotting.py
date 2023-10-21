@@ -109,7 +109,7 @@ def plot_expression_plot(
                                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                                    horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small',
-                                    bbox_to_anchor=(1.2, 1))
+                                    bbox_to_anchor=(1.02, 1.02), loc="upper left")
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
