@@ -2,10 +2,10 @@ from colorama import Fore
 from colorama import Style
 
 
-def do_gridsearch(neurophysiology_data_file_directory,
+def do_gridsearch_on_both_hemsipheres(neurophysiology_data_file_directory,
                     predicted_function_outputs_data,
                     hexel_expression_master,
-                    functions_to_apply_gridsearch):
+                    functions_to_apply_gridsearch) -> XYZ:
     '''Do the Kymata gridsearch over all hexels for all latencies'''
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting gridsearch{Style.RESET_ALL}")
@@ -29,45 +29,29 @@ def do_gridsearch(neurophysiology_data_file_directory,
 
     print(f"...for Function: {xxxxx}")
 
-        Check if the master expression already contains it
+    #Check if the master expression already contains it
 
-        Print out similar, and check.
+    #Print out similar, and check.
 
-        for hemi in ['left', 'right']:
+    for hemi in ['left', 'right']:
 
-            print(f"...for {hemi}")
+        print(f"...for {hemi}")
 
-            # Polarity represents a special case of the function search - that
-            # where the waveform is flipped in it's polarity. The default action
-            # in Kymata is to check both, and then select the best, as we don't
-            # care about the polarity.
-            for polaritiy in ['positive', 'negitive']
-
-                print(f"   ...for {polaritiy}")
-
-                do gridsearch_for_polarity() #??? do we need this at all and just use the two tailness?
-
-            print(f"   ...merging polarities")
-
-            merge polarities
-
+        do_gridsearch()
 
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Ending Gridsearch. Saving in master expression file. {Style.RESET_ALL}")
 
     return xx
 
-
-def do_gridsearch_for_polarity(polarity:String) -> STC file:
-    '''Do the gridsearch for a given polarity'''
+def do_gridsearch():
+    '''Do the gridsearch'''
 
     print(f"   ...XYZ")
 
     dentritic current_data_array = new array()
     prediction_waveform = load_data.load_prediction_waveform()
 
-    if polarity = 'negative'
-        prediction_waveform = prediction_waveform * -1
 
     vecotrise and use Numba/CyPY/CUDA or NUMBa and ...
     # cut to trial length
@@ -180,10 +164,8 @@ def do_gridsearch_for_polarity(polarity:String) -> STC file:
 
             # 2-sample t-test
 
-            - Can we do 2 tails to do polarities?
-
             [h, p, ci, stats] = ttest2(truepopulation, randpopulation,
-                                       1 - ((1 - f_alpha) ^ (1 / (2 * length(latencies) * nVertices))), 'right', 'unequal');
+                                       1 - ((1 - f_alpha) ^ (1 / (2 * length(latencies) * nVertices))), 'both', 'unequal');
             pvalues(1, vertex) = p
 
             # Save at correct latency in STC
