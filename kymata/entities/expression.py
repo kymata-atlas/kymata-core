@@ -4,12 +4,16 @@ Classes and functions for storing expression information.
 
 from __future__ import annotations
 
+from io import TextIOWrapper
+from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple, Optional
+from warnings import warn
+from zipfile import ZipFile
 
-from numpy import nan_to_num, minimum, int_, float_, str_, array, array_equal, ndarray
+from numpy import nan_to_num, minimum, int_, float_, str_, array, array_equal, ndarray, frombuffer
 from numpy.typing import NDArray
-import sparse
+from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
@@ -20,7 +24,7 @@ from kymata.io.matlab import load_mat
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
 Latency = float
 
-_InputDataArray = Union[ndarray, sparse.SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
+_InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
 
 # Data dimension labels
 _HEXEL = "hexel"
@@ -96,11 +100,11 @@ class ExpressionSet:
         self._data: Dataset = concat(datasets, dim=_FUNCTION)
 
     @classmethod
-    def _init_prep_data(cls, data: _InputDataArray) -> sparse.COO:
+    def _init_prep_data(cls, data: _InputDataArray) -> COO:
         """Prep data for ExpressionSet.__init__"""
         if isinstance(data, ndarray):
             data = minimise_pmatrix(data)
-        elif not isinstance(data, sparse.SparseArray):
+        elif not isinstance(data, SparseArray):
             raise NotImplementedError()
         data = expand_dims(data, 2)
         return data
@@ -174,6 +178,99 @@ class ExpressionSet:
             functions=functions,
             hexels=self.hexels, latencies=self.latencies,
             data_lh=data_lh, data_rh=data_rh,
+        )
+
+    def __eq__(self, other: ExpressionSet):
+        if not self.functions == other.functions:
+            return False
+        if not array_equal(self.hexels, other.hexels):
+            return False
+        if not array_equal(self.latencies, other.latencies):
+            return False
+        if not COO(self.left.data == other.left.data).all():
+            return False
+        if not COO(self.right.data == other.right.data).all():
+            return False
+        return True
+
+    def save(self, to_path: Path | str, overwrite: bool = False):
+
+        # Format versioning of the saved file. Used to (eventually) ensure old saved files can always be loaded.
+        #
+        # - Increment MINOR versions when creating a breaking change, but only when we commit to indefinitely supporting
+        #   the new version.
+        # - Increment MAJOR version when creating a breaking change which makes the format fundamentally incompatible
+        #   with previous versions.
+        #
+        # All distinct versions should be documented.
+        #
+        # This value should be saved into file called /_metadata/format-version.txt within an archive.
+        _VERSION = "0.1"
+
+        warn("Experimental function. "
+             "The on-disk data format for ExpressionSet is not yet fixed. "
+             "Files saved using .save should not (yet) be treated as stable or future-proof.")
+
+        to_path = Path(to_path)
+
+        if not overwrite and to_path.exists():
+            raise FileExistsError(to_path)
+
+        with ZipFile(to_path, "w") as zf:
+            zf.writestr("_metadata/format-version.txt", _VERSION)
+            zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
+            zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
+            zf.writestr("/functions.txt", "\n".join(str(x) for x in self.functions))
+            zf.writestr("/left/coo-coords.bytes", self.left.data.coords.tobytes(order="C"))
+            zf.writestr("/left/coo-data.bytes", self.left.data.data.tobytes(order="C"))
+            # The shape can be inferred, but we save it as an extra validation
+            zf.writestr("/left/coo-shape.txt", "\n".join(str(x) for x in self.left.data.shape))
+            zf.writestr("/right/coo-coords.bytes", self.right.data.coords.tobytes(order="C"))
+            zf.writestr("/right/coo-data.bytes", self.right.data.data.tobytes(order="C"))
+            zf.writestr("/right/coo-shape.txt", "\n".join(str(x) for x in self.right.data.shape))
+
+    @classmethod
+    def load(cls, from_path: PathLike) -> ExpressionSet:
+        from_path = Path(from_path)
+        with ZipFile(from_path, "r") as zf:
+            with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
+                hexels: list[_HexelType] = [_HexelType(h.strip()) for h in f.readlines()]
+            with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
+                latencies: list[_LatencyType] = [_LatencyType(lat.strip()) for lat in f.readlines()]
+            with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
+                functions: list[_FunctionNameType] = [_FunctionNameType(fun.strip()) for fun in f.readlines()]
+            with zf.open("/left/coo-coords.bytes") as f:
+                left_coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+            with zf.open("/left/coo-data.bytes") as f:
+                left_data: ndarray = frombuffer(f.read(), dtype=float)
+            with TextIOWrapper(zf.open("/left/coo-shape.txt"), encoding="utf-8") as f:
+                left_shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
+            with zf.open("/right/coo-coords.bytes") as f:
+                right_coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+            with zf.open("/right/coo-data.bytes") as f:
+                right_data: ndarray = frombuffer(f.read(), dtype=float)
+            with TextIOWrapper(zf.open("/right/coo-shape.txt"), encoding="utf-8") as f:
+                right_shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
+
+        left_sparse = COO(coords=left_coords, data=left_data, shape=left_shape, prune=True, fill_value=1.0)
+        right_sparse = COO(coords=right_coords, data=right_data, shape=right_shape, prune=True, fill_value=1.0)
+
+        assert left_shape == right_shape
+
+        # In case there was only 1 function and we have a 2-d data matrix
+        if len(left_shape) == 2:
+            # TODO: does this ever actually happen?
+            left_sparse = expand_dims(left_sparse)
+            right_sparse = expand_dims(right_sparse)
+
+        assert left_shape == (len(hexels), len(latencies), len(functions))
+
+        return ExpressionSet(
+            functions=functions,
+            hexels=hexels,
+            latencies=latencies,
+            data_lh=[left_sparse[:, :, i] for i in range(len(functions))],
+            data_rh=[right_sparse[:, :, i] for i in range(len(functions))],
         )
 
     def best_functions(self) -> Tuple[DataFrame, DataFrame]:

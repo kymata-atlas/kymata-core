@@ -2,7 +2,11 @@
 name = "kymata-toolbox"
 version = "0.1.0"
 description = ""
-authors = ["Andrew Thwaites <acgt2@cam.ac.uk>"]
+authors = [
+    "Andrew Thwaites <acgt2@cam.ac.uk>",
+    "Cai Wingfield <cai@caiwingfield.net>"
+]
+packages = [{include = "kymata"}]
 
 [tool.poetry.dependencies]
 python = "~3.11"
@@ -18,7 +22,7 @@ sparse = "^0.14.0"
 xarray = "^2023.9.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^7.4.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
