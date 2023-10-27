@@ -12,7 +12,7 @@ from seaborn import color_palette
 from kymata.entities.expression import ExpressionSet
 
 
-def plot_expression_plot(
+def expression_plot(
         expression_set: ExpressionSet,
         # TODO: order of this arg gives front-to-back z-order
         include_functions: Optional[Sequence[str]] = None,

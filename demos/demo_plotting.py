@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from kymata.entities.expression import load_matab_expression_files
-from kymata.plot.plotting import plot_expression_plot
+from kymata.plot.plotting import expression_plot
 
 sample_data_dir = Path(Path(__file__).parent.parent, "data", "sample-data")
 expression_data = load_matab_expression_files(
@@ -35,4 +35,4 @@ expression_data += load_matab_expression_files(
     flipped_rh_file=Path(sample_data_dir,
                          "ins_loudness-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
 )
-plot_expression_plot(expression_data, include_functions=["hornschunck_horizontalVelocity"])
+expression_plot(expression_data, include_functions=["hornschunck_horizontalVelocity"])
