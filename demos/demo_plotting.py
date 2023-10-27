@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from kymata.entities.expression import load_matab_expression_files
+from kymata.io.matlab import load_matab_expression_files
 from kymata.plot.plotting import plot_expression_plot
 
 sample_data_dir = Path(Path(__file__).parent.parent, "data", "sample-data")
