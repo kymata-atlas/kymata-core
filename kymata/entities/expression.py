@@ -11,15 +11,13 @@ from typing import Sequence, Union, get_args, Tuple
 from warnings import warn
 from zipfile import ZipFile
 
-from numpy import nan_to_num, minimum, int_, float_, str_, array, array_equal, ndarray, frombuffer
+from numpy import int_, float_, str_, array, array_equal, ndarray, frombuffer
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
-from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
-from kymata.io.matlab import load_mat
 
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
 Latency = float
@@ -325,91 +323,3 @@ class ExpressionSet:
         )
 
     # TODO: plotting in here?
-
-
-def load_matab_expression_files(function_name: str,
-                                lh_file: Path | str, flipped_lh_file: Path | str,
-                                rh_file: Path | str, flipped_rh_file: Path | str) -> ExpressionSet:
-    """Load from a set of MATLAB files."""
-
-    for p in [lh_file, rh_file, flipped_lh_file, flipped_rh_file]:
-        if not Path(p).exists():
-            raise FileNotFoundError(p)
-
-    lh_mat = load_mat(Path(lh_file))
-    rh_mat = load_mat(Path(rh_file))
-    flipped_lh_mat = load_mat(Path(flipped_lh_file))
-    flipped_rh_mat = load_mat(Path(flipped_rh_file))
-
-    # Check 4 files are compatible
-    all_mats = (lh_mat, rh_mat, flipped_lh_mat, flipped_rh_mat)
-    # All the same function
-    assert all_equal(_base_function_name(mat["functionname"]) for mat in all_mats)
-    # Chirality is correct
-    assert lh_mat["leftright"] == flipped_lh_mat["leftright"] == "lh"
-    assert rh_mat["leftright"] == flipped_rh_mat["leftright"] == "rh"
-    # Timing information is the same
-    assert all_equal(mat["latency_step"]               for mat in all_mats)
-    assert all_equal(len(mat["latencies"])             for mat in all_mats)
-    assert all_equal(mat["nTimePoints"]                for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["tmin"]          for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["tstep"]         for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["data"].shape[0] for mat in all_mats)
-    assert lh_mat["outputSTC"]["data"].shape[0] == lh_mat["nTimePoints"]
-    # Spatial information is the same
-    assert all_equal(mat["nVertices"]                       for mat in all_mats)
-    assert all_equal(len(mat["outputSTC"]["vertices"])      for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["data"].shape[1]      for mat in all_mats)
-    assert lh_mat["outputSTC"]["data"].shape[1] == lh_mat["nVertices"]
-
-    # If the data has been downsampled
-    if lh_mat["outputSTC"]["tstep"] != lh_mat["latency_step"]/1000:
-        downsample_ratio = (lh_mat["latency_step"] / 1000) / lh_mat["outputSTC"]["tstep"]
-        assert downsample_ratio == int(downsample_ratio)
-        downsample_ratio = int(downsample_ratio)
-    else:
-        downsample_ratio = 1
-
-    def _prep_matlab_data(data):
-        return (
-            # Some hexels are all nans because they're on the medial wall
-            # or otherwise intentionally excluded from the analysis;
-            # we replace those with p=1.0 to ignore
-            # TODO: could also delete
-            nan_to_num(
-                nan=1.0,
-                x=_downsample_data(data, downsample_ratio)
-                # Trim excess
-                [:len(lh_mat["latencies"]), :],
-            )
-        )
-
-    # Combine flipped and non-flipped
-    # TODO: verify theoretically that this is ok
-    pmatrix_lh = minimum(_prep_matlab_data(lh_mat["outputSTC"]["data"]), _prep_matlab_data(flipped_lh_mat["outputSTC"]["data"]))
-    pmatrix_rh = minimum(_prep_matlab_data(rh_mat["outputSTC"]["data"]), _prep_matlab_data(flipped_rh_mat["outputSTC"]["data"]))
-
-    return ExpressionSet(
-        functions=function_name,
-        hexels=lh_mat["outputSTC"]["vertices"],
-        latencies=lh_mat["latencies"] / 1000,
-        data_lh=pmatrix_lh.T, data_rh=pmatrix_rh.T,
-    )
-
-
-def _base_function_name(function_name: str) -> str:
-    """
-    Removes extraneous metadata from function names.
-    """
-    function_name = function_name.removesuffix("-flipped")
-    return function_name
-
-
-def _downsample_data(data, ratio):
-    """
-    Subsample a numpy array in the first dimension.
-    """
-    if ratio == 1:
-        return data
-    else:
-        return data[::ratio, :]
