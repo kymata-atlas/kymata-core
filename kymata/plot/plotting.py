@@ -12,10 +12,9 @@ from seaborn import color_palette
 from kymata.entities.expression import ExpressionSet
 
 
-def plot_expression_plot(
+def expression_plot(
         expression_set: ExpressionSet,
-        # TODO: order of this arg gives front-to-back z-order
-        include_functions: Optional[Sequence[str]] = None,
+        show_only: Optional[str | Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
@@ -27,9 +26,11 @@ def plot_expression_plot(
     """Generates an expression plot"""
 
     # Default arg values
-    if include_functions is None:
+    if show_only is None:
         # Plot all
-        include_functions = expression_set.functions
+        show_only = expression_set.functions
+    elif isinstance(show_only, str):
+        show_only = [show_only]
     if color is None:
         color = dict()
     elif isinstance(color, str):
@@ -44,7 +45,7 @@ def plot_expression_plot(
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
-    for function in include_functions:
+    for function in show_only:
         if function not in color:
             color[function] = colors.to_hex(next(cycol))
 
@@ -64,7 +65,7 @@ def plot_expression_plot(
 
     custom_handles = []
     custom_labels = []
-    for function in include_functions:
+    for function in show_only:
 
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
