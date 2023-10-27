@@ -4,6 +4,7 @@ from typing import Optional, Sequence, Dict, Tuple
 from statistics import NormalDist
 
 from matplotlib import pyplot, colors
+from matplotlib.legend_handler import HandlerLine2D
 from matplotlib.lines import Line2D
 import numpy as np
 from pandas import DataFrame
@@ -31,6 +32,7 @@ def expression_plot(
         show_only = expression_set.functions
     elif isinstance(show_only, str):
         show_only = [show_only]
+    not_shown = [f for f in expression_set.functions if f not in show_only]
     if color is None:
         color = dict()
     elif isinstance(color, str):
@@ -117,7 +119,16 @@ def expression_plot(
                                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                                    horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small',
+                                    title="Plotted functions", alignment="left",
                                     bbox_to_anchor=(1.02, 1.02), loc="upper left")
+    # Plot dummy legend for other functions which are included in model selection but not plotted
+    leg = right_hem_expression_plot.legend(labels=not_shown, fontsize="x-small",
+                                           title="Non-plotted functions", alignment="left",
+                                           bbox_to_anchor=(1.02, 1.02), loc="upper left",
+                                           # Hide lines for non-plotted functions
+                                           handlelength=0, handletextpad=0)
+    for lh in leg.legendHandles:
+        lh.set_alpha(0)
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
