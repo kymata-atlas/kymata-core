@@ -19,7 +19,7 @@ def plot_expression_plot(
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
-        color: Optional[Dict[str, str]] = None,  # function_name → colour name
+        color: Optional[str | Dict[str, str] | list[str]] = None,  # colour name, function_name → colour name, or list of colour names
         ylim: Optional[Tuple[float, float]] = None,
         # I/O args
         save_to: Optional[Path] = None,
@@ -32,6 +32,13 @@ def plot_expression_plot(
         include_functions = expression_set.functions
     if color is None:
         color = dict()
+    elif isinstance(color, str):
+        # Single string specified: use all that colour
+        color = {f: color for f in show_only}
+    elif isinstance(color, str):
+        # List specified, then pair up in order
+        assert len(color) == len(str)
+        color = {f: c for f, c in zip(show_only, color)}
     if ylim is None:
         ylim = 10 ** -100
 
