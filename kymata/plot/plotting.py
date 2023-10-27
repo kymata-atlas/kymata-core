@@ -14,8 +14,7 @@ from kymata.entities.expression import ExpressionSet
 
 def expression_plot(
         expression_set: ExpressionSet,
-        # TODO: order of this arg gives front-to-back z-order
-        include_functions: Optional[Sequence[str]] = None,
+        include_functions: Optional[str | Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
@@ -30,6 +29,8 @@ def expression_plot(
     if include_functions is None:
         # Plot all
         include_functions = expression_set.functions
+    elif isinstance(include_functions, str):
+        include_functions = [include_functions]
     if color is None:
         color = dict()
     if ylim is None:
