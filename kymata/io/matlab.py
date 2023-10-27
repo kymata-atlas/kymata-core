@@ -28,8 +28,10 @@ def load_mat_variable(path, variable_name: str):
 
 def load_matab_expression_files(
         function_name: str,
-        lh_file: Path | str, rh_file: Path | str,
-        flipped_lh_file: Optional[Path | str], flipped_rh_file: Optional[Path | str],
+        lh_file: Path | str,
+        rh_file: Path | str,
+        flipped_lh_file: Optional[Path | str] = None,
+        flipped_rh_file: Optional[Path | str] = None,
 ) -> ExpressionSet:
     """Load from a set of MATLAB files."""
 
