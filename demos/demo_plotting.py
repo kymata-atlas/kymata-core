@@ -1,38 +1,34 @@
 from pathlib import Path
 
 from kymata.plot.plotting import expression_plot
-from kymata.io.matlab import load_matab_expression_files
+from kymata.entities.expression import ExpressionSet
 
+
+# set location of tutorial data
 sample_data_dir = Path(Path(__file__).parent.parent, "data", "sample-data")
-expression_data = load_matab_expression_files(
-    function_name="hornschunck_horizontalPosition",
-    lh_file=Path(sample_data_dir,
-                 "hornschunck_horizontalPosition_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    rh_file=Path(sample_data_dir,
-                 "hornschunck_horizontalPosition_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_lh_file=Path(sample_data_dir,
-                         "hornschunck_horizontalPosition-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_rh_file=Path(sample_data_dir,
-                         "hornschunck_horizontalPosition-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-)
-expression_data += load_matab_expression_files(
-    function_name="hornschunck_horizontalVelocity",
-    lh_file=Path(sample_data_dir,
-                 "hornschunck_horizontalVelocity_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    rh_file=Path(sample_data_dir,
-                 "hornschunck_horizontalVelocity_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_lh_file=Path(sample_data_dir,
-                         "hornschunck_horizontalVelocity-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_rh_file=Path(sample_data_dir,
-                         "hornschunck_horizontalVelocity-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-)
-expression_data += load_matab_expression_files(
-    function_name="ins_loudness",
-    lh_file=Path(sample_data_dir, "ins_loudness_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    rh_file=Path(sample_data_dir, "ins_loudness_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_lh_file=Path(sample_data_dir,
-                         "ins_loudness-flipped_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-    flipped_rh_file=Path(sample_data_dir,
-                         "ins_loudness-flipped_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat"),
-)
-expression_plot(expression_data, include_functions=["hornschunck_horizontalVelocity"])
+
+# create new expression set object and add to it
+expression_data_kymata_mirror = ExpressionSet.load(from_path=Path(sample_data_dir, "kymata_mirror_Q3_2023_expression_endtable.nkg"))
+
+# print the names of all available functions in the expressionSet object
+print(expression_data_kymata_mirror.functions)
+
+# plot everything, with everything model selected against each other
+expression_plot(expression_data_kymata_mirror)
+
+# only compare a subset of functions (e.g. colour functions), and print them all.
+# Note that 'CIELAB a*' and 'CIELAB L' are not significant, and so will not turn up.
+expression_plot(expression_data_kymata_mirror[
+                    'CIECAM02 A',
+                    'CIECAM02 a',
+                    'CIELAB a*',
+                    'CIELAB L'
+                ])
+
+# Only compare a subset of functions, and print just one of them
+expression_plot(expression_data_kymata_mirror[
+                    'CIECAM02 A',
+                    'CIECAM02 a',
+                    'CIELAB a*',
+                    'CIELAB L'
+                ], show_only=["CIECAM02 A"])
