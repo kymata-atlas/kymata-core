@@ -31,4 +31,51 @@ expression_plot(expression_data_kymata_mirror[
                     'CIECAM02 a',
                     'CIELAB a*',
                     'CIELAB L'
-                ], show_only=["CIECAM02 A"])
+                ], show_only=[
+                    "CIECAM02 A"
+                ])
+
+# Override colours (using hexcodes) so that all touch are cyan, all hearing orange, and all visual purple
+expression_plot(expression_data_kymata_mirror[
+                    'vibration detection (RH-Th/P/M)',
+                    'vibration detection (LH-Th/P/M)',
+                    'CIECAM02 A',
+                    'CIECAM02 a',
+                    'Heeger horizontal velocity',
+                    'Heeger horizontal ME GP1',
+                    'Heeger horizontal ME GP2',
+                    'Heeger horizontal ME GP3',
+                    'Heeger horizontal ME GP4',
+                    'TVL loudness (short-term)', 
+                    'TVL loudness (instantaneous)', 
+                    'TVL loudness chan 1 (instantaneous)', 
+                    'TVL loudness chan 2 (instantaneous)', 
+                    'TVL loudness chan 3 (instantaneous)', 
+                    'TVL loudness chan 4 (instantaneous)', 
+                    'TVL loudness chan 5 (instantaneous)', 
+                    'TVL loudness chan 6 (instantaneous)', 
+                    'TVL loudness chan 7 (instantaneous)',
+                    'TVL loudness chan 8 (instantaneous)',
+                    'TVL loudness chan 9 (instantaneous)',
+                ], color = {
+                    'vibration detection (RH-Th/P/M)': '#21d4ca',
+                    'vibration detection (LH-Th/P/M)': '#21d4ca',
+                    'CIECAM02 A': '#af90e3',
+                    'CIECAM02 a': '#af90e3',
+                    'Heeger horizontal velocity': '#af90e3',
+                    'Heeger horizontal ME GP1': '#af90e3',
+                    'Heeger horizontal ME GP2': '#af90e3',
+                    'Heeger horizontal ME GP3': '#af90e3',
+                    'Heeger horizontal ME GP4': '#af90e3',
+                    'TVL loudness (short-term)': '#f1b37e',
+                    'TVL loudness (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 1 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 2 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 3 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 4 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 5 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 6 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 7 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 8 (instantaneous)': '#f1b37e',
+                    'TVL loudness chan 9 (instantaneous)': '#f1b37e'
+                  })
