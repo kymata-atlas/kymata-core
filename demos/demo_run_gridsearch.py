@@ -1,7 +1,7 @@
 from colorama import Fore, Style
 
 from kymata.plot.plotting import expression_plot
-from kymata.io.yml import load_config_parameters
+from kymata.io.yaml import load_config_parameters
 from kymata.gridsearch.plain_gridsearch import do_gridsearch_on_both_hemsipheres
 
 def main():
