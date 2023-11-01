@@ -19,7 +19,7 @@ def expression_plot(
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,  # colour name, function_name → colour name, or list of colour names
-        ylim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[float] = None,
         # I/O args
         save_to: Optional[Path] = None,
 ):
@@ -41,7 +41,7 @@ def expression_plot(
         assert len(color) == len(str)
         color = {f: c for f, c in zip(show_only, color)}
     if ylim is None:
-        ylim = 10 ** -100
+        ylim = 10 ** -150
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -49,11 +49,12 @@ def expression_plot(
         if function not in color:
             color[function] = colors.to_hex(next(cycol))
 
-    bonferroni_corrected_alpha = 1 - (
+    sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
                  * len(expression_set.latencies)
-                 * len(expression_set.hexels))))
+                 * len(expression_set.hexels)
+                 * len(show_only))))
 
     best_functions_lh: DataFrame
     best_functions_rh: DataFrame
@@ -74,7 +75,7 @@ def expression_plot(
         data_left = best_functions_lh[best_functions_lh["function"] == function]
         x_left = data_left["latency"].values * 1000
         y_left = data_left["value"].values
-        left_color = np.where(np.array(y_left) <= bonferroni_corrected_alpha, color[function], 'black')
+        left_color = np.where(np.array(y_left) <= sidak_corrected_alpha, color[function], 'black')
         left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
         left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
@@ -82,7 +83,7 @@ def expression_plot(
         data_right = best_functions_rh[best_functions_rh["function"] == function]
         x_right = data_right["latency"].values * 1000
         y_right = data_right["value"].values
-        right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color[function], 'black')
+        right_color = np.where(np.array(y_right) <= sidak_corrected_alpha, color[function], 'black')
         right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
         right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
 
@@ -94,12 +95,12 @@ def expression_plot(
         plot.set_xlim(-200, 800)
         plot.set_ylim((1, ylim))
         plot.axvline(x=0, color='k', linestyle='dotted')
-        plot.axhline(y=bonferroni_corrected_alpha, color='k', linestyle='dotted')
-        plot.text(-100, bonferroni_corrected_alpha, 'α*',
+        plot.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
+        plot.text(-100, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.text(600, bonferroni_corrected_alpha, 'α*',
+        plot.text(600, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.set_yticks([1, 10 ** -50, 10 ** -100])
+        plot.set_yticks([1, 10 ** -50, 10 ** -100, 10 ** -150])
 
     # format one-off axis qualities
     left_hem_expression_plot.set_title('Function Expression')
@@ -111,7 +112,7 @@ def expression_plot(
                                   verticalalignment='center')
     right_hem_expression_plot.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
                                    verticalalignment='center')
-    y_axis_label = f'p-value (with α at 5-sigma, Bonferroni corrected)'
+    y_axis_label = f'p-value (with α at 5-sigma, Šidák corrected)'
     left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center', rotation='vertical')
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
                                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
