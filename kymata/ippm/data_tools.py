@@ -1,16 +1,16 @@
 import json
-import requests 
-from typing import Tuple, Dict
-from statistics import NormalDist
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import matplotlib.colors
 from itertools import cycle
-import seaborn as sns
+from statistics import NormalDist
+from typing import Tuple, Dict
 
-from kymata.entities.expression import ExpressionSet, _LEFT, _RIGHT, _FUNCTION, _LATENCY
+import matplotlib.colors
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
+import seaborn as sns
+from matplotlib.lines import Line2D
+
+from kymata.entities.expression import ExpressionSet, _FUNCTION, _LATENCY
 
 
 class IPPMHexel(object):
