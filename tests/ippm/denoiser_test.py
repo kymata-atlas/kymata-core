@@ -1,10 +1,11 @@
-import unittest
-import unittest.mock 
-import denoiser
-from data_tools import Hexel
+import unittest.mock
 
 import pandas as pd
 import numpy as np
+
+from kymata.ippm import denoiser
+from kymata.ippm.data_tools import Hexel
+
 
 class TestDenoisingStrategies(unittest.TestCase):
     # Notes: Need to add test as prefix to run tests.

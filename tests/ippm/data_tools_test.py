@@ -1,6 +1,8 @@
-import data_tools
 import unittest
 import unittest.mock as mock
+
+from kymata.ippm import data_tools
+
 
 class TestDataTools(unittest.TestCase):
 

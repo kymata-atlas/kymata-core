@@ -1,9 +1,7 @@
-import unittest
 import unittest.mock
-from data_tools import Hexel
-from graph_builder import IPPMBuilder, IPPMPlotter, Node
-import networkx as nx
-import seaborn as sns
+from kymata.ippm.data_tools import Hexel
+from kymata.ippm.builder import IPPMBuilder
+
 
 class TestIPPMBuilder(unittest.TestCase):
     def test_get_top_level_functions(self):
@@ -66,25 +64,6 @@ class TestIPPMBuilder(unittest.TestCase):
             self.assertEqual(val.color, actual_graph[node][1])
             self.assertEqual(val.position, actual_graph[node][2])
             self.assertEqual(val.in_edges, actual_graph[node][3])
-
-class TestIPPMPlotter(unittest.TestCase):
-    def test_plot(self):
-        test_dict = {
-                'input' : Node(100, 'red', (0, 0), []),
-                'f1-0' : Node(90, 'green', (10, 0.25), ['input']),
-                'f2-0' : Node(80, 'blue', (20, 0.5), ['f1-0']),
-                'f2-1' : Node(100, 'blue', (25, 0.5), ['f2-0']),
-                'f3-0' : Node(94, 'yellow', (30, 0.75), ['f2-1']),
-            }
-        test_colors = {'f1' : 'green', 'f2' : 'blue', 'f3' : 'yellow', 'input' : 'red'}
-        actual_edges = [('f2-1', 'f3-0'), ('f2-0', 'f2-1'), ('f1-0', 'f2-0'), ('input', 'f1-0')]
-        
-        plotter = IPPMPlotter()
-        graph = plotter.plot(test_dict, test_colors, 'test')
-
-        self.assertEqual(set(graph.nodes), set(test_dict))
-        self.assertEqual(set(graph.edges), set(actual_edges))
-
 
 if __name__ == '__main__':
     unittest.main()

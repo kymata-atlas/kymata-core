@@ -1,4 +1,3 @@
-from collections import namedtuple
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
@@ -6,9 +5,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 from scipy.interpolate import splev
 
-
-# convenient tuple/class to hold information about nodes.
-Node = namedtuple('Node', 'magnitude position in_edges')
+from kymata.ippm.builder import Node
 
 
 class IPPMPlotter(object):

@@ -1,15 +1,15 @@
 import json
 import requests 
 from typing import Tuple, Dict
+from statistics import NormalDist
 
-# plotting imports
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from statistics import NormalDist
+import matplotlib.colors
 from itertools import cycle
 import seaborn as sns
-import matplotlib.colors
+
 
 class Hexel(object):
     """
@@ -53,6 +53,7 @@ class Hexel(object):
         else:
             self.right_best_pairings.append(pairing)
 
+
 def fetch_data(api: str) -> Dict[str, Hexel]:
     """
         Fetches data from Kymata API and converts it into a dictionary of function names as keys
@@ -70,6 +71,7 @@ def fetch_data(api: str) -> Dict[str, Hexel]:
     response = requests.get(api)
     resp_dict = json.loads(response.text)
     return build_hexel_dict(resp_dict)
+
 
 def build_hexel_dict(dict_: Dict) -> Dict[str, Hexel]:
     """
@@ -98,17 +100,18 @@ def build_hexel_dict(dict_: Dict) -> Dict[str, Hexel]:
     
     return hexels
 
+
 def stem_plot(
-        hexels: Dict[str, Hexel], 
-        title: str, 
-        timepoints: int=201, 
+        hexels: Dict[str, Hexel],
+        title: str,
+        timepoints: int=201,
         y_limit: float=pow(10, -100),
         number_of_hexels: int=200000,
         figheight: int=7,
         figwidth: int=12,
         ):
     """
-        Plots a stem plot using hexels. 
+        Plots a stem plot using hexels.
 
         Params
         ------
