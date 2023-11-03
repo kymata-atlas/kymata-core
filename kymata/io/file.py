@@ -1,13 +1,13 @@
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TextIO, BinaryIO, Union, Optional
+from typing import TextIO, BinaryIO, Union
 
 file_type = Union[TextIO, BinaryIO]
 path_type = Union[str, Path]
 
 
 @contextmanager
-def open_or_use(path_or_file: path_type | file_type, mode: Optional[str] = None) -> file_type:
+def open_or_use(path_or_file: path_type | file_type, mode: str = "r") -> file_type:
     """
     If passed a path, will open it and return the file handle, and close when done.
     if passed a file handle, will keep it open, and return it when done.
@@ -26,8 +26,8 @@ def open_or_use(path_or_file: path_type | file_type, mode: Optional[str] = None)
     (Thanks to https://stackoverflow.com/a/6783680/2883198)
     """
     if isinstance(path_or_file, str):
-        f = file_to_close = open(path_or_file, mode)
-    elif isinstance(path_or_file, Path):
+        path_or_file = Path(path_or_file)
+    if isinstance(path_or_file, Path):
         f = file_to_close = path_or_file.open(mode)
     else:
         f = path_or_file
