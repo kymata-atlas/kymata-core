@@ -5,7 +5,6 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from io import TextIOWrapper
-from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple
 from warnings import warn
@@ -18,6 +17,7 @@ from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
 from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
+from kymata.io.file import open_or_use, file_type, path_type
 
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
 Latency = float
@@ -191,7 +191,14 @@ class ExpressionSet:
             return False
         return True
 
-    def save(self, to_path: Path | str, overwrite: bool = False):
+    def save(self, to_path_or_file: path_type | file_type, overwrite: bool = False):
+        """
+        Save the ExpressionSet to a specified path or already open file.
+
+        If an open file is supplied, it should be opened in "wb" mode.
+
+        overwrite flag is ignored if open file is supplied.
+        """
 
         # Format versioning of the saved file. Used to (eventually) ensure old saved files can always be loaded.
         #
@@ -209,12 +216,12 @@ class ExpressionSet:
              "The on-disk data format for ExpressionSet is not yet fixed. "
              "Files saved using .save should not (yet) be treated as stable or future-proof.")
 
-        to_path = Path(to_path)
+        if isinstance(to_path_or_file, str):
+            to_path = Path(to_path_or_file)
+        if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
+            raise FileExistsError(to_path_or_file)
 
-        if not overwrite and to_path.exists():
-            raise FileExistsError(to_path)
-
-        with ZipFile(to_path, "w") as zf:
+        with open_or_use(to_path_or_file, mode="wb") as f, ZipFile(f, "w") as zf:
             zf.writestr("_metadata/format-version.txt", _VERSION)
             zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
             zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
@@ -228,9 +235,16 @@ class ExpressionSet:
             zf.writestr("/right/coo-shape.txt", "\n".join(str(x) for x in self.right.data.shape))
 
     @classmethod
-    def load(cls, from_path: PathLike) -> ExpressionSet:
-        from_path = Path(from_path)
-        with ZipFile(from_path, "r") as zf:
+    def load(cls, from_path_or_file: path_type | file_type) -> ExpressionSet:
+        """
+        Load an ExpressionSet from an open file, or the file at the specified path.
+
+        If an open file is supplied, it should be opened in "rb" mode.
+        """
+        if isinstance(from_path_or_file, str):
+            from_path_or_file = Path(from_path_or_file)
+
+        with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
             with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
                 hexels: list[_HexelType] = [_HexelType(h.strip()) for h in f.readlines()]
             with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
