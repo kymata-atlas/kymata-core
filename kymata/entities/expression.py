@@ -8,7 +8,7 @@ from io import TextIOWrapper
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple
 from warnings import warn
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_LZMA
 
 from numpy import int_, float_, str_, array, array_equal, ndarray, frombuffer
 from numpy.typing import NDArray
@@ -191,7 +191,7 @@ class ExpressionSet:
             return False
         return True
 
-    def save(self, to_path_or_file: path_type | file_type, overwrite: bool = False):
+    def save(self, to_path_or_file: path_type | file_type, compression=ZIP_LZMA, overwrite: bool = False):
         """
         Save the ExpressionSet to a specified path or already open file.
 
@@ -221,7 +221,7 @@ class ExpressionSet:
         if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
             raise FileExistsError(to_path_or_file)
 
-        with open_or_use(to_path_or_file, mode="wb") as f, ZipFile(f, "w") as zf:
+        with open_or_use(to_path_or_file, mode="wb") as f, ZipFile(f, "w", compression=compression) as zf:
             zf.writestr("_metadata/format-version.txt", _VERSION)
             zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
             zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
@@ -241,6 +241,7 @@ class ExpressionSet:
 
         If an open file is supplied, it should be opened in "rb" mode.
         """
+
         if isinstance(from_path_or_file, str):
             from_path_or_file = Path(from_path_or_file)
 
