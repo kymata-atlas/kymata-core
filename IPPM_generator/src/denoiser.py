@@ -1,15 +1,14 @@
-import pandas as pd
-import numpy as np
-
-from sklearn.cluster import KMeans as KMeans_, DBSCAN as DBSCAN_, MeanShift as MeanShift_
-from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler
-
-import data_tools
-from data_tools import Hexel
+from copy import deepcopy
 from statistics import NormalDist
 from typing import Dict, List, Tuple
-from copy import deepcopy
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
+from sklearn.mixture import GaussianMixture
+
+from data_tools import Hexel
+
 
 class DenoisingStrategy(object):
     """

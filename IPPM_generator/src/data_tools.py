@@ -1,6 +1,6 @@
 import json
 import requests 
-from typing import List, Tuple, Dict
+from typing import Tuple, Dict
 
 # plotting imports
 import numpy as np

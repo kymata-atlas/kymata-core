@@ -1,14 +1,16 @@
-
-from data_tools import Hexel
-import networkx as nx
-import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from copy import deepcopy
-import numpy as np
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from collections import namedtuple
 from itertools import cycle
+from copy import deepcopy
+
+from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+import numpy as np
+import networkx as nx
+import seaborn as sns
+
+from data_tools import Hexel
+
 
 # convenient tuple/class to hold information about nodes.
 Node = namedtuple('Node', 'magnitude position in_edges')

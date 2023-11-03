@@ -1,21 +1,23 @@
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from scipy.interpolate import splev
-import numpy as np
 from collections import namedtuple
 from typing import Dict, List, Tuple
-import seaborn as sns
+
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+from scipy.interpolate import splev
+
 
 # convenient tuple/class to hold information about nodes.
 Node = namedtuple('Node', 'magnitude position in_edges')
 
+
 class IPPMPlotter(object):
     def draw(self, 
-            graph: Dict[str, Node], 
-            colors: Dict[str, str], 
-            title: str, 
-            figheight: int=5, 
-            figwidth: int=10):
+             graph: Dict[str, Node],
+             colors: Dict[str, str],
+             title: str,
+             figheight: int=5,
+             figwidth: int=10):
         """
             Generates an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 

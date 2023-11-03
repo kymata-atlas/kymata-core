@@ -1,9 +1,11 @@
-
-from data_tools import Hexel
 from copy import deepcopy
-import numpy as np
 from typing import List, Dict
 from collections import namedtuple
+
+import numpy as np
+
+from data_tools import Hexel
+
 
 # convenient tuple/class to hold information about nodes.
 Node = namedtuple('Node', 'magnitude position in_edges')
