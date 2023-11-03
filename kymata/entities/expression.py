@@ -9,7 +9,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple
 from warnings import warn
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_LZMA
 
 from numpy import int_, float_, str_, array, array_equal, ndarray, frombuffer
 from numpy.typing import NDArray
@@ -191,7 +191,7 @@ class ExpressionSet:
             return False
         return True
 
-    def save(self, to_path: Path | str, overwrite: bool = False):
+    def save(self, to_path: Path | str, compression=ZIP_LZMA, overwrite: bool = False):
 
         # Format versioning of the saved file. Used to (eventually) ensure old saved files can always be loaded.
         #
@@ -214,7 +214,7 @@ class ExpressionSet:
         if not overwrite and to_path.exists():
             raise FileExistsError(to_path)
 
-        with ZipFile(to_path, "w") as zf:
+        with ZipFile(to_path, mode="w", compression=compression) as zf:
             zf.writestr("_metadata/format-version.txt", _VERSION)
             zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
             zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
@@ -230,7 +230,7 @@ class ExpressionSet:
     @classmethod
     def load(cls, from_path: PathLike) -> ExpressionSet:
         from_path = Path(from_path)
-        with ZipFile(from_path, "r") as zf:
+        with ZipFile(from_path, mode="r") as zf:
             with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
                 hexels: list[_HexelType] = [_HexelType(h.strip()) for h in f.readlines()]
             with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
