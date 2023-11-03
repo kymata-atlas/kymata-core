@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TextIO, BinaryIO, Union, Optional
 
 file_type = Union[TextIO, BinaryIO]
-path_type = Union[str | Path]
+path_type = Union[str, Path]
 
 
 @contextmanager
