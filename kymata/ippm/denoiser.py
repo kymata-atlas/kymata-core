@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
 
-from .data_tools import Hexel
+from .data_tools import IPPMHexel
 
 
 class DenoisingStrategy(object):
@@ -21,7 +21,7 @@ class DenoisingStrategy(object):
         """
         self._clusterer = None
     
-    def cluster(self, hexels: Dict[str, Hexel], hemi: str) -> Dict[str, Hexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> Dict[str, IPPMHexel]:
         """
             For each function in hemi, it will attempt to construct a dataframe that holds significant spikes (i.e., abova alpha).
             Next, it clusters using self._clusterer. Finally, it locates the minimum (most significant) point for each cluster and saves
@@ -56,7 +56,7 @@ class DenoisingStrategy(object):
             hexels = self._update_pairings(hexels, func, cluster_mins, hemi)
         return hexels
     
-    def _hexels_to_df(self, hexels: Dict[str, Hexel], hemi: str) -> pd.DataFrame:
+    def _hexels_to_df(self, hexels: Dict[str, IPPMHexel], hemi: str) -> pd.DataFrame:
         """
             A generator used to build a dataframe of significant points only. For each call, it returns the dataframe
             for the next function in hexels.keys().
@@ -135,7 +135,7 @@ class DenoisingStrategy(object):
             print('Hemisphere needs to be rightHemisphere or leftHemisphere')
             raise ValueError
     
-    def _update_pairings(self, hexels: Dict[str, Hexel], func: str, denoised: List[Tuple[float, float]], hemi: str) -> Dict[str, Hexel]:
+    def _update_pairings(self, hexels: Dict[str, IPPMHexel], func: str, denoised: List[Tuple[float, float]], hemi: str) -> Dict[str, IPPMHexel]:
         """
             Overwrite the previous pairings with the new denoised version. 
 
@@ -222,7 +222,7 @@ class MaxPooler(DenoisingStrategy):
             print('Bin size needs to be an integer.')
             raise ValueError
 
-    def cluster(self, hexels: Dict[str, Hexel], hemi: str) -> List[Tuple[float, float]]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> List[Tuple[float, float]]:
         """  
             Custom clustering method since it differs from other unsupervised techniques. 
 
@@ -374,7 +374,7 @@ class GMM(DenoisingStrategy):
             raise ValueError
         
 
-    def cluster(self, hexels: Dict[str, Hexel], hemi: str) -> Dict[str, Hexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> Dict[str, IPPMHexel]:
         """
             Overriding the superclass cluster function because we want to perform a grid-search over the number of clusters to locate the optimal one.
             It works similarly to the superclass.cluster method but it performs it multiple times. It stops if the number of data points < number of clusters as
@@ -425,7 +425,8 @@ class GMM(DenoisingStrategy):
             cluster_mins = super()._get_cluster_mins(df)
             hexels = super()._update_pairings(hexels, func, cluster_mins, hemi)
         return hexels
-    
+
+
 class DBSCAN(DenoisingStrategy):
     """
         This approach leverages the algorithm known as Density-based clustering, which focuses on the density of points rather than solely the distance. Intuitively, for each data point, it
@@ -493,7 +494,8 @@ class DBSCAN(DenoisingStrategy):
                                   algorithm=algorithm,
                                   leaf_size=leaf_size,
                                   n_jobs=n_jobs)
-    
+
+
 class MeanShift(DenoisingStrategy):
     """
         The mean shift algorithm is an improved variant of k-means that does not require the number of clusters to be

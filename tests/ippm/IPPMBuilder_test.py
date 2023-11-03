@@ -1,5 +1,5 @@
 import unittest.mock
-from kymata.ippm.data_tools import Hexel
+from kymata.ippm.data_tools import IPPMHexel
 from kymata.ippm.builder import IPPMBuilder
 
 
@@ -18,7 +18,7 @@ class TestIPPMBuilder(unittest.TestCase):
 
 
     def test_sort_by_latency(self):
-        test_hexels = {'f1' : Hexel('f1')}
+        test_hexels = {'f1' : IPPMHexel('f1')}
         test_hexels['f1'].left_best_pairings = [(-12, 43), (143, 2), (46, 23), (21, 21)]
         test_hexels['f1'].right_best_pairings = [(100, 42), (20, 41), (50, 33)]
 
@@ -31,7 +31,7 @@ class TestIPPMBuilder(unittest.TestCase):
 
     def test_build_graph(self):
         test_hexels = {
-                'f1' : Hexel('f1'), 'f2' : Hexel('f2'), 'f3' : Hexel('f3')
+                'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2'), 'f3' : IPPMHexel('f3')
             }
         test_hexels['f1'].right_best_pairings = [(100, 1e-10)]
         test_hexels['f2'].right_best_pairings = [(90, 1e-15)]

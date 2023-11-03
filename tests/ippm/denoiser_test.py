@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from kymata.ippm import denoiser
-from kymata.ippm.data_tools import Hexel
+from kymata.ippm.data_tools import IPPMHexel
 
 
 class TestDenoisingStrategies(unittest.TestCase):
@@ -12,9 +12,9 @@ class TestDenoisingStrategies(unittest.TestCase):
 
     def setUp(self):
         self.test_hexels = {
-                'func1' : Hexel('func1'),
-                'func2' : Hexel('func2'),
-                'func3' : Hexel('func3')
+                'func1' : IPPMHexel('func1'),
+                'func2' : IPPMHexel('func2'),
+                'func3' : IPPMHexel('func3')
         }
         self.test_hexels['func1'].left_best_pairings = [
                 (20, 1e-66), (35, 1e-50)
@@ -257,7 +257,7 @@ class TestDenoisingStrategies(unittest.TestCase):
         self.assertTrue(len(df) == 0)
 
     def test_Should_hexelsToDf_When_validInput(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         test_hexels['f1'].right_best_pairings = [(10, 1e-25), (25, 1e-23)]
         test_hexels['f2'].right_best_pairings = [(50, 1e-10), (55, 1e-44)]
         denoiser_ = denoiser.DenoisingStrategy()
@@ -276,7 +276,7 @@ class TestDenoisingStrategies(unittest.TestCase):
             i += 1
         
     def test_Should_hexelsToDf_When_leftHemisphere(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         test_hexels['f1'].left_best_pairings = [(10, 1e-25), (25, 1e-23)]
         test_hexels['f2'].left_best_pairings = [(50, 1e-10), (55, 1e-44)]
         denoiser_ = denoiser.DenoisingStrategy()
@@ -295,13 +295,13 @@ class TestDenoisingStrategies(unittest.TestCase):
             i += 1
 
     def test_Should_hexelsToDf_When_emptyInput(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         denoiser_ = denoiser.DenoisingStrategy()
         for _, df in denoiser_._hexels_to_df(test_hexels, 'leftHemisphere'):
             self.assertTrue(len(df) == 0)
 
     def test_Should_updatePairings_When_validInput(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         test_hexels['f1'].right_best_pairings = [(10, 1e-20), (15, 1e-2)]
         test_hexels['f2'].right_best_pairings = [(200, 1e-1), (250, 1e-50)]
         denoised = [(10, 1e-20)]
@@ -311,7 +311,7 @@ class TestDenoisingStrategies(unittest.TestCase):
         self.assertEqual(hexels['f2'].right_best_pairings, [(200, 1e-1), (250, 1e-50)])
 
     def test_Should_updatePairings_When_leftHemisphere(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         test_hexels['f1'].left_best_pairings = [(10, 1e-20), (15, 1e-2)]
         test_hexels['f2'].left_best_pairings = [(200, 1e-1), (250, 1e-50)]
         denoised = [(10, 1e-20)]
@@ -336,7 +336,7 @@ class TestDenoisingStrategies(unittest.TestCase):
         self.assertEqual(denoised['func3'].right_best_pairings, [])
 
     def test_Should_maxPoolerCluster_When_emptyInput(self):
-        test_hexels = {'f1' : Hexel('f1'), 'f2' : Hexel('f2')}
+        test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
         test_hexels['f1'].right_best_pairings = []
         test_hexels['f2'].right_best_pairings = []
 
@@ -380,7 +380,7 @@ class TestDenoisingStrategies(unittest.TestCase):
 
     def test_Should_gmmCluster_When_singleDataPoint(self):
         np.random.seed(0)
-        test_hexels = {'f1' : Hexel('f1')}
+        test_hexels = {'f1' : IPPMHexel('f1')}
         test_hexels['f1'].right_best_pairings = [(10, 1e-20)]
         clusterer = denoiser.GMM()
         denoised = clusterer.cluster(test_hexels, 'rightHemisphere')
