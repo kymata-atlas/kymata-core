@@ -4,7 +4,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from data_tools import Hexel
+from .data_tools import Hexel
 
 
 # convenient tuple/class to hold information about nodes.

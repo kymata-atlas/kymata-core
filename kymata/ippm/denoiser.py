@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
 
-from data_tools import Hexel
+from .data_tools import Hexel
 
 
 class DenoisingStrategy(object):

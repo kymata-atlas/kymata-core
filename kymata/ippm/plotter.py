@@ -5,7 +5,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 from scipy.interpolate import splev
 
-from kymata.ippm.builder import Node
+from .builder import Node
 
 
 class IPPMPlotter(object):
