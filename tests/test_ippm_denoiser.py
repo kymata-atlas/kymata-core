@@ -5,6 +5,8 @@ from math import isclose
 import pandas as pd
 import numpy as np
 
+from copy import deepcopy
+
 from kymata.ippm import denoiser
 from kymata.ippm.data_tools import IPPMHexel
 
@@ -307,29 +309,33 @@ def test_Should_updatePairings_When_leftHemisphere():
 def test_Should_filterSpikes_When_validInput():
     clusterer = denoiser.DenoisingStrategy()
     df = pd.DataFrame(columns=['Latency', 'Mag'])
-    df = clusterer._filter_spikes(self_test_hexels['func2'].left_best_pairings, df, alpha=3e-15)
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    df = clusterer._filter_spikes(self_test_hexels2['func2'].left_best_pairings, df, alpha=3e-15)
     assert df.iloc[0, 0] == 25
     assert df.iloc[0, 1] == 1e-56
     assert df.iloc[1, 0] == 75
     assert df.iloc[1, 1] == 1e-80
 
 def test_Should_filterSpikes_When_emptyInput():
-    self_test_hexels['func1'].right_best_pairings = []
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    self_test_hexels2['func1'].right_best_pairings = []
     clusterer = denoiser.DenoisingStrategy()
     df = pd.DataFrame(columns=['Latency', 'Mag'])
-    df = clusterer._filter_spikes(self_test_hexels['func1'].right_best_pairings, df, alpha=3e-15)
+    df = clusterer._filter_spikes(self_test_hexels2['func1'].right_best_pairings, df, alpha=3e-15)
     assert len(df) == 0
 
 def test_Should_filterSpikes_When_noSignificantSpikes():
+    self_test_hexels2 = deepcopy(self_test_hexels)
     clusterer = denoiser.DenoisingStrategy()
     df = pd.DataFrame(columns=['Latency', 'Mag'])
     # increase alpha so all are insignificant.
-    df = clusterer._filter_spikes(self_test_hexels['func2'].left_best_pairings, df, alpha=3e-100)
+    df = clusterer._filter_spikes(self_test_hexels2['func2'].left_best_pairings, df, alpha=3e-100)
     assert len(df) == 0
 
 def test_Should_maxPoolerCluster_When_validInput():
     pooler = denoiser.MaxPooler(bin_sz=50, threshold=1)
-    denoised = pooler.cluster(self_test_hexels, 'rightHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = pooler.cluster(self_test_hexels2, 'rightHemisphere')
     assert denoised['func1'].right_best_pairings == [(23, 1e-75), (66, 1e-50)]
     assert denoised['func2'].right_best_pairings == [(45, 1e-60), (75, 1e-55)]
     assert denoised['func3'].right_best_pairings == [(120, 1e-90)]
@@ -337,7 +343,8 @@ def test_Should_maxPoolerCluster_When_validInput():
 def test_Should_maxPoolerCluster_When_noSignificantBins():
     # all bins < threshold for significance.
     pooler = denoiser.MaxPooler(bin_sz=50)
-    denoised = pooler.cluster(self_test_hexels, 'rightHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = pooler.cluster(self_test_hexels2, 'rightHemisphere')
     assert denoised['func1'].right_best_pairings == []
     assert denoised['func2'].right_best_pairings == []
     assert denoised['func3'].right_best_pairings == []
@@ -350,11 +357,12 @@ def test_Should_gmmCluster_When_validInputRightHemisphere():
     """
     np.random.seed(0)  # for reproducibility of ML algorithms
     clusterer = denoiser.GMM()
-    denoised = clusterer.cluster(self_test_hexels, 'rightHemisphere')
-    f2_expected = self_test_hexels['func2'].right_best_pairings
-    assert denoised['func1'].right_best_pairings == self_test_hexels['func1'].right_best_pairings
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'rightHemisphere')
+    f2_expected = self_test_hexels2['func2'].right_best_pairings
+    assert denoised['func1'].right_best_pairings == self_test_hexels2['func1'].right_best_pairings
     assert denoised['func2'].right_best_pairings == f2_expected
-    assert denoised['func3'].right_best_pairings == self_test_hexels['func3'].right_best_pairings
+    assert denoised['func3'].right_best_pairings == self_test_hexels2['func3'].right_best_pairings
 
 def test_Should_gmmCluster_When_validInputLeftHemisphere():
     """
@@ -366,19 +374,21 @@ def test_Should_gmmCluster_When_validInputLeftHemisphere():
     """
     np.random.seed(0)  # for reproducibility of ML algorithms
     clusterer = denoiser.GMM()
-    denoised = clusterer.cluster(self_test_hexels, 'leftHemisphere')
-    f2_expected = self_test_hexels['func2'].left_best_pairings
-    f3_expected = self_test_hexels['func3'].left_best_pairings
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'leftHemisphere')
+    f2_expected = self_test_hexels2['func2'].left_best_pairings
+    f3_expected = self_test_hexels2['func3'].left_best_pairings
     f2_expected.remove((10, 0.01))
     f3_expected.remove((130, 0.001))
-    assert denoised['func1'].left_best_pairings == self_test_hexels['func1'].left_best_pairings
-    assert denoised['func2'].left_best_pairings == self_test_hexels['func2'].left_best_pairings
-    assert denoised['func3'].left_best_pairings == self_test_hexels['func3'].left_best_pairings
+    assert denoised['func1'].left_best_pairings == self_test_hexels2['func1'].left_best_pairings
+    assert denoised['func2'].left_best_pairings == self_test_hexels2['func2'].left_best_pairings
+    assert denoised['func3'].left_best_pairings == self_test_hexels2['func3'].left_best_pairings
 
 def test_Should_dbscanCluster_When_validInputRightHemi():
     np.random.seed(0)
     clusterer = denoiser.DBSCAN()
-    denoised = clusterer.cluster(self_test_hexels, 'rightHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'rightHemisphere')
     assert [] == denoised['func1'].right_best_pairings
     assert [(75, 1e-55)] == denoised['func2'].right_best_pairings
     assert [(120, 1e-90)] == denoised['func3'].right_best_pairings
@@ -391,7 +401,8 @@ def test_Should_dbscanCluster_When_validInputLeftHemi():
     """
     np.random.seed(0)
     clusterer = denoiser.DBSCAN()
-    denoised = clusterer.cluster(self_test_hexels, 'leftHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'leftHemisphere')
     assert [] == denoised['func1'].left_best_pairings
     assert [] == denoised['func2'].left_best_pairings
     assert [] == denoised['func3'].left_best_pairings
@@ -399,7 +410,8 @@ def test_Should_dbscanCluster_When_validInputLeftHemi():
 def test_Should_meanShiftCluster_When_validInputRightHemi():
     np.random.seed(0)
     clusterer = denoiser.MeanShift()
-    denoised = clusterer.cluster(self_test_hexels, 'rightHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'rightHemisphere')
     assert self_test_hexels['func1'].right_best_pairings == denoised['func1'].right_best_pairings
     assert self_test_hexels['func2'].right_best_pairings == denoised['func2'].right_best_pairings
     assert self_test_hexels['func3'].right_best_pairings == denoised['func3'].right_best_pairings
@@ -407,7 +419,8 @@ def test_Should_meanShiftCluster_When_validInputRightHemi():
 def test_Should_meanShiftCluster_When_validInputLeftHemi():
     np.random.seed(0)
     clusterer = denoiser.MeanShift()
-    denoised = clusterer.cluster(self_test_hexels, 'leftHemisphere')
+    self_test_hexels2 = deepcopy(self_test_hexels)
+    denoised = clusterer.cluster(self_test_hexels2, 'leftHemisphere')
     f2_expected = self_test_hexels['func2'].left_best_pairings
     f3_expected = self_test_hexels['func3'].left_best_pairings
     f2_expected.remove((10, 0.01))
