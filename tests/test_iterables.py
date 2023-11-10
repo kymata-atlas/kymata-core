@@ -23,3 +23,12 @@ def test_one_thing_is_equal():
 def test_nothing_is_equal():
     assert all_equal([])
 
+
+def test_list_of_arrays_is_equal():
+    from numpy import array
+    assert all_equal([
+        array([0, 0]),
+        array([0, 0]),
+        array([0, 0]),
+        array([0, 0]),
+    ])

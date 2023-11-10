@@ -54,20 +54,20 @@ def _load_matlab_validate(all_mats: tuple[dict, ...]) -> None:
     assert len(all_mats) in {2, 4}
 
     # All the same function
-    assert all_equal(_base_function_name(mat["functionname"]) for mat in all_mats)
+    assert all_equal([_base_function_name(mat["functionname"]) for mat in all_mats])
     # Timing information is the same
-    assert all_equal(mat["latency_step"]               for mat in all_mats)
-    assert all_equal(len(mat["latencies"])             for mat in all_mats)
-    assert all_equal(mat["nTimePoints"]                for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["tmin"]          for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["tstep"]         for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["data"].shape[0] for mat in all_mats)
+    assert all_equal([mat["latency_step"]               for mat in all_mats])
+    assert all_equal([len(mat["latencies"])             for mat in all_mats])
+    assert all_equal([mat["nTimePoints"]                for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["tmin"]          for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["tstep"]         for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["data"].shape[0] for mat in all_mats])
 
     assert all_mats[0]["outputSTC"]["data"].shape[0] == all_mats[0]["nTimePoints"]
     # Spatial information is the same
-    assert all_equal(mat["nVertices"]                       for mat in all_mats)
-    assert all_equal(len(mat["outputSTC"]["vertices"])      for mat in all_mats)
-    assert all_equal(mat["outputSTC"]["data"].shape[1]      for mat in all_mats)
+    assert all_equal([mat["nVertices"]                       for mat in all_mats])
+    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["data"].shape[1]      for mat in all_mats])
     assert all_mats[0]["outputSTC"]["data"].shape[1] == all_mats[0]["nVertices"]
 
 

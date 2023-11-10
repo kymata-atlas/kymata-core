@@ -2,10 +2,33 @@
 Functions for dealing with iterables.
 """
 
-from typing import Iterable
+from itertools import groupby
+from typing import Sequence
+
+from numpy import ndarray
 
 
-def all_equal(iterable: Iterable) -> bool:
+def all_equal(sequence: Sequence) -> bool:
     """All entries in Iterable are the same."""
-    # Use `<= 1` here instead of `== 1` because we want the predicate to evaluate to true on an empty iterable.
-    return len(set(iterable)) <= 1
+    if len(sequence) == 0:
+        # universal quantification over empty set is always true
+        return True
+    elif len(sequence) == 1:
+        # One item is equal to itself
+        return True
+    elif isinstance(sequence[0], ndarray):
+        # numpy arrays deal with equality weirdly
+
+        # Check first two items are equal, and equal to the rest
+        first: ndarray = sequence[0]
+        if not isinstance(sequence[1], ndarray):
+            return False
+        second: ndarray = sequence[1]
+        try:
+            # noinspection PyUnresolvedReferences
+            return (first == second).all() and all_equal(sequence[1:])
+        except AttributeError:
+            return False
+    else:
+        g = groupby(sequence)
+        return next(g, True) and not next(g, False)
