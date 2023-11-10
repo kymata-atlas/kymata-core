@@ -3,6 +3,7 @@ from os import getenv, getcwd, remove, rmdir
 from pathlib import Path
 from typing import Optional
 from urllib import request
+from warnings import warn
 
 from kymata.io.file import path_type
 
@@ -82,6 +83,13 @@ def data_root_path(data_root: Optional[path_type] = None) -> Path:
                 data_root = here
             else:
                 raise FileNotFoundError("Failed to create data root directory")
+
+        # Data root location has been derived, rather than prespecified, so feed that back to the user to avoid a
+        # different location somehow being derived next time
+        warn(f"Data root set at {str(data_root)}.")
+        warn(f"Consider setting this as environmental variable {_DATA_PATH_ENVIRONMENT_VAR_NAME} to ensure it's reused"
+             f" next time.")
+        warn(f"Hint: $> {_DATA_PATH_ENVIRONMENT_VAR_NAME}=\"{str(data_root)}\"")
         return data_root
 
 
