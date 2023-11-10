@@ -2,10 +2,12 @@
 Functions for dealing with iterables.
 """
 
+from itertools import groupby
 from typing import Iterable
 
 
 def all_equal(iterable: Iterable) -> bool:
     """All entries in Iterable are the same."""
-    # Use `<= 1` here instead of `== 1` because we want the predicate to evaluate to true on an empty iterable.
-    return len(set(iterable)) <= 1
+    # Thanks https://stackoverflow.com/a/3844832/2883198
+    g = groupby(iterable)
+    return next(g, True) and not next(g, False)
