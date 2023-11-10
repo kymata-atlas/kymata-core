@@ -107,14 +107,50 @@ def _download_dataset(local_dataset):
             request.urlretrieve(remote, local)
 
 
-def get_kymata_mirror_q3_2023(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
+def get_dataset_kymata_mirror_q3_2023(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
     name = "kymata_mirror_Q3_2023"
 
     local_dataset = SampleDataset(
         name=name,
         path=Path(data_root_path(data_root=data_root), name),
-        filenames=["kymata_mirror_Q3_2023_expression_endtable.nkg"],
-        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/"
+        filenames=[
+            "kymata_mirror_Q3_2023_expression_endtable.nkg",
+        ],
+        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+    )
+    if download:
+        local_dataset.download()
+    return local_dataset
+
+
+def get_dataset_gm_loudness(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
+    name = "GMLoudness"
+
+    local_dataset = SampleDataset(
+        name=name,
+        path=Path(data_root_path(data_root=data_root), name),
+        filenames=[
+            "GMLoudness_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
+            "GMLoudness_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
+        ],
+        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+    )
+    if download:
+        local_dataset.download()
+    return local_dataset
+
+
+def get_dataset_d_ins_loudness_tonop_chan1(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
+    name = "GMLoudness"
+
+    local_dataset = SampleDataset(
+        name=name,
+        path=Path(data_root_path(data_root=data_root), name),
+        filenames=[
+            "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
+            "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
+        ],
+        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
     )
     if download:
         local_dataset.download()
