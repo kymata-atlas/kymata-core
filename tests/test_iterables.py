@@ -29,4 +29,6 @@ def test_list_of_arrays_is_equal():
     assert all_equal([
         array([0, 0]),
         array([0, 0]),
-   ])
+        array([0, 0]),
+        array([0, 0]),
+    ])
