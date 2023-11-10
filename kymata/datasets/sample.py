@@ -3,7 +3,6 @@ from os import getenv, getcwd, remove, rmdir
 from pathlib import Path
 from typing import Optional
 from urllib import request
-from warnings import warn
 
 from kymata.io.file import path_type
 
@@ -51,9 +50,9 @@ def data_root_path(data_root: Optional[path_type] = None) -> Path:
             data_root = Path(data_root)
         # Data root specified
         if not data_root.exists():
-            raise FileNotFoundError("data_root specified but does not exist")
+            raise FileNotFoundError(f"data_root {str(data_root)} specified but does not exist")
         if not data_root.is_dir():
-            raise NotADirectoryError("Please specify a directory")
+            raise NotADirectoryError(f"Please specify a directory ({str(data_root)} is not a directory)")
 
         return data_root
 
@@ -86,10 +85,10 @@ def data_root_path(data_root: Optional[path_type] = None) -> Path:
 
         # Data root location has been derived, rather than prespecified, so feed that back to the user to avoid a
         # different location somehow being derived next time
-        warn(f"Data root set at {str(data_root)}.")
-        warn(f"Consider setting this as environmental variable {_DATA_PATH_ENVIRONMENT_VAR_NAME} to ensure it's reused"
-             f" next time.")
-        warn(f"Hint: $> {_DATA_PATH_ENVIRONMENT_VAR_NAME}=\"{str(data_root)}\"")
+        print(f"Data root set at {str(data_root)}.")
+        print(f"Consider setting this as environmental variable {_DATA_PATH_ENVIRONMENT_VAR_NAME} to ensure it's reused"
+              f" next time.")
+        print(f"Hint: $> {_DATA_PATH_ENVIRONMENT_VAR_NAME}=\"{str(data_root)}\"")
         return data_root
 
 
