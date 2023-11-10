@@ -101,8 +101,11 @@ def _download_dataset(local_dataset):
     for filename in local_dataset.filenames:
         remote = local_dataset.remote_root + "/" + filename
         local = Path(local_dataset.path, filename)
-        print(f"Downloading {remote} to {local}")
-        request.urlretrieve(remote, local)
+        if local.exists():
+            print(f"Local file already exists: {local}")
+        else:
+            print(f"Downloading {remote} to {local}")
+            request.urlretrieve(remote, local)
 
 
 def get_kymata_mirror_q3_2023(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
@@ -114,7 +117,7 @@ def get_kymata_mirror_q3_2023(download: bool = True, data_root: Optional[path_ty
         filenames=["kymata_mirror_Q3_2023_expression_endtable.nkg"],
         remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/"
     )
-    if download and not local_dataset.path.exists():
+    if download:
         local_dataset.download()
     return local_dataset
 
