@@ -92,7 +92,7 @@ def build_hexel_dict_from_expression_set(expression_set: ExpressionSet) -> Dict[
     hexels = {}
     for hemi in ['leftHemisphere', 'rightHemisphere']:
         best_functions = best_functions_left if hemi == "leftHemisphere" else best_functions_right
-        for _i, row in best_functions.iterrows():
+        for _idx, row in best_functions.iterrows():
             func = row[_FUNCTION]
             latency = row[_LATENCY] * 1000  # convert to ms
             pval = row["value"]
