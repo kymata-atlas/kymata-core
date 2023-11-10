@@ -100,7 +100,7 @@ def expression_plot(
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         plot.text(600, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.set_yticks([1, 10 ** -50, 10 ** -100, 10 ** -150])
+        plot.set_yticks(np.geomspace(start=1, stop=ylim, num=4))
 
     # format one-off axis qualities
     left_hem_expression_plot.set_title('Function Expression')
