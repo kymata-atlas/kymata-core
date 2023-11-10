@@ -141,7 +141,7 @@ def get_dataset_gm_loudness(download: bool = True, data_root: Optional[path_type
 
 
 def get_dataset_d_ins_loudness_tonop_chan1(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
-    name = "GMLoudness"
+    name = "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1"
 
     local_dataset = SampleDataset(
         name=name,
