@@ -13,6 +13,10 @@ from seaborn import color_palette
 from kymata.entities.expression import ExpressionSet
 
 
+# 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
+_OOM_SIZE = 50
+
+
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
@@ -158,18 +162,18 @@ def _get_best_xlims(xlims, data_x_min, data_x_max):
 
 
 def _get_best_ylim(ylim: float | None, data_y_min):
-    default_y_min = 10 ** -50
+    default_y_min = 10 ** (-1 * _OOM_SIZE)
     if ylim is not None:
         return ylim
     ylim = min(default_y_min, data_y_min)
     # Round to nearest order of magnitude
-    order_of_magnitude = np.floor(np.log10(ylim) / 50) * 50
+    order_of_magnitude = np.floor(np.log10(ylim) / _OOM_SIZE) * _OOM_SIZE
     ylim = 10 ** order_of_magnitude
     return ylim
 
 
 def _get_yticks(ylim_oom):
-    order_of_magnitude = int(np.floor(np.log10(ylim_oom) / 50)) * -1
+    order_of_magnitude = int(np.floor(np.log10(ylim_oom) / _OOM_SIZE)) * -1
     return np.geomspace(start=1, stop=ylim_oom, num=order_of_magnitude + 1)
 
 
