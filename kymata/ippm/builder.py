@@ -1,12 +1,15 @@
-
-from data_tools import Hexel
 from copy import deepcopy
-import numpy as np
 from typing import List, Dict
 from collections import namedtuple
 
+import numpy as np
+
+from .data_tools import IPPMHexel
+
+
 # convenient tuple/class to hold information about nodes.
 Node = namedtuple('Node', 'magnitude position in_edges')
+
 
 class IPPMBuilder(object):
     """
@@ -15,9 +18,9 @@ class IPPMBuilder(object):
     """
 
     def build_graph(self,
-                    hexels: Dict[str, Hexel], 
-                    function_hier : Dict[str, List[str]], 
-                    inputs : List[str], 
+                    hexels: Dict[str, IPPMHexel],
+                    function_hier : Dict[str, List[str]],
+                    inputs : List[str],
                     hemi : str) -> Dict[str, Node]:
         """
             Builds a dictionary of nodes and information about the node. The information
@@ -111,7 +114,7 @@ class IPPMBuilder(object):
         children_funcs = [f for children in edges.values() for f in children]
         return set(funcs_leftover).difference(set(children_funcs))
 
-    def _sort_by_latency(self, hexels: Dict[str, Hexel], hemi: str):
+    def _sort_by_latency(self, hexels: Dict[str, IPPMHexel], hemi: str):
         """
             Sort pairings by latency in increasing order inplace.
 

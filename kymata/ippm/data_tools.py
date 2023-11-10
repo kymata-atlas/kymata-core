@@ -1,17 +1,19 @@
 import json
-import requests 
-from typing import List, Tuple, Dict
-
-# plotting imports
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from statistics import NormalDist
 from itertools import cycle
-import seaborn as sns
-import matplotlib.colors
+from statistics import NormalDist
+from typing import Tuple, Dict
 
-class Hexel(object):
+import matplotlib.colors
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
+import seaborn as sns
+from matplotlib.lines import Line2D
+
+from kymata.entities.expression import ExpressionSet, _FUNCTION, _LATENCY
+
+
+class IPPMHexel(object):
     """
         Container to hold data about a hexel spike.
         
@@ -53,7 +55,8 @@ class Hexel(object):
         else:
             self.right_best_pairings.append(pairing)
 
-def fetch_data(api: str) -> Dict[str, Hexel]:
+
+def fetch_data(api: str) -> Dict[str, IPPMHexel]:
     """
         Fetches data from Kymata API and converts it into a dictionary of function names as keys
         and hexel objects as values. Advantage of dict is O(1) look-up and hexel object is readable
@@ -69,9 +72,37 @@ def fetch_data(api: str) -> Dict[str, Hexel]:
     """
     response = requests.get(api)
     resp_dict = json.loads(response.text)
-    return build_hexel_dict(resp_dict)
+    return build_hexel_dict_from_api_response(resp_dict)
 
-def build_hexel_dict(dict_: Dict) -> Dict[str, Hexel]:
+
+def build_hexel_dict_from_expression_set(expression_set: ExpressionSet) -> Dict[str, IPPMHexel]:
+    """
+        Builds the dictionary from an ExpressionSet. This function builds a new dictionary
+        which has function names (fast look-up) and only necessary data.
+
+        Params
+        ------
+            dict_ : JSON dictionary of HTTP GET response object.
+
+        Returns
+        -------
+            Dict of the format [function name, Hexel(func_name, id, left_pairings, right_pairings)]
+    """
+    best_functions_left, best_functions_right = expression_set.best_functions()
+    hexels = {}
+    for hemi in ['leftHemisphere', 'rightHemisphere']:
+        best_functions = best_functions_left if hemi == "leftHemisphere" else best_functions_right
+        for _idx, row in best_functions.iterrows():
+            func = row[_FUNCTION]
+            latency = row[_LATENCY] * 1000  # convert to ms
+            pval = row["value"]
+            if not func in hexels:
+                hexels[func] = IPPMHexel(func)
+            hexels[func].add_pairing(hemi, (latency, pval))
+    return hexels
+
+
+def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
     """
         Builds the dictionary from response dictionary. Response dictionary has unneccesary 
         keys and does not have function names as keys. This function builds a new dictionary
@@ -92,23 +123,24 @@ def build_hexel_dict(dict_: Dict) -> Dict[str, Hexel]:
             # discard id as it conveys no useful information
             if not func in hexels:
                 # first time seeing function, so create key and hexel object.
-                hexels[func] = Hexel(func)
+                hexels[func] = IPPMHexel(func)
             
             hexels[func].add_pairing(hemi, (latency, pow(10, pval)))
     
     return hexels
 
+
 def stem_plot(
-        hexels: Dict[str, Hexel], 
-        title: str, 
-        timepoints: int=201, 
+        hexels: Dict[str, IPPMHexel],
+        title: str,
+        timepoints: int=201,
         y_limit: float=pow(10, -100),
         number_of_hexels: int=200000,
         figheight: int=7,
         figwidth: int=12,
         ):
     """
-        Plots a stem plot using hexels. 
+        Plots a stem plot using hexels.
 
         Params
         ------

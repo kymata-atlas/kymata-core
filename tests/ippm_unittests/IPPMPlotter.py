@@ -1,8 +1,7 @@
-import unittest
 import unittest.mock
-from data_tools import Hexel
 import numpy as np
-from IPPMPlotter import IPPMPlotter
+from kymata.ippm.plotter import IPPMPlotter
+
 
 class TestIPPMPlotter(unittest.TestCase):
 
