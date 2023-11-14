@@ -26,6 +26,7 @@ repetitions_per_runs: 2              # number of repetitions per run
 number_of_trials: 400                # number of trials
 
 # Preprocessing pipeline
+EMEG_machine_used_to_record_data: 'vectorview'
 skip_maxfilter_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
 remove_ECG: True

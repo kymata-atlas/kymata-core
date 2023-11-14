@@ -2,8 +2,9 @@
 # Config file for Kymata Dataset 4.00
 
 list_of_participants: [
-                        "participant_04"
+                        "participant_01"
                         ]
+
 
 input_streams: [
                     "auditory"
@@ -13,6 +14,7 @@ repetitions_per_runs: 2              # number of repetitions per run
 number_of_trials: 400                # number of trials
 
 # Preprocessing pipeline
+EMEG_machine_used_to_record_data: 'triux'
 skip_maxfilter_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
 remove_ECG: True

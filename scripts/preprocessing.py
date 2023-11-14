@@ -5,6 +5,7 @@ import mne
 import os.path
 import seaborn as sns
 import numpy as np
+import pandas as pd
 
 import utils
 
@@ -12,6 +13,7 @@ import utils
 def run_preprocessing(config: dict):
     list_of_participants = config['list_of_participants']
     number_of_runs = config['number_of_runs']
+    EMEG_machine_used_to_record_data = config['EMEG_machine_used_to_record_data']
     remove_ECG = config['remove_ECG']
     skip_maxfilter_if_previous_runs_exist = config['skip_maxfilter_if_previous_runs_exist']
     remove_VEOH_and_HEOG = config['remove_VEOH_and_HEOG']
@@ -39,8 +41,6 @@ def run_preprocessing(config: dict):
 
             else:
                 raw_fif_data = mne.io.Raw("data/raw/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
-                head_pos_data = mne.chpi.read_head_pos(
-                    "data/raw/" + participant + "_run" + str(run) + '_raw_hpi_movecomp.pos')
 
                 # Rename any channels that require it, and their type
                 recording_config = utils.load_recording_config('data/raw/' + participant + '_recording_config.yaml')
@@ -59,15 +59,11 @@ def run_preprocessing(config: dict):
                     ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
                 raw_fif_data.rename_channels(ecg_and_eog_channel_name_overwrites, allow_duplicates=False)
 
-                # Set bad channels (manual and automatic)
+                # Set bad channels (manually)
                 print(f"{Fore.GREEN}{Style.BRIGHT}   Setting bad channels...{Style.RESET_ALL}")
                 print(f"{Fore.GREEN}{Style.BRIGHT}   ...manual{Style.RESET_ALL}")
 
                 raw_fif_data.info['bads'] = recording_config['bad_channels']
-
-                if automatic_bad_channel_detection_requested:
-                    print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
-                    raw_fif_data = apply_automatic_bad_channel_detection()
 
                 response = input(
                     f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? Recommended if you want to confirm"
@@ -79,30 +75,41 @@ def run_preprocessing(config: dict):
                 else:
                     print(f"...assuming you want to continue without looking at the raw data.")
 
-                # # Get the head positions
-                # todo - compare with maxfilter version
-                # chpi_picks = mne.pick_types(raw_fif_data.info, meg=False, chpi=True)
-                # assert len(chpi_picks) == 9
-                # head_pos, t = raw_fif_data[chpi_picks]
-                # # Add first_samp.
-                # t = t + raw_fif_data.first_samp / raw_fif_data.info['sfreq']
-                # # The head positions in the FIF file are all zero for invalid positions
-                # # so let's remove them, and then concatenate our times.
-                # mask = (head_pos != 0).any(axis=0)
-                # head_pos = np.concatenate((t[np.newaxis], head_pos)).T[mask]
+                # Get the head positions
+                chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
+                chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
+                head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
 
-                # Apply SSS and movement compensation
-                print(f"{Fore.GREEN}{Style.BRIGHT}   Remove CHPI and Mainline ...{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}{Style.BRIGHT}   Removing CHPI ...{Style.RESET_ALL}")
 
-                # todo confirm this is the same as maxfilter
-                # mne.chpi.filter_chpi()
+                # Remove hpi & line
+                raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
+
+                print(
+                    f"{Fore.GREEN}{Style.BRIGHT}   Removing mains component (50Hz and harmonics) from MEG & EEG...{Style.RESET_ALL}")
+
+                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+
+                # note that EEG and MEG do not have the same frequencies, so we remove them seperately
+                meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
+                meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
+                raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+
+                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+
+                if automatic_bad_channel_detection_requested:
+                    print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
+                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, EMEG_machine_used_to_record_data)
 
                 # Apply SSS and movement compensation
                 print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
 
-                # todo - choose when you are recording in the config (i.e post 2020)
-                fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
-                crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
+                fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal_' + EMEG_machine_used_to_record_data + '.dat'
+                crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse_' + EMEG_machine_used_to_record_data + '.fif'
 
                 mne.viz.plot_head_positions(
                     head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
@@ -127,23 +134,6 @@ def run_preprocessing(config: dict):
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
             else:
                 print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
-
-            # Remove AC mainline from MEG
-
-            print(
-                f"{Fore.GREEN}{Style.BRIGHT}   Removing mains component (50Hz and harmonics) from MEG...{Style.RESET_ALL}")
-
-            raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
-
-            # note that EEG and MEG do not have the same frequencies, so we remove them seperately
-            meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
-            meg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 293, 307, 314, 321,
-                         328)  # 293, 307, 314, 321, 328 are HPI coil frequencies
-            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
-
-            eeg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, eeg=True)
-            eeg_freqs = (50, 150, 250, 300, 350, 400, 450, 293, 307, 314, 321, 328)
-            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
             # EEG channel interpolation
             print(f"{Fore.GREEN}{Style.BRIGHT}   Interpolating EEG...{Style.RESET_ALL}")
@@ -403,13 +393,12 @@ def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
     ax3d.view_init(azim=70, elev=15)
 
-
-def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw):
+def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, EMEG_machine_used_to_record_data: str):
     '''Apply Automatic Bad Channel Detection'''
     raw_check = raw_fif_data.copy()
 
-    fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal.dat'
-    crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse.fif'
+    fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal' + EMEG_machine_used_to_record_data + '.dat'
+    crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse' + EMEG_machine_used_to_record_data + '.fif'
 
     auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(
         raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
