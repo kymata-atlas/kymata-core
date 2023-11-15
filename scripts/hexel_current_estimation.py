@@ -1,32 +1,66 @@
 import mne
-import surfa
 
 def create_current_estimation_prerequisites():
 
-    # Create the boudary element model, the forward model and inverse solution
+    # Copy the structurals to the local Kymata folder,
+    # create the surfaces, the boundary element model solutions, and the source space
 
-    set location in the Kymata Project directory where the converted MRI structurals will reside
-    load in fsaverage mesh # this is the mesh we will use
-    load in fsaverage labels # this is the labels we will use, the aparc.DKTatlas40
+    # <--------------------Command Line-------------------------->
 
+    # Set location in the Kymata Project directory
+    # where the converted MRI structurals will reside, and create the folder structure
+    $ freesurfer_6.0.0
+    $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4-english-narratives/raw_mri_structurals/
+    for all participants:
+        $ mksubjdirs participant_01 # note - this appears to ignore SUBJECTS_DIR and uses the folder you are in.
+
+    # Load the fsaverage mesh
+    $ cp -r $FREESURFER_HOME/subjects/fsaverage $SUBJECTS_DIR/fsaverage
+
+    # todo - we were using the "aparc.DKTatlas40" atlas - is this the same as the Desikan-Killiany Atlas
+    # (?h.aparc.annot)? https://surfer.nmr.mgh.harvard.edu/fswiki/CorticalParcellation. And if so, do we
+    # need to add it to the fsaverage folder for fsaverage? (I don't think it is used here, although we do
+    # use it in Kymata web. If so, remove this section). i.e.
+    #$ cp $FREESURFER_HOME/average/rh.DKTatlas40.gcs  $SUBJECTS_DIR/fsaverage/rh.DKTatlas40.gcs
+    #$ cp $FREESURFER_HOME/average/lh.DKTatlas40.gcs  $SUBJECTS_DIR/fsaverage/lh.DKTatlas40.gcs
+    #$ mris_ca_label -orig white -novar fsaverage rh sphere.reg $SUBJECTS_DIR/fsaverage/label/rh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/rh.aparc.DKTatlas40.annot
+    #$ mris_ca_label -orig white -novar fsaverage lh sphere.reg $SUBJECTS_DIR/fsaverage/label/lh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/lh.aparc.DKTatlas40.annot
 
     # move data across from the MRIdata folder to the local directory, so freesurfer can find it
     for participant in participants
-        mri_convert < / mridata / cbu / * / * / onedcmfile.dcm > < / myMRIdirectory / mysubjectname / mri / orig / 001.
-        mgz>
+        $ mri_convert /mridata/cbu/CBU230790_MEG23008/20231102_130449/Series005_CBU_MPRAGE_32chn/1.3.12.2.1107.5.2.43.67035.202311021312263809335255.dcm $SUBJECTS_DIR/participant_01/mri/orig/001.mgz
 
     # create strucruals meshes and labels
     for participant in participants
-        $recon-all -subjid <mysubjectname> -autorecon1
-        Do i need this, can i not use: ???????? DO I NEED TO DO THIS?
-        https: // mne.tools / stable / generated / mne.bem.make_scalp_surfaces.html
-        or use surfa package
 
-    # create labels for these avergae, for kymata we prefer aparc.DKTatlas40
+        $ recon-all -s participant_01 -all
+
+        this does everything at once (folders as well?) -> $ recon-all -i $SUBJECTS_DIR/participant_01/mri/orig/001.mgz -s participant_01 -all
+
+#        $recon-all -subjid <mysubjectname> -autorecon1
+#        Do i need this, can i not use: ???????? DO I NEED TO DO THIS?
+#        https: // mne.tools / stable / generated / mne.bem.make_scalp_surfaces.html
+#        or use surfa package
+
+    # create labels for these individuals, for Kymata we prefer the aparc.DKTatlas40 Atlas
     for participant in participants
-        # my_subject=sample
-        # my_NIfTI=/path/to/NIfTI.nii.gz
-        # recon-all -i $my_NIfTI -s $my_subject participant_1
+
+        cd ${path}${subjects[m]} / label /
+        mkdir Destrieux_Atlas
+        mkdir DK_Atlas
+        mkdir DKT_Atlas
+
+        cd
+        Destrieux_Atlas
+        mne_annot2labels --subject ${subjects[m]} --parc aparc.a2009s
+
+        cd ../DK_Atlas
+        mne_annot2labels --subject ${subjects[m]} --parc aparc
+
+        cd ../DKT_Atlas  # this is the best one to use (at the momment - from the mind-boggle dataset)
+        mne_annot2labels --subject ${subjects[m]} --parc aparc.DKTatlas40
+
+    #<------------------------------------------------------------->
 
     # visualise the labels on the pial surface
     for participant in participants
@@ -74,8 +108,11 @@ def create_current_estimation_prerequisites():
 
     #Set up the source space
     for  participant in participants
+        # produce the source space (downsampled version of the cortical surface in Freesurfer), which
+        # will be saved in a file ending in *-src.fif
+
         src = mne.setup_source_space(
-            subject, spacing="oct4", add_dist="patch", subjects_dir=subjects_dir
+            subject, spacing="oct5", add_dist="patch", subjects_dir=subjects_dir
         )
         print(src)
         mne.viz.plot_bem(src=src, **plot_bem_kwargs)
@@ -107,7 +144,7 @@ def create_current_estimation_prerequisites():
                                    subject + '-5120-bem-sol.fif', bem_sol)
         #(but is this to only create the ConductorModel?????????? Can't see how this is used in MNE.)
 
-    # Computing the actual BEM solution
+    # Computing patch info
     for participant in participants
         3        # add patch statistics (used in depth wiegthing)
         #        mv $BEM_DIR / sample-oct-6-src.fif $BEM_DIR / sample-oct-6-orig-src.fif
@@ -140,6 +177,7 @@ def create_forward_model_and_inverse_solution():
     for participant in participants
         http://martinos.org/mne/stable/auto_examples/forward/plot_make_forward.html#sphx-glr-auto-examples-forward-plot-make-forward-py
 
+        Use –accurate in the forward model
         ... BE SURE TO copy exactly what was in the origional FORWARD script
 
     # CHECK SENSITIVVITY MAPS
@@ -149,6 +187,10 @@ def create_forward_model_and_inverse_solution():
 
     # Compute inverse operator
     for participant in participants
+
+
+
+
         http://martinos.org/mne/stable/auto_examples/inverse/plot_make_inverse_operator.html#sphx-glr-auto-examples-inverse-plot-make-inverse-operator-py
 
         ... BE SURE TO copy exactly what was in the origional create operator script
@@ -163,7 +205,7 @@ def create_forward_model_and_inverse_solution():
 
 def create_hexel_current_files():
 
-    snr = 1
+    snr = 1 # default is 3
     lambda2 = 1.0 / snr ** 2
 
     for p in participants:
