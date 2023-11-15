@@ -5,15 +5,19 @@ def create_current_estimation_prerequisites():
 
     # Create the boudary element model, the forward model and inverse solution
 
-    set location of MRI structurals
+    set location in the Kymata Project directory where the converted MRI structurals will reside
     load in fsaverage mesh # this is the mesh we will use
     load in fsaverage labels # this is the labels we will use, the aparc.DKTatlas40
 
+
+    # move data across from the MRIdata folder to the local directory, so freesurfer can find it
+    for participant in participants
+        mri_convert < / mridata / cbu / * / * / onedcmfile.dcm > < / myMRIdirectory / mysubjectname / mri / orig / 001.
+        mgz>
+
     # create strucruals meshes and labels
     for participant in participants
-        #my_subject=sample
-        #my_NIfTI=/path/to/NIfTI.nii.gz
-        #recon-all -i $my_NIfTI -s $my_subject participant_1
+        $recon-all -subjid <mysubjectname> -autorecon1
         Do i need this, can i not use: ???????? DO I NEED TO DO THIS?
         https: // mne.tools / stable / generated / mne.bem.make_scalp_surfaces.html
         or use surfa package
@@ -31,13 +35,6 @@ def create_current_estimation_prerequisites():
             "sample", hemi="lh", surf="pial", subjects_dir=subjects_dir, size=(800, 600)
         )
         brain.add_annotation("aparc.a2009s", borders=False)
-
-    # create morph maps to fsaverage (needed for later)
-    if morph_map_overwite or not morph_maps_exist
-    for participant in participants
-        # my_subject=sample
-        # my_NIfTI=/path/to/NIfTI.nii.gz
-        # recon-all -i $my_NIfTI -s $my_subject -all
 
     # co-register data (make sure the MEG and EEG is alligned to the head)
     # this will save a trans .fif file
@@ -156,18 +153,51 @@ def create_forward_model_and_inverse_solution():
 
         ... BE SURE TO copy exactly what was in the origional create operator script
 
+        #    # Apply maxwell filtering (and everything else, such as filtering) to the empty room
+        #
+        #    .maxwell_filter_prepare_emptyroom,
+        #    .maxwell_filter
+
+        # USe Empty room Max filtered for covarience!
+        # USe em[ty room for MEG and dia for EEG etc] (is on MNE)
+
 def create_hexel_current_files():
 
-    #    # Apply maxwell filtering (and everything else, such as filtering) to the empty room
-    #
-    #    .maxwell_filter_prepare_emptyroom,
-    #    .maxwell_filter
+    snr = 1
+    lambda2 = 1.0 / snr ** 2
+
+    for p in participants:
+
+        # First compute morph matices for participant
+        src_to = mne.read_source_spaces(fname_fsaverage_src)
+        print(src_to[0]["vertno"])  # special, np.arange(10242)
+        morph = mne.compute_source_morph(
+            stc,
+            subject_from="sample",
+            subject_to="fsaverage",
+            src_to=src_to,
+            subjects_dir=subjects_dir,
+        )
+
+        # Compute source stcs
+        inverse_operator = read_inverse_operator((data_path + '3-sensor-data/inverse-operators/' + p + '_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif'))
+
+        for w in words:
+            # Apply Inverse
+            evoked = read_evokeds((data_path + '3-sensor-data/fif-out/' + inputstream + '/' + p + '_' + w + '-ave.fif'),
+                                  condition=0, baseline=None)
+
+            if (evoked.nave > 0):
+                stc_from = apply_inverse(evoked, inverse_operator, lambda2, "MNE", pick_ori='normal')
+
+                # Morph to average
+                stc_from.subject = subject_from  # only needed if subject has been tested previously and so has a different subject number
+                stc_morphed = mne.morph_data_precomputed(subject_from, subject_to, stc_from, vertices_to, morph_mat)
+                stc_morphed.save((data_path + '/4-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + p + '-' + w))
 
 
-    #USe Empty room Max filtered for covarience!
-    #USe em[ty room for MEG and dia for EEG etc] (is on MNE)
+def average_participants_hexel_currents():
 
-def average_participants_hexel_currents();
     f = open('/imaging/at03/NKG_Data_Sets/DATASET_3-01_visual-and-auditory/items.txt', 'r')
     words = list(f.read().split())
 
