@@ -10,6 +10,7 @@ def create_current_estimation_prerequisites(config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
+    mri_structural_type = config['mri_structural_type']
     mri_structurals_directory = config['mri_structurals_directory']
     mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
 
@@ -50,9 +51,9 @@ def create_current_estimation_prerequisites(config: dict):
 
     # creates suitable T1, meshes and labels... but using python?
     for participant in participants
-        # todo - Does this do the same thing as $ recon-all -s participant_01 -all? compare partipant1 and particpant 1 test
-        mne.bem.make_watershed_bem.html
-        mne.bem.make_scalp_surfaces
+        The source space (downsampled version of the cortical surface in Freesurfer), which will be saved in a file ending in *-src.fif, which can be read into Matlab using mne_read_source_spaces.
+
+
         mne.viz.plot_alignment()
         mne.viz.plot_bem(),
 
@@ -82,24 +83,44 @@ def create_current_estimation_prerequisites(config: dict):
     #    brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
     #    brain.add_annotation("aparc.a2009s", borders=False)
 
+    # Computing the BEM Surfaces (needed for coregistration to work)
+    for  participant in list_of_participants:
+        https: // imaging.mrc - cbu.cam.ac.uk / meg / AnalyzingData / MNE_MRI_processing
+        # todo -  AT has used the commandline version to create the BEMSs
+        if mri_structural_type == 'T1':
+            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                copy=True,
+                overwrite=True,
+                show=True,
+            )
+
+            mne.bem.make_scalp_surfaces(
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                no_decimate=True,
+                force=True,
+                overwrite=True,
+            )
+
+            mne.viz.plot_bem(subject=participant,
+                subjects_dir=mri_structurals_directory,
+                brain_surfaces="white",
+                orientation="coronal",
+                slices=[50, 100, 150, 200],)
+
+        elif mri_structural_type == 'Flash':
+            # todo add & test flash
+            # mne.bem.make_flash_bem().
+            print("Flash not yet implemented.")
+
+
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
     for  participant in list_of_participants:
         mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory)
 '''
-    # Computing the BEM Surfaces
-    for  participant in participants
-        if normal mre
-            mne.bem.make_watershed_bem
-
-            mne.viz.plot_bem(subject=subject,
-                subjects_dir=subjects_dir,
-                brain_surfaces="white",
-                orientation="coronal",
-                slices=[50, 100, 150, 200],)
-
-        else if Flash
-            mne.bem.make_flash_bem().
 
     #Check eeg is in correct place (can be merged with next one?)
     for  participant in participants
