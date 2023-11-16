@@ -87,6 +87,7 @@ def create_current_estimation_prerequisites(config: dict):
     for  participant in list_of_participants:
         https: // imaging.mrc - cbu.cam.ac.uk / meg / AnalyzingData / MNE_MRI_processing
         # todo -  AT has used the commandline version to create the BEMSs
+
         if mri_structural_type == 'T1':
             mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
                 subject=participant,
@@ -115,6 +116,14 @@ def create_current_estimation_prerequisites(config: dict):
             # mne.bem.make_flash_bem().
             print("Flash not yet implemented.")
 
+        # produce the source space (downsampled version of the cortical surface in Freesurfer), which
+        # will be saved in a file ending in *-src.fif
+
+        src = mne.setup_source_space(
+                subject, spacing="oct5", add_dist="patch", subjects_dir=subjects_dir
+        )
+        print(src)
+        mne.viz.plot_bem(src=src, **plot_bem_kwargs)
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
@@ -137,33 +146,11 @@ def create_current_estimation_prerequisites(config: dict):
         )
 
         # Set viewing angle
-        set_3d_view(figure=fig, azimuth=135, elevation=80)
-
-    #Set up the source space
-    for  participant in participants
-        # produce the source space (downsampled version of the cortical surface in Freesurfer), which
-        # will be saved in a file ending in *-src.fif
-
-        src = mne.setup_source_space(
-            subject, spacing="oct5", add_dist="patch", subjects_dir=subjects_dir
-        )
-        print(src)
-        mne.viz.plot_bem(src=src, **plot_bem_kwargs)
-
-        fig = mne.viz.plot_alignment(
-            subject=subject,
-            subjects_dir=subjects_dir,
-            surfaces="white",
-            coord_frame="mri",
-            src=src,
-        )
-        mne.viz.set_3d_view(
-            fig,
+        set_3d_view(figure=fig,
             azimuth=173.78,
             elevation=101.75,
             distance=0.30,
-            focalpoint=(-0.03, -0.01, 0.03),
-        )
+            focalpoint=(-0.03, -0.01, 0.03),)
 
     #Computing the actual BEM solution
     for participant in participants
@@ -185,24 +172,6 @@ def create_current_estimation_prerequisites(config: dict):
         #        done
         #... BE SURE TO ADD CORTICAL PATCH STATISTICS and to copy exactly what was in the origional BEM script
 
-    # To deleat in refactor
-    # Remember not to use the medial wall (etc) Surface
-    #        # creates surfaces necessary for BEM head models
-    #       mne_watershed_bem --overwrite --subject ${subjects[m]}
-    #        ln -s $SUBJECTS_DIR / ${subjects[m]} / bem / watershed / ${subjects[m]}'_inner_skull_surface' $SUBJECTS_DIR / ${subjects[m]} / bem / inner_skull.surf
-    #        ln -s $SUBJECTS_DIR / ${subjects[m]} / bem / watershed / ${subjects[m]}'_outer_skull_surface' $SUBJECTS_DIR / ${subjects[m]} / bem / outer_skull.surf
-    #        ln -s $SUBJECTS_DIR / ${subjects[m]} / bem / watershed / ${subjects[m]}'_outer_skin_surface'  $SUBJECTS_DIR / ${subjects[m]} / bem / outer_skin.surf
-    #        ln -s $SUBJECTS_DIR / ${subjects[m]} / bem / watershed / ${subjects[m]}'_brain_surface'       $SUBJECTS_DIR / ${subjects[m]} / bem / brain_surface.surf
-    ##        # create acurate head model for coregistration
-    ##        mkheadsurf -s ${subjects[m]}
-    ##        mne_surf2bem --surf $SUBJECTS_DIR / ${subjects[m]} / surf / lh.seghead --id 4 --check --fif $SUBJECTS_DIR / ${subjects[m]} / bem / ${subjects[m]}-head.fif
-    #        # creates fiff-files for MNE describing MRI data
-    #        mne_setup_mri --overwrite --subject ${subjects[m]}
-    #        # create a source space from the cortical surface created in Freesurfer
-    ##        mne_setup_source_space --ico 5 --overwrite --subject ${subjects[m]}
-    #
-    #    If your BEM meshes do not look correct when
-    #    viewed in mne.viz.plot_alignment() or mne.viz.plot_bem(), consider potential solutions from the FAQ.
 
 def create_forward_model_and_inverse_solution():
 
@@ -220,9 +189,6 @@ def create_forward_model_and_inverse_solution():
 
     # Compute inverse operator
     for participant in participants
-
-
-
 
         http://martinos.org/mne/stable/auto_examples/inverse/plot_make_inverse_operator.html#sphx-glr-auto-examples-inverse-plot-make-inverse-operator-py
 
