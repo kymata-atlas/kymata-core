@@ -16,7 +16,6 @@ from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
-from kymata.datasets.sample import SampleDataset
 from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
 from kymata.io.file import open_or_use, file_type, path_type
 
@@ -286,10 +285,6 @@ class ExpressionSet:
             data_lh=[left_sparse[:, :, i] for i in range(len(functions))],
             data_rh=[right_sparse[:, :, i] for i in range(len(functions))],
         )
-
-    @classmethod
-    def from_sample_dataset(cls, sample_dataset: SampleDataset) -> ExpressionSet:
-        return cls.load(from_path_or_file=Path(sample_dataset.path, sample_dataset.filenames[0]))
 
     def best_functions(self) -> Tuple[DataFrame, DataFrame]:
         """

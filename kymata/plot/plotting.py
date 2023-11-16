@@ -184,12 +184,12 @@ def _get_yticks(ylim):
 
 
 if __name__ == '__main__':
-    from kymata.datasets.sample import get_dataset_kymata_mirror_q3_2023
+    from kymata.datasets.sample import KymataMirror2023Q3Dataset
 
     # set location of tutorial data
     sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
 
     # create new expression set object and add to it
-    expression_data_kymata_mirror = ExpressionSet.from_sample_dataset(get_dataset_kymata_mirror_q3_2023())
+    expression_data_kymata_mirror = KymataMirror2023Q3Dataset().to_expressionset()
 
     expression_plot(expression_data_kymata_mirror, show_only=expression_data_kymata_mirror.functions[1:], save_to=Path("/Users/cai/Desktop/temp.png"))
