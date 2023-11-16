@@ -14,7 +14,7 @@ from kymata.entities.expression import ExpressionSet
 
 
 # 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
-_OOM_SIZE = 50
+_MAJOR_TICK_SIZE = 50
 
 
 def expression_plot(
@@ -23,13 +23,18 @@ def expression_plot(
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
-        color: Optional[str | Dict[str, str] | list[str]] = None,  # colour name, function_name → colour name, or list of colour names
+        color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,  # Whole thing None to use default values, either entry None to use default for that value
+        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
         # I/O args
         save_to: Optional[Path] = None,
 ):
-    """Generates an expression plot"""
+    """
+    Generates an expression plot
+
+    color: colour name, function_name → colour name, or list of colour names
+    xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
+    """
 
     # Default arg values
     if show_only is None:
@@ -162,29 +167,30 @@ def _get_best_xlims(xlims, data_x_min, data_x_max):
 
 
 def _get_best_ylim(ylim: float | None, data_y_min):
-    default_y_min = 10 ** (-1 * _OOM_SIZE)
     if ylim is not None:
         return ylim
+    default_y_min = 10 ** (-1 * _MAJOR_TICK_SIZE)
     ylim = min(default_y_min, data_y_min)
-    # Round to nearest order of magnitude
-    order_of_magnitude = np.floor(np.log10(ylim) / _OOM_SIZE) * _OOM_SIZE
-    ylim = 10 ** order_of_magnitude
+    # Round to nearest major tick
+    major_tick = np.floor(np.log10(ylim) / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
+    ylim = 10 ** major_tick
     return ylim
 
 
-def _get_yticks(ylim_oom):
-    order_of_magnitude = int(np.floor(np.log10(ylim_oom) / _OOM_SIZE)) * -1
-    ylim_oom = 10 ** - ((order_of_magnitude -1) * _OOM_SIZE)
-    return np.geomspace(start=1, stop=ylim_oom, num=order_of_magnitude + 1)
+def _get_yticks(ylim):
+    n_major_ticks = int(np.log10(ylim) / _MAJOR_TICK_SIZE) * -1
+    last_major_tick = 10 ** (-1 * n_major_ticks * _MAJOR_TICK_SIZE)
+    return np.geomspace(start=1, stop=last_major_tick, num=n_major_ticks + 1)
 
 
 if __name__ == '__main__':
+    from kymata.datasets.sample import get_dataset_kymata_mirror_q3_2023
 
     # set location of tutorial data
     sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
 
     # create new expression set object and add to it
-    expression_data_kymata_mirror = ExpressionSet.load(
-        from_path_or_file=Path(sample_data_dir, "kymata_mirror_Q3_2023_expression_endtable.nkg"))
+    dataset_q3_2023 = get_dataset_kymata_mirror_q3_2023()
+    expression_data_kymata_mirror = ExpressionSet.load(from_path_or_file=Path(dataset_q3_2023.path, dataset_q3_2023.filenames[0]))
 
-    expression_plot(expression_data_kymata_mirror, save_to=Path("/Users/cai/Desktop/temp.png"))
+    expression_plot(expression_data_kymata_mirror, save_to=Path("/Users/cai/Desktop/temp.png"), ylim=1e-172)
