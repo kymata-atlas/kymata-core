@@ -190,7 +190,6 @@ if __name__ == '__main__':
     sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
 
     # create new expression set object and add to it
-    dataset_q3_2023 = get_dataset_kymata_mirror_q3_2023()
-    expression_data_kymata_mirror = ExpressionSet.load(from_path_or_file=Path(dataset_q3_2023.path, dataset_q3_2023.filenames[0]))
+    expression_data_kymata_mirror = ExpressionSet.from_sample_dataset(get_dataset_kymata_mirror_q3_2023())
 
-    expression_plot(expression_data_kymata_mirror, save_to=Path("/Users/cai/Desktop/temp.png"), ylim=1e-172)
+    expression_plot(expression_data_kymata_mirror, show_only=expression_data_kymata_mirror.functions[1:], save_to=Path("/Users/cai/Desktop/temp.png"))
