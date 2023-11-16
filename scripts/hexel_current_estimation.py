@@ -80,13 +80,13 @@ def create_current_estimation_prerequisites(config: dict):
     for participant in list_of_participants:
         Brain = mne.viz.get_brain_class()
         brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
-        brain.add_annotation("aparc.a2009s", borders=False)
-'''
+        brain.add_annotation("aparc.a2009s", borders=False) # todo not working - show colour in regions.
+
     # co-register data (make sure the MEG and EEG is alligned to the head)
     # this will save a trans .fif file
-    for  participant in participants
+    for  participant in list_of_participants
         mne.gui.coregistration(subject="sample", subjects_dir=subjects_dir, output= XXXX)
-
+'''
     # Computing the BEM Surfaces
     for  participant in participants
         if normal mre
