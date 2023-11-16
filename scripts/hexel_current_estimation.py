@@ -26,23 +26,27 @@ def create_current_estimation_prerequisites():
     #$ mris_ca_label -orig white -novar fsaverage rh sphere.reg $SUBJECTS_DIR/fsaverage/label/rh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/rh.aparc.DKTatlas40.annot
     #$ mris_ca_label -orig white -novar fsaverage lh sphere.reg $SUBJECTS_DIR/fsaverage/label/lh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/lh.aparc.DKTatlas40.annot
 
-    # move data across from the MRIdata folder to the local directory, so freesurfer can find it
+    # move data across from the MRIdata folder to the local
+    # directory, so freesurfer can find it - also convert from dcm to .mgz
     for participant in participants
         $ mri_convert /mridata/cbu/CBU230790_MEG23008/20231102_130449/Series005_CBU_MPRAGE_32chn/1.3.12.2.1107.5.2.43.67035.202311021312263809335255.dcm $SUBJECTS_DIR/participant_01/mri/orig/001.mgz
 
-    # create strucruals meshes and labels
+    # creates suitable T1, meshes and labels
     for participant in participants
-
         $ recon-all -s participant_01 -all
 
-        this does everything at once (folders as well?) -> $ recon-all -i $SUBJECTS_DIR/participant_01/mri/orig/001.mgz -s participant_01 -all
+        #todo - I think this does everything at once (folders and ), so might be better if there is a python version in the future
+        $ recon-all -i $SUBJECTS_DIR/participant_01/mri/orig/001.mgz -s participant_01 -all
 
-#        $recon-all -subjid <mysubjectname> -autorecon1
-#        Do i need this, can i not use: ???????? DO I NEED TO DO THIS?
-#        https: // mne.tools / stable / generated / mne.bem.make_scalp_surfaces.html
-#        or use surfa package
+    # creates suitable T1, meshes and labels... but using python
+    for participant in participants
+        # todo - Does this do the same thing as $ recon-all -s participant_01 -all? compare partipant1 and particpant 1 test
+        mne.bem.make_watershed_bem.html
+        mne.bem.make_scalp_surfaces
+        mne.viz.plot_alignment()
+        mne.viz.plot_bem(),
 
-    # create labels for these individuals, for Kymata we prefer the aparc.DKTatlas40 Atlas
+        # create labels for these individuals, for Kymata we prefer the aparc.DKTatlas40 Atlas
     for participant in participants
 
         cd ${path}${subjects[m]} / label /
