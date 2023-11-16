@@ -114,7 +114,6 @@ def expression_plot(
 
     for plot in [right_hem_expression_plot, left_hem_expression_plot]:
         plot.set_yscale('log')
-        # TODO: hard-coded?
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
         plot.set_xlim(*xlims)
@@ -131,6 +130,7 @@ def expression_plot(
     left_hem_expression_plot.set_title('Function Expression')
     left_hem_expression_plot.set_xticklabels([])
     right_hem_expression_plot.set_xlabel('Latency (ms) relative to onset of the environment')
+    # TODO: hard-coded?
     right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     right_hem_expression_plot.invert_yaxis()
     left_hem_expression_plot.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
