@@ -174,6 +174,7 @@ def _get_best_ylim(ylim: float | None, data_y_min):
 
 def _get_yticks(ylim_oom):
     order_of_magnitude = int(np.floor(np.log10(ylim_oom) / _OOM_SIZE)) * -1
+    ylim_oom = 10 ** - ((order_of_magnitude -1) * _OOM_SIZE)
     return np.geomspace(start=1, stop=ylim_oom, num=order_of_magnitude + 1)
 
 
