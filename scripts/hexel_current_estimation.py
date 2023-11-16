@@ -1,9 +1,19 @@
 import mne
+from os import path
+from pathlib import Path
 
-def create_current_estimation_prerequisites():
+def create_current_estimation_prerequisites(config: dict):
+    '''
+    Copy the structurals to the local Kymata folder,
+    create the surfaces, the boundary element model solutions, and the source space
+    '''
 
-    # Copy the structurals to the local Kymata folder,
-    # create the surfaces, the boundary element model solutions, and the source space
+    list_of_participants = config['list_of_participants']
+    dataset_directory_name = config['dataset_directory_name']
+    mri_structurals_directory = config['mri_structurals_directory']
+    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+
+    '''    
 
     # <--------------------Command Line-------------------------->
 
@@ -17,7 +27,7 @@ def create_current_estimation_prerequisites():
     # Load the fsaverage mesh
     $ cp -r $FREESURFER_HOME/subjects/fsaverage $SUBJECTS_DIR/fsaverage
 
-    # todo - we were using the "aparc.DKTatlas40" atlas - is this the same as the Desikan-Killiany Atlas
+    # todo - we were using the "aparc.DKTatlas40" atlas - is this the same as the Desikan-Killiany Atlas, and aparc.DKTatlas?
     # (?h.aparc.annot)? https://surfer.nmr.mgh.harvard.edu/fswiki/CorticalParcellation. And if so, do we
     # need to add it to the fsaverage folder for fsaverage? (I don't think it is used here, although we do
     # use it in Kymata web. If so, remove this section). i.e.
@@ -38,7 +48,7 @@ def create_current_estimation_prerequisites():
         #todo - I think this does everything at once (folders and ), so might be better if there is a python version in the future
         $ recon-all -i $SUBJECTS_DIR/participant_01/mri/orig/001.mgz -s participant_01 -all
 
-    # creates suitable T1, meshes and labels... but using python
+    # creates suitable T1, meshes and labels... but using python?
     for participant in participants
         # todo - Does this do the same thing as $ recon-all -s participant_01 -all? compare partipant1 and particpant 1 test
         mne.bem.make_watershed_bem.html
@@ -65,15 +75,13 @@ def create_current_estimation_prerequisites():
         mne_annot2labels --subject ${subjects[m]} --parc aparc.DKTatlas40
 
     #<------------------------------------------------------------->
-
+'''
     # visualise the labels on the pial surface
-    for participant in participants
+    for participant in list_of_participants:
         Brain = mne.viz.get_brain_class()
-        brain = Brain(
-            "sample", hemi="lh", surf="pial", subjects_dir=subjects_dir, size=(800, 600)
-        )
+        brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
         brain.add_annotation("aparc.a2009s", borders=False)
-
+'''
     # co-register data (make sure the MEG and EEG is alligned to the head)
     # this will save a trans .fif file
     for  participant in participants
@@ -257,3 +265,4 @@ def average_participants_hexel_currents():
         stc_avg = reduce(lambda x, y: x + y, stcs)
         stc_avg /= len(stcs)
         stc_avg.save('/imaging/at03/NKG_Code_output/Version5/DATASET_3-01_visual-and-auditory/5-averaged-by-trial-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + w))
+'''

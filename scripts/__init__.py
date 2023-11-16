@@ -1,7 +1,6 @@
 import utils
 import preprocessing
-#import bem
-#import hexel_current_estimation
+import hexel_current_estimation
 #import bids
 
 def main():

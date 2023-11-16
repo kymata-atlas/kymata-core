@@ -1,6 +1,11 @@
 
 # Config file for Kymata Dataset 4.00
 
+# General
+dataset_directory_name: "dataset_3-russian-narratives"
+mri_structurals_directory: "raw_mri_structurals"
+
+# General information related to the dataset
 list_of_participants: [ "meg15_0045",
                         "meg15_0051",
                         "meg15_0054",

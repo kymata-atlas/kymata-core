@@ -1,5 +1,5 @@
 .idea/*
 .DS_Store
-data/raw/
 *.pyc
-data/intrim_preprocessing_files/*
+data/dataset_4-english-narratives/*
+
