@@ -1,5 +1,4 @@
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Style
 
 
 def do_gridsearch_on_both_hemsipheres(neurophysiology_data_file_directory,

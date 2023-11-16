@@ -1,6 +1,7 @@
+from os import path
 from pathlib import Path
 from itertools import cycle
-from typing import Optional, Sequence, Dict, Tuple
+from typing import Optional, Sequence, Dict
 from statistics import NormalDist
 
 from matplotlib import pyplot, colors
@@ -13,18 +14,28 @@ from seaborn import color_palette
 from kymata.entities.expression import ExpressionSet
 
 
+# 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
+_MAJOR_TICK_SIZE = 50
+
+
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
-        color: Optional[str | Dict[str, str] | list[str]] = None,  # colour name, function_name → colour name, or list of colour names
-        ylim: Optional[Tuple[float, float]] = None,
+        color: Optional[str | Dict[str, str] | list[str]] = None,
+        ylim: Optional[float] = None,
+        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
         # I/O args
         save_to: Optional[Path] = None,
 ):
-    """Generates an expression plot"""
+    """
+    Generates an expression plot
+
+    color: colour name, function_name → colour name, or list of colour names
+    xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
+    """
 
     # Default arg values
     if show_only is None:
@@ -42,8 +53,6 @@ def expression_plot(
         # List specified, then pair up in order
         assert len(color) == len(str)
         color = {f: c for f, c in zip(show_only, color)}
-    if ylim is None:
-        ylim = 10 ** -100
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -51,11 +60,12 @@ def expression_plot(
         if function not in color:
             color[function] = colors.to_hex(next(cycol))
 
-    bonferroni_corrected_alpha = 1 - (
+    sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
                  * len(expression_set.latencies)
-                 * len(expression_set.hexels))))
+                 * len(expression_set.hexels)
+                 * len(show_only))))
 
     best_functions_lh: DataFrame
     best_functions_rh: DataFrame
@@ -67,6 +77,10 @@ def expression_plot(
 
     custom_handles = []
     custom_labels = []
+    data_x_min, data_x_max = np.Inf, -np.Inf
+    # Careful, the y value is inverted, with y==1 on the origin and y<1 away from the origin.
+    # "y_min" here is real absolute min value in the data (closest to zero)
+    data_y_min = np.Inf
     for function in show_only:
 
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
@@ -76,7 +90,7 @@ def expression_plot(
         data_left = best_functions_lh[best_functions_lh["function"] == function]
         x_left = data_left["latency"].values * 1000
         y_left = data_left["value"].values
-        left_color = np.where(np.array(y_left) <= bonferroni_corrected_alpha, color[function], 'black')
+        left_color = np.where(np.array(y_left) <= sidak_corrected_alpha, color[function], 'black')
         left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
         left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
@@ -84,24 +98,36 @@ def expression_plot(
         data_right = best_functions_rh[best_functions_rh["function"] == function]
         x_right = data_right["latency"].values * 1000
         y_right = data_right["value"].values
-        right_color = np.where(np.array(y_right) <= bonferroni_corrected_alpha, color[function], 'black')
+        right_color = np.where(np.array(y_right) <= sidak_corrected_alpha, color[function], 'black')
         right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
         right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
+
+        data_x_min = min(data_x_min,
+                         x_left.min() if len(x_left) > 0 else np.Inf,
+                         x_right.min() if len(x_right) > 0 else np.Inf)
+        data_x_max = max(data_x_max,
+                         x_left.max() if len(x_left) > 0 else -np.Inf,
+                         x_right.max() if len(x_right) > 0 else- np.Inf)
+        data_y_min = min(data_y_min,
+                         y_left.min() if len(y_left) > 0 else np.Inf,
+                         y_right.min() if len(y_right) > 0 else np.Inf)
 
     # format shared axis qualities
 
     for plot in [right_hem_expression_plot, left_hem_expression_plot]:
         plot.set_yscale('log')
         # TODO: hard-coded?
-        plot.set_xlim(-200, 800)
+        xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
+        ylim = _get_best_ylim(ylim, data_y_min)
+        plot.set_xlim(*xlims)
         plot.set_ylim((1, ylim))
         plot.axvline(x=0, color='k', linestyle='dotted')
-        plot.axhline(y=bonferroni_corrected_alpha, color='k', linestyle='dotted')
-        plot.text(-100, bonferroni_corrected_alpha, 'α*',
+        plot.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
+        plot.text(-100, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.text(600, bonferroni_corrected_alpha, 'α*',
+        plot.text(600, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.set_yticks([1, 10 ** -50, 10 ** -100])
+        plot.set_yticks(_get_yticks(ylim))
 
     # format one-off axis qualities
     left_hem_expression_plot.set_title('Function Expression')
@@ -113,7 +139,7 @@ def expression_plot(
                                   verticalalignment='center')
     right_hem_expression_plot.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
                                    verticalalignment='center')
-    y_axis_label = f'p-value (with α at 5-sigma, Bonferroni corrected)'
+    y_axis_label = f'p-value (with α at 5-sigma, Šidák corrected)'
     left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center', rotation='vertical')
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
                                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
@@ -138,5 +164,44 @@ def expression_plot(
     pyplot.close()
 
 
-def lognuniform(low=0, high=1, size=None, base=np.e):
-    return np.random.uniform(low, high, size) / 1000000000000
+def _get_best_xlims(xlims, data_x_min, data_x_max):
+    default_xlims = (-200, 800)
+    if xlims is None:
+        xlims = (None, None)
+    xmin, xmax = xlims
+    if xmin is None:
+        xmin = min(default_xlims[0], data_x_min)
+    if xmax is None:
+        xmax = max(default_xlims[1], data_x_max)
+    xlims = (xmin, xmax)
+    return xlims
+
+
+def _get_best_ylim(ylim: float | None, data_y_min):
+    if ylim is not None:
+        return ylim
+    default_y_min = 10 ** (-1 * _MAJOR_TICK_SIZE)
+    ylim = min(default_y_min, data_y_min)
+    # Round to nearest major tick
+    major_tick = np.floor(np.log10(ylim) / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
+    ylim = 10 ** major_tick
+    return ylim
+
+
+def _get_yticks(ylim):
+    n_major_ticks = int(np.log10(ylim) / _MAJOR_TICK_SIZE) * -1
+    last_major_tick = 10 ** (-1 * n_major_ticks * _MAJOR_TICK_SIZE)
+    return np.geomspace(start=1, stop=last_major_tick, num=n_major_ticks + 1)
+
+
+if __name__ == '__main__':
+    from kymata.datasets.sample import get_dataset_kymata_mirror_q3_2023
+
+    # set location of tutorial data
+    sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
+
+    # create new expression set object and add to it
+    dataset_q3_2023 = get_dataset_kymata_mirror_q3_2023()
+    expression_data_kymata_mirror = ExpressionSet.load(from_path_or_file=Path(dataset_q3_2023.path, dataset_q3_2023.filenames[0]))
+
+    expression_plot(expression_data_kymata_mirror, save_to=Path("/Users/cai/Desktop/temp.png"), ylim=1e-172)
