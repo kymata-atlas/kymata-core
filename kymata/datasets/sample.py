@@ -82,14 +82,13 @@ class KymataMirror2023Q3Dataset(SampleDataset):
         return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
-class GMLoudnessDataset(SampleDataset):
+class TVLInsLoudnessOnlyDataset(SampleDataset):
     def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
-        name = "GMLoudness"
+        name = "TVL_2020_ins_loudness_only"
         super().__init__(
             name=name,
             filenames=[
-                "GMLoudness_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-                "GMLoudness_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
+                "TVL_2020_ins_loudness_only.nkg",
             ],
             data_root=data_root,
             remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
@@ -97,33 +96,23 @@ class GMLoudnessDataset(SampleDataset):
         )
 
     def to_expressionset(self) -> ExpressionSet:
-        return load_matab_expression_files(
-            function_name="ins_loudness_2020",
-            lh_file=Path(self.path, self.filenames[0]),
-            rh_file=Path(self.path, self.filenames[1]),
-        )
+        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
-class GMDeltaInstantaneousLoudnessTonotopicChannel1Dataset(SampleDataset):
+class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
     def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
-        name = "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1"
+        name = "TVL_2020_delta_ins_tontop_chan1_loudness_only"
         super().__init__(
             name=name,
             filenames=[
-                "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-                "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-            ],
+                "TVL_2020_delta_ins_tontop_chan1_loudness_only.nkg",            ],
             data_root=data_root,
             remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
             download=download,
         )
 
     def to_expressionset(self) -> ExpressionSet:
-        return load_matab_expression_files(
-            function_name="delta_ins_loudness_tonotop_chan1_2020",
-            lh_file=Path(self.path, self.filenames[0]),
-            rh_file=Path(self.path, self.filenames[1]),
-        )
+        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
 def data_root_path(data_root: Optional[path_type] = None) -> Path:
