@@ -4,6 +4,7 @@ Classes and functions for storing expression information.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Sequence, Union, get_args, Tuple
@@ -16,90 +17,109 @@ from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 from pandas import DataFrame
 
+from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
 from kymata.io.file import open_or_use, file_type, path_type
 
 Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
+Sensor = str
 Latency = float
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
 
 # Data dimension labels
 _HEXEL = "hexel"
+_SENSOR = "sensor"
 _LATENCY = "latency"
 _FUNCTION = "function"
-# Hemisphere
+
+# Layer (e.g. hemisphere)
 _LEFT = "left"
 _RIGHT = "right"
+_SCALP = "scalp"
 
 # Set consistent dtypes
-_HexelType = int_
-_LatencyType = float_
-_FunctionNameType = str_
+_HexelDType = int_
+_SensorDType = str_
+_LatencyDType = float_
+_FunctionNameDType = str_
 
 
-class ExpressionSet:
+class ExpressionSet(ABC):
     """
     Brain data associated with expression of a single function.
-    Includes lh, rh, flipped, non-flipped.
     """
-
-    # Canonical order of dimensions
-    _dims = (_HEXEL, _LATENCY, _FUNCTION)
 
     def __init__(self,
                  functions: str | Sequence[str],
                  # Metadata
-                 hexels: Sequence[Hexel],
                  latencies: Sequence[Latency],
                  # In general, we will combine flipped and non-flipped versions
-                 data_lh: _InputDataArray | Sequence[_InputDataArray],
-                 data_rh: _InputDataArray | Sequence[_InputDataArray]):
-        # TODO: Docstring
+                 # data_arrays contains a dict mapping layer names to data arrays
+                 # e.g.:       "left" → [array(), array(), array()],
+                 #        and "right" → [array(), array(), array()]
+                 #   or:      "scalp" → [array(), array(), array()]
+                 # All should be the same size
+                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],
+                 # Supply channels already as an array, i.e.
+                 channel_coord_name: str,
+                 channel_coord_dtype,
+                 channel_coord_values: Sequence,
+                 # String to identify sub-classes in saved files
+                 file_format_identifier: str,
+                 ):
+
+        self._layers: list[str] = list(data_layers.keys())
+        self._file_format_identifier: str = file_format_identifier
+
+        self._channel_coord_name = channel_coord_name
+        self._dims = (channel_coord_name, _LATENCY, _FUNCTION)  # Canonical order of dimensions
 
         # Validate arguments
         _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
                                     "or equal-length sequences of the same.")
+        # TODO: test all of these validations
         if isinstance(functions, str):
-            assert isinstance(data_lh, get_args(_InputDataArray)), _length_mismatch_message
-            assert isinstance(data_rh, get_args(_InputDataArray)), _length_mismatch_message
-            # Wrap into sequence
+            # If only one function
+            for layer, data in data_layers.items():
+                # Data not a sequence
+                assert isinstance(data, get_args(_InputDataArray)), _length_mismatch_message
+            # Wrap into sequences
             functions = [functions]
-            data_lh = [data_lh]
-            data_rh = [data_rh]
-        assert len(functions) == len(data_lh) == len(data_rh), _length_mismatch_message
-        assert len(functions) == len(set(functions)), "Duplicated functions in input"
+            for layer in data_layers.keys():
+                data_layers[layer] = [data_layers[layer]]
 
-        hexels = array(hexels, dtype=_HexelType)
-        latencies = array(latencies, dtype=_LatencyType)
-        functions = array(functions, dtype=_FunctionNameType)
+        assert len(functions) == len(set(functions)), "Duplicated functions in input"
+        for layer, data in data_layers:
+            assert len(functions) == len(data), _length_mismatch_message
+        assert all_equal([arr.shape for _layer, arrs in data_layers.items() for arr in arrs])
+
+        channels  = array(channel_coord_values, dtype=channel_coord_dtype)
+        latencies = array(latencies, dtype=_LatencyDType)
+        functions = array(functions, dtype=_FunctionNameDType)
 
         datasets = []
-        for f, dl, dr in zip(functions, data_lh, data_rh):
-            # Check validity of input data dimensions
-            dl = self._init_prep_data(dl)
-            dr = self._init_prep_data(dr)
-            assert dl.shape == dr.shape
-            assert len(hexels) == dl.shape[0], f"Hexels mismatch for {f}"
-            assert len(latencies) == dl.shape[1], f"Latencies mismatch for {f}"
-            datasets.append(
-                Dataset({
-                    _LEFT: DataArray(
-                        data=dl,
-                        dims=ExpressionSet._dims,
-                    ),
-                    _RIGHT: DataArray(
-                        data=dr,
-                        dims=ExpressionSet._dims,
-                    )},
-                    coords={_HEXEL: hexels, _LATENCY: latencies, _FUNCTION: [f]},
+        for i, f in enumerate(functions):
+            dataset_dict = dict()
+            for layer, data in data_layers:
+                # Get this function's data
+                data = data[i]
+                data = self._init_prep_data(data)
+                # Check validity of input data dimensions
+                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}"
+                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}"
+                dataset_dict[layer] = DataArray(
+                    data=data,
+                    dims=self._dims,
                 )
+            datasets.append(
+                Dataset(dataset_dict,
+                        coords={channel_coord_name: channels, _LATENCY: latencies, _FUNCTION: [f]})
             )
-        self._data: Dataset = concat(datasets, dim=_FUNCTION)
+        self._data = concat(datasets, dim=_FUNCTION)
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
-        """Prep data for ExpressionSet.__init__"""
         if isinstance(data, ndarray):
             data = minimise_pmatrix(data)
         elif not isinstance(data, SparseArray):
@@ -108,86 +128,41 @@ class ExpressionSet:
         return data
 
     @property
-    def functions(self) -> list[_FunctionNameType]:
+    def _channels(self) -> NDArray:
+        return self._data.coords[self._channel_coord_name].values
+
+    @property
+    def functions(self) -> list[_FunctionNameDType]:
         """Function names."""
         return self._data.coords[_FUNCTION].values.tolist()
 
     @property
-    def hexels(self) -> NDArray[_HexelType]:
-        """Hexels, canonical ID."""
-        return self._data.coords[_HEXEL].values
-
-    @property
-    def latencies(self) -> NDArray[_LatencyType]:
+    def latencies(self) -> NDArray[_LatencyDType]:
         """Latencies, in seconds."""
         return self._data.coords[_LATENCY].values
 
-    @property
-    def left(self) -> DataArray:
-        """Left-hemisphere data."""
-        return self._data[_LEFT]
-
-    @property
-    def right(self) -> DataArray:
-        """Right-hemisphere data."""
-        return self._data[_RIGHT]
-
+    @abstractmethod
     def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
-        """
-        Select data for specified function(s) only.
-        Use a function name or list/array of function names
-        """
-        # Allow indexing by a single function
-        if isinstance(functions, str):
-            functions = [functions]
-        for f in functions:
-            if f not in self.functions:
-                raise KeyError(f)
-        return ExpressionSet(
-            functions=functions,
-            hexels=self.hexels,
-            latencies=self.latencies,
-            data_lh=[self._data[_LEFT].sel({_FUNCTION: function}).data for function in functions],
-            data_rh=[self._data[_RIGHT].sel({_FUNCTION: function}).data for function in functions],
-        )
+        pass
 
-    def __copy__(self):
-        return ExpressionSet(
-            functions=self.functions.copy(),
-            hexels=self.hexels.copy(),
-            latencies=self.latencies.copy(),
-            data_lh=self._data[_LEFT].values.copy(),
-            data_rh=self._data[_RIGHT].values.copy(),
-        )
+    @abstractmethod
+    def __copy__(self) -> ExpressionSet:
+        pass
 
-    def __add__(self, other: ExpressionSet) -> ExpressionSet:
-        assert array_equal(self.hexels, other.hexels), "Hexels mismatch"
-        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
-        # constructor expects a sequence of function names and sequences of 2d matrices
-        functions = []
-        data_lh = []
-        data_rh = []
-        for expr_set in [self, other]:
-            for i, function in enumerate(expr_set.functions):
-                functions.append(function)
-                data_lh.append(expr_set._data[_LEFT].data[:, :, i])
-                data_rh.append(expr_set._data[_RIGHT].data[:, :, i])
-        return ExpressionSet(
-            functions=functions,
-            hexels=self.hexels, latencies=self.latencies,
-            data_lh=data_lh, data_rh=data_rh,
-        )
+    @abstractmethod
+    def __add__(self, other) -> ExpressionSet:
+        pass
 
-    def __eq__(self, other: ExpressionSet):
-        if not self.functions == other.functions:
+    @abstractmethod
+    def __eq__(self, other: ExpressionSet) -> bool:
+        # Override this method and provide additional checks after calling super().__eq__(other)
+        if type(self) != type(other):
             return False
-        if not array_equal(self.hexels, other.hexels):
+        if not self.functions == other.functions:
             return False
         if not array_equal(self.latencies, other.latencies):
             return False
-        if not COO(self.left.data == other.left.data).all():
-            return False
-        if not COO(self.right.data == other.right.data).all():
+        if not array_equal(self._channels, other._channels):
             return False
         return True
 
@@ -210,32 +185,189 @@ class ExpressionSet:
         # All distinct versions should be documented.
         #
         # This value should be saved into file called /_metadata/format-version.txt within an archive.
-        _VERSION = "0.1"
+        _VERSION = "0.2"
 
         warn("Experimental function. "
              "The on-disk data format for ExpressionSet is not yet fixed. "
              "Files saved using .save should not (yet) be treated as stable or future-proof.")
 
         if isinstance(to_path_or_file, str):
-            to_path = Path(to_path_or_file)
+            to_path_or_file = Path(to_path_or_file)
         if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
             raise FileExistsError(to_path_or_file)
 
         with open_or_use(to_path_or_file, mode="wb") as f, ZipFile(f, "w", compression=compression) as zf:
             zf.writestr("_metadata/format-version.txt", _VERSION)
-            zf.writestr("/hexels.txt", "\n".join(str(x) for x in self.hexels))
+            zf.writestr("_metadata/expression-set-type.txt", self._file_format_identifier)
+            zf.writestr("/channels.txt",  "\n".join(str(x) for x in self._channels))
             zf.writestr("/latencies.txt", "\n".join(str(x) for x in self.latencies))
             zf.writestr("/functions.txt", "\n".join(str(x) for x in self.functions))
-            zf.writestr("/left/coo-coords.bytes", self.left.data.coords.tobytes(order="C"))
-            zf.writestr("/left/coo-data.bytes", self.left.data.data.tobytes(order="C"))
-            # The shape can be inferred, but we save it as an extra validation
-            zf.writestr("/left/coo-shape.txt", "\n".join(str(x) for x in self.left.data.shape))
-            zf.writestr("/right/coo-coords.bytes", self.right.data.coords.tobytes(order="C"))
-            zf.writestr("/right/coo-data.bytes", self.right.data.data.tobytes(order="C"))
-            zf.writestr("/right/coo-shape.txt", "\n".join(str(x) for x in self.right.data.shape))
+            zf.writestr("/layers.txt",    "\n".join(str(x) for x in self._layers))
+
+            for layer in self._layers:
+                zf.writestr(f"/{layer}/coo-coords.bytes", self._data[layer].data.coords.tobytes(order="C"))
+                zf.writestr(f"/{layer}/coo-data.bytes", self._data[layer].data.data.tobytes(order="C"))
+                # The shape can be inferred, but we save it as an extra validation
+                zf.writestr(f"/{layer}/coo-shape.txt", "\n".join(str(x) for x in self._data[layer].data.shape))
 
     @classmethod
+    @abstractmethod
     def load(cls, from_path_or_file: path_type | file_type) -> ExpressionSet:
+        """
+        Load an ExpressionSet from an open file, or the file at the specified path.
+
+        If an open file is supplied, it should be opened in "rb" mode.
+        """
+        pass
+
+    def _best_functions_for_layer(self, layer: str) -> DataFrame:
+        """
+        Return a DataFrame containing:
+        for each channel, the best function and latency for that channel, and the associated p-value
+        """
+        # Want, for each channel:
+        #  - The name, f, of the function which is best at any latency
+        #  - The latency, l, for which f is best
+        #  - The p-value, p, for f at l
+
+        # sparse.COO doesn't implement argmin, so we have to do it in a few steps
+
+        data = self._data.copy()
+        densify_dataset(data)
+
+        best_latency = data.idxmin(dim=_LATENCY)    # (channel, function) → l, the best latency
+        p_at_best_latency = data.min(dim=_LATENCY)  # (channel, function) → p of best latency for each function
+
+        p_at_best_function = p_at_best_latency.min(dim=_FUNCTION)  # (channel) → p of best function (at best latency)
+        best_function = p_at_best_latency.idxmin(dim=_FUNCTION)  # (channel) → f, the best function
+
+        # TODO: shame I have to break into the layer structure here,
+        #  but I can't think of a better way to do it
+        p_vals = p_at_best_function[layer].data
+
+        best_functions = best_function[layer].data
+
+        best_latencies = best_latency[layer].sel({_HEXEL: self._channels, _FUNCTION: best_function[_LEFT]}).data
+
+        # Cut out channels which have a best p-val of 1
+        idxs = p_vals < 1
+
+        return DataFrame.from_dict({
+            _HEXEL: self._channels[idxs],
+            _FUNCTION: best_functions[idxs],
+            _LATENCY: best_latencies[idxs],
+            "value": p_vals[idxs],
+        })
+
+    @abstractmethod
+    def best_functions(self):
+        """
+        Return a pair of DataFrames (left, right), containing:
+        for each hexel, the best function and latency for that hexel, and the associated p-value
+        """
+        pass
+
+
+class HexelExpressionSet(ExpressionSet):
+    """
+    Brain data associated with expression of a single function in hexel space.
+    Includes lh, rh, flipped, non-flipped.
+    """
+
+    def __init__(self,
+                 functions: str | Sequence[str],
+                 # Metadata
+                 hexels: Sequence[Hexel],
+                 latencies: Sequence[Latency],
+                 # In general, we will combine flipped and non-flipped versions
+                 data_lh: _InputDataArray | Sequence[_InputDataArray],
+                 data_rh: _InputDataArray | Sequence[_InputDataArray]):
+
+        super().__init__(
+            functions=functions,
+            latencies=latencies,
+            data_layers={
+                _LEFT: data_lh,
+                _RIGHT: data_rh,
+            },
+            channel_coord_name=_HEXEL,
+            channel_coord_dtype=_HexelDType,
+            channel_coord_values=hexels,
+            file_format_identifier="hexel",
+        )
+
+    @property
+    def hexels(self) -> NDArray[_HexelDType]:
+        """Hexels, canonical ID."""
+        return self._channels
+
+    @property
+    def left(self) -> DataArray:
+        """Left-hemisphere data."""
+        return self._data[_LEFT]
+
+    @property
+    def right(self) -> DataArray:
+        """Right-hemisphere data."""
+        return self._data[_RIGHT]
+
+    def __getitem__(self, functions: str | Sequence[str]) -> HexelExpressionSet:
+        """
+        Select data for specified function(s) only.
+        Use a function name or list/array of function names
+        """
+        # Allow indexing by a single function
+        if isinstance(functions, str):
+            functions = [functions]
+        for f in functions:
+            if f not in self.functions:
+                raise KeyError(f)
+        return HexelExpressionSet(
+            functions=functions,
+            hexels=self.hexels,
+            latencies=self.latencies,
+            data_lh=[self._data[_LEFT].sel({_FUNCTION: function}).data for function in functions],
+            data_rh=[self._data[_RIGHT].sel({_FUNCTION: function}).data for function in functions],
+        )
+
+    def __copy__(self):
+        return HexelExpressionSet(
+            functions=self.functions.copy(),
+            hexels=self.hexels.copy(),
+            latencies=self.latencies.copy(),
+            data_lh=self._data[_LEFT].values.copy(),
+            data_rh=self._data[_RIGHT].values.copy(),
+        )
+
+    def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
+        assert array_equal(self.hexels, other.hexels), "Hexels mismatch"
+        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
+        # constructor expects a sequence of function names and sequences of 2d matrices
+        functions = []
+        data_lh = []
+        data_rh = []
+        for expr_set in [self, other]:
+            for i, function in enumerate(expr_set.functions):
+                functions.append(function)
+                data_lh.append(expr_set._data[_LEFT].data[:, :, i])
+                data_rh.append(expr_set._data[_RIGHT].data[:, :, i])
+        return HexelExpressionSet(
+            functions=functions,
+            hexels=self.hexels, latencies=self.latencies,
+            data_lh=data_lh, data_rh=data_rh,
+        )
+
+    def __eq__(self, other: HexelExpressionSet) -> bool:
+        if not super().__eq__(other):
+            return False
+        if not COO(self.left.data == other.left.data).all():
+            return False
+        if not COO(self.right.data == other.right.data).all():
+            return False
+        return True
+
+    @classmethod
+    def load(cls, from_path_or_file: path_type | file_type) -> HexelExpressionSet:
         """
         Load an ExpressionSet from an open file, or the file at the specified path.
 
@@ -247,11 +379,11 @@ class ExpressionSet:
 
         with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
             with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
-                hexels: list[_HexelType] = [_HexelType(h.strip()) for h in f.readlines()]
+                hexels: list[_HexelDType] = [_HexelDType(h.strip()) for h in f.readlines()]
             with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
-                latencies: list[_LatencyType] = [_LatencyType(lat.strip()) for lat in f.readlines()]
+                latencies: list[_LatencyDType] = [_LatencyDType(lat.strip()) for lat in f.readlines()]
             with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-                functions: list[_FunctionNameType] = [_FunctionNameType(fun.strip()) for fun in f.readlines()]
+                functions: list[_FunctionNameDType] = [_FunctionNameDType(fun.strip()) for fun in f.readlines()]
             with zf.open("/left/coo-coords.bytes") as f:
                 left_coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
             with zf.open("/left/coo-data.bytes") as f:
@@ -278,7 +410,7 @@ class ExpressionSet:
 
         assert left_shape == (len(hexels), len(latencies), len(functions))
 
-        return ExpressionSet(
+        return HexelExpressionSet(
             functions=functions,
             hexels=hexels,
             latencies=latencies,
@@ -291,50 +423,101 @@ class ExpressionSet:
         Return a pair of DataFrames (left, right), containing:
         for each hexel, the best function and latency for that hexel, and the associated p-value
         """
-        # Want, for each hexel:
-        #  - The name, f, of the function which is best at any latency
-        #  - The latency, l, for which f is best
-        #  - The p-value, p, for f at l
-
-        # sparse.COO doesn't implement argmin, so we have to do it in a few steps
-
-        data = self._data.copy()
-        densify_dataset(data)
-
-        best_latency = data.idxmin(dim=_LATENCY)    # (hexel, function) → l, the best latency
-        p_at_best_latency = data.min(dim=_LATENCY)  # (hexel, function) → p of best latency for each function
-
-        p_at_best_function = p_at_best_latency.min(dim=_FUNCTION)  # (hexel) → p of best function (at best latency)
-        best_function = p_at_best_latency.idxmin(dim=_FUNCTION)    # (hexel) → f, the best function
-
-        # TODO: shame I have to break into the Left/Right structure here,
-        #  but I can't think of a better way to do it
-        p_vals_lh = p_at_best_function[_LEFT].data
-        p_vals_rh = p_at_best_function[_RIGHT].data
-
-        best_functions_lh = best_function[_LEFT].data
-        best_functions_rh = best_function[_RIGHT].data
-
-        best_latencies_lh = best_latency[_LEFT].sel({_HEXEL: self.hexels, _FUNCTION: best_function[_LEFT]}).data
-        best_latencies_rh = best_latency[_RIGHT].sel({_HEXEL: self.hexels, _FUNCTION: best_function[_RIGHT]}).data
-
-        # Cut out hexels which have a best p-val of 1
-        idxs_lh = p_vals_lh < 1
-        idxs_rh = p_vals_rh < 1
-
         return (
-            DataFrame.from_dict({
-                _HEXEL: self.hexels[idxs_lh],
-                _FUNCTION: best_functions_lh[idxs_lh],
-                _LATENCY: best_latencies_lh[idxs_lh],
-                "value": p_vals_lh[idxs_lh],
-            }),
-            DataFrame.from_dict({
-                _HEXEL: self.hexels[idxs_rh],
-                _FUNCTION: best_functions_rh[idxs_rh],
-                _LATENCY: best_latencies_rh[idxs_rh],
-                "value": p_vals_rh[idxs_rh],
-            })
+            super()._best_functions_for_layer(_LEFT),
+            super()._best_functions_for_layer(_RIGHT),
         )
 
-    # TODO: plotting in here?
+
+class SensorExpressionSet(ExpressionSet):
+    """
+    Brain data associated with expression of a single function in sensor space.
+    Includes lh, rh, flipped, non-flipped.
+    """
+
+    def __init__(self,
+                 functions: str | Sequence[str],
+                 # Metadata
+                 sensors: Sequence[Sensor],
+                 latencies: Sequence[Latency],
+                 # In general, we will combine flipped and non-flipped versions
+                 data: _InputDataArray | Sequence[_InputDataArray]):
+        # TODO: Docstring
+
+        super().__init__(
+            functions=functions,
+            latencies=latencies,
+            data_layers={
+                _SCALP: data
+            },
+            channel_coord_name=_SENSOR,
+            channel_coord_dtype=_SensorDType,
+            channel_coord_values=sensors,
+            file_format_identifier="sensor",
+        )
+
+    @property
+    def sensors(self) -> NDArray[_SensorDType]:
+        """Channel names."""
+        return self._channels
+
+    @property
+    def scalp(self) -> DataArray:
+        """Left-hemisphere data."""
+        return self._data[_SCALP]
+
+    def __eq__(self, other: SensorExpressionSet) -> bool:
+        if not super().__eq__(other):
+            return False
+        if not COO(self.scalp.data == other.scalp.data).all():
+            return False
+        return True
+
+    def __copy__(self):
+        return SensorExpressionSet(
+            functions=self.functions.copy(),
+            sensors=self.sensors.copy(),
+            latencies=self.latencies.copy(),
+            data=self._data[_SCALP].values.copy(),
+        )
+
+    def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
+        assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
+        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
+        # constructor expects a sequence of function names and sequences of 2d matrices
+        functions = []
+        data = []
+        for expr_set in [self, other]:
+            for i, function in enumerate(expr_set.functions):
+                functions.append(function)
+                data.append(expr_set._data[_SCALP].data[:, :, i])
+        return SensorExpressionSet(
+            functions=functions,
+            sensors=self.sensors, latencies=self.latencies,
+            data=data,
+        )
+
+    def __getitem__(self, functions: str | Sequence[str]) -> SensorExpressionSet:
+        """
+        Select data for specified function(s) only.
+        Use a function name or list/array of function names
+        """
+        # Allow indexing by a single function
+        if isinstance(functions, str):
+            functions = [functions]
+        for f in functions:
+            if f not in self.functions:
+                raise KeyError(f)
+        return SensorExpressionSet(
+            functions=functions,
+            sensors=self.sensors,
+            latencies=self.latencies,
+            data=[self._data[_SCALP].sel({_FUNCTION: function}).data for function in functions],
+        )
+
+    def best_functions(self) -> DataFrame:
+        """
+        Return a pair of DataFrames (left, right), containing:
+        for each hexel, the best function and latency for that hexel, and the associated p-value
+        """
+        return super()._best_functions_for_layer(_SCALP)

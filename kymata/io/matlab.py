@@ -7,7 +7,7 @@ from numpy import nan_to_num, minimum
 from scipy.io import loadmat as loadmat_pre_73
 from mat73 import loadmat as loadmat_post_73
 
-from kymata.entities.expression import ExpressionSet
+from kymata.entities.expression import HexelExpressionSet
 from kymata.entities.iterables import all_equal
 
 
@@ -26,13 +26,13 @@ def load_mat_variable(path, variable_name: str):
     return load_mat(path)[variable_name]
 
 
-def load_matab_expression_files(
+def load_matab_hexel_expression_files(
         function_name: str,
         lh_file: Path | str,
         rh_file: Path | str,
         flipped_lh_file: Optional[Path | str] = None,
         flipped_rh_file: Optional[Path | str] = None,
-) -> ExpressionSet:
+) -> HexelExpressionSet:
     """Load from a set of MATLAB files."""
 
     if flipped_lh_file is None or flipped_rh_file is None:
@@ -100,7 +100,7 @@ def _prep_matlab_data(data, n_latencies, downsample_ratio):
 def _load_matab_expression_files_separate_flipped(
         function_name: str,
         lh_file: Path | str, flipped_lh_file: Path | str,
-        rh_file: Path | str, flipped_rh_file: Path | str) -> ExpressionSet:
+        rh_file: Path | str, flipped_rh_file: Path | str) -> HexelExpressionSet:
     """
     For loading Matlab files where the flipped and non-flipped versions are separate
     (expects 4 files).
@@ -135,7 +135,7 @@ def _load_matab_expression_files_separate_flipped(
         _prep_matlab_data(flipped_rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
     )
 
-    return ExpressionSet(
+    return HexelExpressionSet(
         functions=function_name,
         hexels=lh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,
@@ -145,7 +145,7 @@ def _load_matab_expression_files_separate_flipped(
 
 def _load_matab_expression_files_combined_flipped(
         function_name: str,
-        lh_file: Path | str, rh_file: Path | str) -> ExpressionSet:
+        lh_file: Path | str, rh_file: Path | str) -> HexelExpressionSet:
     """
     For loading Matlab files where the flipped and non-flipped versions are already combined
     (expects 2 files).
@@ -172,7 +172,7 @@ def _load_matab_expression_files_combined_flipped(
     pmatrix_lh = _prep_matlab_data(lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
     pmatrix_rh = _prep_matlab_data(rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
 
-    return ExpressionSet(
+    return HexelExpressionSet(
         functions=function_name,
         hexels=lh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,

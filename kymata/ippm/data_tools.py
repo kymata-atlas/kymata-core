@@ -10,7 +10,7 @@ import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
 
-from kymata.entities.expression import ExpressionSet, _FUNCTION, _LATENCY
+from kymata.entities.expression import HexelExpressionSet, _FUNCTION, _LATENCY
 
 
 class IPPMHexel(object):
@@ -75,7 +75,7 @@ def fetch_data(api: str) -> Dict[str, IPPMHexel]:
     return build_hexel_dict_from_api_response(resp_dict)
 
 
-def build_hexel_dict_from_expression_set(expression_set: ExpressionSet) -> Dict[str, IPPMHexel]:
+def build_hexel_dict_from_expression_set(expression_set: HexelExpressionSet) -> Dict[str, IPPMHexel]:
     """
         Builds the dictionary from an ExpressionSet. This function builds a new dictionary
         which has function names (fast look-up) and only necessary data.

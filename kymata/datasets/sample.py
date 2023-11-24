@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 from urllib import request
 
-from kymata.entities.expression import ExpressionSet
+from kymata.entities.expression import HexelExpressionSet
 from kymata.io.file import path_type
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
@@ -60,7 +60,7 @@ class SampleDataset(ABC):
                 request.urlretrieve(remote, local)
 
     @abstractmethod
-    def to_expressionset(self) -> ExpressionSet:
+    def to_expressionset(self) -> HexelExpressionSet:
         raise NotImplementedError()
 
 
@@ -77,8 +77,8 @@ class KymataMirror2023Q3Dataset(SampleDataset):
             download=download,
         )
 
-    def to_expressionset(self) -> ExpressionSet:
-        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+    def to_expressionset(self) -> HexelExpressionSet:
+        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
 class TVLInsLoudnessOnlyDataset(SampleDataset):
@@ -94,8 +94,8 @@ class TVLInsLoudnessOnlyDataset(SampleDataset):
             download=download,
         )
 
-    def to_expressionset(self) -> ExpressionSet:
-        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+    def to_expressionset(self) -> HexelExpressionSet:
+        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
 class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
@@ -111,8 +111,8 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
             download=download,
         )
 
-    def to_expressionset(self) -> ExpressionSet:
-        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+    def to_expressionset(self) -> HexelExpressionSet:
+        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
 def data_root_path(data_root: Optional[path_type] = None) -> Path:

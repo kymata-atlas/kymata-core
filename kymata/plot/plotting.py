@@ -9,7 +9,7 @@ import numpy as np
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import ExpressionSet
+from kymata.entities.expression import HexelExpressionSet
 
 
 # 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -17,7 +17,7 @@ _MAJOR_TICK_SIZE = 50
 
 
 def expression_plot(
-        expression_set: ExpressionSet,
+        expression_set: HexelExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
