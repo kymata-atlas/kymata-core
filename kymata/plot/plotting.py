@@ -1,4 +1,3 @@
-from os import path
 from pathlib import Path
 from itertools import cycle
 from typing import Optional, Sequence, Dict
@@ -203,13 +202,9 @@ def _get_yticks(ylim):
 
 
 if __name__ == '__main__':
-    from kymata.datasets.sample import get_dataset_kymata_mirror_q3_2023
-
-    # set location of tutorial data
-    sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
+    from kymata.datasets.sample import KymataMirror2023Q3Dataset
 
     # create new expression set object and add to it
-    dataset_q3_2023 = get_dataset_kymata_mirror_q3_2023()
-    expression_data_kymata_mirror = ExpressionSet.load(from_path_or_file=Path(dataset_q3_2023.path, dataset_q3_2023.filenames[0]))
+    expression_data_kymata_mirror = KymataMirror2023Q3Dataset().to_expressionset()
 
-    expression_plot(expression_data_kymata_mirror, save_to=Path("/Users/cai/Desktop/temp.png"), ylim=1e-172)
+    expression_plot(expression_data_kymata_mirror, show_only=expression_data_kymata_mirror.functions[1:], save_to=Path("/Users/cai/Desktop/temp.png"))

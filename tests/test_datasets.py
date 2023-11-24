@@ -1,10 +1,11 @@
 from pathlib import Path
 
-from kymata.datasets.sample import get_dataset_kymata_mirror_q3_2023, delete_dataset, get_dataset_gm_loudness
+from kymata.datasets.sample import delete_dataset
 
 
 def test_download_and_delete_q3_2023_data_files():
-    dataset = get_dataset_kymata_mirror_q3_2023(download=False)
+    from kymata.datasets.sample import KymataMirror2023Q3Dataset
+    dataset = KymataMirror2023Q3Dataset(download=False)
     try:
         dataset.download()
         for filename in dataset.filenames:
@@ -16,7 +17,8 @@ def test_download_and_delete_q3_2023_data_files():
 
 
 def test_download_and_delete_gm_loudness3_data_files():
-    dataset = get_dataset_gm_loudness(download=False)
+    from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
+    dataset = TVLInsLoudnessOnlyDataset(download=False)
     try:
         dataset.download()
         for filename in dataset.filenames:
