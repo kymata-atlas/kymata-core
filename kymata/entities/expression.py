@@ -211,6 +211,56 @@ class ExpressionSet(ABC):
                 zf.writestr(f"/{layer}/coo-shape.txt", "\n".join(str(x) for x in self._data[layer].data.shape))
 
     @classmethod
+    # TODO: return type
+    def _load_data(cls, from_path_or_file: path_type | file_type):
+        """
+        Load an ExpressionSet from an open file, or the file at the specified path.
+
+        If an open file is supplied, it should be opened in "rb" mode.
+        """
+
+        if isinstance(from_path_or_file, str):
+            from_path_or_file = Path(from_path_or_file)
+
+        with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
+            with TextIOWrapper(zf.open("/_metadata/expression-set-type.txt"), encoding="utf-8") as f:
+                es_type: str = str(f.read()).strip()
+
+            with TextIOWrapper(zf.open("/layers.txt"), encoding="utf-8") as f:
+                layers: list[str] = [str(l.strip()) for l in f.readlines()]
+
+            with TextIOWrapper(zf.open("/channels.txt"), encoding="utf-8") as f:
+                channels: list[str] = [c.strip() for c in f.readlines()]
+
+            with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
+                latencies: list[_LatencyDType] = [_LatencyDType(lat.strip()) for lat in f.readlines()]
+            with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
+                functions: list[_FunctionNameDType] = [_FunctionNameDType(fun.strip()) for fun in f.readlines()]
+            data_dict = dict()
+            for layer in layers:
+                with zf.open(f"/{layer}/coo-coords.bytes") as f:
+                    coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                with zf.open(f"/{layer}/coo-data.bytes") as f:
+                    data: ndarray = frombuffer(f.read(), dtype=float)
+                with TextIOWrapper(zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8") as f:
+                    shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
+                data_dict[layer] = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=1.0)
+                # In case there was only 1 function and we have a 2-d data matrix
+                # TODO: does this ever actually happen?
+                if len(shape) == 2:
+                    data_dict[layer] = expand_dims(data_dict[layer])
+                assert shape == (len(channels), len(latencies), len(functions))
+
+        assert all_equal([sp.shape for _layer, sp in data_dict.items()])
+
+        return (
+            functions,
+            channels,
+            latencies,
+            data_dict,
+        )
+
+    @classmethod
     @abstractmethod
     def load(cls, from_path_or_file: path_type | file_type) -> ExpressionSet:
         """
@@ -218,6 +268,7 @@ class ExpressionSet(ABC):
 
         If an open file is supplied, it should be opened in "rb" mode.
         """
+        # To override this, call _load_data and then call the appropriate constructor
         pass
 
     def _best_functions_for_layer(self, layer: str) -> DataFrame:
@@ -374,48 +425,14 @@ class HexelExpressionSet(ExpressionSet):
         If an open file is supplied, it should be opened in "rb" mode.
         """
 
-        if isinstance(from_path_or_file, str):
-            from_path_or_file = Path(from_path_or_file)
-
-        with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
-            with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
-                hexels: list[_HexelDType] = [_HexelDType(h.strip()) for h in f.readlines()]
-            with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
-                latencies: list[_LatencyDType] = [_LatencyDType(lat.strip()) for lat in f.readlines()]
-            with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-                functions: list[_FunctionNameDType] = [_FunctionNameDType(fun.strip()) for fun in f.readlines()]
-            with zf.open("/left/coo-coords.bytes") as f:
-                left_coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
-            with zf.open("/left/coo-data.bytes") as f:
-                left_data: ndarray = frombuffer(f.read(), dtype=float)
-            with TextIOWrapper(zf.open("/left/coo-shape.txt"), encoding="utf-8") as f:
-                left_shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
-            with zf.open("/right/coo-coords.bytes") as f:
-                right_coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
-            with zf.open("/right/coo-data.bytes") as f:
-                right_data: ndarray = frombuffer(f.read(), dtype=float)
-            with TextIOWrapper(zf.open("/right/coo-shape.txt"), encoding="utf-8") as f:
-                right_shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
-
-        left_sparse = COO(coords=left_coords, data=left_data, shape=left_shape, prune=True, fill_value=1.0)
-        right_sparse = COO(coords=right_coords, data=right_data, shape=right_shape, prune=True, fill_value=1.0)
-
-        assert left_shape == right_shape
-
-        # In case there was only 1 function and we have a 2-d data matrix
-        if len(left_shape) == 2:
-            # TODO: does this ever actually happen?
-            left_sparse = expand_dims(left_sparse)
-            right_sparse = expand_dims(right_sparse)
-
-        assert left_shape == (len(hexels), len(latencies), len(functions))
+        functions, channels, latencies, data_dict = cls._load_data(from_path_or_file)
 
         return HexelExpressionSet(
             functions=functions,
-            hexels=hexels,
+            hexels=[_HexelDType(c) for c in channels],
             latencies=latencies,
-            data_lh=[left_sparse[:, :, i] for i in range(len(functions))],
-            data_rh=[right_sparse[:, :, i] for i in range(len(functions))],
+            data_lh=[data_dict[_LEFT][:, :, i] for i in range(len(functions))],
+            data_rh=[data_dict[_RIGHT][:, :, i] for i in range(len(functions))],
         )
 
     def best_functions(self) -> Tuple[DataFrame, DataFrame]:
@@ -521,3 +538,20 @@ class SensorExpressionSet(ExpressionSet):
         for each hexel, the best function and latency for that hexel, and the associated p-value
         """
         return super()._best_functions_for_layer(_SCALP)
+
+    @classmethod
+    def load(cls, from_path_or_file: path_type | file_type) -> SensorExpressionSet:
+        """
+        Load an ExpressionSet from an open file, or the file at the specified path.
+
+        If an open file is supplied, it should be opened in "rb" mode.
+        """
+
+        functions, channels, latencies, data_dict = cls._load_data(from_path_or_file)
+
+        return SensorExpressionSet(
+            functions=functions,
+            sensors=[_SensorDType(c) for c in channels],
+            latencies=latencies,
+            data=[data_dict[_SCALP][:, :, i] for i in range(len(functions))],
+        )
