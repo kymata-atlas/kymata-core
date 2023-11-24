@@ -17,8 +17,8 @@ def test_download_and_delete_q3_2023_data_files():
 
 
 def test_download_and_delete_gm_loudness3_data_files():
-    from kymata.datasets.sample import GMLoudnessDataset
-    dataset = GMLoudnessDataset(download=False)
+    from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
+    dataset = TVLInsLoudnessOnlyDataset(download=False)
     try:
         dataset.download()
         for filename in dataset.filenames:

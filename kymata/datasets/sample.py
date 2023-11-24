@@ -6,7 +6,6 @@ from urllib import request
 
 from kymata.entities.expression import ExpressionSet
 from kymata.io.file import path_type
-from kymata.io.matlab import load_matab_expression_files
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
 _DATA_DIR_NAME = "kymata_data"
@@ -105,7 +104,8 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
         super().__init__(
             name=name,
             filenames=[
-                "TVL_2020_delta_ins_tontop_chan1_loudness_only.nkg",            ],
+                "TVL_2020_delta_ins_tontop_chan1_loudness_only.nkg"
+            ],
             data_root=data_root,
             remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
             download=download,
