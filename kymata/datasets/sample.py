@@ -1,11 +1,11 @@
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from os import getenv, getcwd, remove, rmdir
 from pathlib import Path
 from typing import Optional
 from urllib import request
 
+from kymata.entities.expression import ExpressionSet
 from kymata.io.file import path_type
-
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
 _DATA_DIR_NAME = "kymata-toolbox-data"
@@ -19,21 +19,100 @@ _preferred_default_data_locations = [
 ]
 
 
-@dataclass
-class SampleDataset:
+class SampleDataset(ABC):
     """
     Info required to retrieve a dataset stored locally.
 
     Names in `.filenames` refer to local files, which (if `remote_root` is specified) are paired with identically
     named remote files.
     """
-    name: str
-    path: Path
-    filenames: list[str]
-    remote_root: Optional[str] = None
+
+    def __init__(self,
+                 name: str,
+                 filenames: list[str],
+                 data_root: Optional[path_type],
+                 remote_root: Optional[str],
+                 download: bool):
+        self.name: str = name
+        self.filenames: list[str] = filenames
+        self.data_root: Path = data_root_path(data_root)
+        self.remote_root: str = remote_root
+
+        if download:
+            self.download()
+
+    @property
+    def path(self) -> Path:
+        return Path(self.data_root, self.name)
 
     def download(self):
-        _download_dataset(self)
+        print(f"Downloading dataset: {self.name}")
+        if self.remote_root is None:
+            raise ValueError("No remote root provided")
+        self.path.mkdir(exist_ok=True)
+        for filename in self.filenames:
+            remote = self.remote_root + "/" + filename
+            local = Path(self.path, filename)
+            if local.exists():
+                print(f"Local file already exists: {local}")
+            else:
+                print(f"Downloading {remote} to {local}")
+                request.urlretrieve(remote, local)
+
+    @abstractmethod
+    def to_expressionset(self) -> ExpressionSet:
+        raise NotImplementedError()
+
+
+class KymataMirror2023Q3Dataset(SampleDataset):
+    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+        name = "kymata_mirror_Q3_2023"
+        super().__init__(
+            name=name,
+            filenames=[
+                "kymata_mirror_Q3_2023_expression_endtable.nkg",
+            ],
+            data_root=data_root,
+            remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+            download=download,
+        )
+
+    def to_expressionset(self) -> ExpressionSet:
+        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+
+
+class TVLInsLoudnessOnlyDataset(SampleDataset):
+    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+        name = "TVL_2020_ins_loudness_only"
+        super().__init__(
+            name=name,
+            filenames=[
+                "TVL_2020_ins_loudness_only.nkg",
+            ],
+            data_root=data_root,
+            remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+            download=download,
+        )
+
+    def to_expressionset(self) -> ExpressionSet:
+        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+
+
+class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
+    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+        name = "TVL_2020_delta_ins_tontop_chan1_loudness_only"
+        super().__init__(
+            name=name,
+            filenames=[
+                "TVL_2020_delta_ins_tontop_chan1_loudness_only.nkg"
+            ],
+            data_root=data_root,
+            remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+            download=download,
+        )
+
+    def to_expressionset(self) -> ExpressionSet:
+        return ExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
 
 
 def data_root_path(data_root: Optional[path_type] = None) -> Path:
@@ -90,71 +169,6 @@ def data_root_path(data_root: Optional[path_type] = None) -> Path:
               f" next time.")
         print(f"Hint: $> {_DATA_PATH_ENVIRONMENT_VAR_NAME}=\"{str(data_root)}\"")
         return data_root
-
-
-def _download_dataset(local_dataset):
-    print(f"Downloading dataset: {local_dataset.name}")
-    if local_dataset.remote_root is None:
-        raise ValueError("No remote root provided")
-    local_dataset.path.mkdir(exist_ok=True)
-    for filename in local_dataset.filenames:
-        remote = local_dataset.remote_root + "/" + filename
-        local = Path(local_dataset.path, filename)
-        if local.exists():
-            print(f"Local file already exists: {local}")
-        else:
-            print(f"Downloading {remote} to {local}")
-            request.urlretrieve(remote, local)
-
-
-def get_dataset_kymata_mirror_q3_2023(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
-    name = "kymata_mirror_Q3_2023"
-
-    local_dataset = SampleDataset(
-        name=name,
-        path=Path(data_root_path(data_root=data_root), name),
-        filenames=[
-            "kymata_mirror_Q3_2023_expression_endtable.nkg",
-        ],
-        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
-    )
-    if download:
-        local_dataset.download()
-    return local_dataset
-
-
-def get_dataset_gm_loudness(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
-    name = "GMLoudness"
-
-    local_dataset = SampleDataset(
-        name=name,
-        path=Path(data_root_path(data_root=data_root), name),
-        filenames=[
-            "GMLoudness_lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-            "GMLoudness_rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-        ],
-        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
-    )
-    if download:
-        local_dataset.download()
-    return local_dataset
-
-
-def get_dataset_d_ins_loudness_tonop_chan1(download: bool = True, data_root: Optional[path_type] = None) -> SampleDataset:
-    name = "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1"
-
-    local_dataset = SampleDataset(
-        name=name,
-        path=Path(data_root_path(data_root=data_root), name),
-        filenames=[
-            "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__lh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-            "GMloudness_tonotop_82dB_d_ins_loudness_tonop_chan1__rh_10242verts_-200-800ms_cuttoff1000_5perms_ttestpval.mat",
-        ],
-        remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
-    )
-    if download:
-        local_dataset.download()
-    return local_dataset
 
 
 def delete_dataset(local_dataset: SampleDataset):
