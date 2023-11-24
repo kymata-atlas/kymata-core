@@ -1,4 +1,3 @@
-from os import path
 from pathlib import Path
 from itertools import cycle
 from typing import Optional, Sequence, Dict
@@ -26,6 +25,7 @@ def expression_plot(
         color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
         xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
+        hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
 ):
@@ -42,6 +42,7 @@ def expression_plot(
         show_only = expression_set.functions
     elif isinstance(show_only, str):
         show_only = [show_only]
+    not_shown = [f for f in expression_set.functions if f not in show_only]
     if color is None:
         color = dict()
     elif isinstance(color, str):
@@ -114,7 +115,6 @@ def expression_plot(
 
     for plot in [right_hem_expression_plot, left_hem_expression_plot]:
         plot.set_yscale('log')
-        # TODO: hard-coded?
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
         plot.set_xlim(*xlims)
@@ -131,6 +131,7 @@ def expression_plot(
     left_hem_expression_plot.set_title('Function Expression')
     left_hem_expression_plot.set_xticklabels([])
     right_hem_expression_plot.set_xlabel('Latency (ms) relative to onset of the environment')
+    # TODO: hard-coded?
     right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     right_hem_expression_plot.invert_yaxis()
     left_hem_expression_plot.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
@@ -142,12 +143,29 @@ def expression_plot(
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
                                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                                    horizontalalignment='center', rotation='vertical')
-    left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small',
-                                    bbox_to_anchor=(1.02, 1.02), loc="upper left")
+    # Legend for plotted functions
+    split_legend_at_n_functions = 15
+    legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
+    if hidden_functions_in_legend and len(not_shown) > 0:
+        if len(not_shown) > split_legend_at_n_functions:
+            legend_n_col = 2
+        # Plot dummy legend for other functions which are included in model selection but not plotted
+        leg = right_hem_expression_plot.legend(labels=not_shown, fontsize="x-small", alignment="left",
+                                               title="Non-plotted functions",
+                                               ncol=legend_n_col,
+                                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
+                                               # Hide lines for non-plotted functions
+                                               handlelength=0, handletextpad=0)
+        for lh in leg.legend_handles:
+            lh.set_alpha(0)
+    left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
+                                    title="Plotted functions",
+                                    ncol=legend_n_col,
+                                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
-        pyplot.savefig(Path(save_to))
+        pyplot.savefig(Path(save_to), bbox_inches='tight')
 
     pyplot.show()
     pyplot.close()
@@ -185,9 +203,6 @@ def _get_yticks(ylim):
 
 if __name__ == '__main__':
     from kymata.datasets.sample import KymataMirror2023Q3Dataset
-
-    # set location of tutorial data
-    sample_data_dir = Path(Path(path.abspath("")).parent.parent, "data", "sample-data")
 
     # create new expression set object and add to it
     expression_data_kymata_mirror = KymataMirror2023Q3Dataset().to_expressionset()

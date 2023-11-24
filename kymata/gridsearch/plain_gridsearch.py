@@ -106,6 +106,9 @@ def do_gridsearch():
 
         allcorrs = zeros(nVertices, numberOfIterations, nWords);
 
+        nn = size(MEGdataDownsampled, 2);
+        pow2(nextpow2(m))
+
         for i in 1:numberOfIterations:
 
             disp(['Iteration ', num2str(i) ' out of ', num2str(numberOfIterations)]);
@@ -117,16 +120,38 @@ def do_gridsearch():
             shuffledMEGdata = reshape(shuffledMEGdata, nWords, downsampledtimespan, nVertices)
             shuffledMEGdata = permute(shuffledMEGdata, [3 2 1])
 
-            # Confirm signals are not shorter than cutt-off
-            assert XYZ
+            sig1 = bsxfun( @ minus, shuffledMEGdata, mean(shuffledMEGdata, 2));
+            sig2 = bsxfun( @ minus, wordsignalstrueDownsampled, mean(wordsignalstrueDownsampled, 2));
 
-            # Do  correlation
-            allcorrs(:, i,:) = nansum(bsxfun( @ minus, shuffledMEGdata,
-                                      nanmean(shuffledMEGdata, 2)). * bsxfun( @ minus, wordsignalstrueDownsampled, nanmean(
-            wordsignalstrueDownsampled, 2)), 2)./ (sqrt(
-            nansum((bsxfun( @ minus, shuffledMEGdata, nanmean(shuffledMEGdata, 2))). ^ 2, 2)). * sqrt(
-            nansum((bsxfun( @ minus, wordsignalstrueDownsampled, nanmean(wordsignalstrueDownsampled, 2))). ^ 2, 2)));
+            sig1 = sig1. / sqrt(sum(sig1. ^ 2, 2));
+            sig2 = sig2. / sqrt(sum(sig2. ^ 2, 2));
 
+            Fsig1 = fft(sig1, nn, 2);
+            Fsig2 = fft(sig2, nn, 2);
+
+            Fcomb = Fsig1. * conj(Fsig2);
+            comb = ifft(Fcomb, nn, 2);
+
+            allcorrs(:,:, i,:) = real(comb(:, 1: length(latencies),:));
+        end
+
+        k_ = mean(allcorrs(:,:,:,:), 4);
+        [m, am] = max(k_(:,:, 1).^ 2, [], 2);
+        [m, am] = max(m);
+        disp(sqrt(m));
+        disp(am);
+
+        %207
+        figure;
+        hold on;
+        for i = 1:5
+            k = k_(207,:, i);
+            % k = permute(k, [3, 1, 2]);
+            % k = allcorrs(2,:, 1, 102);
+            % k = permute(k, [2, 1, 3, 4]);
+            %disp(size(k));
+            plot(k);
+        end
 
         clear shuffledMEGdata;
 

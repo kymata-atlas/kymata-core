@@ -8,7 +8,7 @@ from kymata.entities.expression import ExpressionSet
 from kymata.io.file import path_type
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
-_DATA_DIR_NAME = "kymata_data"
+_DATA_DIR_NAME = "kymata-toolbox-data"
 
 # Places downloaded datasets could go, in order of preference
 _preferred_default_data_locations = [
