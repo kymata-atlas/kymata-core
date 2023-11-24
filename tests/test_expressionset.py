@@ -4,8 +4,8 @@ from kymata.entities.expression import ExpressionSet
 
 
 def test_save_and_load_is_equal():
-    from kymata.datasets.sample import GMLoudnessDataset, delete_dataset
-    sample_dataset = GMLoudnessDataset(download=False)
+    from kymata.datasets.sample import TVLInsLoudnessOnlyDataset, delete_dataset
+    sample_dataset = TVLInsLoudnessOnlyDataset(download=False)
     already_existed = sample_dataset.path.exists()
     sample_dataset.download()
     es_loaded_from_source = sample_dataset.to_expressionset()
