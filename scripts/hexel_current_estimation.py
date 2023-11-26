@@ -75,6 +75,11 @@ def create_current_estimation_prerequisites(config: dict):
         cd ../DKT_Atlas  # this is the best one to use (at the momment - from the mind-boggle dataset)
         mne_annot2labels --subject ${subjects[m]} --parc aparc.DKTatlas40
 
+    # export to .stl file format, to offer it to participant for 3d printing (if requested)
+    for participant in participants
+        $ mkdir $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing
+        $ mris_convert $SUBJECTS_DIR/participant_01/surf/rh.pial $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/rh.pial.stl
+
     #<------------------------------------------------------------->
 '''
     # visualise the labels on the pial surface
@@ -83,51 +88,50 @@ def create_current_estimation_prerequisites(config: dict):
     #    brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
     #    brain.add_annotation("aparc.a2009s", borders=False)
 
-    # Computing the BEM Surfaces (needed for coregistration to work)
+    # Computing the 'BEM' surfaces (needed for coregistration to work)
     for  participant in list_of_participants:
-        https: // imaging.mrc - cbu.cam.ac.uk / meg / AnalyzingData / MNE_MRI_processing
-        # todo -  AT has used the commandline version to create the BEMSs
-
-        if mri_structural_type == 'T1':
-            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
-                subject=participant,
-                subjects_dir=mri_structurals_directory,
-                copy=True,
-                overwrite=True,
-                show=True,
-            )
-
-            mne.bem.make_scalp_surfaces(
-                subject=participant,
-                subjects_dir=mri_structurals_directory,
-                no_decimate=True,
-                force=True,
-                overwrite=True,
-            )
-
-            mne.viz.plot_bem(subject=participant,
-                subjects_dir=mri_structurals_directory,
-                brain_surfaces="white",
-                orientation="coronal",
-                slices=[50, 100, 150, 200],)
-
-        elif mri_structural_type == 'Flash':
-            # todo add & test flash
-            # mne.bem.make_flash_bem().
-            print("Flash not yet implemented.")
+#        # andy is using:
+#        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
+#        # todo -  AT has used the commandline version to create the BEMSs: do and then compare
+#
+#        if mri_structural_type == 'T1':
+#            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+#                subject=participant,
+#                subjects_dir=mri_structurals_directory,
+#                copy=True,
+#                overwrite=True,
+#                show=True,
+#            )
+#
+#            mne.bem.make_scalp_surfaces(
+#                subject=participant,
+#                subjects_dir=mri_structurals_directory,
+#                no_decimate=True,
+#                force=True,
+#                overwrite=True,
+#            )
+#
+#        elif mri_structural_type == 'Flash':
+#            # todo add & test flash
+#            # mne.bem.make_flash_bem().
+#            print("Flash not yet implemented.")
 
         # produce the source space (downsampled version of the cortical surface in Freesurfer), which
         # will be saved in a file ending in *-src.fif
-
         src = mne.setup_source_space(
-                subject, spacing="oct5", add_dist="patch", subjects_dir=subjects_dir
+                participant, spacing="ico5", add_dist=True, subjects_dir=mri_structurals_directory
         )
         print(src)
-        mne.viz.plot_bem(src=src, **plot_bem_kwargs)
+
+        mne.viz.plot_bem(subject=participant,
+                         subjects_dir=mri_structurals_directory,
+                         brain_surfaces="white",
+                         orientation="coronal",
+                         slices=[50, 100, 150, 200])
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
-    for  participant in list_of_participants:
+    for participant in list_of_participants:
         mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory)
 '''
 
@@ -178,6 +182,8 @@ def create_forward_model_and_inverse_solution():
     # Compute forward solution
     for participant in participants
         http://martinos.org/mne/stable/auto_examples/forward/plot_make_forward.html#sphx-glr-auto-examples-forward-plot-make-forward-py
+
+        mne_do_forward_solution --subject ${subjects[m]} --mindist 5 --ico 5 --bem ${mne_sub}${subjects[m]}/bem/${subjectsX[m]}-5120-5120-5120-bem-sol.fif --src ${mne_sub}${subjects[m]}/bem/${subjectsX[m]}-ico-5-src.fif --meas ${code_output_path}3-sensor-data/fif-out/'meg14_'${subjects[m]}-grandave.fif --fwd ${code_output_path}3-sensor-data/forward-models/meg14_${subjects[m]}_ico-5-3L-fwd.fif
 
         Use –accurate in the forward model
         ... BE SURE TO copy exactly what was in the origional FORWARD script
