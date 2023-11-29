@@ -231,7 +231,7 @@ def run_preprocessing(config: dict):
 
             raw_fif_data_sss_movecomp_tr.save(
                 'data/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(run) + '_cleaned_raw.fif.gz',
-                overwrite=True)
+                overwrite=True, fmt='short')
 
 
 def create_trials(config: dict):
@@ -340,6 +340,7 @@ def create_trials(config: dict):
             for i in range(1, number_of_trials + 1):
                 # evoked_one.plot() #(on top of each other)
                 # evoked_one.plot_image() #(side-by-side)
+
                 evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
                 evoked.save(
                     'data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
