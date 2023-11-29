@@ -14,7 +14,7 @@ First, confirm you have the correct version of Python installed. Navigate to the
 ```
 $ pyenv versions
 ```
-This should confirm that python 3.8.9 or above is installed. If it isn't already there,
+This should confirm that python 3.11 or above is installed. If it isn't already there,
 install it using `pyenv install`. You should be able to confirm
 you are using the correct version using 
 
