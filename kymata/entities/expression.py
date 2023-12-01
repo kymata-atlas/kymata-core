@@ -217,7 +217,7 @@ class ExpressionSet:
              "Files saved using .save should not (yet) be treated as stable or future-proof.")
 
         if isinstance(to_path_or_file, str):
-            to_path = Path(to_path_or_file)
+            to_path_or_file = Path(to_path_or_file)
         if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
             raise FileExistsError(to_path_or_file)
 
