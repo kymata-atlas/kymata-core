@@ -54,7 +54,7 @@ CURRENT_VERSION = "0.2"
 
 def file_version(from_path_or_file: path_type | file_type) -> version.Version:
     with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
-        with TextIOWrapper(zf.open("/_metadata/version.txt"), encoding="utf-8") as f:
+        with TextIOWrapper(zf.open("/_metadata/format-version.txt"), encoding="utf-8") as f:
             return version.parse(str(f.read()).strip())
 
 
