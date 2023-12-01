@@ -6,6 +6,7 @@ from urllib import request
 
 from kymata.entities.expression import HexelExpressionSet
 from kymata.io.file import path_type
+from kymata.io.nkg import load_expression_set
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
 _DATA_DIR_NAME = "kymata-toolbox-data"
@@ -78,7 +79,9 @@ class KymataMirror2023Q3Dataset(SampleDataset):
         )
 
     def to_expressionset(self) -> HexelExpressionSet:
-        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+        es = load_expression_set(from_path_or_file=Path(self.path, self.filenames[0]))
+        assert isinstance(es, HexelExpressionSet)
+        return es
 
 
 class TVLInsLoudnessOnlyDataset(SampleDataset):
@@ -95,7 +98,9 @@ class TVLInsLoudnessOnlyDataset(SampleDataset):
         )
 
     def to_expressionset(self) -> HexelExpressionSet:
-        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+        es = load_expression_set(from_path_or_file=Path(self.path, self.filenames[0]))
+        assert isinstance(es, HexelExpressionSet)
+        return es
 
 
 class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
@@ -112,7 +117,9 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
         )
 
     def to_expressionset(self) -> HexelExpressionSet:
-        return HexelExpressionSet.load(from_path_or_file=Path(self.path, self.filenames[0]))
+        es = load_expression_set(from_path_or_file=Path(self.path, self.filenames[0]))
+        assert isinstance(es, HexelExpressionSet)
+        return es
 
 
 def data_root_path(data_root: Optional[path_type] = None) -> Path:
