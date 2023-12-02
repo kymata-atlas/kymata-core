@@ -73,7 +73,7 @@ class ExpressionSet(ABC):
                 data_layers[layer] = [data_layers[layer]]
 
         assert len(functions) == len(set(functions)), "Duplicated functions in input"
-        for layer, data in data_layers:
+        for layer, data in data_layers.items():
             assert len(functions) == len(data), _length_mismatch_message
         assert all_equal([arr.shape for _layer, arrs in data_layers.items() for arr in arrs])
 
@@ -84,7 +84,7 @@ class ExpressionSet(ABC):
         datasets = []
         for i, f in enumerate(functions):
             dataset_dict = dict()
-            for layer, data in data_layers:
+            for layer, data in data_layers.items():
                 # Get this function's data
                 data = data[i]
                 data = self._init_prep_data(data)
