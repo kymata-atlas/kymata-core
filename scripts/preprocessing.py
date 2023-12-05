@@ -12,6 +12,7 @@ import utils
 
 def run_preprocessing(config: dict):
     list_of_participants = config['list_of_participants']
+    dataset_directory_name = config['dataset_directory_name']
     number_of_runs = config['number_of_runs']
     EMEG_machine_used_to_record_data = config['EMEG_machine_used_to_record_data']
     remove_ECG = config['remove_ECG']
@@ -33,17 +34,17 @@ def run_preprocessing(config: dict):
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = 'data/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+            saved_maxfiltered_filename = 'data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
             else:
-                raw_fif_data = mne.io.Raw("data/raw/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
+                raw_fif_data = mne.io.Raw('data/' + dataset_directory_name + "/raw/" + participant + "/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
-                recording_config = utils.load_recording_config('data/raw/' + participant + '_recording_config.yaml')
+                recording_config = utils.load_recording_config('data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -153,7 +154,7 @@ def run_preprocessing(config: dict):
 
             # remove very slow drift
             print(f"{Fore.GREEN}{Style.BRIGHT}   Removing slow drift...{Style.RESET_ALL}")
-            # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
+            raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
             # Remove ECG, VEOH and HEOG
 
@@ -230,13 +231,14 @@ def run_preprocessing(config: dict):
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
             raw_fif_data_sss_movecomp_tr.save(
-                'data/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(run) + '_cleaned_raw.fif.gz',
+                'data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(run) + '_cleaned_raw.fif.gz',
                 overwrite=True, fmt='short')
 
 
 def create_trials(config: dict):
     """Create trials objects from the raw data files (still in sensor space)"""
 
+    dataset_directory_name = config['dataset_directory_name']
     list_of_participants = config['list_of_participants']
     repetitions_per_runs = config['repetitions_per_runs']
     number_of_runs = config['number_of_runs']
@@ -265,7 +267,7 @@ def create_trials(config: dict):
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = 'data/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = 'data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -332,7 +334,7 @@ def create_trials(config: dict):
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject=p)
             dropfig.savefig(
-                'data/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
+                'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -343,7 +345,7 @@ def create_trials(config: dict):
 
                 evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
                 evoked.save(
-                    'data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
+                    'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
                         i) + '-ave.fif', overwrite=True)
 
         # save grand average
@@ -351,7 +353,7 @@ def create_trials(config: dict):
 
         evoked_grandaverage = epochs.average()
         evoked_grandaverage.save(
-            'data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
+            'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
             overwrite=True)
 
         # save grand covs
@@ -361,7 +363,7 @@ def create_trials(config: dict):
         # cov.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
 
     #	Save global droplog
-    with open('data/intrim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
+    with open('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
         file.write('Average drop rate for each participant\n')
         for item in global_droplog:
             file.write(item + '/n')
@@ -375,13 +377,13 @@ def create_trials(config: dict):
             evokeds_list = []
             for p in list_of_participants:
                 individual_evoked = mne.read_evokeds(
-                    'data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
+                    'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
                         trial) + '-ave.fif', condition=str(trial))
                 evokeds_list.append(individual_evoked)
 
             average_participant_evoked = mne.combine_evoked(evokeds_list, weights="nave")
             average_participant_evoked.save(
-                'data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
+                'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
                     trial) + '-ave.fif', overwrite=True)
 
 
