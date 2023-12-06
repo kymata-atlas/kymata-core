@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "kymata-hpc"
+name = "kymata-preprocessing-pipeline"
 version = "0.1.0"
 description = "The pipeline for central Kymata analysis."
 authors = ["neukym <acgt2@cam.ac.uk>"]
