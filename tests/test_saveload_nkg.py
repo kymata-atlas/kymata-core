@@ -1,6 +1,7 @@
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from kymata.entities.expression import ExpressionSet
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
 from kymata.io.nkg import save_expression_set, load_expression_set
 
 
@@ -21,3 +22,23 @@ def test_save_and_load_is_equal():
         delete_dataset(sample_dataset)
 
     assert es_loaded_from_source == ed_saved_and_reloaded
+
+
+def test_load_v0_1_nkg():
+    es = load_expression_set(Path(Path(__file__).parent, "test-data", "version_0_1.nkg"))
+    assert isinstance(es, HexelExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.hexels) == 100
+    assert es.left.shape == es.right.shape == (100, 10, 1)
+
+
+def test_load_sensor_nkg():
+    es = load_expression_set(Path(Path(__file__).parent, "test-data", "sensor.nkg"))
+    assert isinstance(es, SensorExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.sensors) == 305
+    assert es.scalp.shape == (305, 10, 1)

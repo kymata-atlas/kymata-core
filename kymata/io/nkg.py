@@ -59,7 +59,7 @@ def file_version(from_path_or_file: path_type | file_type) -> version.Version:
 
 
 def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionSet:
-    version, data_dict = _load_data(from_path_or_file)
+    _v, data_dict = _load_data(from_path_or_file)
 
     type_identifier = data_dict[_Keys.expressionset_type]
 
@@ -78,7 +78,7 @@ def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionS
             functions=data_dict[_Keys.functions],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels]],
             latencies=data_dict[_Keys.latencies],
-            data=[data_dict[LAYER_SCALP][:, :, i]
+            data=[data_dict[_Keys.data][LAYER_SCALP][:, :, i]
                   for i in range(len(data_dict[_Keys.functions]))],
         )
 
@@ -151,6 +151,7 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
     return v, return_dict
 
 
+# noinspection DuplicatedCode
 def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, Any]:
     """
     Load data from current version
@@ -187,6 +188,7 @@ def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, An
     return return_dict
 
 
+# noinspection DuplicatedCode
 def _load_data_0_1(from_path_or_file: path_type | file_type) -> dict[str, Any]:
     """
     This is a function which loads data format 0.1.
