@@ -7,6 +7,7 @@ from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
 import numpy as np
 from seaborn import color_palette
+from pandas import DataFrame
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet
 
@@ -94,9 +95,14 @@ def expression_plot(
                  * len(channels)
                  * len(show_only))))
 
-    best_funs = expression_set.best_functions()
+    best_functions = expression_set.best_functions()
+    # Wrap into list if necessary
+    if isinstance(best_functions, DataFrame):
+        best_functions = (best_functions, )
 
-    fig, axes = pyplot.subplots(nrows=2, ncols=1, figsize=(12, 7))
+    paired_axes = True
+
+    fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
@@ -109,10 +115,10 @@ def expression_plot(
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        for ax, best_funs in zip(axes, best_funs):
+        for ax, best_fun in zip(axes, best_functions):
 
             x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                function_data=best_funs[best_funs["function"] == function], function_name=function,
+                function_data=best_fun[best_fun["function"] == function], function_name=function,
                 ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
             data_x_min = min(data_x_min, x_min)
             data_x_max = max(data_x_max, x_max)
@@ -134,22 +140,27 @@ def expression_plot(
         ax.set_yticks(_get_yticks(ylim))
 
     # format one-off axis qualities
-    left_hem_expression_ax, right_hem_expression_ax = axes
-    left_hem_expression_ax.set_title('Function Expression')
-    left_hem_expression_ax.set_xticklabels([])
-    right_hem_expression_ax.set_xlabel('Latency (ms) relative to onset of the environment')
+    if paired_axes:
+        top_ax, bottom_ax = axes
+        top_ax.set_xticklabels([])
+        bottom_ax.invert_yaxis()
+    else:
+        top_ax = bottom_ax = axes[0]
+    top_ax.set_title('Function Expression')
+    bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     # TODO: hard-coded?
-    right_hem_expression_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
-    right_hem_expression_ax.invert_yaxis()
-    left_hem_expression_ax.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
-                                verticalalignment='center')
-    right_hem_expression_ax.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
-                                 verticalalignment='center')
-    y_axis_label = f'p-value (with α at 5-sigma, Šidák corrected)'
-    left_hem_expression_ax.text(-275, 1, y_axis_label, verticalalignment='center', rotation='vertical')
-    right_hem_expression_ax.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
-                                 bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                                 horizontalalignment='center', rotation='vertical')
+    bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
+    if paired_axes:
+        top_ax.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
+                    verticalalignment='center')
+        bottom_ax.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
+                       verticalalignment='center')
+    top_ax.text(-275, 1, f'p-value (with α at 5-sigma, Šidák corrected)',
+                verticalalignment='center', rotation='vertical')
+    bottom_ax.text(0, 1, '   onset of environment   ',
+                   color='white', fontsize='x-small',
+                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
+                   horizontalalignment='center', rotation='vertical')
     # Legend for plotted function
     split_legend_at_n_functions = 15
     legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
@@ -157,18 +168,18 @@ def expression_plot(
         if len(not_shown) > split_legend_at_n_functions:
             legend_n_col = 2
         # Plot dummy legend for other functions which are included in model selection but not plotted
-        leg = right_hem_expression_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
-                                             title="Non-plotted functions",
-                                             ncol=legend_n_col,
-                                             bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                                             # Hide lines for non-plotted functions
-                                             handlelength=0, handletextpad=0)
+        leg = bottom_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
+                               title="Non-plotted functions",
+                               ncol=legend_n_col,
+                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
+                               # Hide lines for non-plotted functions
+                               handlelength=0, handletextpad=0)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
-    left_hem_expression_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                                  title="Plotted functions",
-                                  ncol=legend_n_col,
-                                  loc="upper left", bbox_to_anchor=(1.02, 1.02))
+    top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
+                  title="Plotted functions",
+                  ncol=legend_n_col,
+                  loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
