@@ -189,11 +189,7 @@ class ExpressionSet(ABC):
         })
 
     @abstractmethod
-    def best_functions(self):
-        """
-        Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated p-value
-        """
+    def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
         pass
 
 
@@ -392,7 +388,7 @@ class SensorExpressionSet(ExpressionSet):
 
     def best_functions(self) -> DataFrame:
         """
-        Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated p-value
+        Return a DataFrame containing:
+        for each sensor, the best function and latency for that sensor, and the associated p-value
         """
         return super()._best_functions_for_layer(LAYER_SCALP)

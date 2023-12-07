@@ -6,18 +6,40 @@ from statistics import NormalDist
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
 import numpy as np
-from pandas import DataFrame
 from seaborn import color_palette
+from pandas import DataFrame
 
-from kymata.entities.expression import HexelExpressionSet
-
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet
 
 # 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
 
 
+def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data, function_name: str, sidak_corrected_alpha: float, colors):
+    """
+    Returns:
+        x_min, x_max, y_min, y_max
+            Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
+                  (so they can be added to min() and max() without altering the result).
+    """
+    x = function_data["latency"].values * 1000  # Convert to milliseconds
+    y = function_data["value"].values
+    c = np.where(np.array(y) <= sidak_corrected_alpha, colors[function_name], "black")
+    ax.vlines(x=x, ymin=1, ymax=y, color=c)
+    ax.scatter(x, y, color=c, s=20)
+
+    x_min = x.min() if len(x) > 0 else np.Inf
+    x_max = x.max() if len(x) > 0 else -np.Inf
+    # Careful, the y value is inverted, with y==1 on the origin and y<1 away from the origin.
+    # "y_min" here is real absolute min value in the data (closest to zero)
+    y_min = y.min() if len(y) > 0 else np.Inf
+    y_max = y.max() if len(y) > 0 else -np.Inf
+
+    return x_min, x_max, y_min, y_max
+
+
 def expression_plot(
-        expression_set: HexelExpressionSet,
+        expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
@@ -59,109 +81,105 @@ def expression_plot(
         if function not in color:
             color[function] = colors.to_hex(next(cycol))
 
+    if isinstance(expression_set, HexelExpressionSet):
+        channels = expression_set.hexels
+    elif isinstance(expression_set, SensorExpressionSet):
+        channels = expression_set.sensors
+    else:
+        raise NotImplementedError()
+
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
                  * len(expression_set.latencies)
-                 * len(expression_set.hexels)
+                 * len(channels)
                  * len(show_only))))
 
-    best_functions_lh: DataFrame
-    best_functions_rh: DataFrame
-    best_functions_lh, best_functions_rh = expression_set.best_functions()
+    best_functions = expression_set.best_functions()
+    # Wrap into list if necessary
+    if isinstance(best_functions, DataFrame):
+        best_functions = (best_functions, )
 
-    fig, (left_hem_expression_plot, right_hem_expression_plot) = pyplot.subplots(nrows=2, ncols=1, figsize=(12, 7))
+    paired_axes = True
+
+    fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
     custom_handles = []
     custom_labels = []
     data_x_min, data_x_max = np.Inf, -np.Inf
-    # Careful, the y value is inverted, with y==1 on the origin and y<1 away from the origin.
-    # "y_min" here is real absolute min value in the data (closest to zero)
-    data_y_min = np.Inf
+    data_y_min             = np.Inf
     for function in show_only:
 
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        # left
-        data_left = best_functions_lh[best_functions_lh["function"] == function]
-        x_left = data_left["latency"].values * 1000
-        y_left = data_left["value"].values
-        left_color = np.where(np.array(y_left) <= sidak_corrected_alpha, color[function], 'black')
-        left_hem_expression_plot.vlines(x=x_left, ymin=1, ymax=y_left, color=left_color)
-        left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
+        for ax, best_fun in zip(axes, best_functions):
 
-        # right
-        data_right = best_functions_rh[best_functions_rh["function"] == function]
-        x_right = data_right["latency"].values * 1000
-        y_right = data_right["value"].values
-        right_color = np.where(np.array(y_right) <= sidak_corrected_alpha, color[function], 'black')
-        right_hem_expression_plot.vlines(x=x_right, ymin=1, ymax=y_right, color=right_color)
-        right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
-
-        data_x_min = min(data_x_min,
-                         x_left.min() if len(x_left) > 0 else np.Inf,
-                         x_right.min() if len(x_right) > 0 else np.Inf)
-        data_x_max = max(data_x_max,
-                         x_left.max() if len(x_left) > 0 else -np.Inf,
-                         x_right.max() if len(x_right) > 0 else- np.Inf)
-        data_y_min = min(data_y_min,
-                         y_left.min() if len(y_left) > 0 else np.Inf,
-                         y_right.min() if len(y_right) > 0 else np.Inf)
+            x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
+                function_data=best_fun[best_fun["function"] == function], function_name=function,
+                ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
+            data_x_min = min(data_x_min, x_min)
+            data_x_max = max(data_x_max, x_max)
+            data_y_min = min(data_y_min, y_min)
 
     # format shared axis qualities
-
-    for plot in [right_hem_expression_plot, left_hem_expression_plot]:
-        plot.set_yscale('log')
+    for ax in axes:
+        ax.set_yscale('log')
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
-        plot.set_xlim(*xlims)
-        plot.set_ylim((1, ylim))
-        plot.axvline(x=0, color='k', linestyle='dotted')
-        plot.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
-        plot.text(-100, sidak_corrected_alpha, 'α*',
+        ax.set_xlim(*xlims)
+        ax.set_ylim((1, ylim))
+        ax.axvline(x=0, color='k', linestyle='dotted')
+        ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
+        ax.text(-100, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.text(600, sidak_corrected_alpha, 'α*',
+        ax.text(600, sidak_corrected_alpha, 'α*',
                   bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        plot.set_yticks(_get_yticks(ylim))
+        ax.set_yticks(_get_yticks(ylim))
 
     # format one-off axis qualities
-    left_hem_expression_plot.set_title('Function Expression')
-    left_hem_expression_plot.set_xticklabels([])
-    right_hem_expression_plot.set_xlabel('Latency (ms) relative to onset of the environment')
+    if paired_axes:
+        top_ax, bottom_ax = axes
+        top_ax.set_xticklabels([])
+        bottom_ax.invert_yaxis()
+    else:
+        top_ax = bottom_ax = axes[0]
+    top_ax.set_title('Function Expression')
+    bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     # TODO: hard-coded?
-    right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
-    right_hem_expression_plot.invert_yaxis()
-    left_hem_expression_plot.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
-                                  verticalalignment='center')
-    right_hem_expression_plot.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
-                                   verticalalignment='center')
-    y_axis_label = f'p-value (with α at 5-sigma, Šidák corrected)'
-    left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center', rotation='vertical')
-    right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
-                                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                                   horizontalalignment='center', rotation='vertical')
-    # Legend for plotted functions
+    bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
+    if paired_axes:
+        top_ax.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
+                    verticalalignment='center')
+        bottom_ax.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
+                       verticalalignment='center')
+    top_ax.text(-275, 1, f'p-value (with α at 5-sigma, Šidák corrected)',
+                verticalalignment='center', rotation='vertical')
+    bottom_ax.text(0, 1, '   onset of environment   ',
+                   color='white', fontsize='x-small',
+                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
+                   horizontalalignment='center', rotation='vertical')
+    # Legend for plotted function
     split_legend_at_n_functions = 15
     legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
     if hidden_functions_in_legend and len(not_shown) > 0:
         if len(not_shown) > split_legend_at_n_functions:
             legend_n_col = 2
         # Plot dummy legend for other functions which are included in model selection but not plotted
-        leg = right_hem_expression_plot.legend(labels=not_shown, fontsize="x-small", alignment="left",
-                                               title="Non-plotted functions",
-                                               ncol=legend_n_col,
-                                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                                               # Hide lines for non-plotted functions
-                                               handlelength=0, handletextpad=0)
+        leg = bottom_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
+                               title="Non-plotted functions",
+                               ncol=legend_n_col,
+                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
+                               # Hide lines for non-plotted functions
+                               handlelength=0, handletextpad=0)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
-    left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                                    title="Plotted functions",
-                                    ncol=legend_n_col,
-                                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
+    top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
+                  title="Plotted functions",
+                  ncol=legend_n_col,
+                  loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
@@ -199,12 +217,3 @@ def _get_yticks(ylim):
     n_major_ticks = int(np.log10(ylim) / _MAJOR_TICK_SIZE) * -1
     last_major_tick = 10 ** (-1 * n_major_ticks * _MAJOR_TICK_SIZE)
     return np.geomspace(start=1, stop=last_major_tick, num=n_major_ticks + 1)
-
-
-if __name__ == '__main__':
-    from kymata.datasets.sample import KymataMirror2023Q3Dataset
-
-    # create new expression set object and add to it
-    expression_data_kymata_mirror = KymataMirror2023Q3Dataset().to_expressionset()
-
-    expression_plot(expression_data_kymata_mirror, show_only=expression_data_kymata_mirror.functions[1:], save_to=Path("/Users/cai/Desktop/temp.png"))
