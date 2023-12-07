@@ -176,13 +176,13 @@ class ExpressionSet(ABC):
 
         best_functions = best_function[layer].data
 
-        best_latencies = best_latency[layer].sel({_HEXEL: self._channels, _FUNCTION: best_function[layer]}).data
+        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, _FUNCTION: best_function[layer]}).data
 
         # Cut out channels which have a best p-val of 1
         idxs = p_vals < 1
 
         return DataFrame.from_dict({
-            _HEXEL: self._channels[idxs],
+            self._channel_coord_name: self._channels[idxs],
             _FUNCTION: best_functions[idxs],
             _LATENCY: best_latencies[idxs],
             "value": p_vals[idxs],

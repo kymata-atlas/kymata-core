@@ -1,6 +1,6 @@
 from pathlib import Path
 from itertools import cycle
-from typing import Optional, Sequence, Dict
+from typing import Optional, Sequence, Dict, NamedTuple
 from statistics import NormalDist
 
 from matplotlib import pyplot, colors
@@ -38,9 +38,23 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data, function_n
     return x_min, x_max, y_min, y_max
 
 
+class AxisAssignment(NamedTuple):
+    axis_name: str
+    axis_channels: list
+
+
+left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
+    AxisAssignment(axis_name="left",
+                   axis_channels=[]),
+    AxisAssignment(axis_name="right",
+                   axis_channels=[]),
+)
+
+
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
+        assign_left_right_channels: Optional[tuple[AxisAssignment, AxisAssignment, AxisAssignment]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
@@ -54,6 +68,14 @@ def expression_plot(
     """
     Generates an expression plot
 
+    assign_left_right_channels: Only applies to SensorExpressionSets (i.e. those with a single layer of channels)
+                                If supplied, assigns specific channels to left and right plots.
+                                If not supplied or None, default behaviour is:
+                                    hexel data → left hemi on top axis, right hemi on bottom (by definition of "only applies")
+                                    sensor data → all sensors together
+                                If the same channels are listed in both axes, they will be displayed in a different colour
+                                (e.g. medial sensors shown on both hemis)
+
     color: colour name, function_name → colour name, or list of colour names
     xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
     """
@@ -65,6 +87,26 @@ def expression_plot(
     elif isinstance(show_only, str):
         show_only = [show_only]
     not_shown = [f for f in expression_set.functions if f not in show_only]
+
+    if assign_left_right_channels is None:
+        # Set defaults
+        if isinstance(expression_set, HexelExpressionSet):
+            paired_axes = True
+            axes_names = ("left hemisphere", "right hemisphere")
+        elif isinstance(expression_set, SensorExpressionSet):
+            paired_axes = False
+            axes_names = ("", )
+        else:
+            raise NotImplementedError()
+    else:
+        if isinstance(expression_set, HexelExpressionSet):
+            raise ValueError("HexelExpressionSets have preset hemisphere assignments")
+        elif isinstance(expression_set, SensorExpressionSet):
+            paired_axes = True
+            axes_names = (assign_left_right_channels[0].axis_name, assign_left_right_channels[1].axis_name)
+        else:
+            raise NotImplementedError()
+
     if color is None:
         color = dict()
     elif isinstance(color, str):
@@ -100,9 +142,8 @@ def expression_plot(
     if isinstance(best_functions, DataFrame):
         best_functions = (best_functions, )
 
-    paired_axes = True
-
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
+    if isinstance(axes, pyplot.Axes): axes = (axes, )  # Wrap if necessary
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
@@ -151,13 +192,15 @@ def expression_plot(
     # TODO: hard-coded?
     bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     if paired_axes:
-        top_ax.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
-                    verticalalignment='center')
-        bottom_ax.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
-                       verticalalignment='center')
-    top_ax.text(-275, 1, f'p-value (with α at 5-sigma, Šidák corrected)',
-                verticalalignment='center', rotation='vertical')
-    bottom_ax.text(0, 1, '   onset of environment   ',
+        top_ax.text(s=axes_names[0],
+                    x=-180, y=ylim * 10_000_000,
+                    style='italic', verticalalignment='center')
+        bottom_ax.text(s=axes_names[1],
+                       x=-180, y=ylim * 10_000_000,
+                       style='italic', verticalalignment='center')
+    fig.supylabel(f'p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
+    bottom_ax.text(s='   onset of environment   ',
+                   x=0, y=1 if paired_axes else 10**(np.log10(ylim)/2),  # vertically centred
                    color='white', fontsize='x-small',
                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                    horizontalalignment='center', rotation='vertical')
