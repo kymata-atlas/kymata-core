@@ -44,13 +44,13 @@ class AxisAssignment(NamedTuple):
     axis_channels: list
 
 
-left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
+_left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(axis_name="left",
                    axis_channels=[
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x <= 0
-                   ] + eeg_sensors()),
+                   ] + eeg_sensors()),  # TODO: these EEGs aren't split appropriately
     AxisAssignment(axis_name="right",
                    axis_channels=[
                        sensor
@@ -63,7 +63,7 @@ left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
-        assign_left_right_channels: Optional[tuple[AxisAssignment, AxisAssignment]] = None,
+        paired_axes: bool = True,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
@@ -77,13 +77,8 @@ def expression_plot(
     """
     Generates an expression plot
 
-    assign_left_right_channels: Only applies to SensorExpressionSets (i.e. those with a single layer of channels)
-                                If supplied, assigns specific channels to left and right plots.
-                                If not supplied or None, default behaviour is:
-                                    hexel data → left hemi on top axis, right hemi on bottom (by definition of "only applies")
-                                    sensor data → all sensors together
-                                If the same channels are listed in both axes, they will be displayed in a different colour
-                                (e.g. medial sensors shown on both hemis)
+    paired_axes: When True, show the expression plot split left/right.
+                 When False, all points shown on the same axis.
 
     color: colour name, function_name → colour name, or list of colour names
     xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
@@ -96,25 +91,6 @@ def expression_plot(
     elif isinstance(show_only, str):
         show_only = [show_only]
     not_shown = [f for f in expression_set.functions if f not in show_only]
-
-    if assign_left_right_channels is None:
-        # Set defaults
-        if isinstance(expression_set, HexelExpressionSet):
-            paired_axes = True
-            axes_names = ("left hemisphere", "right hemisphere")
-        elif isinstance(expression_set, SensorExpressionSet):
-            paired_axes = False
-            axes_names = ("", )
-        else:
-            raise NotImplementedError()
-    else:
-        if isinstance(expression_set, HexelExpressionSet):
-            raise ValueError("HexelExpressionSets have preset hemisphere assignments")
-        elif isinstance(expression_set, SensorExpressionSet):
-            paired_axes = True
-            axes_names = (assign_left_right_channels[0].axis_name, assign_left_right_channels[1].axis_name)
-        else:
-            raise NotImplementedError()
 
     if color is None:
         color = dict()
@@ -139,20 +115,35 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
+    best_functions = expression_set.best_functions()
+
+    if paired_axes:
+        if isinstance(expression_set, HexelExpressionSet):
+            axes_names = ("left hemisphere", "right hemisphere")
+            assert isinstance(best_functions, tuple)
+        elif isinstance(expression_set, SensorExpressionSet):
+            axes_names = ("left", "right")
+            # Same functions passed, filtering done at channel level
+            best_functions = (best_functions, best_functions)
+        else:
+            raise NotImplementedError()
+    else:
+        if isinstance(expression_set, HexelExpressionSet):
+            # TODO: if we ever want to, we could implement collapsing sensor expression plots
+            raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
+        elif isinstance(expression_set, SensorExpressionSet):
+            axes_names = ("", )
+            # Wrap into list
+            best_functions = (best_functions, )
+        else:
+            raise NotImplementedError()
+
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
                  * len(expression_set.latencies)
                  * len(channels)
                  * len(show_only))))
-
-    best_functions = expression_set.best_functions()
-    # Wrap into list if necessary
-    if isinstance(best_functions, DataFrame):
-        if assign_left_right_channels is not None and isinstance(expression_set, SensorExpressionSet):
-            best_functions = (best_functions, best_functions)  # Same functions passed, filtering done at channel level
-        else:
-            best_functions = (best_functions, )
 
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     if isinstance(axes, pyplot.Axes): axes = (axes, )  # Wrap if necessary
@@ -168,7 +159,8 @@ def expression_plot(
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        if assign_left_right_channels is not None and isinstance(expression_set, SensorExpressionSet):
+        if not paired_axes and isinstance(expression_set, SensorExpressionSet):
+            assign_left_right_channels = _left_right_sensors
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels)
             bottom_chans = set(assign_left_right_channels[1].axis_channels)
