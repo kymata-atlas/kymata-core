@@ -4,3 +4,5 @@
 # read all bids documentation - you need to include line_freq, and stuff like that.
 #particpants,
 #Data
+
+#use https://github.com/bids-standard/bids-validator to confirm it is correct.
