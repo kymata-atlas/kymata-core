@@ -6,7 +6,6 @@ from statistics import NormalDist
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
 import numpy as np
-from pandas import DataFrame
 from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet
@@ -15,17 +14,16 @@ from kymata.entities.expression import HexelExpressionSet, ExpressionSet, Sensor
 _MAJOR_TICK_SIZE = 50
 
 
-def do_plot(best_functions, function: str, ax: pyplot.Axes, sidak_corrected_alpha, colors):
+def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data, function_name: str, sidak_corrected_alpha: float, colors):
     """
     Returns:
         x_min, x_max, y_min, y_max
             Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
                   (so they can be added to min() and max() without altering the result).
     """
-    data = best_functions[best_functions["function"] == function]
-    x = data["latency"].values * 1000  # Convert to milliseconds
-    y = data["value"].values
-    c = np.where(np.array(y) <= sidak_corrected_alpha, colors[function], "black")
+    x = function_data["latency"].values * 1000  # Convert to milliseconds
+    y = function_data["value"].values
+    c = np.where(np.array(y) <= sidak_corrected_alpha, colors[function_name], "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, color=c, s=20)
 
@@ -96,42 +94,32 @@ def expression_plot(
                  * len(channels)
                  * len(show_only))))
 
-    best_functions_lh: DataFrame
-    best_functions_rh: DataFrame
-    best_functions_lh, best_functions_rh = expression_set.best_functions()
+    best_funs = expression_set.best_functions()
 
-    fig, (left_hem_expression_ax, right_hem_expression_ax) = pyplot.subplots(nrows=2, ncols=1, figsize=(12, 7))
+    fig, axes = pyplot.subplots(nrows=2, ncols=1, figsize=(12, 7))
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
     custom_handles = []
     custom_labels = []
     data_x_min, data_x_max = np.Inf, -np.Inf
-    data_y_min = np.Inf
+    data_y_min             = np.Inf
     for function in show_only:
 
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        # left
-        x_left_min, x_left_max, y_left_min, _y_max, = do_plot(best_functions=best_functions_lh, function=function,
-                                                              ax=left_hem_expression_ax,
-                                                              sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
-        data_x_min = min(data_x_min, x_left_min)
-        data_x_max = max(data_x_max, x_left_max)
-        data_y_min = min(data_y_min, y_left_min)
+        for ax, best_funs in zip(axes, best_funs):
 
-        # right
-        x_right_min, x_right_max, y_right_min, _y_max = do_plot(best_functions=best_functions_rh, function=function,
-                                                                ax=right_hem_expression_ax,
-                                                                sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
-        data_x_min = min(data_x_min, x_right_min)
-        data_x_max = max(data_x_max, x_right_max)
-        data_y_min = min(data_y_min, y_right_min)
+            x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
+                function_data=best_funs[best_funs["function"] == function], function_name=function,
+                ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
+            data_x_min = min(data_x_min, x_min)
+            data_x_max = max(data_x_max, x_max)
+            data_y_min = min(data_y_min, y_min)
 
     # format shared axis qualities
-
-    for ax in [right_hem_expression_ax, left_hem_expression_ax]:
+    for ax in axes:
         ax.set_yscale('log')
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
@@ -146,6 +134,7 @@ def expression_plot(
         ax.set_yticks(_get_yticks(ylim))
 
     # format one-off axis qualities
+    left_hem_expression_ax, right_hem_expression_ax = axes
     left_hem_expression_ax.set_title('Function Expression')
     left_hem_expression_ax.set_xticklabels([])
     right_hem_expression_ax.set_xlabel('Latency (ms) relative to onset of the environment')
@@ -153,15 +142,15 @@ def expression_plot(
     right_hem_expression_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     right_hem_expression_ax.invert_yaxis()
     left_hem_expression_ax.text(-180, ylim * 10000000, 'left hemisphere', style='italic',
-                                  verticalalignment='center')
+                                verticalalignment='center')
     right_hem_expression_ax.text(-180, ylim * 10000000, 'right hemisphere', style='italic',
-                                   verticalalignment='center')
+                                 verticalalignment='center')
     y_axis_label = f'p-value (with α at 5-sigma, Šidák corrected)'
     left_hem_expression_ax.text(-275, 1, y_axis_label, verticalalignment='center', rotation='vertical')
     right_hem_expression_ax.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small',
-                                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                                   horizontalalignment='center', rotation='vertical')
-    # Legend for plotted functions
+                                 bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
+                                 horizontalalignment='center', rotation='vertical')
+    # Legend for plotted function
     split_legend_at_n_functions = 15
     legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
     if hidden_functions_in_legend and len(not_shown) > 0:
@@ -169,17 +158,17 @@ def expression_plot(
             legend_n_col = 2
         # Plot dummy legend for other functions which are included in model selection but not plotted
         leg = right_hem_expression_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
-                                               title="Non-plotted functions",
-                                               ncol=legend_n_col,
-                                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                                               # Hide lines for non-plotted functions
-                                               handlelength=0, handletextpad=0)
+                                             title="Non-plotted functions",
+                                             ncol=legend_n_col,
+                                             bbox_to_anchor=(1.02, -0.02), loc="lower left",
+                                             # Hide lines for non-plotted functions
+                                             handlelength=0, handletextpad=0)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
     left_hem_expression_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                                    title="Plotted functions",
-                                    ncol=legend_n_col,
-                                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
+                                  title="Plotted functions",
+                                  ncol=legend_n_col,
+                                  loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
@@ -217,12 +206,3 @@ def _get_yticks(ylim):
     n_major_ticks = int(np.log10(ylim) / _MAJOR_TICK_SIZE) * -1
     last_major_tick = 10 ** (-1 * n_major_ticks * _MAJOR_TICK_SIZE)
     return np.geomspace(start=1, stop=last_major_tick, num=n_major_ticks + 1)
-
-
-if __name__ == '__main__':
-    from kymata.datasets.sample import KymataMirror2023Q3Dataset
-
-    # create new expression set object and add to it
-    expression_data_kymata_mirror = KymataMirror2023Q3Dataset().to_expressionset()
-
-    expression_plot(expression_data_kymata_mirror, show_only=expression_data_kymata_mirror.functions[1:], save_to=Path("/Users/cai/Desktop/temp.png"))
