@@ -9,13 +9,14 @@ import numpy as np
 from seaborn import color_palette
 from pandas import DataFrame
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, _SENSOR, _FUNCTION
+from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
 
 
-def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data, function_name: str, sidak_corrected_alpha: float, colors):
+def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame, color, sidak_corrected_alpha: float, filled: bool):
     """
     Returns:
         x_min, x_max, y_min, y_max
@@ -24,9 +25,9 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data, function_n
     """
     x = function_data["latency"].values * 1000  # Convert to milliseconds
     y = function_data["value"].values
-    c = np.where(np.array(y) <= sidak_corrected_alpha, colors[function_name], "black")
+    c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
-    ax.scatter(x, y, color=c, s=20)
+    ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
 
     x_min = x.min() if len(x) > 0 else np.Inf
     x_max = x.max() if len(x) > 0 else -np.Inf
@@ -45,16 +46,24 @@ class AxisAssignment(NamedTuple):
 
 left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(axis_name="left",
-                   axis_channels=[]),
+                   axis_channels=[
+                       sensor
+                       for sensor, (x, y) in get_meg_sensor_xy().items()
+                       if x <= 0
+                   ] + eeg_sensors()),
     AxisAssignment(axis_name="right",
-                   axis_channels=[]),
+                   axis_channels=[
+                       sensor
+                       for sensor, (x, y) in get_meg_sensor_xy().items()
+                       if x >= 0
+                   ] + eeg_sensors()),
 )
 
 
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
-        assign_left_right_channels: Optional[tuple[AxisAssignment, AxisAssignment, AxisAssignment]] = None,
+        assign_left_right_channels: Optional[tuple[AxisAssignment, AxisAssignment]] = None,
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
@@ -140,7 +149,10 @@ def expression_plot(
     best_functions = expression_set.best_functions()
     # Wrap into list if necessary
     if isinstance(best_functions, DataFrame):
-        best_functions = (best_functions, )
+        if assign_left_right_channels is not None and isinstance(expression_set, SensorExpressionSet):
+            best_functions = (best_functions, best_functions)  # Same functions passed, filtering done at channel level
+        else:
+            best_functions = (best_functions, )
 
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     if isinstance(axes, pyplot.Axes): axes = (axes, )  # Wrap if necessary
@@ -156,14 +168,45 @@ def expression_plot(
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        for ax, best_fun in zip(axes, best_functions):
+        if assign_left_right_channels is not None and isinstance(expression_set, SensorExpressionSet):
+            # Some points will be plotted on one axis, filled, some on both, empty
+            top_chans = set(assign_left_right_channels[0].axis_channels)
+            bottom_chans = set(assign_left_right_channels[1].axis_channels)
+            # Symmetric difference
+            both_chans = top_chans & bottom_chans
+            top_chans -= both_chans
+            bottom_chans -= both_chans
+            chans = (top_chans, bottom_chans)
+            for ax, best_funs_this_ax, chans_this_ax in zip(axes, best_functions, chans):
+                # Plot filled
+                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
+                    function_data=best_funs_this_ax[(best_funs_this_ax[_FUNCTION] == function)
+                                                    & (best_funs_this_ax[_SENSOR].isin(chans_this_ax))],
+                    color=color[function],
+                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
+                data_x_min = min(data_x_min, x_min)
+                data_x_max = max(data_x_max, x_max)
+                data_y_min = min(data_y_min, y_min)
+                # Plot empty
+                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
+                    function_data=best_funs_this_ax[(best_funs_this_ax[_FUNCTION] == function)
+                                                    & (best_funs_this_ax[_SENSOR].isin(both_chans))],
+                    color=color[function],
+                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=False)
+                data_x_min = min(data_x_min, x_min)
+                data_x_max = max(data_x_max, x_max)
+                data_y_min = min(data_y_min, y_min)
 
-            x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                function_data=best_fun[best_fun["function"] == function], function_name=function,
-                ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, colors=color)
-            data_x_min = min(data_x_min, x_min)
-            data_x_max = max(data_x_max, x_max)
-            data_y_min = min(data_y_min, y_min)
+        else:
+            # As normal, plot appropriate filled points in each axis
+            for ax, best_funs_this_ax in zip(axes, best_functions):
+                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
+                    function_data=best_funs_this_ax[best_funs_this_ax[_FUNCTION] == function],
+                    color=color[function],
+                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
+                data_x_min = min(data_x_min, x_min)
+                data_x_max = max(data_x_max, x_max)
+                data_y_min = min(data_y_min, y_min)
 
     # format shared axis qualities
     for ax in axes:
@@ -204,6 +247,7 @@ def expression_plot(
                    color='white', fontsize='x-small',
                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                    horizontalalignment='center', rotation='vertical')
+
     # Legend for plotted function
     split_legend_at_n_functions = 15
     legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
