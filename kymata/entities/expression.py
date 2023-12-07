@@ -176,24 +176,20 @@ class ExpressionSet(ABC):
 
         best_functions = best_function[layer].data
 
-        best_latencies = best_latency[layer].sel({_HEXEL: self._channels, _FUNCTION: best_function[layer]}).data
+        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, _FUNCTION: best_function[layer]}).data
 
         # Cut out channels which have a best p-val of 1
         idxs = p_vals < 1
 
         return DataFrame.from_dict({
-            _HEXEL: self._channels[idxs],
+            self._channel_coord_name: self._channels[idxs],
             _FUNCTION: best_functions[idxs],
             _LATENCY: best_latencies[idxs],
             "value": p_vals[idxs],
         })
 
     @abstractmethod
-    def best_functions(self):
-        """
-        Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated p-value
-        """
+    def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
         pass
 
 
@@ -392,7 +388,7 @@ class SensorExpressionSet(ExpressionSet):
 
     def best_functions(self) -> DataFrame:
         """
-        Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated p-value
+        Return a DataFrame containing:
+        for each sensor, the best function and latency for that sensor, and the associated p-value
         """
         return super()._best_functions_for_layer(LAYER_SCALP)
