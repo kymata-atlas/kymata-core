@@ -176,7 +176,7 @@ class ExpressionSet(ABC):
 
         best_functions = best_function[layer].data
 
-        best_latencies = best_latency[layer].sel({_HEXEL: self._channels, _FUNCTION: best_function[LAYER_LEFT]}).data
+        best_latencies = best_latency[layer].sel({_HEXEL: self._channels, _FUNCTION: best_function[layer]}).data
 
         # Cut out channels which have a best p-val of 1
         idxs = p_vals < 1
