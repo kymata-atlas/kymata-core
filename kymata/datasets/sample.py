@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 from urllib import request
 
-from kymata.entities.expression import HexelExpressionSet
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
 from kymata.io.file import path_type
 from kymata.io.nkg import load_expression_set
 
@@ -119,6 +119,24 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
     def to_expressionset(self) -> HexelExpressionSet:
         es = load_expression_set(from_path_or_file=Path(self.path, self.filenames[0]))
         assert isinstance(es, HexelExpressionSet)
+        return es
+
+class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
+    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+        name = "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors"
+        super().__init__(
+            name=name,
+            filenames=[
+                "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors.nkg"
+            ],
+            data_root=data_root,
+            remote_root="https://kymata.org/assets_kymata_toolbox_tutorial_data/gridsearch-result-data/",
+            download=download,
+        )
+
+    def to_expressionset(self) -> SensorExpressionSet:
+        es = load_expression_set(from_path_or_file=Path(self.path, self.filenames[0]))
+        assert isinstance(es, SensorExpressionSet)
         return es
 
 
