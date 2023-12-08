@@ -159,7 +159,9 @@ def expression_plot(
         custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
         custom_labels.append(function)
 
-        if not paired_axes and isinstance(expression_set, SensorExpressionSet):
+        # We have a special case with paired sensor data, in that some sensors need to appear
+        # on both sides of the midline.
+        if paired_axes and isinstance(expression_set, SensorExpressionSet):
             assign_left_right_channels = _left_right_sensors
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels)
@@ -189,6 +191,7 @@ def expression_plot(
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
 
+        # With non-sensor data, or non-paired axes, we can treat these cases together
         else:
             # As normal, plot appropriate filled points in each axis
             for ax, best_funs_this_ax in zip(axes, best_functions):
