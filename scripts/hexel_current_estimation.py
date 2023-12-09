@@ -10,6 +10,8 @@ def create_current_estimation_prerequisites(config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
+    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
+                                               "intrim_preprocessing_files")
     mri_structural_type = config['mri_structural_type']
     mri_structurals_directory = config['mri_structurals_directory']
     mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
@@ -121,80 +123,66 @@ def create_current_estimation_prerequisites(config: dict):
         src = mne.setup_source_space(
                 participant, spacing="ico5", add_dist=True, subjects_dir=mri_structurals_directory
         )
-        print(src)
+        mne.write_source_spaces(Path(intrim_preprocessing_directory_name,
+                                     "4_hexel_current_reconstruction",
+                                     "src_files",
+                                     participant + "_ico5-src.fif"), src)
 
-        mne.viz.plot_bem(subject=participant,
-                         subjects_dir=mri_structurals_directory,
-                         brain_surfaces="white",
-                         orientation="coronal",
-                         slices=[50, 100, 150, 200])
+#        mne.viz.plot_bem(subject=participant,
+#                         subjects_dir=mri_structurals_directory,
+#                         brain_surfaces="white",
+#                         orientation="coronal",
+#                         slices=[50, 100, 150, 200])
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
+    #for participant in list_of_participants:
+    #    mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
+
+### #Computing the actual BEM solution
     for participant in list_of_participants:
-        mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory)
-'''
-
-    #Check eeg is in correct place (can be merged with next one?)
-    for  participant in participants
-        # Plot electrode locations on scalp
-        fig = plot_alignment(
-            raw.info,
-            trans,
-            subject="sample",
-            dig=False,
-            eeg=["original", "projected"],
-            meg=[],
-            coord_frame="head",
-            subjects_dir=subjects_dir,
-        )
-
-        # Set viewing angle
-        set_3d_view(figure=fig,
-            azimuth=173.78,
-            elevation=101.75,
-            distance=0.30,
-            focalpoint=(-0.03, -0.01, 0.03),)
-
-    #Computing the actual BEM solution
-    for participant in participants
-        conductivity = (0.3,)  # for single layer
-        # conductivity = (0.3, 0.006, 0.3)  # for three layers
-        model = mne.make_bem_model(subject='sample', ico=4,
+        #conductivity = (0.3)  # for single layer
+        conductivity = (0.3, 0.006, 0.3)  # for three layers
+        #Note that only ico=4 is required here: Https://mail.nmr.mgh.harvard.edu/pipermail//mne_analysis/2012-June/001102.html
+        model = mne.make_bem_model(subject=participant, ico=4,
                                    conductivity=conductivity,
-                                   subjects_dir=subjects_dir)
-        bem = mne.make_bem_solution(model)
-        mne.bem.write_bem_solution(subjects_dir + subject + '/' +
-                                   subject + '-5120-bem-sol.fif', bem_sol)
-        #(but is this to only create the ConductorModel?????????? Can't see how this is used in MNE.)
-
-    # Computing patch info
-    for participant in participants
-        3        # add patch statistics (used in depth wiegthing)
-        #        mv $BEM_DIR / sample-oct-6-src.fif $BEM_DIR / sample-oct-6-orig-src.fif
-        #        mne_add_patch_info --dist 7 --src $BEM_DIR / sample-oct-6-orig-src.fif --srcp $BEM_DIR / sample-oct-6-src.fif
-        #        done
-        #... BE SURE TO ADD CORTICAL PATCH STATISTICS and to copy exactly what was in the origional BEM script
+                                   subjects_dir=mri_structurals_directory)
+        bem_sol = mne.make_bem_solution(model)
+        output_filename = participant + '-5120-5120-5120-bem-sol.fif'
+        mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
+                                   output_filename), bem_sol)
 
 
-def create_forward_model_and_inverse_solution():
+def create_forward_model_and_inverse_solution(config: dict):
+
+    list_of_participants = config['list_of_participants']
+    dataset_directory_name = config['dataset_directory_name']
+    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name, "intrim_preprocessing_files")
+    mri_structurals_directory = config['mri_structurals_directory']
+    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
 
     # Compute forward solution
-    for participant in participants
-        http://martinos.org/mne/stable/auto_examples/forward/plot_make_forward.html#sphx-glr-auto-examples-forward-plot-make-forward-py
+    for participant in list_of_participants:
+        fwd = mne.make_forward_solution(
+            Path(Path(path.abspath("")), "data",
+                 dataset_directory_name,
+                 'raw', participant, participant +
+                 '_run1_raw.fif'), # note this file is only used for the sensor positions.
+            trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
+            src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
+            bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+            meg=True,
+            eeg=True,
+            mindist=5.0,
+            n_jobs=None,
+            verbose=True,
+        )
+        print(fwd)
+        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
 
-        mne_do_forward_solution --subject ${subjects[m]} --mindist 5 --ico 5 --bem ${mne_sub}${subjects[m]}/bem/${subjectsX[m]}-5120-5120-5120-bem-sol.fif --src ${mne_sub}${subjects[m]}/bem/${subjectsX[m]}-ico-5-src.fif --meas ${code_output_path}3-sensor-data/fif-out/'meg14_'${subjects[m]}-grandave.fif --fwd ${code_output_path}3-sensor-data/forward-models/meg14_${subjects[m]}_ico-5-3L-fwd.fif
-
-        Use –accurate in the forward model
-        ... BE SURE TO copy exactly what was in the origional FORWARD script
-
-    # CHECK SENSITIVVITY MAPS
-    for participant in participants
-        # mne.sensitivity_map
-        ... http://martinos.org/mne/stable/auto_examples/forward/plot_make_forward.html#sphx-glr-auto-examples-forward-plot-make-forward-py
-
+    '''
     # Compute inverse operator
-    for participant in participants
+    for participant in list_of_participants:
 
         http://martinos.org/mne/stable/auto_examples/inverse/plot_make_inverse_operator.html#sphx-glr-auto-examples-inverse-plot-make-inverse-operator-py
 
@@ -215,7 +203,7 @@ def create_hexel_current_files():
 
     for p in participants:
 
-        # First compute morph matices for participant
+        # First compute morph matrices for participant
         src_to = mne.read_source_spaces(fname_fsaverage_src)
         print(src_to[0]["vertno"])  # special, np.arange(10242)
         morph = mne.compute_source_morph(
@@ -227,7 +215,7 @@ def create_hexel_current_files():
         )
 
         # Compute source stcs
-        inverse_operator = read_inverse_operator((data_path + '3-sensor-data/inverse-operators/' + p + '_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif'))
+        inverse_operator = read_inverse_operator((data_path + '3-sensor-data/inverse-operators/' + p + '_ico-53L-loose02-diagnoise-nodepth-reg-inv-csd.fif'))
 
         for w in words:
             # Apply Inverse
