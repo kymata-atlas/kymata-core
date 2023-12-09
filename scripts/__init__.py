@@ -20,16 +20,16 @@ def main():
     #preprocessing.run_preprocessing(config=config)
 
     # Save sensor level data, epoched by trial
-    preprocessing.create_trials(config=config)
+    #preprocessing.create_trials(config=config)
     
     # Create Boundary Element Models
     #hexel_current_estimation.create_current_estimation_prerequisites(config=config)
 
     # Create forward model and inverse solution
-    #hexel_current_estimation.create_forward_model_and_inverse_solution(config=config)
+    hexel_current_estimation.create_forward_model_and_inverse_solution(config=config)
 
     # Create the hexel current reconstructions, epoched by trial
-#    hexel_current_estimation.create_hexel_current_files(list_of_participants=list_of_participants, input_stream=input_stream)
+    hexel_current_estimation.create_hexel_current_files(config=config)
 
     # Average the hexel current reconstructions into a single participant
 #    hexel_current_estimation.average_participants_hexel_currents(list_of_participants=list_of_participants, input_stream=input_stream)
