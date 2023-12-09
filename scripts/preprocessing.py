@@ -357,12 +357,13 @@ def create_trials(config: dict):
 #            overwrite=True)
 
         # save grand covs
-        # print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
 
-        cov = mne.compute_covariance(epochs, tmin=None, tmax=None, method='auto', return_estimators=True)
-        cov.save('data/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/covariance_grand_average/' + p + '-auto-gcov.fif')
+        cov = mne.compute_raw_covariance(raw, tmin=0, tmax=10, return_estimators=True)
+        mne.write_cov('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
 
-    #	Save global droplog
+
+#	Save global droplog
 #    with open('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
 #        file.write('Average drop rate for each participant\n')
 #        for item in global_droplog:
