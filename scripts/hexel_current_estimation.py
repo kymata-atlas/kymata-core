@@ -271,7 +271,8 @@ def create_hexel_current_files(config: dict):
                                                             stc_from = stc_from,
                                                             vertices_to = vertices_to,
                                                             morph_mat = morph)
-                stc_morphed.save((data_path + '/5-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + p + '-' + w))
+                stc_morphed.save('data/' + dataset_directory_name +
+                                 '/intrim_preprocessing_files/5-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + p + '-' + w))
 
 
 def average_participants_hexel_currents():
