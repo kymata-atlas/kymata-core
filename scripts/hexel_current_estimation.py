@@ -82,6 +82,8 @@ def create_current_estimation_prerequisites(config: dict):
     for participant in participants
         $ mkdir $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing
         $ mris_convert $SUBJECTS_DIR/participant_01/surf/rh.pial $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/rh.pial.stl
+        $ mris_convert $SUBJECTS_DIR/participant_01/surf/lh.pial $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/lh.pial.stl
+        $ zip $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/participant_01_stls.zip -q -9 $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/lh.pial.stl $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing/rh.pial.stl
 
     #<------------------------------------------------------------->
 '''
