@@ -215,7 +215,7 @@ def create_forward_model_and_inverse_solution(config: dict):
                                                 '/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
                                                 + participant + '_ico5-3L-loose02-cps-nodepth.fif', inverse_operator)
 
-
+'''
 def create_hexel_current_files(config: dict):
 
     list_of_participants = config['list_of_participants']
@@ -234,15 +234,21 @@ def create_hexel_current_files(config: dict):
 
         # First compute morph matrices for participant
         if xxx don't exist':
-            src_from = mne.read_source_spaces(Path(intrim_preprocessing_directory_name,
-                                         "4_hexel_current_reconstruction",
-                                         "src_files",
-                                         participant + "_ico5-src.fif"))
+            
+            # read the src space not from the orgional but from the version in fwd or
+            # inv, incase an vertices have been removed due to proximity to the scalp
+            # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
+            fwd = mne.read_forward_solution(
+            Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction", "forward_sol_files",
+                 participant + '-fwd.fif'))
+            src_from = fwd['src']
+            
             src_to = mne.read_source_spaces(Path(mri_structurals_directory, "fsaverage",
                                          participant + "_ico5-src.fif"))
+                                         
             print(src_to[0]["vertno"])  # special, np.arange(10242)
             morph = mne.compute_source_morph(
-                src_from,
+                src_from = src_from,
                 subject_from=participant,
                 subject_to="fsaverage",
                 src_to=src_to,
@@ -271,7 +277,7 @@ def create_hexel_current_files(config: dict):
                 stc_morphed = mne.morph_data_precomputed(subject_from=participant,
                                                             subject_to="fsaverage",
                                                             stc_from = stc_from,
-                                                            vertices_to = vertices_to,
+                                                            vertices_to = fwd['src'],
                                                             morph_mat = morph)
                 stc_morphed.save('data/' + dataset_directory_name +
                                  '/intrim_preprocessing_files/5-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + p + '-' + w))
