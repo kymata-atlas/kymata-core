@@ -126,7 +126,7 @@ def run_preprocessing(config: dict):
                     destination=(0, 0, 0.04),
                     verbose=True)
 
-                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
+                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='single')
 
             response = input(
                 f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
@@ -232,7 +232,7 @@ def run_preprocessing(config: dict):
 
             raw_fif_data_sss_movecomp_tr.save(
                 'data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(run) + '_cleaned_raw.fif.gz',
-                overwrite=True, fmt='short')
+                overwrite=True, fmt='single')
 
 
 def create_trials(config: dict):
