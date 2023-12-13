@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from numpy import ndarray, nanmin, greater
+from numpy import nanmin, greater
+from numpy.typing import NDArray
 import sparse
 from xarray import Dataset
 
@@ -27,7 +28,7 @@ def expand_dims(x: sparse.COO, axis=-1) -> sparse.COO:
     return x
 
 
-def minimise_pmatrix(pmatrix: ndarray) -> sparse.COO:
+def minimise_pmatrix(pmatrix: NDArray) -> sparse.COO:
     """
     Converts a hexel-x-latency data matrix containing p-values into a sparse matrix
     only storing the minimum (over latencies) p-value for each hexel.
