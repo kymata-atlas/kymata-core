@@ -1,6 +1,7 @@
 # Possible default location for downloaded data
 kymata_data/
 kymata-toolbox-data/
+data/dataset_4-english-narratives/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
