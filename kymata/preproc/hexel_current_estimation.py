@@ -4,10 +4,10 @@ from pathlib import Path
 
 
 def create_current_estimation_prerequisites(config: dict):
-    '''
+    """
     Copy the structurals to the local Kymata folder,
     create the surfaces, the boundary element model solutions, and the source space
-    '''
+    """
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']

@@ -1,9 +1,9 @@
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Style
 import yaml
 
+
 def display_welcome_message_to_terminal():
-    '''Runs welcome message'''
+    """Runs welcome message"""
 
     print(f"{Fore.BLUE}{Style.BRIGHT}-----------------------------------------------{Style.RESET_ALL}")
     print(f"{Fore.BLUE}{Style.BRIGHT} Kymata Preprocessing and Analysis Pipeline    {Style.RESET_ALL}")
@@ -11,12 +11,12 @@ def display_welcome_message_to_terminal():
     print("")
 
 def run_cleanup():
-    '''Runs clean up'''
+    """Runs clean up"""
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Exited sucessfully.{Style.RESET_ALL}")
 
 def load_config_parameters(file_location):
-    '''Loads config file'''
+    """Loads config file"""
 
     with open(file_location, "r") as stream:
         try:
@@ -25,7 +25,7 @@ def load_config_parameters(file_location):
             print(exc)
 
 def load_recording_config(file_location: str):
-    '''Loads EMEG bad channels from yaml suitable YAML file'''
+    """Loads EMEG bad channels from yaml suitable YAML file"""
 
     with open(file_location, "r") as stream:
         try:
@@ -35,7 +35,7 @@ def load_recording_config(file_location: str):
 
 
 def data_integrety_checks(config: dict):
-    '''Runs data integrety checks before starting pipeline.'''
+    """Runs data integrety checks before starting pipeline."""
 
     #Check raw files are there?
 

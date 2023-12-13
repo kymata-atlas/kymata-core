@@ -283,7 +283,7 @@ def create_trials(config: dict):
         #	Correct for visual equiptment latency error
         visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
 
-        trigger_name = 1;
+        trigger_name = 1
         for trigger in visual_events:
             trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
             if trigger_name == 400:
@@ -314,7 +314,7 @@ def create_trials(config: dict):
         assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
 
         #	Denote picks
-        include = [];  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
@@ -389,7 +389,7 @@ def create_trials(config: dict):
 
 
 def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
-    '''Plot Sensor positions'''
+    """Plot Sensor positions"""
     fig = plt.figure()
     ax2d = fig.add_subplot(121)
     ax3d = fig.add_subplot(122, projection='3d')
@@ -398,7 +398,7 @@ def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     ax3d.view_init(azim=70, elev=15)
 
 def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, EMEG_machine_used_to_record_data: str):
-    '''Apply Automatic Bad Channel Detection'''
+    """Apply Automatic Bad Channel Detection"""
     raw_check = raw_fif_data.copy()
 
     fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal' + EMEG_machine_used_to_record_data + '.dat'
