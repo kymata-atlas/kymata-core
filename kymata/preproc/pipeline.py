@@ -244,7 +244,7 @@ def create_trials(dataset_directory_name: str,
                   mag_thresh: float,
                   visual_delivery_latency: float,
                   audio_delivery_latency: float,
-                  audio_delivery_shift_correction: float,
+                  audio_delivery_shift_correction: float,  # seconds
                   tmin: float,
                   tmax: float,
                   ):
@@ -300,7 +300,7 @@ def create_trials(dataset_directory_name: str,
         for run, item in enumerate(audio_events_raw):
             for trial in range(1, number_of_trials + 1):
                 audio_events[(trial + (number_of_trials * run)) - 1][0] = item[0] + round(
-                    (trial - 1) * (1000 + audio_delivery_shift_correction))
+                    (trial - 1) * 1000 * (1 + audio_delivery_shift_correction))
                 audio_events[(trial + (number_of_trials * run)) - 1][1] = 0
                 audio_events[(trial + (number_of_trials * run)) - 1][2] = trial
 
