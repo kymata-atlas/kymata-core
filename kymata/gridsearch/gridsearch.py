@@ -9,17 +9,17 @@ from kymata.entities.expression import SensorExpressionSet
 
 
 def do_gridsearch(
-        emeg_values: NDArray,
+        emeg_values: NDArray,  # chan x time
         function: Function,
         sensor_names: list[str],
         start_latency: float,  # seconds
         emeg_t_start: float,
         emeg_sample_rate: int = 1000,  # Hertz
+        audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
         # TODO: what are good default values?
         n_derangements: int = 20,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
-        audio_shift_correction: float = 0.0005375,  # second/second  # TODO: describe in which direction?
         ) -> SensorExpressionSet:
     """
     Do the Kymata gridsearch over all hexels for all latencies.
@@ -51,10 +51,10 @@ def do_gridsearch(
     ]
     emeg_reshaped = np.zeros((n_channels, n_splits, n_samples_per_split))
     for split_i in range(n_splits):
-        emeg_reshaped[:, split_i, :] = emeg_values[
-            :, split_initial_timesteps[split_i]
-               :split_initial_timesteps[split_i] + int(2 * emeg_sample_rate * seconds_per_split)
-               :downsample_rate]
+        # Split indexes
+        split_start = split_initial_timesteps[split_i]
+        split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+        emeg_reshaped[:, split_i, :] = emeg_values[:, split_start:split_stop:downsample_rate]
 
     # Derangements for null distribution
     derangements = np.zeros((n_derangements, n_splits), dtype=int)

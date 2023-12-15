@@ -13,11 +13,18 @@ def main():
     downsample_rate = 5
     function_name = 'd_IL2'
 
-    func = load_function(str(Path('/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours', '/GMSloudness/stimulisig')),
+    base_dir = Path("/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/")
+
+    func = load_function(Path(base_dir,
+                              'predicted_function_contours',
+                              'GMSloudness/stimulisig'),
                          func_name=function_name)
     func = func.downsampled(downsample_rate)
 
-    emeg_dir = Path(f"/imaging/projects/cbu/kymata/data//dataset_4-english-narratives/intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data")
+    emeg_dir = Path(base_dir,
+                    "intrim_preprocessing_files",
+                    "3_trialwise_sensorspace",
+                    "evoked_data")
     emeg_filename = 'participant_01-ave'
 
     # Load data

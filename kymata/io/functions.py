@@ -1,4 +1,4 @@
-from os import path
+from pathlib import Path
 
 from numpy import array, float16
 from numpy.typing import NDArray
@@ -6,22 +6,26 @@ from h5py import File
 from scipy.io import loadmat
 
 from kymata.entities.functions import Function
+from kymata.io.file import path_type
 
 
-def load_function(function_path: str, func_name: str) -> Function:
-    if not path.isfile(function_path + '.h5'):
-        mat = loadmat(function_path + '.mat')['stimulisig']
-        with File(function_path + '.h5', 'w') as f:
-            for key in mat.dtype.names:
-                if key != 'name':
-                    f.create_dataset(key, data=array(mat[key][0, 0], dtype=float16))
-        func: NDArray = array(mat[func_name][0][0])
+def load_function(function_path_without_suffix: path_type, func_name: str) -> Function:
+    function_path_without_suffix = Path(function_path_without_suffix)
+    func: NDArray
+    if function_path_without_suffix.with_suffix(".h5").exists():
+        with File(function_path_without_suffix.with_suffix(".h5"), "r") as f:
+            func = f[func_name]
     else:
-        with File(function_path + '.h5', 'r') as f:
-            func: NDArray = f[func_name]
+        mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
+        with File(function_path_without_suffix.with_suffix(".h5"), 'w') as f:
+            for key in mat.dtype.names:
+                if key == 'name':
+                    continue
+                f.create_dataset(key, data=array(mat[key][0, 0], dtype=float16))
+        func = array(mat[func_name][0][0])
 
     return Function(
         name=func_name,
         values=func.flatten().squeeze(),
-        tstep=0.001,
+        sample_rate=1000,
     )
