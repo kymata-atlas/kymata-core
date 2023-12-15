@@ -7,11 +7,15 @@ from numpy.typing import NDArray
 class Function:
     name: str
     values: NDArray
-    tstep: float
+    sample_rate: float  # Hertz
 
     def downsampled(self, rate: int):
         return Function(
             name=self.name,
             values=self.values[:, ::rate],
-            tstep=self.tstep * rate
+            sample_rate=self.sample_rate / rate,
         )
+
+    @property
+    def time_step(self) -> float:
+        return 1 / self.sample_rate

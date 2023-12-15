@@ -31,13 +31,12 @@ except FileNotFoundError:
 es = do_gridsearch(
     emeg_values=emeg,
     sensor_names=ch_names,
-    function_name=function_name,
     function=func,
-    downsample_rate=downsample_rate,
     seconds_per_split=0.5,
-    n_derangements=1,  # TODO: 1?
+    n_derangements=1,
     n_splits=800,
-    start_latency_ms=-100,
+    start_latency=-100,
+    emeg_t_start=-200,
 )
 
 expression_plot(es)
