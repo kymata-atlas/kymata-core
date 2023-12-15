@@ -1,13 +1,14 @@
-import mne
 from os import path
 from pathlib import Path
 
+import mne
+
 
 def create_current_estimation_prerequisites(config: dict):
-    '''
+    """
     Copy the structurals to the local Kymata folder,
     create the surfaces, the boundary element model solutions, and the source space
-    '''
+    """
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
@@ -197,17 +198,22 @@ def create_forward_model_and_inverse_solution(config: dict):
     # Compute inverse operator
 
     for participant in list_of_participants:
-        fwd = mne.read_forward_solution(
-            Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction", "forward_sol_files",
-                 participant + '-fwd.fif'))
-        noise_cov = mne.read_cov('data/' + dataset_directory_name +
-                                 '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/'
-                                 + participant + '-auto-cov.fif')
+        fwd = mne.read_forward_solution(Path(
+            intrim_preprocessing_directory_name,
+            "4_hexel_current_reconstruction",
+            "forward_sol_files",
+            participant + '-fwd.fif'))
+        noise_cov = mne.read_cov(str(Path(
+            intrim_preprocessing_directory_name,
+            '3_evoked_sensor_data',
+            'covariance_grand_average',
+            participant + '-auto-cov.fif')))
         # note this file is only used for the sensor positions.
-        raw = mne.io.Raw(Path(Path(path.abspath("")), "data",
-                              dataset_directory_name,
-                              'intrim_preprocessing_files', '2_cleaned', participant +
-                              '_run1_cleaned_raw.fif.gz'))
+        raw = mne.io.Raw(Path(
+            Path(path.abspath("")),
+            intrim_preprocessing_directory_name,
+            '2_cleaned',
+            participant + '_run1_cleaned_raw.fif.gz'))
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
             raw.info,  # note this file is only used for the sensor positions.
@@ -220,9 +226,13 @@ def create_forward_model_and_inverse_solution(config: dict):
             # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-lh.label
             # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-rh.label
         )
-        mne.minimum_norm.write_inverse_operator('data/' + dataset_directory_name +
-                                                '/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
-                                                + participant + '_ico5-3L-loose02-cps-nodepth.fif', inverse_operator)
+        mne.minimum_norm.write_inverse_operator(
+            str(Path(
+                intrim_preprocessing_directory_name,
+                '4_hexel_current_reconstruction',
+                'inverse-operators',
+                participant + '_ico5-3L-loose02-cps-nodepth.fif'),
+            inverse_operator))
 
 
 def create_hexel_current_files(config: dict):
@@ -230,8 +240,10 @@ def create_hexel_current_files(config: dict):
     list_of_participants = config['list_of_participants']
     number_of_trials = config['number_of_trials']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
-                                               "intrim_preprocessing_files")
+    intrim_preprocessing_directory_name = Path(
+        Path(path.abspath("")),
+        "data", dataset_directory_name,
+        "intrim_preprocessing_files")
     mri_structurals_directory = config['mri_structurals_directory']
     mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
     input_streams = config['input_streams']
@@ -241,8 +253,10 @@ def create_hexel_current_files(config: dict):
 
     for participant in list_of_participants:
 
-        morphmap_filename = Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction", "morph_maps",
-                 participant + "_fsaverage_morph.h5")
+        morphmap_filename = Path(intrim_preprocessing_directory_name,
+                                 "4_hexel_current_reconstruction",
+                                 "morph_maps",
+                                 participant + "_fsaverage_morph.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
@@ -250,12 +264,18 @@ def create_hexel_current_files(config: dict):
             # read the src space not from the original but from the version in fwd or
             # inv, incase an vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
-            fwd = mne.read_forward_solution(
-            Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction", "forward_sol_files",
-                 participant + '-fwd.fif'))
+            fwd = mne.read_forward_solution(Path(
+                intrim_preprocessing_directory_name,
+                "4_hexel_current_reconstruction",
+                "forward_sol_files",
+                participant + '-fwd.fif'))
             src_from = fwd['src']
             
-            src_to = mne.read_source_spaces(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", 'fsaverage_ico5-src.fif')),
+            src_to = mne.read_source_spaces(Path(
+                intrim_preprocessing_directory_name,
+                "4_hexel_current_reconstruction",
+                "src_files",
+                'fsaverage_ico5-src.fif'))
 
             morph = mne.compute_source_morph(
                 src_from,
@@ -269,39 +289,62 @@ def create_hexel_current_files(config: dict):
             morph = mne.read_source_morph(morphmap_filename)
 
         # Compute source stcs
-        inverse_operator = mne.minimum_norm.read_inverse_operator('data/' + dataset_directory_name +
-                                                '/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
-                                                + participant + '_ico5-3L-loose02-cps-nodepth.fif')
+        inverse_operator = mne.minimum_norm.read_inverse_operator(str(Path(
+            intrim_preprocessing_directory_name,
+            '4_hexel_current_reconstruction',
+            'inverse-operators',
+            participant + '_ico5-3L-loose02-cps-nodepth.fif')))
 
         for input_stream in input_streams:
             for trial in range(1,number_of_trials+1):
                 # Apply Inverse
-                evoked = mne.read_evokeds('data/' + dataset_directory_name +
-                                                '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream +
-                                          '/' + participant + '_item' + str(trial) + '-ave.fif',
-                                      condition=0, baseline=None)
+                evoked = mne.read_evokeds(str(Path(
+                        intrim_preprocessing_directory_name,
+                        '3_evoked_sensor_data',
+                        'evoked_data',
+                        input_stream,
+                        participant + '_item' + str(trial) + '-ave.fif')),
+                    condition=0, baseline=None)
                 mne.set_eeg_reference(evoked, projection=True)
                 stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, "MNE", pick_ori='normal')
 
                 # Morph to average
                 stc_morphed_to_fsaverage = morph.apply(stc)
-                stc_morphed_to_fsaverage.save('data/' + dataset_directory_name +
-                                 '/intrim_preprocessing_files/5-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + input_stream + '/' + participant + '-' + str(trial))
+                stc_morphed_to_fsaverage.save(str(Path(
+                    intrim_preprocessing_directory_name,
+                    '5-single-trial-source-data',
+                    'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
+                    input_stream,
+                    participant + '-' + str(trial))))
 
-'''
-def average_participants_hexel_currents():
 
-    f = open('/imaging/at03/NKG_Data_Sets/DATASET_3-01_visual-and-auditory/items.txt', 'r')
-    words = list(f.read().split())
+def average_participants_hexel_currents(participants, inputstream):
+    from functools import reduce
 
-    stcdir = '/imaging/at03/NKG_Code_output/Version5/DATASET_3-01_visual-and-auditory/4-single-trial-source-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/'
+    dataset_root = Path('/imaging/at03/NKG_Data_Sets/DATASET_3-01_visual-and-auditory/')
+
+    with Path(dataset_root, 'items.txt').open("r") as f:
+        words = list(f.read().split())
+
+    stc_dir = Path(dataset_root,
+                   '4-single-trial-source-data',
+                   'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
+                   inputstream)
 
     for w in words:
-        fname = os.path.join(stcdir, '%s-' + w + '-lh.stc')
-        stcs = [mne.read_source_estimate(fname % subject, subject='fsaverage') for subject in participants]
+        stcs = [
+            mne.read_source_estimate(
+                str(Path(stc_dir, f"{subject}{w}-lh.stc")),
+                subject='fsaverage')
+            for subject in participants
+        ]
 
         # take mean average
         stc_avg = reduce(lambda x, y: x + y, stcs)
         stc_avg /= len(stcs)
-        stc_avg.save('/imaging/at03/NKG_Code_output/Version5/DATASET_3-01_visual-and-auditory/5-averaged-by-trial-data/vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone/' + inputstream + '/' + w))
-'''
+        stc_avg.save(str(Path(
+            dataset_root,
+            '5-averaged-by-trial-data',
+            'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
+            inputstream,
+            w)))
