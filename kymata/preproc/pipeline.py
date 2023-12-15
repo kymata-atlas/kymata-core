@@ -7,7 +7,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 
-from kymata.preproc.utils import load_recording_config
+from kymata.preproc.config import load_recording_config
 
 
 def run_preprocessing(config: dict):
