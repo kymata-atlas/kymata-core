@@ -1,16 +1,17 @@
-from colorama import Fore
-from colorama import Style
+import os.path
+
+from colorama import Fore, Style
 import matplotlib.pyplot as plt
 import mne
-import os.path
 import seaborn as sns
 import numpy as np
 import pandas as pd
 
-import utils
+from kymata.preproc.utils import load_recording_config
 
 
 def run_preprocessing(config: dict):
+    """Runs Preprocessing"""
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
     number_of_runs = config['number_of_runs']
@@ -20,15 +21,12 @@ def run_preprocessing(config: dict):
     remove_VEOH_and_HEOG = config['remove_VEOH_and_HEOG']
     automatic_bad_channel_detection_requested = config['automatic_bad_channel_detection_requested']
 
-    '''Runs Preprocessing'''
-
     for participant in list_of_participants:
 
         for run in range(1, number_of_runs + 1):
 
             # Preprocessing Participant and run info
-            print(
-                f"{Fore.GREEN}{Style.BRIGHT}Loading participant {participant} [{Fore.LIGHTYELLOW_EX}Run {str(run)}{Fore.GREEN}]...{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}{Style.BRIGHT}Loading participant {participant} [{Fore.LIGHTYELLOW_EX}Run {str(run)}{Fore.GREEN}]...{Style.RESET_ALL}")
 
             # Load data
             print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
@@ -44,7 +42,7 @@ def run_preprocessing(config: dict):
                 raw_fif_data = mne.io.Raw('data/' + dataset_directory_name + "/raw/" + participant + "/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
-                recording_config = utils.load_recording_config('data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
+                recording_config = load_recording_config('data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -396,6 +394,7 @@ def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
     raw_fif.plot_sensors(ch_type='eeg', axes=ax2d)
     raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
     ax3d.view_init(azim=70, elev=15)
+
 
 def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, EMEG_machine_used_to_record_data: str):
     """Apply Automatic Bad Channel Detection"""

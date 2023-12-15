@@ -1,4 +1,5 @@
-from kymata.preproc.utils import data_integrety_checks, display_welcome_message_to_terminal, load_config_parameters, run_cleanup
+from kymata.preproc.cli import display_welcome_message_to_terminal, run_cleanup
+from kymata.preproc.utils import data_integrety_checks, load_config_parameters
 from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, \
     create_hexel_current_files
 
