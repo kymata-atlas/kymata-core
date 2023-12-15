@@ -26,14 +26,11 @@ def do_gridsearch(
     """
 
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate = emeg_sample_rate / function.sample_rate
+    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
 
     n_samples_per_split = int(
-        (seconds_per_split * emeg_sample_rate
-         * 2)  # We need double the length so we can do the full cross-correlation overlap
-        # TODO: does this need to be integer div if we're also coercing to int?
-        #  Now that downsample_rate is computed (and is a float), this div will
-        #  result in a float anyway.
+        seconds_per_split * emeg_sample_rate
+        * 2  # We need double the length so we can do the full cross-correlation overlap
         // downsample_rate)
 
     func = function.values.reshape(n_splits, n_samples_per_split // 2)
@@ -62,7 +59,7 @@ def do_gridsearch(
         derangements[der_i, :] = generate_derangement(n_splits)
     derangements = np.vstack((np.arange(n_splits), derangements))  # Include the identity on top
 
-    # FFT cross-corr
+    # Fast cross-correlation using FFT
     emeg_reshaped = np.fft.rfft(normalize(emeg_reshaped), n=n_samples_per_split, axis=-1)
     f_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
     corrs = np.zeros((n_channels, n_derangements + 1, n_splits, n_samples_per_split // 2))
@@ -84,25 +81,29 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, f_alpha: float = 0.001, use_all_lats: bool = True):
+def _ttest(corrs: NDArray, use_all_lats: bool = True):
     """
     Vectorised Welch's t-test.
     """
-
-    # Fisher Z-Transformation
-    corrs = 0.5 * np.log((1 + corrs) / (1 - corrs))
     n_channels, n_derangements, n_splits, t_steps = corrs.shape
 
-    true_mean = np.mean(corrs[:, 0, :, :], axis=1)
-    true_var = np.var(corrs[:, 0, :, :], axis=1, ddof=1)
+    # Fisher Z-Transformation
+    corrs_z = 0.5 * np.log((1 + corrs) / (1 - corrs))
+
+    # Non-deranged values are on top
+    true_mean = np.mean(corrs_z[:, 0, :, :], axis=1)
+    true_var = np.var(corrs_z[:, 0, :, :], axis=1, ddof=1)
     true_n = n_splits
+
+    # Recompute mean and var for null correlations
+    # TODO: why looking at only 1 in the n_derangements dimension?
     if use_all_lats:
-        rand_mean = np.mean(corrs[:, 1:, :, :].reshape(n_channels, -1), axis=1).reshape(n_channels, 1)
-        rand_var = np.var(corrs[:, 1:, :, :].reshape(n_channels, -1), axis=1, ddof=1).reshape(n_channels, 1)
+        rand_mean = np.mean(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1).reshape(n_channels, 1)
+        rand_var = np.var(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1, ddof=1).reshape(n_channels, 1)
         rand_n = n_splits * n_derangements * t_steps
     else:
-        rand_mean = np.mean(corrs[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1)
-        rand_var = np.var(corrs[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1, ddof=1)
+        rand_mean = np.mean(corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1)
+        rand_var = np.var(corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1, ddof=1)
         rand_n = n_splits * n_derangements
 
     # Vectorized two-sample t-tests for all channels and time steps
