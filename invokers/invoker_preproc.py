@@ -1,9 +1,10 @@
 from kymata.preproc.utils import data_integrety_checks, display_welcome_message_to_terminal, load_config_parameters, run_cleanup
-from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, create_hexel_current_files
+from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, \
+    create_hexel_current_files
 
 
 def main():
-    '''The pipeline invoker'''
+    """The pipeline invoker"""
 
     # Start up
     display_welcome_message_to_terminal()
@@ -15,13 +16,16 @@ def main():
     data_integrety_checks(config=config)
 
     # Preprocess EMEG raw data
-    #preprocessing.run_preprocessing(config=config)
+#    preprocessing.run_preprocessing(config=config)
 
     # Save sensor level data, epoched by trial
-    #preprocessing.create_trials(config=config)
+#    preprocessing.create_trials(config=config)
     
     # Create Boundary Element Models
-    #hexel_current_estimation.create_current_estimation_prerequisites(config=config)
+    # Average the hexel current reconstructions into a single participant
+
+
+#    hexel_current_estimation.create_current_estimation_prerequisites(config=config)
 
     # Create forward model and inverse solution
     create_forward_model_and_inverse_solution(config=config)
@@ -36,7 +40,7 @@ def main():
 #    export_for_sharing()
 
     # Run Kymata
-    #XYZ
+#    XYZ
 
     # End code with cleanup
     run_cleanup()
