@@ -1,13 +1,14 @@
 import os.path
 
-from colorama import Fore, Style
+from colorama import Fore
 import matplotlib.pyplot as plt
 import mne
 import seaborn as sns
 import numpy as np
 import pandas as pd
 
-from kymata.preproc.config import load_recording_config
+from kymata.io.cli import print_with_color, input_with_color
+from kymata.io.yaml import load_config
 
 
 def run_preprocessing(config: dict):
@@ -26,10 +27,10 @@ def run_preprocessing(config: dict):
         for run in range(1, number_of_runs + 1):
 
             # Preprocessing Participant and run info
-            print(f"{Fore.GREEN}{Style.BRIGHT}Loading participant {participant} [{Fore.LIGHTYELLOW_EX}Run {str(run)}{Fore.GREEN}]...{Style.RESET_ALL}")
+            print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
 
             # Load data
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Loading Raw data...{Style.RESET_ALL}")
+            print_with_color(f"   Loading Raw data...", Fore.GREEN)
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
             saved_maxfiltered_filename = 'data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
@@ -42,7 +43,7 @@ def run_preprocessing(config: dict):
                 raw_fif_data = mne.io.Raw('data/' + dataset_directory_name + "/raw/" + participant + "/" + participant + "_run" + str(run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
-                recording_config = load_recording_config('data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
+                recording_config = load_config('data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -59,15 +60,15 @@ def run_preprocessing(config: dict):
                 raw_fif_data.rename_channels(ecg_and_eog_channel_name_overwrites, allow_duplicates=False)
 
                 # Set bad channels (manually)
-                print(f"{Fore.GREEN}{Style.BRIGHT}   Setting bad channels...{Style.RESET_ALL}")
-                print(f"{Fore.GREEN}{Style.BRIGHT}   ...manual{Style.RESET_ALL}")
+                print_with_color(f"   Setting bad channels...", Fore.GREEN)
+                print_with_color(f"   ...manual", Fore.GREEN)
 
                 raw_fif_data.info['bads'] = recording_config['bad_channels']
 
-                response = input(
-                    f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the raw data? Recommended if you want to confirm"
+                response = input_with_color(
+                    f"Would you like to see the raw data? Recommended if you want to confirm"
                     f" ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    f" (y/n){Style.RESET_ALL}")
+                    f" (y/n)", Fore.MAGENTA)
                 if response == "y":
                     print(f"...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings='auto', block=True)
@@ -79,13 +80,12 @@ def run_preprocessing(config: dict):
                 chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
                 head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
 
-                print(f"{Fore.GREEN}{Style.BRIGHT}   Removing CHPI ...{Style.RESET_ALL}")
+                print_with_color(f"   Removing CHPI ...", Fore.GREEN)
 
                 # Remove hpi & line
                 raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
 
-                print(
-                    f"{Fore.GREEN}{Style.BRIGHT}   Removing mains component (50Hz and harmonics) from MEG & EEG...{Style.RESET_ALL}")
+                print_with_color(f"   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
 
                 raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
@@ -101,11 +101,11 @@ def run_preprocessing(config: dict):
                 raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
                 if automatic_bad_channel_detection_requested:
-                    print(f"{Fore.GREEN}{Style.BRIGHT}   ...automatic{Style.RESET_ALL}")
+                    print_with_color(f"   ...automatic", Fore.GREEN)
                     raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, EMEG_machine_used_to_record_data)
 
                 # Apply SSS and movement compensation
-                print(f"{Fore.GREEN}{Style.BRIGHT}   Applying SSS and movement compensation...{Style.RESET_ALL}")
+                print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
 
                 fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal_' + EMEG_machine_used_to_record_data + '.dat'
                 crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse_' + EMEG_machine_used_to_record_data + '.fif'
@@ -126,8 +126,9 @@ def run_preprocessing(config: dict):
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
-            response = input(
-                f"{Fore.MAGENTA}{Style.BRIGHT}Would you like to see the SSS, movement compensated, raw data data? (y/n){Style.RESET_ALL}")
+            response = input_with_color(
+                f"Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                Fore.MAGENTA)
             if response == "y":
                 print(f"...Plotting Raw data.")
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
@@ -135,7 +136,7 @@ def run_preprocessing(config: dict):
                 print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
             # EEG channel interpolation
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Interpolating EEG...{Style.RESET_ALL}")
+            print_with_color(f"   Interpolating EEG...", Fore.GREEN)
 
             print("Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"]))
 
@@ -146,12 +147,12 @@ def run_preprocessing(config: dict):
                                                                                          mode='accurate')
 
             # Use common average reference, not the nose reference.
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Use common average EEG reference...{Style.RESET_ALL}")
+            print_with_color(f"   Use common average EEG reference...", Fore.GREEN)
 
             # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
             # remove very slow drift
-            print(f"{Fore.GREEN}{Style.BRIGHT}   Removing slow drift...{Style.RESET_ALL}")
+            print_with_color(f"   Removing slow drift...", Fore.GREEN)
             raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
             # Remove ECG, VEOH and HEOG
@@ -174,7 +175,7 @@ def run_preprocessing(config: dict):
                 ica.exclude = []
 
                 if remove_ECG:
-                    print(f"{Fore.GREEN}{Style.BRIGHT}   Starting ECG removal...{Style.RESET_ALL}")
+                    print_with_color(f"   Starting ECG removal...", Fore.GREEN)
 
                     ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
                     ecg_evoked.apply_baseline(baseline=(None, -0.2))
@@ -256,11 +257,11 @@ def create_trials(config: dict):
 
     global_droplog = []
 
-    print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
+    print_with_color(f"Starting trials and ", Fore.GREEN)
 
     for p in list_of_participants:
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
+        print_with_color(f"...Concatenating trials", Fore.GREEN)
 
         cleaned_raws = []
 
@@ -273,7 +274,7 @@ def create_trials(config: dict):
 
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+        print_with_color(f"...finding visual events", Fore.GREEN)
 
         #	Extract visual events
         visual_events = mne.pick_events(raw_events, include=[2, 3])
@@ -292,7 +293,7 @@ def create_trials(config: dict):
         #  Test there are the correct number of events
         assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
+        print_with_color(f"...finding audio events", Fore.GREEN)
 
         #	Extract audio events
         audio_events_raw = mne.pick_events(raw_events, include=3)
@@ -315,7 +316,7 @@ def create_trials(config: dict):
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
+        print_with_color(f"... extract and save evoked data", Fore.GREEN)
 
         for input_stream in input_streams:
 
@@ -347,7 +348,7 @@ def create_trials(config: dict):
 #                        i) + '-ave.fif', overwrite=True)
 
         # save grand average
-        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand average{Style.RESET_ALL}")
+        print_with_color(f"... save grand average", Fore.GREEN)
 
 #        evoked_grandaverage = epochs.average()
 #        evoked_grandaverage.save(
@@ -355,7 +356,7 @@ def create_trials(config: dict):
 #            overwrite=True)
 
         # save grand covs
-        print(f"{Fore.GREEN}{Style.BRIGHT}... save grand covariance matrix{Style.RESET_ALL}")
+        print_with_color(f"... save grand covariance matrix", Fore.GREEN)
 
         cov = mne.compute_raw_covariance(raw, tmin=0, tmax=10, return_estimators=True)
         mne.write_cov('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
@@ -369,7 +370,7 @@ def create_trials(config: dict):
 
     # Create average participant EMEG
 
-#    print(f"{Fore.GREEN}{Style.BRIGHT}... save participant average{Style.RESET_ALL}")
+#    print_with_color(f"... save participant average", Fore.GREEN)
 
 #    for input_stream in input_streams:
 #        for trial in range(1, number_of_trials + 1):
@@ -418,7 +419,7 @@ def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, EMEG_machine
     ch_names = auto_scores['ch_names'][ch_subset]
     scores = auto_scores['scores_noisy'][ch_subset]
     limits = auto_scores['limits_noisy'][ch_subset]
-    bins = auto_scores['bins']  # The the windows that were evaluated.
+    bins = auto_scores['bins']  # The windows that were evaluated.
     # We will label each segment by its start and stop time, with up to 3
     # digits before and 3 digits after the decimal place (1 ms precision).
     bin_labels = [f'{start:3.3f} – {stop:3.3f}'

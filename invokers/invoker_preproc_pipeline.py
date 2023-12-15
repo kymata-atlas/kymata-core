@@ -1,5 +1,8 @@
-from kymata.preproc.cli import display_welcome_message_to_terminal, run_cleanup
-from kymata.preproc.utils import data_integrety_checks, load_config_parameters
+from colorama import Fore
+
+from kymata.io.cli import print_with_color
+from kymata.io.yaml import load_config
+from kymata.preproc.data import data_integrety_checks
 from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, \
     create_hexel_current_files
 
@@ -8,10 +11,10 @@ def main():
     """The pipeline invoker"""
 
     # Start up
-    display_welcome_message_to_terminal()
+    _display_welcome_message_to_terminal()
 
     # Load parameters
-    config = load_config_parameters('kymata/config/dataset4_config_file.yaml')
+    config = load_config('kymata/config/dataset4_config_file.yaml')
 
     # Ensure we have all the data we need
     data_integrety_checks(config=config)
@@ -44,7 +47,20 @@ def main():
 #    XYZ
 
     # End code with cleanup
-    run_cleanup()
+    _run_cleanup()
+
+
+def _display_welcome_message_to_terminal():
+    """Runs welcome message"""
+    print_with_color("-----------------------------------------------", Fore.BLUE)
+    print_with_color(" Kymata Preprocessing and Analysis Pipeline    ", Fore.BLUE)
+    print_with_color("-----------------------------------------------", Fore.BLUE)
+    print_with_color("", Fore.BLUE)
+
+
+def _run_cleanup():
+    """Runs clean up"""
+    print_with_color("Exited successfully.", Fore.GREEN)
 
 
 if __name__ == "__main__":
