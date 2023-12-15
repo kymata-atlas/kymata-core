@@ -4,6 +4,7 @@ from kymata.io.yaml import load_config
 from kymata.preproc.pipeline import run_preprocessing, create_trials
 
 
+# noinspection DuplicatedCode
 def main():
     config = load_config(str(Path(Path(__file__).parent, "kymata", "config", "dataset3.yaml")))
 
