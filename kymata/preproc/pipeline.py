@@ -1,14 +1,12 @@
 import os.path
 
 from colorama import Fore
-import matplotlib.pyplot as plt
 import mne
-import seaborn as sns
 import numpy as np
-import pandas as pd
 
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.yaml import load_config
+from kymata.preproc.emeg import apply_automatic_bad_channel_detection
 
 
 def run_preprocessing(config: dict):
@@ -385,75 +383,3 @@ def create_trials(config: dict):
 #            average_participant_evoked.save(
 #                'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
 #                    trial) + '-ave.fif', overwrite=True)
-
-
-def plot_eeg_sensor_positions(raw_fif: mne.io.Raw):
-    """Plot Sensor positions"""
-    fig = plt.figure()
-    ax2d = fig.add_subplot(121)
-    ax3d = fig.add_subplot(122, projection='3d')
-    raw_fif.plot_sensors(ch_type='eeg', axes=ax2d)
-    raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
-    ax3d.view_init(azim=70, elev=15)
-
-
-def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, EMEG_machine_used_to_record_data: str):
-    """Apply Automatic Bad Channel Detection"""
-    raw_check = raw_fif_data.copy()
-
-    fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal' + EMEG_machine_used_to_record_data + '.dat'
-    crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse' + EMEG_machine_used_to_record_data + '.fif'
-
-    auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(
-        raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
-        return_scores=True, verbose=True)
-    print(auto_noisy_chs)
-    print(auto_flat_chs)
-
-    bads = raw_fif_data.info['bads'] + auto_noisy_chs + auto_flat_chs
-    raw_fif_data.info['bads'] = bads
-
-    # Only select the data for gradiometer channels.
-    ch_type = 'grad'
-    ch_subset = auto_scores['ch_types'] == ch_type
-    ch_names = auto_scores['ch_names'][ch_subset]
-    scores = auto_scores['scores_noisy'][ch_subset]
-    limits = auto_scores['limits_noisy'][ch_subset]
-    bins = auto_scores['bins']  # The windows that were evaluated.
-    # We will label each segment by its start and stop time, with up to 3
-    # digits before and 3 digits after the decimal place (1 ms precision).
-    bin_labels = [f'{start:3.3f} – {stop:3.3f}'
-                  for start, stop in bins]
-
-    # We store the data in a Pandas DataFrame. The seaborn heatmap function
-    # we will call below will then be able to automatically assign the correct
-    # labels to all axes.
-    data_to_plot = pd.DataFrame(data=scores,
-                                columns=pd.Index(bin_labels, name='Time (s)'),
-                                index=pd.Index(ch_names, name='Channel'))
-
-    # First, plot the "raw" scores.
-    fig, ax = plt.subplots(1, 2, figsize=(12, 8))
-    fig.suptitle(f'Automated noisy channel detection: {ch_type}',
-                 fontsize=16, fontweight='bold')
-    sns.heatmap(data=data_to_plot, cmap='Reds', cbar_kws=dict(label='Score'),
-                ax=ax[0])
-    [ax[0].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
-     for x in range(1, len(bins))]
-    ax[0].set_title('All Scores', fontweight='bold')
-
-    # Now, adjust the color range to highlight segments that exceeded the limit.
-    sns.heatmap(data=data_to_plot,
-                vmin=np.nanmin(limits),  # bads in input data have NaN limits
-                cmap='Reds', cbar_kws=dict(label='Score'), ax=ax[1])
-    [ax[1].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
-     for x in range(1, len(bins))]
-    ax[1].set_title('Scores > Limit', fontweight='bold')
-
-    # The figure title should not overlap with the subplots.
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-    # Replace the word “noisy” with “flat”, and replace
-    # vmin=np.nanmin(limits) with vmax=np.nanmax(limits) to print flat channels
-
-    return raw_fif_data

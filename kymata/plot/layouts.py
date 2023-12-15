@@ -2,6 +2,9 @@ import re
 from pathlib import Path
 from typing import NamedTuple
 
+from mne.io import Raw
+from matplotlib import pyplot as plt
+
 
 class Point2d(NamedTuple):
     x: float
@@ -30,4 +33,15 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
 
 
 def eeg_sensors() -> list[str]:
+    """The names of all EEG sensors."""
     return [f"EEG{i:03}" for i in range(1, 65)]
+
+
+def plot_eeg_sensor_positions(raw_fif: Raw):
+    """Plot Sensor positions"""
+    fig = plt.figure()
+    ax2d = fig.add_subplot(121)
+    ax3d = fig.add_subplot(122, projection='3d')
+    raw_fif.plot_sensors(ch_type='eeg', axes=ax2d)
+    raw_fif.plot_sensors(ch_type='eeg', axes=ax3d, kind='3d')
+    ax3d.view_init(azim=70, elev=15)
