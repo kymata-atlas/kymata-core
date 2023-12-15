@@ -2,10 +2,8 @@ from pathlib import Path
 
 from mne.io import Raw
 from mne.preprocessing import find_bad_channels_maxwell
-import numpy as np
 from pandas import DataFrame, Index
-import seaborn as sns
-from matplotlib import pyplot as plt
+from numpy import nanmin
 
 
 def apply_automatic_bad_channel_detection(raw_fif_data: Raw, machine_used: str, plot: bool = True):
@@ -35,6 +33,9 @@ def apply_automatic_bad_channel_detection(raw_fif_data: Raw, machine_used: str, 
 
 
 def _plot_bad_chans(auto_scores):
+    import seaborn as sns
+    from matplotlib import pyplot as plt
+
     # Only select the data for gradiometer channels.
     ch_type = 'grad'
     ch_subset = auto_scores['ch_types'] == ch_type
@@ -67,7 +68,7 @@ def _plot_bad_chans(auto_scores):
 
     # Now, adjust the color range to highlight segments that exceeded the limit.
     sns.heatmap(data=data_to_plot,
-                vmin=np.nanmin(limits),  # bads in input data have NaN limits
+                vmin=nanmin(limits),  # bads in input data have NaN limits
                 cmap='Reds', cbar_kws=dict(label='Score'), ax=ax[1])
     [ax[1].axvline(x, ls='dashed', lw=0.25, dashes=(25, 15), color='gray')
      for x in range(1, len(bins))]
@@ -77,4 +78,4 @@ def _plot_bad_chans(auto_scores):
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     # Replace the word “noisy” with “flat”, and replace
-    # vmin=np.nanmin(limits) with vmax=np.nanmax(limits) to print flat channels
+    # vmin=nanmin(limits) with vmax=nanmax(limits) to print flat channels
