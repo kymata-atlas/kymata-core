@@ -8,6 +8,8 @@ from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.yaml import load_config
 from kymata.preproc.emeg import apply_automatic_bad_channel_detection
 
+import matplotlib
+matplotlib.use('TkAgg')
 
 def run_preprocessing(list_of_participants: list[str],
                       dataset_directory_name: str,
@@ -28,20 +30,19 @@ def run_preprocessing(list_of_participants: list[str],
             print_with_color(f"   Loading Raw data...", Fore.GREEN)
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
-                run) + '_raw_sss.fif'
+            saved_maxfiltered_filename = r'//cbsu/data/Imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/intrim_preprocessing_files/1_maxfiltered/" + participant + "_run" + str(run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
             else:
                 raw_fif_data = mne.io.Raw(
-                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
+                    r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
                         run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
                 recording_config = load_config(
-                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
+                    r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -105,8 +106,8 @@ def run_preprocessing(list_of_participants: list[str],
                 # Apply SSS and movement compensation
                 print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'
-                crosstalk_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'
+                fine_cal_file = r'//cbsu/data/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'
+                crosstalk_file = r'//cbsu/data/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'
 
                 mne.viz.plot_head_positions(
                     head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
@@ -182,7 +183,7 @@ def run_preprocessing(list_of_participants: list[str],
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
             raw_fif_data_sss_movecomp_tr.save(
-                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
+                r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
                     run) + '_cleaned_raw.fif.gz',
                 overwrite=True)
 
@@ -261,7 +262,7 @@ def create_trials(dataset_directory_name: str,
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -328,7 +329,7 @@ def create_trials(dataset_directory_name: str,
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject=p)
             dropfig.savefig(
-                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
+                r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -354,7 +355,7 @@ def create_trials(dataset_directory_name: str,
         print_with_color(f"... save grand covariance matrix", Fore.GREEN)
 
         cov = mne.compute_raw_covariance(raw, tmin=0, tmax=10, return_estimators=True)
-        mne.write_cov('/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
+        mne.write_cov(r'//cbsu/data/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
 
 
 # Save global droplog

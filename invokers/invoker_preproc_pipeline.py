@@ -15,7 +15,7 @@ def main():
     _display_welcome_message_to_terminal()
 
     # Load parameters
-    config = load_config('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata/config/dataset4.yaml')
+    config = load_config(r'\\cbsu\data\Imaging\projects\cbu\kymata\analyses\tianyi\kymata-toolbox\kymata\config\dataset4.yaml')
 
     # Ensure we have all the data we need
     data_integrety_checks(config=config)
