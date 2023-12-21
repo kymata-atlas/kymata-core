@@ -1,0 +1,21 @@
+
+bad_channels: [
+          "EEG002",
+          "EEG003",
+          "EEG045",
+          "EEG054",
+          "MEG1432",
+          "MEG2022",
+          "MEG1723"
+            ]
+
+ECG_and_EOG_channel_name_and_type_overwrites:
+      EOG061:
+        new_name: "VEOG"
+        new_type: "eog"
+      EOG062:
+        new_name: "HEOG"
+        new_type: "eog"
+      ECG063:
+        new_name: "recordedinerror"
+        new_type: "misc"
