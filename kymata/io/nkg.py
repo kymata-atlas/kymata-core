@@ -15,7 +15,7 @@ from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, L
     SensorExpressionSet, p_to_logp
 from kymata.entities.sparse_data import expand_dims
 from kymata.io.file import path_type, file_type, open_or_use
-from kymata.io.nkg_legacy import _load_data_0_1, _load_data_0_2
+from kymata.io.nkg_compatibility import _load_data_0_1, _load_data_0_2
 
 
 class _Keys(StrEnum):
