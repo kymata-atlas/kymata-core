@@ -1,19 +1,19 @@
-from pathlib import Path
 from itertools import cycle
-from typing import Optional, Sequence, Dict, NamedTuple
+from pathlib import Path
 from statistics import NormalDist
+from typing import Optional, Sequence, Dict, NamedTuple
 
+import numpy as np
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
-import numpy as np
-from seaborn import color_palette
 from pandas import DataFrame
+from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, _SENSOR, _FUNCTION, \
-    logp_to_p
+    p_to_logp
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
-# 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
+# log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
 
 
@@ -21,12 +21,12 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame,
     """
     Returns:
         x_min, x_max, y_min, y_max
+            logp values for axis limits
             Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
                   (so they can be added to min() and max() without altering the result).
     """
     x = function_data["latency"].values * 1000  # Convert to milliseconds
     y = function_data["value"].values
-    y = np.array(logp_to_p(y))
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
@@ -147,6 +147,8 @@ def expression_plot(
                  * len(channels)
                  * len(show_only))))
 
+    sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
+
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     if isinstance(axes, pyplot.Axes): axes = (axes, )  # Wrap if necessary
     fig.subplots_adjust(hspace=0)
@@ -207,18 +209,23 @@ def expression_plot(
 
     # format shared axis qualities
     for ax in axes:
-        ax.set_yscale('log')
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
         ax.set_xlim(*xlims)
-        ax.set_ylim((1, ylim))
+        ax.set_ylim((0, ylim))
         ax.axvline(x=0, color='k', linestyle='dotted')
         ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
         ax.text(-100, sidak_corrected_alpha, 'α*',
-                  bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
+                bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         ax.text(600, sidak_corrected_alpha, 'α*',
-                  bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
+                bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         ax.set_yticks(_get_yticks(ylim))
+        # Format yaxis as p-values (e.g. 10^{-50} instead of -50)
+        pval_labels = [
+            f"$10^{{{int(t)}}}$" if t != 0 else "1"  # Instead of 10^0
+            for t in ax.get_yticks()
+        ]
+        ax.set_yticklabels(pval_labels)
 
     # format one-off axis qualities
     if paired_axes:
@@ -233,14 +240,14 @@ def expression_plot(
     bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     if paired_axes:
         top_ax.text(s=axes_names[0],
-                    x=-180, y=ylim * 10_000_000,
+                    x=-180, y=ylim * 0.95,
                     style='italic', verticalalignment='center')
         bottom_ax.text(s=axes_names[1],
-                       x=-180, y=ylim * 10_000_000,
+                       x=-180, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
     fig.supylabel(f'p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
     bottom_ax.text(s='   onset of environment   ',
-                   x=0, y=1 if paired_axes else 10**(np.log10(ylim)/2),  # vertically centred
+                   x=0, y=0 if paired_axes else ylim/2,  # vertically centred
                    color='white', fontsize='x-small',
                    bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
                    horizontalalignment='center', rotation='vertical')
@@ -289,15 +296,15 @@ def _get_best_xlims(xlims, data_x_min, data_x_max):
 def _get_best_ylim(ylim: float | None, data_y_min):
     if ylim is not None:
         return ylim
-    default_y_min = 10 ** (-1 * _MAJOR_TICK_SIZE)
+    default_y_min = -1 * _MAJOR_TICK_SIZE
     ylim = min(default_y_min, data_y_min)
     # Round to nearest major tick
-    major_tick = np.floor(np.log10(ylim) / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
-    ylim = 10 ** major_tick
+    major_tick = np.floor(ylim / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
+    ylim = major_tick
     return ylim
 
 
 def _get_yticks(ylim):
-    n_major_ticks = int(np.log10(ylim) / _MAJOR_TICK_SIZE) * -1
-    last_major_tick = 10 ** (-1 * n_major_ticks * _MAJOR_TICK_SIZE)
-    return np.geomspace(start=1, stop=last_major_tick, num=n_major_ticks + 1)
+    n_major_ticks = int(ylim / _MAJOR_TICK_SIZE) * -1
+    last_major_tick = -1 * n_major_ticks * _MAJOR_TICK_SIZE
+    return np.linspace(start=0, stop=last_major_tick, num=n_major_ticks + 1)
