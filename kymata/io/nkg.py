@@ -230,7 +230,7 @@ def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, An
                 data: ndarray = frombuffer(f.read(), dtype=float)
             with TextIOWrapper(zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8") as f:
                 shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
-            sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=1.0)
+            sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=0.0)
             # In case there was only 1 function and we have a 2-d data matrix
             if len(shape) == 2:
                 sparse_data = expand_dims(sparse_data)
