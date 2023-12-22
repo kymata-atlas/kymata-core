@@ -27,7 +27,7 @@ def test_save_and_load_is_equal():
 def test_load_v0_1_nkg():
     from packaging import version
     v01_path = Path(Path(__file__).parent, "test-data", "version_0_1.nkg")
-    v = _load_data(v01_path)
+    v, _ = _load_data(v01_path)
     assert v == version.parse("0.1")
     es = load_expression_set(v01_path)
     assert isinstance(es, HexelExpressionSet)
