@@ -99,10 +99,6 @@ def save_expression_set(expression_set: ExpressionSet,
     overwrite flag is ignored if open file is supplied.
     """
 
-    warn("Experimental function. "
-         "The on-disk data format for ExpressionSet is not yet fixed. "
-         "Files saved using .save should not (yet) be treated as stable or future-proof.")
-
     if isinstance(to_path_or_file, str):
         to_path_or_file = Path(to_path_or_file)
     if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
