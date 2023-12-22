@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 from packaging import version
 from io import TextIOWrapper
 from pathlib import Path
@@ -9,13 +11,13 @@ from numpy import ndarray, frombuffer
 from sparse import COO
 
 from kymata.entities.datatypes import HexelDType, LatencyDType, FunctionNameDType, SensorDType
-from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, HexelExpressionSet, SensorExpressionSet, \
-    LAYER_SCALP
+from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, LAYER_SCALP, HexelExpressionSet, \
+    SensorExpressionSet, p_to_logp
 from kymata.entities.sparse_data import expand_dims
 from kymata.io.file import path_type, file_type, open_or_use
 
 
-class _Keys:
+class _Keys(StrEnum):
     channels  = "channels"
     latencies = "latencies"
     functions = "functions"
@@ -25,7 +27,7 @@ class _Keys:
     expressionset_type = "expressionset-type"
 
 
-class _ExpressionSetTypeIdentifier:
+class _ExpressionSetTypeIdentifier(StrEnum):
     hexel  = "hexel"
     sensor = "sensor"
 
@@ -49,7 +51,7 @@ class _ExpressionSetTypeIdentifier:
 # All distinct versions should be documented.
 #
 # This value should be saved into file called /_metadata/format-version.txt within an archive.
-CURRENT_VERSION = "0.2"
+CURRENT_VERSION = "0.3"
 
 
 def file_version(from_path_or_file: path_type | file_type) -> version.Version:
@@ -96,10 +98,6 @@ def save_expression_set(expression_set: ExpressionSet,
     overwrite flag is ignored if open file is supplied.
     """
 
-    warn("Experimental function. "
-         "The on-disk data format for ExpressionSet is not yet fixed. "
-         "Files saved using .save should not (yet) be treated as stable or future-proof.")
-
     if isinstance(to_path_or_file, str):
         to_path_or_file = Path(to_path_or_file)
     if isinstance(to_path_or_file, Path) and to_path_or_file.exists() and not overwrite:
@@ -138,13 +136,64 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
     # For each, delegate to the appropriate _load_data_x_y() function, then
     # ensure the keys are set correctly.
     if v <= version.parse("0.1"):
+        from kymata.io.nkg_compatibility import _load_data_0_1
         dict_0_1 = _load_data_0_1(from_path_or_file)
+
+        # v0.1 data was stored as p values
+        data = dict()
+        for layer, sparse_data_dict in dict_0_1["data"].items():
+            sparse_data_dict["data"] = p_to_logp(sparse_data_dict["data"])
+
+            sparse_data = COO(coords=sparse_data_dict["coords"],
+                              data=sparse_data_dict["data"],
+                              shape=sparse_data_dict["shape"],
+                              prune=True, fill_value=0.0)
+            assert sparse_data.shape == (
+                len(dict_0_1["hexels"]),
+                len(dict_0_1["latencies"]),
+                len(dict_0_1["functions"]),
+            )
+            # In case there was only 1 function and we have a 2-d data matrix
+            if len(sparse_data.shape) == 2:
+                sparse_data = expand_dims(sparse_data)
+            data[layer] = sparse_data
+
         return_dict = {
             _Keys.channels:  dict_0_1["hexels"],
             _Keys.functions: dict_0_1["functions"],
             _Keys.latencies: dict_0_1["latencies"],
-            _Keys.data:      dict_0_1["data"],
-            _Keys.expressionset_type: "hexel",
+            _Keys.data:      data,
+            # Keys not present in v0.1
+            _Keys.expressionset_type: _ExpressionSetTypeIdentifier.hexel,
+        }
+    elif v <= version.parse("0.2"):
+        from kymata.io.nkg_compatibility import _load_data_0_2
+        dict_0_2 = _load_data_0_2(from_path_or_file)
+
+        # v0.2 data was stored as p-values
+        data = dict()
+        for layer, sparse_data_dict in dict_0_2["data"].items():
+            sparse_data_dict["data"] = p_to_logp(sparse_data_dict["data"])
+
+            sparse_data = COO(coords=sparse_data_dict["coords"],
+                              data=sparse_data_dict["data"],
+                              shape=sparse_data_dict["shape"],
+                              prune=True, fill_value=0.0)
+            assert sparse_data.shape == (
+                len(dict_0_2["channels"]),
+                len(dict_0_2["latencies"]),
+                len(dict_0_2["functions"]),
+            )
+            # In case there was only 1 function and we have a 2-d data matrix
+            if len(sparse_data.shape) == 2:
+                sparse_data = expand_dims(sparse_data)
+            data[layer] = sparse_data
+        return_dict = {
+            _Keys.expressionset_type: dict_0_2["expressionset-type"],
+            _Keys.channels:           dict_0_2["channels"],
+            _Keys.functions:          dict_0_2["functions"],
+            _Keys.latencies:          dict_0_2["latencies"],
+            _Keys.data:               data,
         }
     else:
         return_dict = _load_data_current(from_path_or_file)
@@ -178,7 +227,7 @@ def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, An
                 data: ndarray = frombuffer(f.read(), dtype=float)
             with TextIOWrapper(zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8") as f:
                 shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
-            sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=1.0)
+            sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=0.0)
             # In case there was only 1 function and we have a 2-d data matrix
             if len(shape) == 2:
                 sparse_data = expand_dims(sparse_data)
@@ -186,49 +235,4 @@ def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, An
                              len(return_dict[_Keys.latencies]),
                              len(return_dict[_Keys.functions]))
             return_dict[_Keys.data][layer] = sparse_data
-    return return_dict
-
-
-# noinspection DuplicatedCode
-def _load_data_0_1(from_path_or_file: path_type | file_type) -> dict[str, Any]:
-    """
-    This is a function which loads data format 0.1.
-
-    The idea is that *this function never changes*, and handling code instead can change to
-    transform the returned dictionary to whatever format is required for the current
-    iteration of the appropriate classes.
-
-    In particular, that means it uses inline string keys rather than keys stored in the Keys class.
-    """
-
-    if isinstance(from_path_or_file, str):
-        from_path_or_file = Path(from_path_or_file)
-
-    return_dict = dict()
-    with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
-        with TextIOWrapper(zf.open("/hexels.txt"), encoding="utf-8") as f:
-            return_dict["hexels"]: list[HexelDType] = [HexelDType(h.strip()) for h in f.readlines()]
-        with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
-            return_dict["latencies"]: list[LatencyDType] = [LatencyDType(lat.strip()) for lat in f.readlines()]
-        with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-            return_dict["functions"]: list[FunctionNameDType] = [FunctionNameDType(fun.strip()) for fun in f.readlines()]
-        return_dict["data"] = dict()
-        for layer in ["left", "right"]:
-            with zf.open(f"/{layer}/coo-coords.bytes") as f:
-                coords: ndarray = frombuffer(f.read(), dtype=int).reshape((3, -1))
-            with zf.open(f"/{layer}/coo-data.bytes") as f:
-                data: ndarray = frombuffer(f.read(), dtype=float)
-            with TextIOWrapper(zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8") as f:
-                shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
-            sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=1.0)
-            # In case there was only 1 function and we have a 2-d data matrix
-            if len(sparse_data.shape) == 2:
-                sparse_data = expand_dims(sparse_data)
-
-            assert sparse_data.shape == (
-                len(return_dict["hexels"]),
-                len(return_dict["latencies"]),
-                len(return_dict["functions"]),
-            )
-            return_dict["data"][layer] = sparse_data
     return return_dict
