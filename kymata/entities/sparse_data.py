@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from numpy import ndarray, nanmin, greater
+from numpy import nanmin, greater
+from numpy.typing import NDArray
 import sparse
 from xarray import Dataset
 
@@ -27,16 +28,17 @@ def expand_dims(x: sparse.COO, axis=-1) -> sparse.COO:
     return x
 
 
-def minimise_pmatrix(pmatrix: ndarray) -> sparse.COO:
+def sparsify_log_pmatrix(log_pmatrix: NDArray) -> sparse.COO:
     """
-    Converts a hexel-x-latency data matrix containing p-values into a sparse matrix
-    only storing the minimum (over latencies) p-value for each hexel.
+    Converts a channel-x-latency data matrix containing log p-values into a sparse matrix
+    only storing the minimum (over latencies) log p-value for each channel.
     """
-    hexel_min = nanmin(pmatrix, axis=1)
-    hexel_min = expand_dims(hexel_min, axis=2)
-    # Minimum p-val over all latencies for this hexel
-    pmatrix[greater(pmatrix, hexel_min)] = 1.0
-    return sparse.COO(pmatrix, fill_value=1.0)
+    fill_value = 0.0
+    channel_min = nanmin(log_pmatrix, axis=1)
+    channel_min = expand_dims(channel_min, axis=2)
+    # Minimum value over all latencies for this channel
+    log_pmatrix[greater(log_pmatrix, channel_min)] = fill_value
+    return sparse.COO(log_pmatrix, fill_value=fill_value)
 
 
 def densify_dataset(x: Dataset):

@@ -38,6 +38,20 @@ def test_load_v0_1_nkg():
     assert es.left.shape == es.right.shape == (100, 10, 1)
 
 
+def test_load_v0_2_nkg():
+    from packaging import version
+    v01_path = Path(Path(__file__).parent, "test-data", "version_0_2.nkg")
+    v = _load_data(v01_path)
+    assert v == version.parse("0.2")
+    es = load_expression_set(v01_path)
+    assert isinstance(es, HexelExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.hexels) == 100
+    assert es.left.shape == es.right.shape == (100, 10, 1)
+
+
 def test_load_sensor_nkg():
     es = load_expression_set(Path(Path(__file__).parent, "test-data", "sensor.nkg"))
     assert isinstance(es, SensorExpressionSet)
