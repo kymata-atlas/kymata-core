@@ -9,7 +9,8 @@ import numpy as np
 from seaborn import color_palette
 from pandas import DataFrame
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, _SENSOR, _FUNCTION
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, _SENSOR, _FUNCTION, \
+    logp_to_p
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -25,6 +26,7 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame,
     """
     x = function_data["latency"].values * 1000  # Convert to milliseconds
     y = function_data["value"].values
+    y = np.array(logp_to_p(y))
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
