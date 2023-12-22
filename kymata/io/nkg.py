@@ -15,7 +15,6 @@ from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, L
     SensorExpressionSet, p_to_logp
 from kymata.entities.sparse_data import expand_dims
 from kymata.io.file import path_type, file_type, open_or_use
-from kymata.io.nkg_compatibility import _load_data_0_1, _load_data_0_2
 
 
 class _Keys(StrEnum):
@@ -137,6 +136,7 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
     # For each, delegate to the appropriate _load_data_x_y() function, then
     # ensure the keys are set correctly.
     if v <= version.parse("0.1"):
+        from kymata.io.nkg_compatibility import _load_data_0_1
         dict_0_1 = _load_data_0_1(from_path_or_file)
 
         # v0.1 data was stored as p values
@@ -167,6 +167,7 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
             _Keys.expressionset_type: _ExpressionSetTypeIdentifier.hexel,
         }
     elif v <= version.parse("0.2"):
+        from kymata.io.nkg_compatibility import _load_data_0_2
         dict_0_2 = _load_data_0_2(from_path_or_file)
 
         # v0.2 data was stored as p-values
