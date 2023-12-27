@@ -5,7 +5,7 @@ import mne
 from numpy import zeros
 
 from kymata.io.cli import print_with_color, input_with_color
-from kymata.io.yaml import load_config
+from kymata.io.yaml import load_config, modify_param_config
 from kymata.preproc.emeg import apply_automatic_bad_channel_detection
 
 
@@ -72,6 +72,13 @@ def run_preprocessing(list_of_participants: list[str],
                     mne.viz.plot_raw(raw_fif_data, scalings='auto', block=True)
                 else:
                     print(f"...assuming you want to continue without looking at the raw data.")
+
+                # Write back selected bad channels back to participant's config .yaml file
+                modify_param_config(
+                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg_data/' + participant + "/" + participant + '_recording_config.yaml',
+                    'bad_channels',
+                    [str(item) for item in sorted(raw_fif_data.info['bads'])]
+                )
 
                 # Get the head positions
                 chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
