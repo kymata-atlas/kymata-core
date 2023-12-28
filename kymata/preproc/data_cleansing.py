@@ -31,7 +31,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 run) + '_raw_sss.fif'
 
             if not(skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename)):
-                
+
                 raw_fif_data = mne.io.Raw(
                     '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
                         run) + "_raw.fif", preload=True)
@@ -128,7 +128,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
-def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
+def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                                                       dataset_directory_name: str,
                                                       n_runs: int,
                                                       remove_ecg: bool,
