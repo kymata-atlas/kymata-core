@@ -1,5 +1,5 @@
 # Possible default location for downloaded data
-kymata-toolbox-data/demo_nkg_data/
+kymata-toolbox-data/tutorial_nkg_data/
 kymata-toolbox-data/emeg_study_data/
 
 # Byte-compiled / optimized / DLL files
