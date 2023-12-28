@@ -1,6 +1,6 @@
 # Possible default location for downloaded data
-kymata_data/
-kymata-toolbox-data/
+kymata-toolbox-data/demo_nkg_data/
+kymata-toolbox-data/emeg_study_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

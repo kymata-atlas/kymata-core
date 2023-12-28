@@ -10,7 +10,15 @@ from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_f
 def main():
     config = load_config(str(Path(Path(__file__).parent, "kymata", "config", "dataset4.yaml")))
 
+    if config['data_location'] == "local":
+        data_root_dir = load_config(str(Path(Path(__file__).parent, "kymata-toolbox-data", "emeg_study_data")))
+    elif config['data_location'] == "cbu":
+        data_root_dir = '/imaging/projects/cbu/kymata/data/'
+    else:
+        raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local'.")
+
     run_first_pass_cleansing_and_maxwell_filtering(
+        data_root_dir = data_root_dir,
         list_of_participants=config['list_of_participants'],
         dataset_directory_name=config['dataset_directory_name'],
         n_runs=config['number_of_runs'],
@@ -20,6 +28,7 @@ def main():
     )
 
     run_second_pass_cleansing_and_EOG_removal(
+        data_root_dir=data_root_dir,
         list_of_participants=config['list_of_participants'],
         dataset_directory_name=config['dataset_directory_name'],
         n_runs=config['number_of_runs'],

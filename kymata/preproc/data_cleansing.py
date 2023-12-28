@@ -11,34 +11,36 @@ from kymata.io.yaml import load_config, modify_param_config
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
+                      data_root_dir: str,
                       dataset_directory_name: str,
                       n_runs: int,
                       emeg_machine_used_to_record_data: str,
                       skip_maxfilter_if_previous_runs_exist: bool,
                       automatic_bad_channel_detection_requested: bool,
                       ):
+
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
 
-            # Preprocessing Participant and run info
-            print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
-
-            # Load data
-            print_with_color(f"   Loading Raw data...", Fore.GREEN)
-
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+            saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
             if not(skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename)):
 
+                # Preprocessing Participant and run info
+                print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
+
+                # Load data
+                print_with_color(f"   Loading Raw data...", Fore.GREEN)
+
                 raw_fif_data = mne.io.Raw(
-                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
+                    data_root_dir + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
                         run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
                 recording_config = load_config(
-                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
+                    data_root_dir + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -72,7 +74,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
 
                 # Write back selected bad channels back to participant's config .yaml file
                 modify_param_config(
-                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg_data/' + participant + "/" + participant + '_recording_config.yaml',
+                    data_root_dir + dataset_directory_name + '/raw_emeg_data/' + participant + "/" + participant + '_recording_config.yaml',
                     'bad_channels',
                     [str(item) for item in sorted(raw_fif_data.info['bads'])]
                 )
@@ -109,8 +111,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 # Apply SSS and movement compensation
                 print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'
-                crosstalk_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'
+                fine_cal_file = str(Path(Path(__file__).parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+                crosstalk_file = str(Path(Path(__file__).parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
 
                 mne.viz.plot_head_positions(
                     head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
@@ -129,6 +131,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
 def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
+                                                      data_root_dir: str,
                                                       dataset_directory_name: str,
                                                       n_runs: int,
                                                       remove_ecg: bool,
@@ -141,7 +144,7 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
             print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+            saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
             # Load data
@@ -207,7 +210,7 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
             raw_fif_data_sss_movecomp_tr.save(
-                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
+                data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
                     run) + '_cleaned_raw.fif.gz',
                 overwrite=True)
 
