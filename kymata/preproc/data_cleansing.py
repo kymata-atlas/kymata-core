@@ -26,8 +26,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
             saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
-            if not(skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename)):
+            if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
 
+                print_with_color(f"Skipping first pass filtering and Maxfiltering for {participant} [Run {str(run)}]...", Fore.GREEN)
+
+            else:
                 # Preprocessing Participant and run info
                 print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
 
@@ -111,8 +114,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 # Apply SSS and movement compensation
                 print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = str(Path(Path(__file__).parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-                crosstalk_file = str(Path(Path(__file__).parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+                fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+                crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
 
                 mne.viz.plot_head_positions(
                     head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
