@@ -10,13 +10,11 @@ from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.yaml import load_config, modify_param_config
 
 
-def run_preprocessing(list_of_participants: list[str],
+def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
                       dataset_directory_name: str,
                       n_runs: int,
                       emeg_machine_used_to_record_data: str,
-                      remove_ecg: bool,
                       skip_maxfilter_if_previous_runs_exist: bool,
-                      remove_veoh_and_heog: bool,
                       automatic_bad_channel_detection_requested: bool,
                       ):
     for participant in list_of_participants:
@@ -32,10 +30,8 @@ def run_preprocessing(list_of_participants: list[str],
             saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
-            if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
-                raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
-
-            else:
+            if not(skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename)):
+                
                 raw_fif_data = mne.io.Raw(
                     '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
                         run) + "_raw.fif", preload=True)
@@ -131,6 +127,27 @@ def run_preprocessing(list_of_participants: list[str],
                     verbose=True)
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
+
+def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
+                                                      dataset_directory_name: str,
+                                                      n_runs: int,
+                                                      remove_ecg: bool,
+                                                      remove_veoh_and_heog: bool,
+                                                      ):
+    for participant in list_of_participants:
+        for run in range(1, n_runs + 1):
+
+            # Preprocessing Participant and run info
+            print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
+
+            # set filename. (Use .fif.gz extension to use gzip to compress)
+            saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+                run) + '_raw_sss.fif'
+
+            # Load data
+            print_with_color(f"   Loading Raw data...", Fore.GREEN)
+
+            raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
             response = input_with_color(
                 f"Would you like to see the SSS, movement compensated, raw data data? (y/n)",
