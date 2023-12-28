@@ -74,7 +74,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
 
                 # Write back selected bad channels back to participant's config .yaml file
                 modify_param_config(
-                    data_root_dir + dataset_directory_name + '/raw_emeg_data/' + participant + "/" + participant + '_recording_config.yaml',
+                    data_root_dir + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml',
                     'bad_channels',
                     [str(item) for item in sorted(raw_fif_data.info['bads'])]
                 )

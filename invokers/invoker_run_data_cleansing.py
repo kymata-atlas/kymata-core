@@ -8,10 +8,10 @@ from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_f
 
 # noinspection DuplicatedCode
 def main():
-    config = load_config(str(Path(Path(__file__).parent, "kymata", "config", "dataset4.yaml")))
+    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
     if config['data_location'] == "local":
-        data_root_dir = load_config(str(Path(Path(__file__).parent, "kymata-toolbox-data", "emeg_study_data")))
+        data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
     elif config['data_location'] == "cbu":
         data_root_dir = '/imaging/projects/cbu/kymata/data/'
     else:
