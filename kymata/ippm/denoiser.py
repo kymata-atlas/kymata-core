@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, normalize
 
 from .data_tools import IPPMHexel
 
@@ -22,7 +22,7 @@ class DenoisingStrategy(object):
         """
         self._clusterer = None
     
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False) -> Dict[str, IPPMHexel]:
         """
             For each function in hemi, it will attempt to construct a dataframe that holds significant spikes (i.e., abova alpha).
             Next, it clusters using self._clusterer. Finally, it locates the minimum (most significant) point for each cluster and saves
@@ -52,7 +52,7 @@ class DenoisingStrategy(object):
                 continue
 
             # if we are renormalising each feature, then scale otherwise no
-            fitted = self._clusterer.fit(StandardScaler().fit_transform(df)) if scaling else self._clusterer.fit(df)
+            fitted = self._clusterer.fit(normalize(df)) if normalise else self._clusterer.fit(df)
             df['Label'] = fitted.labels_
             cluster_mins = self._get_cluster_mins(df)
             hexels = self._update_pairings(hexels, func, cluster_mins, hemi)
@@ -224,7 +224,7 @@ class MaxPooler(DenoisingStrategy):
             print('Bin size needs to be an integer.')
             raise ValueError
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> List[Tuple[float, float]]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False) -> List[Tuple[float, float]]:
         """  
             Custom clustering method since it differs from other unsupervised techniques. 
 
@@ -345,12 +345,13 @@ class GMM(DenoisingStrategy):
                            set this if you want your results to be reproducible.
         """
         # we are instantiating multiple models, so save hyperparameters instead of clusterer object.
-        self._max_gaussians = 6 if not 'max_gaussians' in kwargs.keys() else kwargs['max_gaussians']
+        self._max_gaussians = 5 if not 'max_gaussians' in kwargs.keys() else kwargs['max_gaussians']
         self._covariance_type = 'full' if not 'covariance_type' in kwargs.keys() else kwargs['covariance_type']
-        self._max_iter = 100 if not 'max_iter' in kwargs.keys() else kwargs['max_iter']
-        self._n_init = 3 if not 'n_init' in kwargs.keys() else kwargs['n_init']
-        self._init_params = 'k-means++' if not 'init_params' in kwargs.keys() else kwargs['init_params']
+        self._max_iter = 1000 if not 'max_iter' in kwargs.keys() else kwargs['max_iter']
+        self._n_init = 8 if not 'n_init' in kwargs.keys() else kwargs['n_init']
+        self._init_params = 'kmeans' if not 'init_params' in kwargs.keys() else kwargs['init_params']
         self._random_state = None if not 'random_state' in kwargs.keys() else kwargs['random_state']
+        self._is_aic = False if not 'is_aic' in kwargs.keys() else kwargs['is_aic'] # default is BIC since it is better for explanatory models, since it assumes reality lies within the hypothesis space.
 
         invalid = False
         if type(self._max_gaussians) != int:
@@ -376,7 +377,7 @@ class GMM(DenoisingStrategy):
             raise ValueError
         
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False) -> Dict[str, IPPMHexel]:
         """
             Overriding the superclass cluster function because we want to perform a grid-search over the number of clusters to locate the optimal one.
             It works similarly to the superclass.cluster method but it performs it multiple times. It stops if the number of data points < number of clusters as
@@ -405,7 +406,7 @@ class GMM(DenoisingStrategy):
                 continue
 
             best_labels = None
-            best_score = np.inf # use aic, bic or silhouette score for model selection. if silhouette, switch this to -inf since we wanna maximise it.
+            best_score = np.inf 
             for n in range(1, self._max_gaussians):
                 if n > len(df):
                     # the number of gaussians has to be less than the number of datapoints.
@@ -416,13 +417,18 @@ class GMM(DenoisingStrategy):
                                       n_init=self._n_init,
                                       init_params=self._init_params,
                                       random_state=self._random_state)
-                scaler = StandardScaler()
-                gmm.fit(scaler.fit_transform(df)) if scaling else gmm.fit(df)
-                
-                score = gmm.bic(df)  # gmm.aic(df) for AIC score. 
+                norm_df = None
+                if normalise:
+                    norm_df = normalize(df)
+                    gmm.fit(norm_df)
+                    score = gmm.aic(norm_df) if self._is_aic else gmm.bic(norm_df)
+                else:
+                    gmm.fit(df)
+                    score = gmm.aic(df) if self._is_aic else gmm.bic(df)
+
                 if score < best_score:
-                    # this condition depends on the choice of AIC/BIC/silhouette. if using silhouette, reverse the inequality.
-                    best_labels = gmm.predict(scaler.transform(df)) if scaling else gmm.predict(df)
+                    # this condition depends on the choice of AIC/BIC
+                    best_labels = gmm.predict(norm_df) if normalise else gmm.predict(df)
                     best_score = score
         
             df['Label'] = best_labels
@@ -522,7 +528,7 @@ class MeanShift(DenoisingStrategy):
     """
     def __init__(self, **kwargs):
         cluster_all = False if not 'cluster_all' in kwargs.keys() else kwargs['cluster_all']
-        bandwidth = None if not 'bandwidth' in kwargs.keys() else kwargs['bandwidth']
+        bandwidth = 30 if not 'bandwidth' in kwargs.keys() else kwargs['bandwidth']
         seeds = None if not 'seeds' in kwargs.keys() else kwargs['seeds']
         min_bin_freq = 2 if not 'min_bin_freq' in kwargs.keys() else kwargs['min_bin_freq']
         n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']

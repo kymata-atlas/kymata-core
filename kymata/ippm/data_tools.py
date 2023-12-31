@@ -10,6 +10,8 @@ import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
 
+import math
+
 from kymata.entities.expression import HexelExpressionSet, _FUNCTION, _LATENCY
 
 
@@ -231,3 +233,9 @@ def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str,
             total_arrows += 1
 
     return causality_violations / total_arrows if total_arrows != 0 else 0
+
+def convert_to_power10(hexels):
+    for func, hexel in hexels.items():
+        hexels[func].right_best_pairings = list(map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].right_best_pairings))
+        hexels[func].left_best_pairings = list(map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].left_best_pairings))
+    return hexels
