@@ -14,6 +14,8 @@ def main():
         data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
     elif config['data_location'] == "cbu":
         data_root_dir = '/imaging/projects/cbu/kymata/data/'
+    elif config['data_location'] == "cbu-local":
+        data_root_dir = '//cbsu/data/imaging/projects/cbu/kymata/data/'
     else:
         raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local'.")
 
