@@ -3,11 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from numpy import nan_to_num, minimum
+from numpy import nan_to_num, minimum, array
 from scipy.io import loadmat as loadmat_pre_73
 from mat73 import loadmat as loadmat_post_73
 
-from kymata.entities.expression import HexelExpressionSet
+from kymata.entities.expression import HexelExpressionSet, p_to_logp
 from kymata.entities.iterables import all_equal
 
 
@@ -126,20 +126,21 @@ def _load_matab_expression_files_separate_flipped(
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
     # Combine flipped and non-flipped
-    pmatrix_lh = minimum(
+    # Matlab data contains p-values
+    logp_matrix_lh = p_to_logp(minimum(
         _prep_matlab_data(lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio),
         _prep_matlab_data(flipped_lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
-    )
-    pmatrix_rh = minimum(
+    ))
+    logp_matrix_rh = p_to_logp(minimum(
         _prep_matlab_data(rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio),
         _prep_matlab_data(flipped_rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
-    )
+    ))
 
     return HexelExpressionSet(
         functions=function_name,
         hexels=lh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,
-        data_lh=pmatrix_lh.T, data_rh=pmatrix_rh.T,
+        data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
     )
 
 
@@ -169,14 +170,18 @@ def _load_matab_expression_files_combined_flipped(
 
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
-    pmatrix_lh = _prep_matlab_data(lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
-    pmatrix_rh = _prep_matlab_data(rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
+    logp_matrix_lh = p_to_logp(_prep_matlab_data(lh_mat["outputSTC"]["data"],
+                                                 n_latencies=len(lh_mat["latencies"]),
+                                                 downsample_ratio=downsample_ratio))
+    logp_matrix_rh = p_to_logp(_prep_matlab_data(rh_mat["outputSTC"]["data"],
+                                                 n_latencies=len(lh_mat["latencies"]),
+                                                 downsample_ratio=downsample_ratio))
 
     return HexelExpressionSet(
         functions=function_name,
         hexels=lh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,
-        data_lh=pmatrix_lh.T, data_rh=pmatrix_rh.T,
+        data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
     )
 
 

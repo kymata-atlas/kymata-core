@@ -170,18 +170,21 @@ def create_forward_model_and_inverse_solution(config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
-                                               "intrim_preprocessing_files")
+    # intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
+    #                                            "intrim_preprocessing_files")
+    intrim_preprocessing_directory_name = Path("/imaging/projects/cbu/kymata", "data", dataset_directory_name, "intrim_preprocessing_files")
     mri_structurals_directory = config['mri_structurals_directory']
-    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+    # mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+    mri_structurals_directory = Path("/imaging/projects/cbu/kymata", "data", dataset_directory_name, mri_structurals_directory)
 
     # Compute forward solution
     for participant in list_of_participants:
 
         fwd = mne.make_forward_solution(
-            Path(Path(path.abspath("")), "data",
+            # Path(Path(path.abspath("")), "data",
+            Path("/imaging/projects/cbu/kymata", "data",
                  dataset_directory_name,
-                 'raw', participant, participant +
+                 'raw_emeg', participant, participant +
                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
             trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
             src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
@@ -241,7 +244,8 @@ def create_hexel_current_files(config: dict):
     number_of_trials = config['number_of_trials']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(
-        Path(path.abspath("")),
+    #    Path(path.abspath("")),
+        "/imaging/projects/cbu/kymata",
         "data", dataset_directory_name,
         "intrim_preprocessing_files")
     mri_structurals_directory = config['mri_structurals_directory']
