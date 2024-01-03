@@ -5,7 +5,7 @@ import mne
 from numpy import zeros
 
 from kymata.io.cli import print_with_color, input_with_color
-from kymata.io.yaml import load_config
+from kymata.io.yaml import load_config, modify_param_config
 from kymata.preproc.emeg import apply_automatic_bad_channel_detection
 
 
@@ -28,7 +28,7 @@ def run_preprocessing(list_of_participants: list[str],
             print_with_color(f"   Loading Raw data...", Fore.GREEN)
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = 'data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+            saved_maxfiltered_filename = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
@@ -36,12 +36,12 @@ def run_preprocessing(list_of_participants: list[str],
 
             else:
                 raw_fif_data = mne.io.Raw(
-                    'data/' + dataset_directory_name + "/raw/" + participant + "/" + participant + "_run" + str(
+                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
                         run) + "_raw.fif", preload=True)
 
                 # Rename any channels that require it, and their type
                 recording_config = load_config(
-                    'data/' + dataset_directory_name + '/raw/' + participant + "/" + participant + '_recording_config.yaml')
+                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -72,6 +72,13 @@ def run_preprocessing(list_of_participants: list[str],
                     mne.viz.plot_raw(raw_fif_data, scalings='auto', block=True)
                 else:
                     print(f"...assuming you want to continue without looking at the raw data.")
+
+                # Write back selected bad channels back to participant's config .yaml file
+                modify_param_config(
+                    '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/raw_emeg_data/' + participant + "/" + participant + '_recording_config.yaml',
+                    'bad_channels',
+                    [str(item) for item in sorted(raw_fif_data.info['bads'])]
+                )
 
                 # Get the head positions
                 chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
@@ -105,8 +112,8 @@ def run_preprocessing(list_of_participants: list[str],
                 # Apply SSS and movement compensation
                 print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = 'data/cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'
-                crosstalk_file = 'data/cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'
+                fine_cal_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'
+                crosstalk_file = '/imaging/projects/cbu/kymata/data/cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'
 
                 mne.viz.plot_head_positions(
                     head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
@@ -182,7 +189,7 @@ def run_preprocessing(list_of_participants: list[str],
                 mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
             raw_fif_data_sss_movecomp_tr.save(
-                'data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
+                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
                     run) + '_cleaned_raw.fif.gz',
                 overwrite=True)
 
@@ -233,6 +240,122 @@ def _remove_ecg(filt_raw, ica):
     ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
 
 
+def create_trialwise_data(dataset_directory_name: str,
+                        list_of_participants: list[str],
+                        repetitions_per_runs: int,
+                        number_of_runs: int,
+                        number_of_trials: int,
+                        input_streams: list[str],
+                        eeg_thresh: float,
+                        grad_thresh: float,
+                        mag_thresh: float,
+                        visual_delivery_latency: float,
+                        audio_delivery_latency: float,
+                        audio_delivery_shift_correction: float,  # seconds
+                        tmin: float,
+                        tmax: float,
+                        ):
+    """Create trials objects from the raw data files (still in sensor space)"""
+
+    global_droplog = []
+
+    print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
+
+    for p in list_of_participants:
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
+
+        cleaned_raws = []
+
+        for run in range(1, number_of_runs + 1):
+            raw_fname = f'{data_path}/intrim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
+            if os.path.isfile(raw_fname):
+                raw = mne.io.Raw(raw_fname, preload=True)
+                events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
+                #print([i[0] for i in mne.pick_events(events_, include=2)])
+                #print(mne.pick_events(events_, include=3))
+                cleaned_raws.append(raw)
+
+        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+        raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1) #, uint_cast=True)
+
+        """print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+
+        #	Extract visual events
+        visual_events = mne.pick_events(raw_events, include=[2, 3])
+
+        #	Correct for visual equiptment latency error
+        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+
+        trigger_name = 1
+        for trigger in visual_events:
+            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
+            if trigger_name == 400:
+                trigger_name = 1
+            else:
+                trigger_name = trigger_name + 1
+
+        #  Test there are the correct number of events
+        assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials"""
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
+
+        #	Extract audio events
+        audio_events_raw = mne.pick_events(raw_events, include=3)
+
+        #	Correct for audio latency error
+        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+
+        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
+        for run, item in enumerate(audio_events_raw):
+            print('item: ', item)
+            audio_events_raw[run][2] = run # rename the audio events raw to pick apart later
+            for trial in range(number_of_trials):
+                audio_events[(trial + (number_of_trials * run))][0] = item[0] + round(
+                    trial * (1000 + audio_delivery_shift_correction))
+                audio_events[(trial + (number_of_trials * run))][1] = 0
+                audio_events[(trial + (number_of_trials * run))][2] = trial
+
+        #  Test there are the correct number of events
+        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials # TODO handle overlapping visual/audio triggers
+        
+        print(f'\n Runs found: {audio_events.shape[0]} \n')
+
+        #	Denote picks
+        include = [];  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
+
+        for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
+            if input_stream == 'auditory':
+                events = audio_events
+            else:
+                events = visual_events
+
+            #	Extract trial instances ('epochs')
+
+            _tmin = -0.2
+            _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction
+            epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
+                                baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
+                                preload=True)
+
+            # 	Log which channels are worst
+            dropfig = epochs.plot_drop_log(subject=p)
+            dropfig.savefig(f'{data_path}/intrim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
+
+            global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
+
+            for i in range(len(audio_events_raw)):
+                evoked = epochs[str(i)].average()
+                evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
+
+            evoked = epochs.average()
+            evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
+
+
+
 def create_trials(dataset_directory_name: str,
                   list_of_participants: list[str],
                   repetitions_per_runs: int,
@@ -261,7 +384,7 @@ def create_trials(dataset_directory_name: str,
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = 'data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -328,7 +451,7 @@ def create_trials(dataset_directory_name: str,
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject=p)
             dropfig.savefig(
-                'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
+                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -354,7 +477,7 @@ def create_trials(dataset_directory_name: str,
         print_with_color(f"... save grand covariance matrix", Fore.GREEN)
 
         cov = mne.compute_raw_covariance(raw, tmin=0, tmax=10, return_estimators=True)
-        mne.write_cov('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
+        mne.write_cov('/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
 
 
 # Save global droplog

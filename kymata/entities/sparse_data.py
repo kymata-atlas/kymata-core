@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from numpy import nanmin, greater
+from numpy import ndarray, nanmin, greater
 from numpy.typing import NDArray
 import sparse
 from xarray import Dataset

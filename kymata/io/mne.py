@@ -12,7 +12,8 @@ def get_emeg_data(emeg_path: path_type) -> tuple[NDArray, list[str]]:
     emeg_path = Path(emeg_path)
 
     evoked = read_evokeds(emeg_path, verbose=False)  # should be len 1 list
-    emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 406_001)
+    emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
+
     # Normalise
     emeg /= max(emeg, axis=1, keepdims=True)
     return emeg, evoked[0].ch_names

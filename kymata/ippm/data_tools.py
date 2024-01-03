@@ -208,6 +208,8 @@ def stem_plot(
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
 
+    plt.show()
+
 def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str, List[str]], hemi: str):
     assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
 

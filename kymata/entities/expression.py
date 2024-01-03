@@ -35,6 +35,7 @@ LAYER_SCALP = "scalp"
 class ExpressionSet(ABC):
     """
     Brain data associated with expression of a single function.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -47,7 +48,7 @@ class ExpressionSet(ABC):
                  #        and "right" → [array(), array(), array()]
                  #   or:      "scalp" → [array(), array(), array()]
                  # All should be the same size
-                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],
+                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
                  # Supply channels already as an array, i.e.
                  channel_coord_name: str,
                  channel_coord_dtype,
@@ -199,6 +200,7 @@ class HexelExpressionSet(ExpressionSet):
     """
     Brain data associated with expression of a single function in hexel space.
     Includes lh, rh, flipped, non-flipped.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -206,6 +208,7 @@ class HexelExpressionSet(ExpressionSet):
                  # Metadata
                  hexels: Sequence[Hexel],
                  latencies: Sequence[Latency],
+                 # log p-values
                  # In general, we will combine flipped and non-flipped versions
                  data_lh: _InputDataArray | Sequence[_InputDataArray],
                  data_rh: _InputDataArray | Sequence[_InputDataArray],
@@ -308,6 +311,7 @@ class SensorExpressionSet(ExpressionSet):
     """
     Brain data associated with expression of a single function in sensor space.
     Includes lh, rh, flipped, non-flipped.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -315,6 +319,7 @@ class SensorExpressionSet(ExpressionSet):
                  # Metadata
                  sensors: Sequence[Sensor],
                  latencies: Sequence[Latency],
+                 # log p-values
                  # In general, we will combine flipped and non-flipped versions
                  data: _InputDataArray | Sequence[_InputDataArray],
                  ):
