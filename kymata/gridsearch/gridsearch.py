@@ -5,7 +5,7 @@ from scipy import stats
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize
-from kymata.entities.expression import SensorExpressionSet
+from kymata.entities.expression import SensorExpressionSet, p_to_logp
 
 
 def do_gridsearch(
@@ -75,7 +75,7 @@ def do_gridsearch(
         functions=function.name,
         latencies=latencies,
         sensors=sensor_names,
-        data=p_values,
+        data=p_to_logp(p_values),
     )
 
     return es
