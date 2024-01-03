@@ -3,6 +3,9 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
+import sys
+sys.path.append('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox')
+
 from kymata.gridsearch.gridsearch import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import get_emeg_data
@@ -17,7 +20,8 @@ def main():
 
     func = load_function(Path(base_dir,
                               'predicted_function_contours',
-                              'GMSloudness/stimulisig'),
+                              'GMSloudness',
+                              'stimulisig'),
                          func_name=function_name)
     func = func.downsampled(downsample_rate)
 

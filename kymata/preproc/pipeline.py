@@ -233,6 +233,122 @@ def _remove_ecg(filt_raw, ica):
     ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
 
 
+def create_trialwise_data(dataset_directory_name: str,
+                        list_of_participants: list[str],
+                        repetitions_per_runs: int,
+                        number_of_runs: int,
+                        number_of_trials: int,
+                        input_streams: list[str],
+                        eeg_thresh: float,
+                        grad_thresh: float,
+                        mag_thresh: float,
+                        visual_delivery_latency: float,
+                        audio_delivery_latency: float,
+                        audio_delivery_shift_correction: float,  # seconds
+                        tmin: float,
+                        tmax: float,
+                        ):
+    """Create trials objects from the raw data files (still in sensor space)"""
+
+    global_droplog = []
+
+    print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
+
+    for p in list_of_participants:
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
+
+        cleaned_raws = []
+
+        for run in range(1, number_of_runs + 1):
+            raw_fname = f'{data_path}/intrim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
+            if os.path.isfile(raw_fname):
+                raw = mne.io.Raw(raw_fname, preload=True)
+                events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
+                #print([i[0] for i in mne.pick_events(events_, include=2)])
+                #print(mne.pick_events(events_, include=3))
+                cleaned_raws.append(raw)
+
+        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+        raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1) #, uint_cast=True)
+
+        """print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+
+        #	Extract visual events
+        visual_events = mne.pick_events(raw_events, include=[2, 3])
+
+        #	Correct for visual equiptment latency error
+        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+
+        trigger_name = 1
+        for trigger in visual_events:
+            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
+            if trigger_name == 400:
+                trigger_name = 1
+            else:
+                trigger_name = trigger_name + 1
+
+        #  Test there are the correct number of events
+        assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials"""
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
+
+        #	Extract audio events
+        audio_events_raw = mne.pick_events(raw_events, include=3)
+
+        #	Correct for audio latency error
+        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+
+        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
+        for run, item in enumerate(audio_events_raw):
+            print('item: ', item)
+            audio_events_raw[run][2] = run # rename the audio events raw to pick apart later
+            for trial in range(number_of_trials):
+                audio_events[(trial + (number_of_trials * run))][0] = item[0] + round(
+                    trial * (1000 + audio_delivery_shift_correction))
+                audio_events[(trial + (number_of_trials * run))][1] = 0
+                audio_events[(trial + (number_of_trials * run))][2] = trial
+
+        #  Test there are the correct number of events
+        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials # TODO handle overlapping visual/audio triggers
+        
+        print(f'\n Runs found: {audio_events.shape[0]} \n')
+
+        #	Denote picks
+        include = [];  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+
+        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
+
+        for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
+            if input_stream == 'auditory':
+                events = audio_events
+            else:
+                events = visual_events
+
+            #	Extract trial instances ('epochs')
+
+            _tmin = -0.2
+            _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction
+            epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
+                                baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
+                                preload=True)
+
+            # 	Log which channels are worst
+            dropfig = epochs.plot_drop_log(subject=p)
+            dropfig.savefig(f'{data_path}/intrim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
+
+            global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
+
+            for i in range(len(audio_events_raw)):
+                evoked = epochs[str(i)].average()
+                evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
+
+            evoked = epochs.average()
+            evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
+
+
+
 def create_trials(dataset_directory_name: str,
                   list_of_participants: list[str],
                   repetitions_per_runs: int,
