@@ -1,0 +1,51 @@
+
+# Config file for Kymata Dataset 4.00
+
+# General
+dataset_directory_name: "dataset_3-russian-narratives"
+mri_structurals_directory: "raw_mri_structurals"
+
+# General information related to the dataset
+list_of_participants: [ "meg15_0045",
+                        "meg15_0051",
+                        "meg15_0054",
+                        "meg15_0055",
+                        "meg15_0056",
+                        "meg15_0058",
+                        "meg15_0060",
+                        "meg15_0065",
+                        "meg15_0066",
+                        "meg15_0070",
+                        "meg15_0071",
+                        "meg15_0072",
+                        "meg15_0079",
+                        "meg15_0081",
+                        "meg15_0082"
+                        ]
+
+input_streams: [
+  "auditory"
+                        ]            # auditory | visual
+number_of_runs: 2                    # number of runs
+repetitions_per_runs: 2              # number of repetitions per run
+number_of_trials: 400                # number of trials
+mri_structural_type: "T1"            # T1 | flash
+
+# Preprocessing pipeline
+EMEG_machine_used_to_record_data: 'vectorview'
+skip_maxfilter_if_previous_runs_exist: True
+remove_VEOH_and_HEOG: True
+remove_ECG: True
+automatic_bad_channel_detection_requested: False
+
+# Creation of evoked trial pipeline
+audio_delivery_latency:  26        # in milliseconds
+visual_delivery_latency: 17        # in milliseconds
+tactile_delivery_latency: 0        # in milliseconds
+audio_delivery_shift_correction: 0 # in seconds per second
+tmin: -0.2 # seconds
+tmax: 1.8  # seconds
+
+eeg_thresh: 1 #200e-6
+grad_thresh: 1 #4000e-13
+mag_thresh: 1 #4000e-15

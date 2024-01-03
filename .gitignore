@@ -1,5 +1,6 @@
-
-data/output-graphs/*
+# Possible default location for downloaded data
+kymata_data/
+kymata-toolbox-data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
