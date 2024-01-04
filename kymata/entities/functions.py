@@ -12,7 +12,7 @@ class Function:
     def downsampled(self, rate: int):
         return Function(
             name=self.name,
-            values=self.values[:, ::rate],
+            values=self.values[::rate],
             sample_rate=self.sample_rate / rate,
         )
 

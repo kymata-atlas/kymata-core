@@ -5,22 +5,24 @@ from scipy import stats
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize
-from kymata.entities.expression import SensorExpressionSet, p_to_logp
-
+#from kymata.entities.expression import SensorExpressionSet, p_to_logp
+import matplotlib.pyplot as plt
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
         function: Function,
         sensor_names: list[str],
-        start_latency: float,  # seconds
-        emeg_t_start: float,
+        start_latency: float,   # ms
+        emeg_t_start: float,    # ms
         emeg_sample_rate: int = 1000,  # Hertz
         audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
-        # TODO: what are good default values?
-        n_derangements: int = 20,
+        n_derangements: int = 1,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
-        ) -> SensorExpressionSet:
+        ave_mode: str = 'ave', # either ave or add, for averaging over input files or adding in as extra evidence
+        add_autocorr: bool = True,
+        plot_name: str = 'example'
+        ):
     """
     Do the Kymata gridsearch over all hexels for all latencies.
     """
@@ -28,55 +30,119 @@ def do_gridsearch(
     # We'll need to downsample the EMEG to match the function's sample rate
     downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
 
-    n_samples_per_split = int(
-        seconds_per_split * emeg_sample_rate
-        * 2  # We need double the length so we can do the full cross-correlation overlap
-        // downsample_rate)
+    n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
-    func = function.values.reshape(n_splits, n_samples_per_split // 2)
+    if ave_mode == 'add':
+        n_reps = len(EMEG_paths)
+    else:
+        n_reps = 1
+
+    func_length = n_splits * n_samples_per_split // 2
+    if func_length < function.values.shape[0]:
+        func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
+        print(f'WARNING: not using full 400s of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
+    else:
+        func = function.values.reshape(n_splits, n_samples_per_split // 2)
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
-    split_initial_timesteps = [
-        start_latency
-        + round(i * seconds_per_split
-                # Correct for audio drift in delivery equipment
-                * (1 + audio_shift_correction)
-                )
-        - emeg_t_start
-        for i in range(n_splits)
-    ]
-    emeg_reshaped = np.zeros((n_channels, n_splits, n_samples_per_split))
-    for split_i in range(n_splits):
-        # Split indexes
-        split_start = split_initial_timesteps[split_i]
-        split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
-        emeg_reshaped[:, split_i, :] = emeg_values[:, split_start:split_stop:downsample_rate]
+    split_initial_timesteps = [start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start
+        for i in range(n_splits)]
+
+    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
+    for j in range(n_reps):
+        for split_i in range(n_splits):
+            split_start = split_initial_timesteps[split_i]
+            split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[:, j, split_start:split_stop:downsample_rate]
+
+    del emeg_values
 
     # Derangements for null distribution
-    derangements = np.zeros((n_derangements, n_splits), dtype=int)
+    derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
     for der_i in range(n_derangements):
-        derangements[der_i, :] = generate_derangement(n_splits)
-    derangements = np.vstack((np.arange(n_splits), derangements))  # Include the identity on top
+        derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
+    derangements = np.vstack((np.arange(n_splits * n_reps), derangements))  # Include the identity on top
 
     # Fast cross-correlation using FFT
     emeg_reshaped = np.fft.rfft(normalize(emeg_reshaped), n=n_samples_per_split, axis=-1)
-    f_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
-    corrs = np.zeros((n_channels, n_derangements + 1, n_splits, n_samples_per_split // 2))
+    F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
+    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_samples_per_split // 2))
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = np.fft.irfft(deranged_emeg * f_func)[:, :, :n_samples_per_split//2]
+        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2]
 
-    p_values = _ttest(corrs)
 
-    latencies = np.linspace(start_latency, start_latency + seconds_per_split, n_samples_per_split // 2) / 1000
+    if add_autocorr:
+        auto_corrs = np.zeros((n_splits, n_samples_per_split//2))
+        noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
+        noisy_func = normalize(np.copy(func)) + noise
+        nn = n_samples_per_split // 2
 
-    es = SensorExpressionSet(
+        F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
+        F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
+
+        auto_corrs = np.fft.irfft(F_noisy_func * F_func)
+
+    del F_func, deranged_emeg, emeg_reshaped
+
+    log_pvalues = _ttest(corrs)
+
+    latencies = np.linspace(start_latency, start_latency + seconds_per_split * 1000, n_samples_per_split // 2) / 1000
+
+    if plot_name:
+        plt.figure(1)
+        maxs = np.max(-log_pvalues[:, :], axis=1)
+        n_amaxs = 5
+        amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
+        amax = np.argmax(-log_pvalues) // (n_samples_per_split // 2)
+        amaxs = [i for i in amaxs if i != amax] + [206]
+
+        plt.plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
+        plt.plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
+        std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits) # 3 pop std.s
+        std_real = np.std(corrs[amax, 0], axis=-2).T * 3  / np.sqrt(n_reps * n_splits)
+        av_real = np.mean(corrs[amax, 0], axis=-2).T
+        #print(std_null)
+        plt.fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
+        plt.fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
+
+        if add_autocorr:
+            peak_lat_ind = np.argmax(-log_pvalues) % (n_samples_per_split // 2)
+            peak_lat = latencies[peak_lat_ind]
+            peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
+            print('peak lat, peak corr:', peak_lat, peak_corr)
+
+            auto_corrs = np.mean(auto_corrs, axis=0)
+            plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
+
+        
+        #plt.plot(latencies, np.mean(corrs[0:300:15, 1], axis=-2).T, 'cyan')
+        plt.axvline(0, color='k')
+        plt.legend()
+        plt.xlabel('latencies (ms)')
+        plt.ylabel('Corr coef.')
+        plt.savefig(f'{plot_name}_1.png')
+        plt.clf()
+
+        plt.figure(2)
+        plt.plot(latencies, -log_pvalues[amax].T / np.log(10), 'r-', label=amax)
+        plt.plot(latencies, -log_pvalues[amaxs].T / np.log(10), label=amaxs)
+        plt.axvline(0, color='k')
+        plt.legend()
+        plt.xlabel('latencies (ms)')
+        plt.ylabel('p-values')
+        plt.savefig(f'{plot_name}_2.png')
+        plt.clf()
+
+    return
+
+    """es = SensorExpressionSet(
         functions=function.name,
         latencies=latencies,
         sensors=sensor_names,
         data=p_to_logp(p_values),
-    )
+    )"""
 
     return es
 
@@ -114,9 +180,11 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True):
            (rand_var / rand_n) ** 2 / (rand_n - 1)))
 
     t_stat = numerator / denominator
-    p = stats.t.sf(np.abs(t_stat), df) * 2  # two-tailed p-value
 
-    # Adjust p-values for multiple comparisons (Bonferroni correction) [NOT SURE ABOUT THIS]
-    pvalues_adj = p #np.minimum(1, p * t_steps * n_channels / (1 - f_alpha))
+    if np.min(df) <= 300:
+        log_p = np.log(stats.t.sf(np.abs(t_stat), df) * 2)  # two-tailed p-value
+    else:
+        # norm v good approx for this, (logsf for t not implemented in logspace)
+        log_p = stats.norm.logsf(np.abs(t_stat)) + np.log(2) 
 
-    return pvalues_adj
+    return log_p / np.log(10)  # log base correction
