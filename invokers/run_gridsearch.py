@@ -55,7 +55,7 @@ def main():
     emeg_dir = Path(args.base_dir, args.data_path)
     emeg_paths = [Path(emeg_dir, args.emeg_file)]
 
-    """participants = ['participant_01',
+    participants = ['participant_01',
                     'participant_01b',
                     'participant_02',
                     'participant_03',
@@ -66,7 +66,7 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
-    emeg_paths = [Path(emeg_dir, p + r) for p in participants[1:2] for r in reps[:1]]"""
+    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[1:2] for r in reps[:1]]
 
     inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
 
