@@ -88,7 +88,7 @@ def do_gridsearch(
 
     log_pvalues = _ttest(corrs)
 
-    latencies = np.linspace(start_latency, start_latency + seconds_per_split * 1000, n_samples_per_split // 2) / 1000
+    latencies = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
     if plot_name:
         plt.figure(1)
@@ -120,17 +120,17 @@ def do_gridsearch(
         #plt.plot(latencies, np.mean(corrs[0:300:15, 1], axis=-2).T, 'cyan')
         plt.axvline(0, color='k')
         plt.legend()
-        plt.xlabel('latencies (ms)')
+        plt.xlabel('latencies (s)')
         plt.ylabel('Corr coef.')
         plt.savefig(f'{plot_name}_1.png')
         plt.clf()
 
         plt.figure(2)
-        plt.plot(latencies, -log_pvalues[amax].T / np.log(10), 'r-', label=amax)
-        plt.plot(latencies, -log_pvalues[amaxs].T / np.log(10), label=amaxs)
+        plt.plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
+        plt.plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
         plt.axvline(0, color='k')
         plt.legend()
-        plt.xlabel('latencies (ms)')
+        plt.xlabel('latencies (s)')
         plt.ylabel('p-values')
         plt.savefig(f'{plot_name}_2.png')
         plt.clf()
@@ -139,7 +139,7 @@ def do_gridsearch(
 
     """es = SensorExpressionSet(
         functions=function.name,
-        latencies=latencies,
+        latencies=latencies / 1000,
         sensors=sensor_names,
         data=p_to_logp(p_values),
     )"""
