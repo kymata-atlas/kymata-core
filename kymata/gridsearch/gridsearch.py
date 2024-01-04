@@ -46,7 +46,7 @@ def do_gridsearch(
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
-    split_initial_timesteps = [start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start
+    split_initial_timesteps = [int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
         for i in range(n_splits)]
 
     emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
@@ -116,8 +116,6 @@ def do_gridsearch(
             auto_corrs = np.mean(auto_corrs, axis=0)
             plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
 
-        
-        #plt.plot(latencies, np.mean(corrs[0:300:15, 1], axis=-2).T, 'cyan')
         plt.axvline(0, color='k')
         plt.legend()
         plt.xlabel('latencies (s)')
