@@ -1,7 +1,7 @@
 import json
 from itertools import cycle
 from statistics import NormalDist
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -207,3 +207,27 @@ def stem_plot(
     left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center',rotation='vertical')
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
+
+    plt.show()
+
+def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str, List[str]], hemi: str):
+    assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
+
+    def get_latency(func_hexels: IPPMHexel, mini: bool):
+        return (min(func_hexels.left_best_pairings, key=lambda x: x[0]) if hemi == 'leftHemisphere' else
+                min(func_hexels.right_best_pairings, key=lambda x: x[0])) if mini else (
+            max(func_hexels.left_best_pairings, key=lambda x: x[0]) if hemi == 'leftHemisphere' else
+            max(func_hexels.right_best_pairings, key=lambda x: x[0]))
+
+    causality_violations = 0
+    total_arrows = 0
+    for func, inc_edges in hierarchy.items():
+        # arrows go from latest inc_edge spike to the earliest func spike
+        child_latency = get_latency(hexels[func], mini=True)
+        for inc_edge in inc_edges:
+            parent_latency = get_latency(hexels[inc_edge], mini=False)
+            if child_latency < parent_latency:
+                causality_violations += 1
+            total_arrows += 1
+
+    return causality_violations / total_arrows if total_arrows != 0 else 0

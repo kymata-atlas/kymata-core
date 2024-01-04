@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
+from sklearn.preprocessing import StandardScaler
 
 from .data_tools import IPPMHexel
 
@@ -21,7 +22,7 @@ class DenoisingStrategy(object):
         """
         self._clusterer = None
     
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> Dict[str, IPPMHexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
         """
             For each function in hemi, it will attempt to construct a dataframe that holds significant spikes (i.e., abova alpha).
             Next, it clusters using self._clusterer. Finally, it locates the minimum (most significant) point for each cluster and saves
@@ -50,7 +51,8 @@ class DenoisingStrategy(object):
                 hexels = self._update_pairings(hexels, func, [], hemi)
                 continue
 
-            fitted = self._clusterer.fit(df)
+            # if we are renormalising each feature, then scale otherwise no
+            fitted = self._clusterer.fit(StandardScaler().fit_transform(df)) if scaling else self._clusterer.fit(df)
             df['Label'] = fitted.labels_
             cluster_mins = self._get_cluster_mins(df)
             hexels = self._update_pairings(hexels, func, cluster_mins, hemi)
@@ -222,7 +224,7 @@ class MaxPooler(DenoisingStrategy):
             print('Bin size needs to be an integer.')
             raise ValueError
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> List[Tuple[float, float]]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> List[Tuple[float, float]]:
         """  
             Custom clustering method since it differs from other unsupervised techniques. 
 
@@ -374,7 +376,7 @@ class GMM(DenoisingStrategy):
             raise ValueError
         
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str) -> Dict[str, IPPMHexel]:
+    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
         """
             Overriding the superclass cluster function because we want to perform a grid-search over the number of clusters to locate the optimal one.
             It works similarly to the superclass.cluster method but it performs it multiple times. It stops if the number of data points < number of clusters as
@@ -414,11 +416,13 @@ class GMM(DenoisingStrategy):
                                       n_init=self._n_init,
                                       init_params=self._init_params,
                                       random_state=self._random_state)
-                gmm.fit(df)
+                scaler = StandardScaler()
+                gmm.fit(scaler.fit_transform(df)) if scaling else gmm.fit(df)
+                
                 score = gmm.bic(df)  # gmm.aic(df) for AIC score. 
                 if score < best_score:
                     # this condition depends on the choice of AIC/BIC/silhouette. if using silhouette, reverse the inequality.
-                    best_labels = gmm.predict(df)
+                    best_labels = gmm.predict(scaler.transform(df)) if scaling else gmm.predict(df)
                     best_score = score
         
             df['Label'] = best_labels
@@ -462,10 +466,10 @@ class DBSCAN(DenoisingStrategy):
         n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']
 
         invalid = False
-        if type(eps) != int:
-            print('Epsilon must be of type integer.')
+        if type(eps) != int and type(eps) != float:
+            print('Epsilon must be of numeric type.')
             invalid = True
-        if type(min_samples) != int:
+        if type(min_samples) != int and type(min_samples) != float:
             print('Min samples must be of type integer.')
             invalid = True
         if type(metric) != str:

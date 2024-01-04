@@ -7,17 +7,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence, Union, get_args, Tuple
 
-from numpy import array, array_equal, ndarray
-from numpy.typing import NDArray
+from numpy import array, array_equal, ndarray, log10
+from numpy.typing import NDArray, ArrayLike
 from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 
-from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, Latency
+from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
+    Latency
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, minimise_pmatrix, densify_dataset
+from kymata.entities.sparse_data import expand_dims, densify_dataset, sparsify_log_pmatrix
 
-_InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted  # TODO: replace with nicer | syntax when dropping supprot for python <3.12
+_InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
 # Data dimension labels
 _HEXEL = "hexel"
@@ -34,6 +35,7 @@ LAYER_SCALP = "scalp"
 class ExpressionSet(ABC):
     """
     Brain data associated with expression of a single function.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -46,12 +48,13 @@ class ExpressionSet(ABC):
                  #        and "right" → [array(), array(), array()]
                  #   or:      "scalp" → [array(), array(), array()]
                  # All should be the same size
-                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],
+                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
                  # Supply channels already as an array, i.e.
                  channel_coord_name: str,
                  channel_coord_dtype,
                  channel_coord_values: Sequence,
                  ):
+        """data_layers' values should store log10 p-values"""
 
         self._layers: list[str] = list(data_layers.keys())
 
@@ -104,7 +107,7 @@ class ExpressionSet(ABC):
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
         if isinstance(data, ndarray):
-            data = minimise_pmatrix(data)
+            data = sparsify_log_pmatrix(data)
         elif not isinstance(data, SparseArray):
             raise NotImplementedError()
         data = expand_dims(data, 2)
@@ -152,12 +155,12 @@ class ExpressionSet(ABC):
     def _best_functions_for_layer(self, layer: str) -> DataFrame:
         """
         Return a DataFrame containing:
-        for each channel, the best function and latency for that channel, and the associated p-value
+        for each channel, the best function and latency for that channel, and the associated log p-value
         """
         # Want, for each channel:
         #  - The name, f, of the function which is best at any latency
         #  - The latency, l, for which f is best
-        #  - The p-value, p, for f at l
+        #  - The log p-value, p, for f at l
 
         # sparse.COO doesn't implement argmin, so we have to do it in a few steps
 
@@ -165,27 +168,27 @@ class ExpressionSet(ABC):
         densify_dataset(data)
 
         best_latency = data.idxmin(dim=_LATENCY)    # (channel, function) → l, the best latency
-        p_at_best_latency = data.min(dim=_LATENCY)  # (channel, function) → p of best latency for each function
+        logp_at_best_latency = data.min(dim=_LATENCY)  # (channel, function) → log p of best latency for each function
 
-        p_at_best_function = p_at_best_latency.min(dim=_FUNCTION)  # (channel) → p of best function (at best latency)
-        best_function = p_at_best_latency.idxmin(dim=_FUNCTION)  # (channel) → f, the best function
+        logp_at_best_function = logp_at_best_latency.min(dim=_FUNCTION)  # (channel) → log p of best function (at best latency)
+        best_function = logp_at_best_latency.idxmin(dim=_FUNCTION)  # (channel) → f, the best function
 
         # TODO: shame I have to break into the layer structure here,
         #  but I can't think of a better way to do it
-        p_vals = p_at_best_function[layer].data
+        logp_vals = logp_at_best_function[layer].data
 
         best_functions = best_function[layer].data
 
         best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, _FUNCTION: best_function[layer]}).data
 
-        # Cut out channels which have a best p-val of 1
-        idxs = p_vals < 1
+        # Cut out channels which have a best log p-val of 1
+        idxs = logp_vals < 1
 
         return DataFrame.from_dict({
             self._channel_coord_name: self._channels[idxs],
             _FUNCTION: best_functions[idxs],
             _LATENCY: best_latencies[idxs],
-            "value": p_vals[idxs],
+            "value": logp_vals[idxs],
         })
 
     @abstractmethod
@@ -197,6 +200,7 @@ class HexelExpressionSet(ExpressionSet):
     """
     Brain data associated with expression of a single function in hexel space.
     Includes lh, rh, flipped, non-flipped.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -204,9 +208,11 @@ class HexelExpressionSet(ExpressionSet):
                  # Metadata
                  hexels: Sequence[Hexel],
                  latencies: Sequence[Latency],
+                 # log p-values
                  # In general, we will combine flipped and non-flipped versions
                  data_lh: _InputDataArray | Sequence[_InputDataArray],
-                 data_rh: _InputDataArray | Sequence[_InputDataArray]):
+                 data_rh: _InputDataArray | Sequence[_InputDataArray],
+                 ):
 
         super().__init__(
             functions=functions,
@@ -293,7 +299,7 @@ class HexelExpressionSet(ExpressionSet):
     def best_functions(self) -> Tuple[DataFrame, DataFrame]:
         """
         Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated p-value
+        for each hexel, the best function and latency for that hexel, and the associated log p-value
         """
         return (
             super()._best_functions_for_layer(LAYER_LEFT),
@@ -305,6 +311,7 @@ class SensorExpressionSet(ExpressionSet):
     """
     Brain data associated with expression of a single function in sensor space.
     Includes lh, rh, flipped, non-flipped.
+    Data is log10 p-values
     """
 
     def __init__(self,
@@ -312,8 +319,10 @@ class SensorExpressionSet(ExpressionSet):
                  # Metadata
                  sensors: Sequence[Sensor],
                  latencies: Sequence[Latency],
+                 # log p-values
                  # In general, we will combine flipped and non-flipped versions
-                 data: _InputDataArray | Sequence[_InputDataArray]):
+                 data: _InputDataArray | Sequence[_InputDataArray],
+                 ):
         # TODO: Docstring
 
         super().__init__(
@@ -389,6 +398,16 @@ class SensorExpressionSet(ExpressionSet):
     def best_functions(self) -> DataFrame:
         """
         Return a DataFrame containing:
-        for each sensor, the best function and latency for that sensor, and the associated p-value
+        for each sensor, the best function and latency for that sensor, and the associated log p-value
         """
         return super()._best_functions_for_layer(LAYER_SCALP)
+
+
+def p_to_logp(arraylike: ArrayLike) -> ArrayLike:
+    """The one-stop-shop for converting from p-values to log p-values."""
+    return log10(arraylike)
+
+
+def logp_to_p(arraylike: ArrayLike) -> ArrayLike:
+    """The one-stop-shop for converting from log p-values to p-values."""
+    return float(10) ** arraylike

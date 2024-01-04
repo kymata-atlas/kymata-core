@@ -121,6 +121,7 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
         assert isinstance(es, HexelExpressionSet)
         return es
 
+
 class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
     def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors"
