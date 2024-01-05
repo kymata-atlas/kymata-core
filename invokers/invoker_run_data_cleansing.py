@@ -27,6 +27,7 @@ def main():
         emeg_machine_used_to_record_data=config['EMEG_machine_used_to_record_data'],
         skip_maxfilter_if_previous_runs_exist=config['skip_maxfilter_if_previous_runs_exist'],
         automatic_bad_channel_detection_requested=config['automatic_bad_channel_detection_requested'],
+        clean=config['clean'],
     )
 
     run_second_pass_cleansing_and_EOG_removal(
@@ -36,6 +37,8 @@ def main():
         n_runs=config['number_of_runs'],
         remove_ecg=config['remove_ECG'],
         remove_veoh_and_heog=config['remove_VEOH_and_HEOG'],
+        skip_ica_if_previous_runs_exist=config['skip_ica_if_previous_runs_exist'],
+        clean=config['clean'],
     )
 
 def _display_welcome_message_to_terminal():
