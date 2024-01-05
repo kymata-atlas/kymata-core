@@ -17,7 +17,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                       emeg_machine_used_to_record_data: str,
                       skip_maxfilter_if_previous_runs_exist: bool,
                       automatic_bad_channel_detection_requested: bool,
-                      clean: bool,
+                      supress_excessive_plots_and_prompts: bool,
                       ):
 
     for participant in list_of_participants:
@@ -118,7 +118,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
                 crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
                 
-                if not clean:
+                if not supress_excessive_plots_and_prompts:
                     mne.viz.plot_head_positions(
                         head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
@@ -142,7 +142,7 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                                                       remove_ecg: bool,
                                                       remove_veoh_and_heog: bool,
                                                       skip_ica_if_previous_runs_exist: bool,
-                                                      clean: bool,
+                                                      supress_excessive_plots_and_prompts: bool,
                                                       ):
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
@@ -168,7 +168,7 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
 
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
-                if not clean:
+                if not supress_excessive_plots_and_prompts:
                     response = input_with_color(
                         f"Would you like to see the SSS, movement compensated, raw data data? (y/n)",
                         Fore.MAGENTA)
@@ -225,7 +225,7 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
 
                     ica.apply(raw_fif_data_sss_movecomp_tr)
 
-                    if not clean:
+                    if not supress_excessive_plots_and_prompts:
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
                 raw_fif_data_sss_movecomp_tr.save(
