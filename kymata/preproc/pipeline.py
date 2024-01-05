@@ -1,6 +1,6 @@
 import os.path
 
-from colorama import Fore
+from colorama import Fore, Style
 import mne
 from numpy import zeros
 
@@ -259,6 +259,9 @@ def create_trialwise_data(dataset_directory_name: str,
 
     global_droplog = []
 
+    data_path = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name
+    save_folder = '3_trialwise_sensorspace'
+
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
     for p in list_of_participants:
@@ -306,7 +309,7 @@ def create_trialwise_data(dataset_directory_name: str,
         #	Correct for audio latency error
         audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
 
-        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
+        audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
             print('item: ', item)
             audio_events_raw[run][2] = run # rename the audio events raw to pick apart later

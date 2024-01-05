@@ -111,7 +111,7 @@ def do_gridsearch(
             peak_lat_ind = np.argmax(-log_pvalues) % (n_samples_per_split // 2)
             peak_lat = latencies[peak_lat_ind]
             peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-            print('peak lat, peak corr:', peak_lat, peak_corr)
+            print(f'{function.name}: peak lat, peak corr:', peak_lat, peak_corr)
 
             auto_corrs = np.mean(auto_corrs, axis=0)
             plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
