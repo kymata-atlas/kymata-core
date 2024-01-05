@@ -22,9 +22,11 @@ mri_structural_type: "T1"            # T1 | flash
 # Preprocessing pipeline
 EMEG_machine_used_to_record_data: 'triux'
 skip_maxfilter_if_previous_runs_exist: True
+skip_ica_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
+supress_excessive_plots_and_prompts: True
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
