@@ -289,16 +289,12 @@ def _remove_ecg_eog(filt_raw, ica):
     Note: mutates `ica`.
     """
     print_with_color(f"   Starting ECG and EOG removal...", Fore.GREEN)
-    
-
     ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
     eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
     ica.exclude = ecg_indices
     ica.exclude += eog_indices
-
-
+    eog_scores.append(ecg_scores)
     ica.plot_sources(filt_raw, show_scrollbars=True)
-    ica.plot_scores(ecg_scores)
     ica.plot_scores(eog_scores)
 
 
