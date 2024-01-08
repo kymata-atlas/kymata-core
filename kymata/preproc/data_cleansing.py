@@ -217,11 +217,15 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
 
                     ica.exclude = []
 
-                    if remove_ecg:
-                        _remove_ecg(filt_raw, ica)
+                    if supress_excessive_plots_and_prompts:
+                         _remove_ecg_eog(filt_raw, ica)
 
-                    if remove_veoh_and_heog:
-                        _remove_veoh_and_heog(filt_raw, ica)
+                    else:
+                        if remove_ecg:
+                            _remove_ecg(filt_raw, ica)
+
+                        if remove_veoh_and_heog:
+                            _remove_veoh_and_heog(filt_raw, ica)
 
                     ica.apply(raw_fif_data_sss_movecomp_tr)
 
@@ -278,6 +282,26 @@ def _remove_ecg(filt_raw, ica):
     ica.plot_sources(ecg_evoked)
     # heartbeats
     ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
+
+
+def _remove_ecg_eog(filt_raw, ica):
+    """
+    Note: mutates `ica`.
+    """
+    print_with_color(f"   Starting ECG and EOG removal...", Fore.GREEN)
+    
+
+    ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
+    eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
+    ica.exclude = ecg_indices
+    ica.exclude += eog_indices
+
+
+    ica.plot_sources(filt_raw, show_scrollbars=True)
+    ica.plot_scores(ecg_scores)
+    ica.plot_scores(eog_scores)
+
+
 
 
 def create_trials(dataset_directory_name: str,
