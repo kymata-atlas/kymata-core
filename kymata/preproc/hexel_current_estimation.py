@@ -190,7 +190,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             verbose=True,
         )
         print(fwd)
-        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-meg.fif'), fwd)
+        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
 
     # Compute inverse operator
 
@@ -199,7 +199,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             intrim_preprocessing_directory_name,
             "4_hexel_current_reconstruction",
             "forward_sol_files",
-            participant + '-fwd-meg.fif'))
+            participant + '-fwd-megonly.fif'))
         noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
             '3_evoked_sensor_data',
@@ -228,22 +228,17 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 '4_hexel_current_reconstruction',
                 'inverse-operators',
-                participant + '_ico5-3L-loose02-cps-nodepth-meg.fif')), 
+                participant + '_ico5-3L-loose02-cps-nodepth-megonly.fif')), 
             inverse_operator)
 
 
-def create_hexel_current_files(config: dict):
+def create_hexel_current_files(data_root_dir, config: dict):
 
-    list_of_participants = config['list_of_participants']
     number_of_trials = config['number_of_trials']
+    list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(
-    #    Path(path.abspath("")),
-        "/imaging/projects/cbu/kymata",
-        "data", dataset_directory_name,
-        "intrim_preprocessing_files")
-    mri_structurals_directory = config['mri_structurals_directory']
-    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+    mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
     input_streams = config['input_streams']
 
     snr = 1 # default is 3
@@ -254,7 +249,7 @@ def create_hexel_current_files(config: dict):
         morphmap_filename = Path(intrim_preprocessing_directory_name,
                                  "4_hexel_current_reconstruction",
                                  "morph_maps",
-                                 participant + "_fsaverage_morph.h5")
+                                 participant + "_fsaverage_morph_meg.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
@@ -266,7 +261,7 @@ def create_hexel_current_files(config: dict):
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd.fif'))
+                participant + '-fwd-megonly.fif'))
             src_from = fwd['src']
             
             src_to = mne.read_source_spaces(Path(
@@ -279,7 +274,7 @@ def create_hexel_current_files(config: dict):
                 src_from,
                 subject_from=participant,
                 subject_to="fsaverage",
-                src_to=src_to[0],
+                src_to=src_to,
                 subjects_dir=mri_structurals_directory,
             )
             morph.save(morphmap_filename)
@@ -291,7 +286,7 @@ def create_hexel_current_files(config: dict):
             intrim_preprocessing_directory_name,
             '4_hexel_current_reconstruction',
             'inverse-operators',
-            participant + '_ico5-3L-loose02-cps-nodepth.fif')))
+            participant + '_ico5-3L-loose02-cps-nodepth-megonly.fif')))
 
         for input_stream in input_streams:
             for trial in range(1,number_of_trials+1):
@@ -313,7 +308,7 @@ def create_hexel_current_files(config: dict):
                     '5-single-trial-source-data',
                     'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
                     input_stream,
-                    participant + '-' + str(trial))))
+                    participant + '-' + str(trial) + '-megonly')))
 
 
 def average_participants_hexel_currents(participants, inputstream):
