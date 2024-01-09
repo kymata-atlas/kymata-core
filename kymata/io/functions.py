@@ -3,7 +3,6 @@ from pathlib import Path
 from numpy import array, float16, convolve, mean
 import numpy as np
 from numpy.typing import NDArray
-from h5py import File
 from scipy.io import loadmat
 
 from kymata.entities.functions import Function
