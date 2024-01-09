@@ -4,7 +4,7 @@ from pathlib import Path
 import mne
 
 
-def create_current_estimation_prerequisites(config: dict):
+def create_current_estimation_prerequisites(data_root_dir, config: dict):
     """
     Copy the structurals to the local Kymata folder,
     create the surfaces, the boundary element model solutions, and the source space
@@ -12,11 +12,9 @@ def create_current_estimation_prerequisites(config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
-                                               "intrim_preprocessing_files")
-    mri_structural_type = config['mri_structural_type']
-    mri_structurals_directory = config['mri_structurals_directory']
-    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+    mri_structural_type = config['mri_structural_type'] 
+    mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     '''    
 
@@ -166,23 +164,19 @@ def create_current_estimation_prerequisites(config: dict):
                                         output_filename), bem_sol)
 
 
-def create_forward_model_and_inverse_solution(config: dict):
+def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    # intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
-    #                                            "intrim_preprocessing_files")
-    intrim_preprocessing_directory_name = Path("/imaging/projects/cbu/kymata", "data", dataset_directory_name, "intrim_preprocessing_files")
-    mri_structurals_directory = config['mri_structurals_directory']
-    # mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
-    mri_structurals_directory = Path("/imaging/projects/cbu/kymata", "data", dataset_directory_name, mri_structurals_directory)
+    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+    mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     # Compute forward solution
     for participant in list_of_participants:
 
         fwd = mne.make_forward_solution(
             # Path(Path(path.abspath("")), "data",
-            Path("/imaging/projects/cbu/kymata", "data",
+            Path(data_root_dir,
                  dataset_directory_name,
                  'raw_emeg', participant, participant +
                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
@@ -190,13 +184,13 @@ def create_forward_model_and_inverse_solution(config: dict):
             src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
             bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
             meg=True,
-            eeg=True,
+            eeg=False,
             mindist=5.0,
             n_jobs=None,
             verbose=True,
         )
         print(fwd)
-        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
+        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-meg.fif'), fwd)
 
     # Compute inverse operator
 
@@ -205,7 +199,7 @@ def create_forward_model_and_inverse_solution(config: dict):
             intrim_preprocessing_directory_name,
             "4_hexel_current_reconstruction",
             "forward_sol_files",
-            participant + '-fwd.fif'))
+            participant + '-fwd-meg.fif'))
         noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
             '3_evoked_sensor_data',
@@ -234,8 +228,8 @@ def create_forward_model_and_inverse_solution(config: dict):
                 intrim_preprocessing_directory_name,
                 '4_hexel_current_reconstruction',
                 'inverse-operators',
-                participant + '_ico5-3L-loose02-cps-nodepth.fif'),
-            inverse_operator))
+                participant + '_ico5-3L-loose02-cps-nodepth-meg.fif')), 
+            inverse_operator)
 
 
 def create_hexel_current_files(config: dict):
