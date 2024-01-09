@@ -15,30 +15,47 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
     func: NDArray
     if 'neurogram' in func_name:
         print('USING BRUCE MODEL')
-        mat = loadmat(function_path_without_suffix.with_suffix('.mat'))['neurogramResults']
-        func = np.array(mat[func_name][0][0])
-        func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
-        tt = np.array(mat['t_'+func_name[-2:]][0][0])
+        if function_path_without_suffix.with_suffix(".npz").exists():
+            func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+            func = func_dict[func_name]
+            func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
+        else:
+            mat = loadmat(function_path_without_suffix.with_suffix('.mat'))['neurogramResults']
+            func = np.array(mat[func_name][0][0])
+            # func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
+            tt = np.array(mat['t_'+func_name[-2:]][0][0])
+            n_chans = func.shape[0]
+            new_mr_arr = np.zeros((n_chans, 400_000))
+            new_ft_arr = np.zeros((n_chans, 400_000))
+            T_end = tt[0, -1]
+            if func_name == 'neurogram_mr':
+                for i in range(n_chans):
+                    new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt[0], func[i])
+            elif func_name == 'neurogram_ft':
+                func = np.cumsum(func * (tt[0, 1] - tt[0, 0]), axis=-1)
+                for i in range(n_chans):
+                    func_interp = np.interp(np.linspace(0, 400, 400_000 + 1), tt[0], func[i])
+                    new_ft_arr[i] = np.diff(func_interp, axis=-1)
 
-        T_end = tt[0, -1]
-        if func_name == 'neurogram_mr':
-            func = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt[0], func, )
-        elif func_name == 'neurogram_ft':
-            func = np.cumsum(func * (tt[0, 1] - tt[0, 0]), axis=-1)
-            func = np.interp(np.linspace(0, 400, 400_000 + 1)[:], tt[0], func)
-            func = np.diff(func, axis=-1)
+            func_dict = {'neurogram_mr': new_mr_arr,
+                         'neurogram_ft': new_ft_arr}
+            np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)
+
+            func = func_dict[func_name]
+            func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
 
     else:
-        if function_path_without_suffix.with_suffix(".h5").exists():
-            with File(function_path_without_suffix.with_suffix(".h5"), "r") as f:
-                func = np.array(f[func_name])
+        if function_path_without_suffix.with_suffix(".npz").exists():
+            func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
+            func = np.array(func_dict[func_name])
         else:
             mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
-            with File(function_path_without_suffix.with_suffix(".h5"), 'w') as f:
-                for key in mat.dtype.names:
-                    if key == 'name':
-                        continue
-                    f.create_dataset(key, data=np.array(mat[key][0, 0], dtype=np.float16))
+            func_dict = {}
+            for key in mat.dtype.names:
+                if key == 'name':
+                    continue
+                func_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
+            np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)
             func = np.array(mat[func_name][0][0])
 
         if func_name in ('STL', 'IL', 'LTL'):
