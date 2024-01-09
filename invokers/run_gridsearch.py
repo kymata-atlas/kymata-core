@@ -16,7 +16,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Gridsearch Params')
     parser.add_argument('--emeg_sample_rate', type=int, default=1000,
-                        help='sampling rate of the emeg machine (always 1000 I thought?)')
+                        help='sampling rate of the emeg machine (not implemented yet)')
     parser.add_argument('--snr', type=float, default=3,
                         help='inverse solution snr')
     parser.add_argument('--downsample_rate', type=int, default=5,
@@ -51,7 +51,6 @@ def main():
     args.base_dir = Path(args.base_dir)
 
 
-
     emeg_dir = Path(args.base_dir, args.data_path)
     emeg_paths = [Path(emeg_dir, args.emeg_file)]
 
@@ -66,9 +65,14 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[1:2] for r in reps[:1]]
+    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
     inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
+
+    # args.function_path = 'predicted_function_contours/Bruce_model/neurogramResults'
+    # args.function_name = 'neurogram_mr'
+    #args.n_splits = 800
+    #args.seconds_per_split = 0.5
 
     # Load data
     emeg, ch_names = load_emeg_pack(emeg_paths,
@@ -79,7 +83,8 @@ def main():
                                     snr=args.snr)
 
     func = load_function(Path(args.base_dir, args.function_path),
-                         func_name=args.function_name)
+                         func_name=args.function_name,
+                         bruce_neurons=(5, 10))
     func = func.downsampled(args.downsample_rate)
 
     es = do_gridsearch(
@@ -97,7 +102,6 @@ def main():
     )
 
     # expression_plot(es)
-
 
 if __name__ == '__main__':
     main()

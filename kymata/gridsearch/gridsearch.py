@@ -4,7 +4,7 @@ from scipy import stats
 
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
-from kymata.math.vector import normalize
+from kymata.math.vector import normalize, get_stds
 #from kymata.entities.expression import SensorExpressionSet, p_to_logp
 import matplotlib.pyplot as plt
 
@@ -65,13 +65,14 @@ def do_gridsearch(
     derangements = np.vstack((np.arange(n_splits * n_reps), derangements))  # Include the identity on top
 
     # Fast cross-correlation using FFT
-    emeg_reshaped = np.fft.rfft(normalize(emeg_reshaped), n=n_samples_per_split, axis=-1)
+    emeg_reshaped = normalize(emeg_reshaped)
+    emeg_stds = get_stds(emeg_reshaped, n_samples_per_split // 2)
+    emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
     corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_samples_per_split // 2))
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2]
-
+        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2] / emeg_stds[:, derangement]
 
     if add_autocorr:
         auto_corrs = np.zeros((n_splits, n_samples_per_split//2))
@@ -92,11 +93,12 @@ def do_gridsearch(
 
     if plot_name:
         plt.figure(1)
-        maxs = np.max(-log_pvalues[:, :], axis=1)
+        corr_avrs = np.mean(corrs[:, 0]**2, axis=-2)
+        maxs = np.max(corr_avrs, axis=1)
         n_amaxs = 5
         amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
-        amax = np.argmax(-log_pvalues) // (n_samples_per_split // 2)
-        amaxs = [i for i in amaxs if i != amax] + [206]
+        amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
+        amaxs = [i for i in amaxs if i != amax] # + [209]
 
         plt.plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
         plt.plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
@@ -108,17 +110,17 @@ def do_gridsearch(
         plt.fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
 
         if add_autocorr:
-            peak_lat_ind = np.argmax(-log_pvalues) % (n_samples_per_split // 2)
+            peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
             peak_lat = latencies[peak_lat_ind]
             peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-            print(f'{function.name}: peak lat, peak corr:', peak_lat, peak_corr)
+            print(f'{function.name}: peak lat, peak corr, ind:', peak_lat, peak_corr, amax)
 
             auto_corrs = np.mean(auto_corrs, axis=0)
             plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
 
         plt.axvline(0, color='k')
         plt.legend()
-        plt.xlabel('latencies (s)')
+        plt.xlabel('latencies (ms)')
         plt.ylabel('Corr coef.')
         plt.savefig(f'{plot_name}_1.png')
         plt.clf()
@@ -128,7 +130,7 @@ def do_gridsearch(
         plt.plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
         plt.axvline(0, color='k')
         plt.legend()
-        plt.xlabel('latencies (s)')
+        plt.xlabel('latencies (ms)')
         plt.ylabel('p-values')
         plt.savefig(f'{plot_name}_2.png')
         plt.clf()
@@ -139,7 +141,7 @@ def do_gridsearch(
         functions=function.name,
         latencies=latencies / 1000,
         sensors=sensor_names,
-        data=p_to_logp(p_values),
+        data=log_pvalues,
     )"""
 
     return es
