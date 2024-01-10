@@ -203,7 +203,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd-meg.fif'))
+                participant + '-fwd.fif'))
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,
@@ -239,7 +239,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-meg.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth.fif')), 
                 inverse_operator)
         elif config['meg']:
             mne.minimum_norm.write_inverse_operator(
