@@ -9,7 +9,7 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 list_of_participants: [
-                        "participant_17"
+                        "participant_01"
                         ]
 input_streams: [
                     "auditory"
@@ -27,6 +27,10 @@ remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
+
+# Inverse operator
+eeg: True
+meg: True
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
