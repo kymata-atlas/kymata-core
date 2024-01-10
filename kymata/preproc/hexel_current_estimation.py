@@ -194,6 +194,10 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
         elif config['meg']:
             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
+        elif config['eeg']:
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
+        else:
+            raise Exception('eeg and meg in the config file cannot be both False')
 
     # Compute inverse operator
 
@@ -210,6 +214,12 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
                 participant + '-fwd-megonly.fif'))
+        elif config['eeg']:
+            fwd = mne.read_forward_solution(Path(
+                intrim_preprocessing_directory_name,
+                "4_hexel_current_reconstruction",
+                "forward_sol_files",
+                participant + '-fwd-eegonly.fif'))
         noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
             '3_evoked_sensor_data',
@@ -249,6 +259,14 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     'inverse-operators',
                     participant + '_ico5-3L-loose02-cps-nodepth-megonly.fif')), 
                 inverse_operator)
+        elif config['eeg']:
+            mne.minimum_norm.write_inverse_operator(
+                str(Path(
+                    intrim_preprocessing_directory_name,
+                    '4_hexel_current_reconstruction',
+                    'inverse-operators',
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly.fif')), 
+                inverse_operator)
 
 
 def create_hexel_current_files(data_root_dir, config: dict):
@@ -268,7 +286,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
         morphmap_filename = Path(intrim_preprocessing_directory_name,
                                  "4_hexel_current_reconstruction",
                                  "morph_maps",
-                                 participant + "_fsaverage_morph_meg.h5")
+                                 participant + "_fsaverage_morph.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
@@ -280,7 +298,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd-meg.fif'))
+                participant + '-fwd.fif'))
             src_from = fwd['src']
             
             src_to = mne.read_source_spaces(Path(
@@ -305,7 +323,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
             intrim_preprocessing_directory_name,
             '4_hexel_current_reconstruction',
             'inverse-operators',
-            participant + '_ico5-3L-loose02-cps-nodepth-meg.fif')))
+            participant + '_ico5-3L-loose02-cps-nodepth.fif')))
 
         for input_stream in input_streams:
             for trial in range(1,number_of_trials+1):
@@ -327,7 +345,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
                     '5-single-trial-source-data',
                     'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
                     input_stream,
-                    participant + '-' + str(trial) + '-meg')))
+                    participant + '-' + str(trial))))
 
 
 def average_participants_hexel_currents(participants, inputstream):
