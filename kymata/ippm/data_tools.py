@@ -14,8 +14,6 @@ import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
 
-from kymata.ippm.denoiser import DenoisingStrategy
-
 import math
 
 from kymata.entities.expression import HexelExpressionSet, _FUNCTION, _LATENCY
@@ -301,7 +299,7 @@ def copy_hemisphere(
         else:
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
 
-def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer: DenoisingStrategy, title: str):
+def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer, title: str):
     denoised_hexels = clusterer.cluster(hexels, 'rightHemisphere')
     copy_hemisphere(denoised_hexels, hexels, 'leftHemisphere', 'rightHemisphere')
     stem_plot(denoised_hexels, title)
