@@ -9,7 +9,7 @@ from kymata.io.file import path_type
 from kymata.io.nkg import load_expression_set
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
-_DATA_DIR_NAME = "kymata-toolbox-data"
+_DATA_DIR_NAME = "kymata-toolbox-data/tutorial_nkg_data"
 
 # Places downloaded datasets could go, in order of preference
 _preferred_default_data_locations = [
