@@ -339,7 +339,7 @@ def create_trialwise_data(dataset_directory_name: str,
         raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1) #, uint_cast=True)
 
-        """print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
 
         #	Extract visual events
         visual_events = mne.pick_events(raw_events, include=[2, 3])
@@ -347,16 +347,16 @@ def create_trialwise_data(dataset_directory_name: str,
         #	Correct for visual equiptment latency error
         visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
 
-        trigger_name = 1
-        for trigger in visual_events:
-            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
-            if trigger_name == 400:
-                trigger_name = 1
-            else:
-                trigger_name = trigger_name + 1
-
-        #  Test there are the correct number of events
-        assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials"""
+        # trigger_name = 1
+        # for trigger in visual_events:
+        #    trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
+        #    if trigger_name == 400:
+        #        trigger_name = 1
+        #    else:
+        #        trigger_name = trigger_name + 1
+        #
+        # #  Test there are the correct number of events
+        # assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
 
         print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
 
@@ -390,8 +390,8 @@ def create_trialwise_data(dataset_directory_name: str,
         for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
             if input_stream == 'auditory':
                 events = audio_events
-            else:
-                events = visual_events
+            #else:
+            #    events = visual_events
 
             #	Extract trial instances ('epochs')
 

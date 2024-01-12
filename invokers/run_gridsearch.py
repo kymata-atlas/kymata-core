@@ -1,8 +1,4 @@
 from pathlib import Path
-
-import sys
-sys.path.append('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox')
-
 import argparse
 from kymata.gridsearch.gridsearch import do_gridsearch
 from kymata.io.functions import load_function
