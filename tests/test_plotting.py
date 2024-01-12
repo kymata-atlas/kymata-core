@@ -1,6 +1,6 @@
 from numpy import log10
 
-from kymata.plot.plotting import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks
+from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks
 
 
 def test_best_best_ylim_returns_supplied_ylim():

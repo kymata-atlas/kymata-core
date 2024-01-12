@@ -21,10 +21,10 @@ from kymata.entities.sparse_data import expand_dims, densify_dataset, sparsify_l
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
 # Data dimension labels
-_HEXEL = "hexel"
-_SENSOR = "sensor"
-_LATENCY = "latency"
-_FUNCTION = "function"
+DIM_HEXEL = "hexel"
+DIM_SENSOR = "sensor"
+DIM_LATENCY = "latency"
+DIM_FUNCTION = "function"
 
 # Layer (e.g. hemisphere)
 LAYER_LEFT  = "left"
@@ -59,7 +59,7 @@ class ExpressionSet(ABC):
         self._layers: list[str] = list(data_layers.keys())
 
         self._channel_coord_name = channel_coord_name
-        self._dims = (channel_coord_name, _LATENCY, _FUNCTION)  # Canonical order of dimensions
+        self._dims = (channel_coord_name, DIM_LATENCY, DIM_FUNCTION)  # Canonical order of dimensions
 
         # Validate arguments
         _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
@@ -100,9 +100,9 @@ class ExpressionSet(ABC):
                 )
             datasets.append(
                 Dataset(dataset_dict,
-                        coords={channel_coord_name: channels, _LATENCY: latencies, _FUNCTION: [f]})
+                        coords={channel_coord_name: channels, DIM_LATENCY: latencies, DIM_FUNCTION: [f]})
             )
-        self._data = concat(datasets, dim=_FUNCTION)
+        self._data = concat(datasets, dim=DIM_FUNCTION)
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
@@ -120,12 +120,12 @@ class ExpressionSet(ABC):
     @property
     def functions(self) -> list[FunctionNameDType]:
         """Function names."""
-        return self._data.coords[_FUNCTION].values.tolist()
+        return self._data.coords[DIM_FUNCTION].values.tolist()
 
     @property
     def latencies(self) -> NDArray[LatencyDType]:
         """Latencies, in seconds."""
-        return self._data.coords[_LATENCY].values
+        return self._data.coords[DIM_LATENCY].values
 
     @abstractmethod
     def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
@@ -167,11 +167,11 @@ class ExpressionSet(ABC):
         data = self._data.copy()
         densify_dataset(data)
 
-        best_latency = data.idxmin(dim=_LATENCY)    # (channel, function) → l, the best latency
-        logp_at_best_latency = data.min(dim=_LATENCY)  # (channel, function) → log p of best latency for each function
+        best_latency = data.idxmin(dim=DIM_LATENCY)    # (channel, function) → l, the best latency
+        logp_at_best_latency = data.min(dim=DIM_LATENCY)  # (channel, function) → log p of best latency for each function
 
-        logp_at_best_function = logp_at_best_latency.min(dim=_FUNCTION)  # (channel) → log p of best function (at best latency)
-        best_function = logp_at_best_latency.idxmin(dim=_FUNCTION)  # (channel) → f, the best function
+        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)  # (channel) → log p of best function (at best latency)
+        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)  # (channel) → f, the best function
 
         # TODO: shame I have to break into the layer structure here,
         #  but I can't think of a better way to do it
@@ -179,15 +179,15 @@ class ExpressionSet(ABC):
 
         best_functions = best_function[layer].data
 
-        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, _FUNCTION: best_function[layer]}).data
+        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, DIM_FUNCTION: best_function[layer]}).data
 
         # Cut out channels which have a best log p-val of 1
         idxs = logp_vals < 1
 
         return DataFrame.from_dict({
             self._channel_coord_name: self._channels[idxs],
-            _FUNCTION: best_functions[idxs],
-            _LATENCY: best_latencies[idxs],
+            DIM_FUNCTION: best_functions[idxs],
+            DIM_LATENCY: best_latencies[idxs],
             "value": logp_vals[idxs],
         })
 
@@ -221,7 +221,7 @@ class HexelExpressionSet(ExpressionSet):
                 LAYER_LEFT: data_lh,
                 LAYER_RIGHT: data_rh,
             },
-            channel_coord_name=_HEXEL,
+            channel_coord_name=DIM_HEXEL,
             channel_coord_dtype=HexelDType,
             channel_coord_values=hexels,
         )
@@ -256,8 +256,8 @@ class HexelExpressionSet(ExpressionSet):
             functions=functions,
             hexels=self.hexels,
             latencies=self.latencies,
-            data_lh=[self._data[LAYER_LEFT].sel({_FUNCTION: function}).data for function in functions],
-            data_rh=[self._data[LAYER_RIGHT].sel({_FUNCTION: function}).data for function in functions],
+            data_lh=[self._data[LAYER_LEFT].sel({DIM_FUNCTION: function}).data for function in functions],
+            data_rh=[self._data[LAYER_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
     def __copy__(self):
@@ -331,7 +331,7 @@ class SensorExpressionSet(ExpressionSet):
             data_layers={
                 LAYER_SCALP: data
             },
-            channel_coord_name=_SENSOR,
+            channel_coord_name=DIM_SENSOR,
             channel_coord_dtype=SensorDType,
             channel_coord_values=sensors,
         )
@@ -392,7 +392,7 @@ class SensorExpressionSet(ExpressionSet):
             functions=functions,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[LAYER_SCALP].sel({_FUNCTION: function}).data for function in functions],
+            data=[self._data[LAYER_SCALP].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
     def best_functions(self) -> DataFrame:

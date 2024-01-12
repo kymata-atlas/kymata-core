@@ -6,6 +6,7 @@ from itertools import groupby
 from typing import Sequence
 
 from numpy import ndarray
+from numpy.typing import NDArray
 
 
 def all_equal(sequence: Sequence) -> bool:
@@ -20,10 +21,10 @@ def all_equal(sequence: Sequence) -> bool:
         # numpy arrays deal with equality weirdly
 
         # Check first two items are equal, and equal to the rest
-        first: ndarray = sequence[0]
+        first: NDArray = sequence[0]
         if not isinstance(sequence[1], ndarray):
             return False
-        second: ndarray = sequence[1]
+        second: NDArray = sequence[1]
         try:
             # noinspection PyUnresolvedReferences
             return (first == second).all() and all_equal(sequence[1:])
