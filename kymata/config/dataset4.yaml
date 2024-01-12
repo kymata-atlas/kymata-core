@@ -36,9 +36,9 @@ meg: True
 audio_delivery_latency:  26        # in milliseconds
 visual_delivery_latency: 17        # in milliseconds
 tactile_delivery_latency: 0        # in milliseconds
-audio_delivery_shift_correction: 0.5375   # in milliseconds per second
-tmin: -0.2
-tmax: 1.8
+audio_delivery_shift_correction: 0.0005375   # in seconds per second
+tmin: -0.2  # seconds
+tmax: 1.8   # seconds
 
 eeg_thresh: 1 #200e-6
 grad_thresh: 1 #4000e-13
