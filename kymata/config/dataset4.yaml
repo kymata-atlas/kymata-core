@@ -32,6 +32,9 @@ supress_excessive_plots_and_prompts: True
 eeg: True
 meg: True
 
+# Method to estimate noise covariance matrix
+cov_method: 'grand_ave'            # grand_ave | empty_room | run_start
+
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
 visual_delivery_latency: 17        # in milliseconds
