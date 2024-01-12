@@ -17,7 +17,7 @@ def main():
     elif config['data_location'] == "cbu-local":
         data_root_dir = '//cbsu/data/imaging/projects/cbu/kymata/data/'
     else:
-        raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local'.")
+        raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local' or 'cbu-local'.")
 
     run_first_pass_cleansing_and_maxwell_filtering(
         data_root_dir = data_root_dir,

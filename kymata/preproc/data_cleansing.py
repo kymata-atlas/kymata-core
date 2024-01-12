@@ -298,9 +298,36 @@ def _remove_ecg_eog(filt_raw, ica):
     ica.plot_scores(eog_scores)
 
 
+def estimate_noise_cov(data_root_dir, config):
+    for p in config['list_of_participants']:
+        if config['cov_method'] == 'grand_ave':
+            cleaned_raws = []
+            for run in range(1, config['number_of_runs'] + 1):
+                raw_fname = data_root_dir + config['dataset_directory_name'] + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw = mne.io.Raw(raw_fname, preload=True)
+                cleaned_raws.append(raw)
+            raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+            cov = mne.compute_raw_covariance(raw, tmin=300, tmax=310, return_estimators=True)
+            mne.write_cov(data_root_dir + config['dataset_directory_name'] + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-300.fif', cov)
+            
+        elif config['cov_method'] == 'empty_room':
+            emptyroom_raw = mne.read_raw() 
+            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw)
+            raw_fif_data_sss = mne.preprocessing.maxwell_filter(
+                        emptyroom_raw,
+                        cross_talk=crosstalk_file,
+                        calibration=fine_cal_file,
+                        st_correlation=0.980,
+                        st_duration=10,
+                        verbose=True)
+
+            raw_fif_data_sss.save(saved_maxfiltered_filename, fmt='short')
+            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=10, return_estimators=True)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom.fif', cov)
 
 
-def create_trials(dataset_directory_name: str,
+def create_trials(data_root_dir: str,
+                  dataset_directory_name: str,
                   list_of_participants: list[str],
                   repetitions_per_runs: int,
                   number_of_runs: int,
@@ -328,7 +355,7 @@ def create_trials(dataset_directory_name: str,
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -395,7 +422,7 @@ def create_trials(dataset_directory_name: str,
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject=p)
             dropfig.savefig(
-                '/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
+                data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -417,11 +444,9 @@ def create_trials(dataset_directory_name: str,
 #            'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
 #            overwrite=True)
 
-        # save grand covs
-        print_with_color(f"... save grand covariance matrix", Fore.GREEN)
 
-        cov = mne.compute_raw_covariance(raw, tmin=0, tmax=10, return_estimators=True)
-        mne.write_cov('/imaging/projects/cbu/kymata/data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov.fif', cov)
+
+
 
 
 # Save global droplog
