@@ -9,7 +9,7 @@ from matplotlib.lines import Line2D
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, _SENSOR, _FUNCTION, \
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
     p_to_logp
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
@@ -178,8 +178,8 @@ def expression_plot(
             for ax, best_funs_this_ax, chans_this_ax in zip(axes, best_functions, chans):
                 # Plot filled
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[(best_funs_this_ax[_FUNCTION] == function)
-                                                    & (best_funs_this_ax[_SENSOR].isin(chans_this_ax))],
+                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
+                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chans_this_ax))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -187,8 +187,8 @@ def expression_plot(
                 data_y_min = min(data_y_min, y_min)
                 # Plot empty
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[(best_funs_this_ax[_FUNCTION] == function)
-                                                    & (best_funs_this_ax[_SENSOR].isin(both_chans))],
+                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
+                                                    & (best_funs_this_ax[DIM_SENSOR].isin(both_chans))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=False)
                 data_x_min = min(data_x_min, x_min)
@@ -200,7 +200,7 @@ def expression_plot(
             # As normal, plot appropriate filled points in each axis
             for ax, best_funs_this_ax in zip(axes, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[best_funs_this_ax[_FUNCTION] == function],
+                    function_data=best_funs_this_ax[best_funs_this_ax[DIM_FUNCTION] == function],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
