@@ -8,6 +8,7 @@ from kymata.math.vector import normalize, get_stds
 #from kymata.entities.expression import SensorExpressionSet, p_to_logp
 import matplotlib.pyplot as plt
 
+
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
         function: Function,
@@ -19,7 +20,7 @@ def do_gridsearch(
         n_derangements: int = 1,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
-        ave_mode: str = 'ave', # either ave or add, for averaging over input files or adding in as extra evidence
+        ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
         add_autocorr: bool = True,
         plot_name: str = 'example'
         ):
