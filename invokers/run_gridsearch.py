@@ -62,11 +62,6 @@ def main():
 
     inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
 
-    # args.function_path = 'predicted_function_contours/Bruce_model/neurogramResults'
-    # args.function_name = 'neurogram_mr'
-    #args.n_splits = 800
-    #args.seconds_per_split = 0.5
-
     # Load data
     emeg, ch_names = load_emeg_pack(emeg_paths,
                                     need_names=False,
