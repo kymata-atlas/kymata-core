@@ -3,13 +3,10 @@ from pathlib import Path
 import sys
 sys.path.append('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox')
 
-import numpy as np
 import argparse
-from numpy.typing import NDArray
 from kymata.gridsearch.gridsearch import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import load_emeg_pack
-# from kymata.plot.plotting import expression_plot
 
 
 def main():
