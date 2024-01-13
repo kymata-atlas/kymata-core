@@ -13,10 +13,8 @@ from copy import deepcopy
 import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
-
 import math
-
-from kymata.entities.expression import HexelExpressionSet, _FUNCTION, _LATENCY
+from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
 class IPPMHexel(object):
     """
@@ -98,8 +96,8 @@ def build_hexel_dict_from_expression_set(expression_set: HexelExpressionSet) -> 
     for hemi in ['leftHemisphere', 'rightHemisphere']:
         best_functions = best_functions_left if hemi == "leftHemisphere" else best_functions_right
         for _idx, row in best_functions.iterrows():
-            func = row[_FUNCTION]
-            latency = row[_LATENCY] * 1000  # convert to ms
+            func = row[DIM_FUNCTION]
+            latency = row[DIM_LATENCY] * 1000  # convert to ms
             pval = row["value"]
             if not func in hexels:
                 hexels[func] = IPPMHexel(func)

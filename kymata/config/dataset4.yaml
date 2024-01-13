@@ -2,6 +2,7 @@
 # Config file for Kymata Dataset 4.00
 
 # General
+data_location: "cbu-local"                # local | cbu | cbu-local
 dataset_directory_name: "dataset_4-english-narratives"
 mri_structurals_directory: "raw_mri_structurals"
 
@@ -21,17 +22,26 @@ mri_structural_type: "T1"            # T1 | flash
 # Preprocessing pipeline
 EMEG_machine_used_to_record_data: 'triux'
 skip_maxfilter_if_previous_runs_exist: True
+skip_ica_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
+supress_excessive_plots_and_prompts: True
+
+# Inverse operator
+eeg: True
+meg: True
+
+# Method to estimate noise covariance matrix
+cov_method: 'grand_ave'            # grand_ave | empty_room | run_start
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
 visual_delivery_latency: 17        # in milliseconds
 tactile_delivery_latency: 0        # in milliseconds
-audio_delivery_shift_correction: 0.5375   # in milliseconds per second
-tmin: -0.2
-tmax: 1.8
+audio_delivery_shift_correction: 0.0005375   # in seconds per second
+tmin: -0.2  # seconds
+tmax: 1.8   # seconds
 
 eeg_thresh: 1 #200e-6
 grad_thresh: 1 #4000e-13
