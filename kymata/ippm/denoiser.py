@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, normalize
 
 from .data_tools import IPPMHexel
 
@@ -22,7 +22,10 @@ class DenoisingStrategy(object):
         """
         self._clusterer = None
     
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
+    def cluster(
+        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False, cluster_latency: bool = False,
+        posterior_pooling: bool = False
+    ) -> Dict[str, IPPMHexel]:
         """
             For each function in hemi, it will attempt to construct a dataframe that holds significant spikes (i.e., abova alpha).
             Next, it clusters using self._clusterer. Finally, it locates the minimum (most significant) point for each cluster and saves
@@ -52,11 +55,30 @@ class DenoisingStrategy(object):
                 continue
 
             # if we are renormalising each feature, then scale otherwise no
-            fitted = self._clusterer.fit(StandardScaler().fit_transform(df)) if scaling else self._clusterer.fit(df)
+            if cluster_latency:
+                # cluster only the latency dimension.
+                latency_only = self._get_latency_dim(df)
+                fitted = (self._clusterer.fit(latency_only)
+                          if not normalise else 
+                          self._clusterer.fit(normalize(latency_only)))
+            else:
+                fitted = self._clusterer.fit(normalize(df)) if normalise else self._clusterer.fit(df)
             df['Label'] = fitted.labels_
             cluster_mins = self._get_cluster_mins(df)
             hexels = self._update_pairings(hexels, func, cluster_mins, hemi)
+        return hexels if not posterior_pooling else self._posterior_pooling(hexels, hemi)
+
+    def _get_latency_dim(self, df: pd.DataFrame) -> np.ndarray:
+        return np.reshape(df['Latency'], (-1, 1))
+
+    def _posterior_pooling(self, hexels: Dict[str, IPPMHexel], hemi: str) -> Dict[str, IPPMHexel]:
+        for func in hexels.keys():
+            if len(hexels[func].left_best_pairings) != 0 and hemi == 'leftHemisphere':
+                hexels[func].left_best_pairings = [min(hexels[func].left_best_pairings, key=lambda x: x[1])]
+            elif len(hexels[func].right_best_pairings) != 0 and hemi == 'rightHemisphere':
+                hexels[func].right_best_pairings = [min(hexels[func].right_best_pairings, key=lambda x: x[1])]
         return hexels
+        
     
     def _hexels_to_df(self, hexels: Dict[str, IPPMHexel], hemi: str) -> pd.DataFrame:
         """
@@ -224,7 +246,10 @@ class MaxPooler(DenoisingStrategy):
             print('Bin size needs to be an integer.')
             raise ValueError
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> List[Tuple[float, float]]:
+    def cluster(
+        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        cluster_latency: bool = False, posterior_pooling: bool = False
+    ) -> Dict[str, IPPMHexel]:
         """  
             Custom clustering method since it differs from other unsupervised techniques. 
 
@@ -278,7 +303,7 @@ class MaxPooler(DenoisingStrategy):
             
             hexels = super()._update_pairings(hexels, func, ret, hemi)
 
-        return hexels
+        return hexels if not posterior_pooling else super()._posterior_pooling(hexels, hemi)
     
     def _cluster_bin(self, df: pd.DataFrame, r_idx: int, latency: int) -> Tuple[float, int, int, int]:
         """
@@ -319,10 +344,65 @@ class MaxPooler(DenoisingStrategy):
         
         return bin_min, lat_min, num_seen, r_idx
 
+class AdaptiveMaxPooler(DenoisingStrategy):
+    def __init__(self, base_bin_sz: int=10, threshold: int=5):
+        self._threshold = threshold
+        self._base_bin_sz = base_bin_sz
+        
+    def cluster(
+        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        cluster_latency: bool = False, posterior_pooling: bool = False
+    ) -> Dict[str, IPPMHexel]:
+        hexels = deepcopy(hexels)
+        get_default_vals = lambda _: (np.inf, None)
+        for func, df in super()._hexels_to_df(hexels, hemi):
+            if len(df) == 0:
+                hexels = super()._update_pairings(hexels, func, [], hemi)
+                continue
+
+            df = df.sort_values(by='Latency')
+
+            df_ptr = 0  # index into df
+            end_ptr = 1 # guarenteed to have > 1 data point. delineates end of bin
+            start_ptr = 0
+            total_bins = 1000 / self._base_bin_sz
+            prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+            prev_signi = False
+            ret = []
+            while df_ptr < len(df) and start_ptr < total_bins:
+                end_ms = end_ptr * self._base_bin_sz
+                num_in_bin = 0
+                cur_bin_min, cur_bin_lat_min = get_default_vals('a')
+                while df_ptr < len(df) and df.iloc[df_ptr, 0] < end_ms:
+                    if df.iloc[df_ptr, 1] < cur_bin_min:
+                        cur_bin_min, cur_bin_lat_min = df.iloc[df_ptr, 1], df.iloc[df_ptr, 0]
+                    num_in_bin += 1
+                    df_ptr += 1
+                if num_in_bin >= self._threshold:
+                    end_ptr += 1
+                    prev_signi = True
+                    if cur_bin_min < prev_bin_min:
+                        prev_bin_min, prev_bin_lat_min = cur_bin_min, cur_bin_lat_min
+                else:
+                    if prev_signi:
+                        # start_ptr to end_ptr is significant
+                        ret.append((prev_bin_lat_min, prev_bin_min))
+                        prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+                        prev_signi = False
+                    start_ptr = end_ptr
+                    end_ptr += 1
+            if prev_signi:
+                # last bin was significant and we expanded
+                ret.append((prev_bin_lat_min, prev_bin_min))
+                prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+                prev_signi = False
+            hexels = super()._update_pairings(hexels, func, ret, hemi)
+        return hexels if not posterior_pooling else super()._posterior_pooling(hexels, hemi)
+
             
 class GMM(DenoisingStrategy):
     """
-        This strategy uses the GaussianMixtureModel algorithm. Intuitively, it attempts to fit a multimodal Gaussian distribution to the data using the EM algorithm.
+        This strategy uses the GaussianMixtureModel algorithm. It attempts to fit a multimodal Gaussian distribution to the data using the EM algorithm.
         The primary disadvantage of this model is that the number of Gaussians have to be prespecified. This implementation does a grid search from 1 to max_gaussians 
         to find the optimal number of Gaussians. Moreover, it does not work well with anomalies.
     """
@@ -345,12 +425,13 @@ class GMM(DenoisingStrategy):
                            set this if you want your results to be reproducible.
         """
         # we are instantiating multiple models, so save hyperparameters instead of clusterer object.
-        self._max_gaussians = 6 if not 'max_gaussians' in kwargs.keys() else kwargs['max_gaussians']
+        self._max_gaussians = 5 if not 'max_gaussians' in kwargs.keys() else kwargs['max_gaussians']
         self._covariance_type = 'full' if not 'covariance_type' in kwargs.keys() else kwargs['covariance_type']
-        self._max_iter = 100 if not 'max_iter' in kwargs.keys() else kwargs['max_iter']
-        self._n_init = 3 if not 'n_init' in kwargs.keys() else kwargs['n_init']
-        self._init_params = 'k-means++' if not 'init_params' in kwargs.keys() else kwargs['init_params']
+        self._max_iter = 1000 if not 'max_iter' in kwargs.keys() else kwargs['max_iter']
+        self._n_init = 8 if not 'n_init' in kwargs.keys() else kwargs['n_init']
+        self._init_params = 'kmeans' if not 'init_params' in kwargs.keys() else kwargs['init_params']
         self._random_state = None if not 'random_state' in kwargs.keys() else kwargs['random_state']
+        self._is_aic = False if not 'is_aic' in kwargs.keys() else kwargs['is_aic'] # default is BIC since it is better for explanatory models, since it assumes reality lies within the hypothesis space.
 
         invalid = False
         if type(self._max_gaussians) != int:
@@ -376,7 +457,10 @@ class GMM(DenoisingStrategy):
             raise ValueError
         
 
-    def cluster(self, hexels: Dict[str, IPPMHexel], hemi: str, scaling: bool = False) -> Dict[str, IPPMHexel]:
+    def cluster(
+        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        cluster_latency: bool = False, posterior_pooling: bool = False
+    ) -> Dict[str, IPPMHexel]:
         """
             Overriding the superclass cluster function because we want to perform a grid-search over the number of clusters to locate the optimal one.
             It works similarly to the superclass.cluster method but it performs it multiple times. It stops if the number of data points < number of clusters as
@@ -396,6 +480,10 @@ class GMM(DenoisingStrategy):
         super()._check_hemi(hemi)
         hexels = deepcopy(hexels)
         for func, df in super()._hexels_to_df(hexels, hemi):
+            if len(df) == 0:
+                hexels = super()._update_pairings(hexels, func, [], hemi)
+                continue
+                
             if len(df) == 1:
                 # no point clustering, just return the single data point.
                 ret = []
@@ -405,7 +493,7 @@ class GMM(DenoisingStrategy):
                 continue
 
             best_labels = None
-            best_score = np.inf # use aic, bic or silhouette score for model selection. if silhouette, switch this to -inf since we wanna maximise it.
+            best_score = np.inf 
             for n in range(1, self._max_gaussians):
                 if n > len(df):
                     # the number of gaussians has to be less than the number of datapoints.
@@ -416,19 +504,29 @@ class GMM(DenoisingStrategy):
                                       n_init=self._n_init,
                                       init_params=self._init_params,
                                       random_state=self._random_state)
-                scaler = StandardScaler()
-                gmm.fit(scaler.fit_transform(df)) if scaling else gmm.fit(df)
+                temp = None
+                if normalise and cluster_latency:
+                    temp = np.reshape(normalize(df['Latency']), (-1, 1))
+                if not normalise and cluster_latency:
+                    temp = np.reshape(df['Latency'], (-1, 1))
+                if normalise and not cluster_latency:
+                    temp = normalize(df)
+                else:
+                    temp = df
                 
-                score = gmm.bic(df)  # gmm.aic(df) for AIC score. 
+                gmm.fit(temp)
+                score = gmm.aic(temp) if self._is_aic else gmm.bic(temp)
+                labels = gmm.predict(temp)
+
                 if score < best_score:
-                    # this condition depends on the choice of AIC/BIC/silhouette. if using silhouette, reverse the inequality.
-                    best_labels = gmm.predict(scaler.transform(df)) if scaling else gmm.predict(df)
+                    # this condition depends on the choice of AIC/BIC
+                    best_labels = labels
                     best_score = score
         
             df['Label'] = best_labels
             cluster_mins = super()._get_cluster_mins(df)
             hexels = super()._update_pairings(hexels, func, cluster_mins, hemi)
-        return hexels
+        return hexels if not posterior_pooling else super()._posterior_pooling(hexels, hemi)
 
 
 class DBSCAN(DenoisingStrategy):
@@ -522,7 +620,7 @@ class MeanShift(DenoisingStrategy):
     """
     def __init__(self, **kwargs):
         cluster_all = False if not 'cluster_all' in kwargs.keys() else kwargs['cluster_all']
-        bandwidth = None if not 'bandwidth' in kwargs.keys() else kwargs['bandwidth']
+        bandwidth = 30 if not 'bandwidth' in kwargs.keys() else kwargs['bandwidth']
         seeds = None if not 'seeds' in kwargs.keys() else kwargs['seeds']
         min_bin_freq = 2 if not 'min_bin_freq' in kwargs.keys() else kwargs['min_bin_freq']
         n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']

@@ -6,12 +6,15 @@ from typing import Tuple, Dict, List
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import normalize
+from sklearn.metrics.pairwise import euclidean_distances
+from copy import deepcopy
 import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
-
+import math
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
-
 
 class IPPMHexel(object):
     """
@@ -231,3 +234,70 @@ def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str,
             total_arrows += 1
 
     return causality_violations / total_arrows if total_arrows != 0 else 0
+
+def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
+    for func, hexel in hexels.items():
+        hexels[func].right_best_pairings = list(map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].right_best_pairings))
+        hexels[func].left_best_pairings = list(map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].left_best_pairings))
+    return hexels
+
+
+def remove_excess_funcs(to_retain: List[str], hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
+    funcs = list(hexels.keys())
+    for func in funcs:
+        if not func in to_retain:
+            # delete
+            hexels.pop(func)
+    return hexels
+
+def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: bool=False):
+    alpha = 3.55e-15
+    X = pd.DataFrame(columns=['Latency'])
+    for latency, spike in pairings:
+        if spike <= alpha:
+            X.loc[len(X)] = [latency]
+
+    if normalise:
+        X = normalize(X)
+            
+    distance_M = euclidean_distances(X) # rows are points, columns are other points same order with values as distances
+    k_dists = []
+    for r in range(len(distance_M)):
+        sorted_dists = sorted(distance_M[r], reverse=True) # descending order
+        k_dists.append(sorted_dists[k]) # store k-dist
+    sorted_k_dists = sorted(k_dists, reverse=True)
+    plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
+    plt.show()
+
+def copy_hemisphere(
+    hexels_to: Dict[str, IPPMHexel], 
+    hexels_from: Dict[str, IPPMHexel], 
+    hemi_to: str,
+    hemi_from: str,
+    func: str = None):
+    if func:
+        # copy only one function
+        if hemi_to == 'rightHemisphere' and hemi_from == 'rightHemisphere':
+            hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
+        elif hemi_to == 'rightHemisphere' and hemi_from == 'leftHemisphere':
+            hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
+        elif hemi_to == 'leftHemisphere' and hemi_from == 'rightHemisphere':
+            hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
+        else:
+            hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
+        return
+        
+    for func, hexel in hexels_from.items():
+        if hemi_to == 'rightHemisphere' and hemi_from == 'rightHemisphere':
+            hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
+        elif hemi_to == 'rightHemisphere' and hemi_from == 'leftHemisphere':
+            hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
+        elif hemi_to == 'leftHemisphere' and hemi_from == 'rightHemisphere':
+            hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
+        else:
+            hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
+
+def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer, title: str):
+    denoised_hexels = clusterer.cluster(hexels, 'rightHemisphere')
+    copy_hemisphere(denoised_hexels, hexels, 'leftHemisphere', 'rightHemisphere')
+    stem_plot(denoised_hexels, title)

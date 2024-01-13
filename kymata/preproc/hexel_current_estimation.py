@@ -173,7 +173,6 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # # Compute forward solution
     # for participant in list_of_participants:
-
     #     fwd = mne.make_forward_solution(
     #         # Path(Path(path.abspath("")), "data",
     #         Path(data_root_dir,

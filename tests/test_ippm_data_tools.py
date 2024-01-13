@@ -1,4 +1,5 @@
 from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score
+import kymata.ippm.data_tools as data_tools
 
 def test_hexel():
     hexel = IPPMHexel('test', 'test description', 'test commit')
@@ -80,3 +81,23 @@ def test_causalityViolation_With_SingleEdge_Should_Return0():
     test_hierarchy = {'f2' : ['f1'], 'f1' : []}
 
     assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere') == 0)
+
+def test_Should_convertToPower10_When_validInput():
+    hexels = {'f1' : IPPMHexel('f1')}
+    hexels['f1'].right_best_pairings = [(10, -50), (20, -10), (30, -20), (40, -3)]
+    converted = data_tools.convert_to_power10(hexels)  
+    assert converted['f1'].right_best_pairings == [(10, 1e-50), (20, 1e-10), (30, 1e-20), (40, 1e-3)]
+
+def test_Should_removeExcessFuncs_When_validInput():
+    hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2'), 'f3' : IPPMHexel('f3')}
+    to_retain = ['f2']
+    filtered = data_tools.remove_excess_funcs(to_retain, hexels)
+    assert list(filtered.keys()) == to_retain
+
+def test_Should_copyHemisphere_When_validInput():
+    hexels = {'f1' : IPPMHexel('f1')}
+    hexels['f1'].right_best_pairings = [(20, 1e-20), (23, 1e-32), (35, 1e-44)]
+    hexels['f1'].left_best_pairings = [(10, 1e-20), (21, 1e-55)]
+    data_tools.copy_hemisphere(hexels_to=hexels, hexels_from=hexels, hemi_to='rightHemisphere', hemi_from='leftHemisphere', func='f1')
+    assert hexels['f1'].right_best_pairings == hexels['f1'].left_best_pairings
+
