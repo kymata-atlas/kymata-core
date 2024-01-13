@@ -1,10 +1,6 @@
 from pathlib import Path
-
-import sys
-sys.path.append('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox')
-
 from kymata.io.yaml import load_config
-from kymata.preproc.data_cleansing import run_preprocessing, create_trials, create_trialwise_data
+from kymata.preproc.data_cleansing import create_trialwise_data
 
 
 # noinspection DuplicatedCode
