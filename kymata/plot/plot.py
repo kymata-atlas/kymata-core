@@ -385,7 +385,7 @@ def plot_top_five_channels_of_gridsearch(
         save_to = Path(save_to,'gridsearch_top_five_channels.png')
 
         if overwrite or not save_to.exists():
-            pyplot.savefig(Path(save_to), bbox_inches='tight')
+            pyplot.savefig(Path(save_to))
         else:
             raise FileExistsError(save_to)
 
