@@ -15,34 +15,34 @@ _default_output_dir = Path(data_root_path(), "output")
 def main():
 
     parser = argparse.ArgumentParser(description='Gridsearch Params')
-    parser.add_argument('--emeg_sample_rate', type=int, default=1000,
+    parser.add_argument('--emeg-sample-rate', type=int, default=1000,
                         help='sampling rate of the emeg machine (not implemented yet)')
     parser.add_argument('--snr', type=float, default=3, help='inverse solution snr')
-    parser.add_argument('--downsample_rate', type=int, default=5, help='downsample_rate')
-    parser.add_argument('--base_dir', type=str, required=True, help='base data directory')
-    parser.add_argument('--data_path', type=str, required=True, help='data path after base dir')
-    parser.add_argument('--function_path', type=str, required=True, help='location of function stimulisig')
+    parser.add_argument('--downsample-rate', type=int, default=5, help='downsample_rate')
+    parser.add_argument('--base-dir', type=str, required=True, help='base data directory')
+    parser.add_argument('--data-path', type=str, required=True, help='data path after base dir')
+    parser.add_argument('--function-path', type=str, required=True, help='location of function stimulisig')
     parser.add_argument('--save-expression-set', type=Path, default=Path(_default_output_dir, "gridsearch.nkg"),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot', type=Path, default=Path(_default_output_dir, "gridsearch.png"),
                         help="Save an expression plot file")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
-    parser.add_argument('--function_name', type=str, required=True, help='function name in stimulisig')
-    parser.add_argument('--emeg_file', type=str, required=True, help='emeg_file_name')
-    parser.add_argument('--ave_mode', type=str, default="ave",
+    parser.add_argument('--function-name', type=str, required=True, help='function name in stimulisig')
+    parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
+    parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
-    parser.add_argument('--inverse_operator', type=Optional[str], default=None, help='inverse solution path')
-    parser.add_argument('--seconds_per_split', type=float, default=0.5,
+    parser.add_argument('--inverse-operator', type=Optional[str], default=None, help='inverse solution path')
+    parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n_splits', type=int, default=800,
+    parser.add_argument('--n-splits', type=int, default=800,
                         help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
-    parser.add_argument('--n_derangements', type=int, default=1,
+    parser.add_argument('--n-derangements', type=int, default=1,
                         help='inverse solution snr')
-    parser.add_argument('--start_latency', type=float, default=-100,
+    parser.add_argument('--start-latency', type=float, default=-100,
                         help='earliest latency to check in cross correlation')
-    parser.add_argument('--emeg_t_start', type=float, default=-200,
+    parser.add_argument('--emeg-t-start', type=float, default=-200,
                         help='start of the emeg evoked files relative to the start of the function')
-    parser.add_argument('--audio_shift_correction', type=float, default=0.000_537_5,
+    parser.add_argument('--audio-shift-correction', type=float, default=0.000_537_5,
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
