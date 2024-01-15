@@ -83,10 +83,12 @@ def main():
                          bruce_neurons=(5, 10))
     func = func.downsampled(args.downsample_rate)
 
+    channel_space = "source" if inverse_operator is not None else "sensor"
+
     es = do_gridsearch(
         emeg_values=emeg_values,
         channel_names=ch_names,
-        channel_space="sensor" if inverse_operator is None else "source",
+        channel_space=channel_space,
         function=func,
         seconds_per_split=args.seconds_per_split,
         n_derangements=args.n_derangements,
@@ -101,7 +103,7 @@ def main():
     if args.save_expression_set is not None:
         save_expression_set(es, args.save_expression_set)
 
-    expression_plot(es, save_to=args.save_plot)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=args.save_plot)
 
 
 if __name__ == '__main__':

@@ -94,8 +94,7 @@ def do_gridsearch(
         )
     elif channel_space == "source":
         es = HexelExpressionSet(
-            functions=function.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we
-                                                        #  have both hemispheres in place
+            functions=function.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we have both hemispheres in place
             latencies=latencies_ms / 1000,  # seconds
             hexels=channel_names,
             data_lh=log_pvalues,
