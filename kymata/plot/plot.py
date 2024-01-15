@@ -279,7 +279,8 @@ def expression_plot(
 
         if overwrite or not save_to.exists():
             pyplot.savefig(Path(save_to), bbox_inches='tight')
-        raise FileExistsError(save_to)
+        else:
+            raise FileExistsError(save_to)
 
     pyplot.show()
     pyplot.close()
