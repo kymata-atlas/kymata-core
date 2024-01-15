@@ -1,5 +1,7 @@
 # Kymata Toolbox Readme
 
+[![Perform unit tests](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
+
 Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
 
 //Add citation
