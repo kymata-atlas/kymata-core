@@ -1,6 +1,5 @@
 from pathlib import Path
 import argparse
-from typing import Optional
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -35,7 +34,7 @@ def main():
     parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
-    parser.add_argument('--inverse-operator', type=Optional[str], default=None, help='inverse solution path')
+    parser.add_argument('--inverse-operator', type=str, required=False, default=None, help='inverse solution path')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits', type=int, default=800,
