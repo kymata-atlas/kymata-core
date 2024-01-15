@@ -101,7 +101,7 @@ def main():
         overwrite=args.overwrite,
     )
 
-    if args.save_expression_set is not None:
+    if args.save_expression_set_location is not None:
         save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location,'gridsearch.nkg'), overwrite=args.overwrite)
 
     expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location,'gridsearch.png'), overwrite=args.overwrite)
