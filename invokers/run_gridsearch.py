@@ -93,7 +93,7 @@ def main():
         n_derangements=args.n_derangements,
         n_splits=args.n_splits,
         start_latency=args.start_latency,
-        plot_location=args.save_plot,
+        plot_location=args.save_plot_location,
         emeg_t_start=args.emeg_t_start,
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
@@ -102,9 +102,9 @@ def main():
     )
 
     if args.save_expression_set is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set,'gridsearch.nkg'), overwrite=args.overwrite)
+        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location,'gridsearch.nkg'), overwrite=args.overwrite)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot,'gridsearch.png'), overwrite=args.overwrite)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location,'gridsearch.png'), overwrite=args.overwrite)
 
 
 if __name__ == '__main__':
