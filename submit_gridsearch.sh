@@ -21,6 +21,7 @@ args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 python invokers/run_gridsearch.py \
+  --reality-check-plot-name "example" \
   --base-dir "/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/" \
   --data-path "intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data" \
   --function-path "predicted_function_contours/GMSloudness/stimulisig" \

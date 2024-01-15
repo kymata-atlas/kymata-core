@@ -26,6 +26,9 @@ def main():
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot', type=Path, default=Path(_default_output_dir, "gridsearch.png"),
                         help="Save an expression plot file")
+    parser.add_argument("--reality-check-plot-name", type=str, required=False, default=None,
+                        help="Save reality-check plots")
+    parser.add_argument("--add-autocorr", action="store_true", help="Adds autocorrelation to reality-check plots")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function-name', type=str, required=True, help='function name in stimulisig')
     parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
@@ -96,6 +99,8 @@ def main():
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
         ave_mode=args.ave_mode,
+        add_autocorr=args.add_autocorr,
+        plot_name=args.reality_check_plot_name,
     )
 
     if args.save_expression_set is not None:
