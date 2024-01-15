@@ -6,7 +6,6 @@ from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
-import matplotlib.pyplot as plt
 
 
 def do_gridsearch(
@@ -95,8 +94,8 @@ def do_gridsearch(
         )
     elif channel_space == "source":
         es = HexelExpressionSet(
-            functions=function.name + f"_mirrored_{handed}",  # TODO: revert to just `function.name` when we
-                                                              #  have both hemispheres in place
+            functions=function.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we
+                                                        #  have both hemispheres in place
             latencies=latencies_ms / 1000,  # seconds
             hexels=channel_names,
             data_lh=log_pvalues,

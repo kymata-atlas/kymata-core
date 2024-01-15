@@ -1,11 +1,7 @@
-from pathlib import Path
-
 from mne import read_evokeds, minimum_norm, set_eeg_reference
 import numpy as np
 from numpy.typing import NDArray
 from os.path import isfile
-
-from kymata.io.file import path_type
 
 
 def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
@@ -18,16 +14,13 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
         evoked = read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr)
-            # TODO: I think ch_names here is the wrong thing 
-            
-            emeg = None #np.concatenate((lh_emeg, rh_emeg), axis=0)
+            # TODO: I think ch_names here is the wrong thing
 
             # TODO: currently this goes OOM (node-h04 atleast):
             #       looks like this will be faster when split up anyway
             #       note, don't run the inv_op twice for rh and lh!
             # TODO: move inverse operator to run after EMEG channel combination
-
-            emeg = lh_emeg
+            emeg = lh_emeg #np.concatenate((lh_emeg, rh_emeg), axis=0)
             del lh_emeg, rh_emeg
         else:
             emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
