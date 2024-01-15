@@ -8,7 +8,6 @@ from os.path import isfile
 from kymata.io.file import path_type
 
 
-
 def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
     emeg_path_npy = f"{emeg_path}.npy"
     emeg_path_fif = f"{emeg_path}.fif"
@@ -39,12 +38,14 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
         del evoked
     return emeg, ch_names
 
+
 def inverse_operate(evoked, inverse_operator, snr=4):
     lambda2 = 1.0 / snr ** 2
     inverse_operator = minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     set_eeg_reference(evoked, projection=True, verbose=False)
     stc = minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     return stc.lh_data, stc.rh_data, evoked.ch_names
+
 
 def load_emeg_pack(emeg_paths, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4):  # TODO: FIX PRE-AVE-NORMALISATION
     if p_tshift is None:
