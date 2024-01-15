@@ -31,6 +31,7 @@ supress_excessive_plots_and_prompts: True
 # Inverse operator
 eeg: True
 meg: True
+inverse_operator: "intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
 # Method to estimate noise covariance matrix
 cov_method: 'grand_ave'            # grand_ave | empty_room | run_start
