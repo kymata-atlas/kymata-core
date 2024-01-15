@@ -13,6 +13,8 @@ _default_output_dir = Path(data_root_path(), "output")
 
 def main():
 
+    _default_output_dir.mkdir(exist_ok=True, parents=False)
+
     parser = argparse.ArgumentParser(description='Gridsearch Params')
     parser.add_argument('--emeg-sample-rate', type=int, default=1000,
                         help='sampling rate of the emeg machine (not implemented yet)')
