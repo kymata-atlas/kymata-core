@@ -348,14 +348,14 @@ def plot_top_five_channels_of_gridsearch(
     amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
     amaxs = [i for i in amaxs if i != amax]  # + [209]
 
-    axis[0, 0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
-    axis[0, 0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
+    axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
+    axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
     std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits)  # 3 pop std.s
     std_real = np.std(corrs[amax, 0], axis=-2).T * 3 / np.sqrt(n_reps * n_splits)
     av_real = np.mean(corrs[amax, 0], axis=-2).T
 
-    axis[0, 0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
-    axis[0, 0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
+    axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
+    axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
 
     peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
@@ -363,20 +363,20 @@ def plot_top_five_channels_of_gridsearch(
     print(f'{function.name}: peak lat, peak corr, ind:', peak_lat, peak_corr, amax)
 
     auto_corrs = np.mean(auto_corrs, axis=0)
-    axis[0, 0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
+    axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
                     label='func auto-corr')
 
-    axis[0, 0].axvline(0, color='k')
-    axis[0, 0].legend()
-    axis[0, 0].xlabel('latencies (ms)')
-    axis[0, 0].ylabel('Corr coef.')
+    axis[0].axvline(0, color='k')
+    axis[0].legend()
+    axis[0].xlabel('latencies (ms)')
+    axis[0].ylabel('Corr coef.')
 
-    axis[0, 1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
-    axis[0, 1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-    axis[0, 1].axvline(0, color='k')
-    axis[0, 1].legend()
-    axis[0, 1].xlabel('latencies (ms)')
-    axis[0, 1].ylabel('p-values')
+    axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
+    axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
+    axis[1].axvline(0, color='k')
+    axis[1].legend()
+    axis[1].xlabel('latencies (ms)')
+    axis[1].ylabel('p-values')
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
