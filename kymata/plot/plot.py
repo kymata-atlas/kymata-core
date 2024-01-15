@@ -368,15 +368,15 @@ def plot_top_five_channels_of_gridsearch(
 
     axis[0].axvline(0, color='k')
     axis[0].legend()
-    axis[0].xlabel('latencies (ms)')
-    axis[0].ylabel('Corr coef.')
+    #axis[0].xlabel('latencies (ms)')
+    #axis[0].ylabel('Corr coef.')
 
     axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
     axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-    axis[1].axvline(0, color='k')
-    axis[1].legend()
-    axis[1].xlabel('latencies (ms)')
-    axis[1].ylabel('p-values')
+    #axis[1].axvline(0, color='k')
+    #axis[1].legend()
+    #axis[1].xlabel('latencies (ms)')
+    #axis[1].ylabel('p-values')
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
