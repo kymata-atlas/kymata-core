@@ -72,11 +72,11 @@ def main():
 
     # Load data
     emeg_values, ch_names = load_emeg_pack(emeg_paths,
-                                    need_names=False,
-                                    ave_mode=args.ave_mode,
-                                    inverse_operator=inverse_operator,
-                                    p_tshift=None,
-                                    snr=args.snr)
+                                           need_names=True,
+                                           ave_mode=args.ave_mode,
+                                           inverse_operator=inverse_operator,
+                                           p_tshift=None,
+                                           snr=args.snr)
 
     func = load_function(Path(args.base_dir, args.function_path),
                          func_name=args.function_name,
