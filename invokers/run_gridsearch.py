@@ -23,14 +23,10 @@ def main():
     parser.add_argument('--base-dir', type=str, required=True, help='base data directory')
     parser.add_argument('--data-path', type=str, required=True, help='data path after base dir')
     parser.add_argument('--function-path', type=str, required=True, help='location of function stimulisig')
-    parser.add_argument('--save-expression-set', type=Path, default=Path(_default_output_dir, "gridsearch.nkg"),
+    parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
-    parser.add_argument('--save-plot', type=Path, default=Path(_default_output_dir, "gridsearch.png"),
-                        help="Save an expression plot file")
-    parser.add_argument("--reality-check-plot-location", type=Path, default=Path(_default_output_dir))
-    parser.add_argument("--reality-check-plot-name", type=str, required=False, default=None,
-                        help="Save reality-check plots")
-    parser.add_argument("--add-autocorr", action="store_true", help="Adds autocorrelation to reality-check plots")
+    parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir),
+                        help="Save an expression plots, and other plots, in this location")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function-name', type=str, required=True, help='function name in stimulisig')
     parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
@@ -97,19 +93,18 @@ def main():
         n_derangements=args.n_derangements,
         n_splits=args.n_splits,
         start_latency=args.start_latency,
+        plot_location=args.save_plot,
         emeg_t_start=args.emeg_t_start,
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
         ave_mode=args.ave_mode,
-        add_autocorr=args.add_autocorr,
-        plot_name=args.reality_check_plot_name,
-        plot_location=args.reality_check_plot_location,
+        overwrite=args.overwrite,
     )
 
     if args.save_expression_set is not None:
-        save_expression_set(es, args.save_expression_set, overwrite=args.overwrite)
+        save_expression_set(es, to_path_or_file = Path(args.save_expression_set,'gridsearch.nkg'), overwrite=args.overwrite)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=args.save_plot, overwrite=args.overwrite)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot,'gridsearch.png'), overwrite=args.overwrite)
 
 
 if __name__ == '__main__':

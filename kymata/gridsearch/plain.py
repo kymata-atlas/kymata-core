@@ -4,13 +4,12 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 from scipy import stats
-from matplotlib import pyplot as plt
 
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
-
+from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
@@ -19,8 +18,6 @@ def do_gridsearch(
         channel_space: str,
         start_latency: float,   # ms
         emeg_t_start: float,    # ms
-        add_autocorr: bool,
-        plot_name: Optional[str] = None,
         plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
         audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
@@ -28,6 +25,7 @@ def do_gridsearch(
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
         ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
+        overwrite: bool = True,
 ) -> ExpressionSet:
     """
     Do the Kymata gridsearch over all hexels for all latencies.
@@ -86,71 +84,33 @@ def do_gridsearch(
         deranged_emeg = emeg_reshaped[:, derangement, :]
         corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2] / emeg_stds[:, derangement]
 
-    if add_autocorr:
-        noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
-        noisy_func = normalize(np.copy(func)) + noise
-        nn = n_samples_per_split // 2
+    # work out autocorrelation for channel-by-channel plots
+    noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
+    noisy_func = normalize(np.copy(func)) + noise
+    nn = n_samples_per_split // 2
 
-        F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
-        F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
+    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
+    F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
 
-        auto_corrs = np.fft.irfft(F_noisy_func * F_func)
+    auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 
     del F_func, deranged_emeg, emeg_reshaped
 
+    # derive pvalues
     log_pvalues = _ttest(corrs)
 
     latencies = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
-    if plot_name is not None:
-        plt.figure(1)
-        corr_avrs = np.mean(corrs[:, 0]**2, axis=-2)
-        maxs = np.max(corr_avrs, axis=1)
-        n_amaxs = 5
-        amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
-        amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
-        amaxs = [i for i in amaxs if i != amax]  # + [209]
-
-        plt.plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
-        plt.plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
-        std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits) # 3 pop std.s
-        std_real = np.std(corrs[amax, 0], axis=-2).T * 3  / np.sqrt(n_reps * n_splits)
-        av_real = np.mean(corrs[amax, 0], axis=-2).T
-
-        plt.fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
-        plt.fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
-
-        if add_autocorr:
-            peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
-            peak_lat = latencies[peak_lat_ind]
-            peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-            print(f'{function.name}: peak lat, peak corr, ind:', peak_lat, peak_corr, amax)
-
-            auto_corrs = np.mean(auto_corrs, axis=0)
-            plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
-
-        plt.axvline(0, color='k')
-        plt.legend()
-        plt.xlabel('latencies (ms)')
-        plt.ylabel('Corr coef.')
-        if plot_location is None:
-            plt.savefig(f'{plot_name}_1.png')
-        else:
-            plt.savefig(Path(plot_location, f'{plot_name}_1.png'))
-        plt.clf()
-
-        plt.figure(2)
-        plt.plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
-        plt.plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-        plt.axvline(0, color='k')
-        plt.legend()
-        plt.xlabel('latencies (ms)')
-        plt.ylabel('p-values')
-        if plot_location is None:
-            plt.savefig(f'{plot_name}_2.png')
-        else:
-            plt.savefig(Path(plot_location, f'{plot_name}_2.png'))
-        plt.clf()
+    plot_top_five_channels_of_gridsearch(
+                                        corrs=corrs,
+                                        auto_corrs=auto_corrs,
+                                        function=function,
+                                        n_samples_per_split=n_samples_per_split,
+                                        latencies=latencies,
+                                        save_to=plot_location,
+                                        log_pvalues=log_pvalues,
+                                        overwrite=overwrite,
+                                        )
 
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
