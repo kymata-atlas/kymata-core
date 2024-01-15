@@ -27,16 +27,17 @@ def print_progress(iteration: int, total: int,
     Call in a loop to create terminal progress bar.
     Based on https://github.com/emcoglab/ldm-core/blob/main/utils/log.py
     @params:
-        iteration           - Required  : current iteration (Int)  0-indexed
-        total               - Required  : total iterations (Int)  total n-iterations
-        prefix              - Optional  : prefix string (Str)
-        suffix              - Optional  : suffix string (Str)
-        decimals            - Optional  : positive number of decimals in percent complete (Int)
-        bar_length          - Optional  : character length of bar (Int)
-        clear_on_completion - Optional  : clear the bar when it reaches 100% (bool)
+        iteration           - Required : current iteration (0-indexed) (Int)
+                                         (so the at the last iteration, `iteration == total - 1`)
+        total               - Required : total iterations (Int)
+        prefix              - Optional : prefix string (Str)
+        suffix              - Optional : suffix string (Str)
+        decimals            - Optional : positive number of decimals in percent complete (Int)
+        bar_length          - Optional : character length of bar (Int)
+        clear_on_completion - Optional : clear the bar when it reaches 100% (bool)
     """
 
-    iteration += 1  # 1-index
+    iteration += 1  # convert to 1-indexed to make the maths easier
 
     if iteration < total and iteration % update_downsample != 0:
         stdout.flush()
