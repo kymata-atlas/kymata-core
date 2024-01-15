@@ -29,10 +29,11 @@ class SampleDataset(ABC):
         self.name: str = name
         self.filenames: list[str] = filenames
         self.data_root: Path = Path(data_root_path(data_root), _SAMPLE_DATA_DIR_NAME)
+        self.remote_root: str = remote_root
+
         # Create the default location, if it's being used
         if data_root is None:
             self.data_root.mkdir(exist_ok=True)
-        self.remote_root: str = remote_root
 
         if download:
             self.download()
