@@ -1,9 +1,13 @@
 from pathlib import Path
 import argparse
 
+from matplotlib import pyplot
+
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import load_emeg_pack
+from kymata.io.nkg import save_expression_set
+from kymata.plot.plot import expression_plot
 
 
 def main():
@@ -21,6 +25,10 @@ def main():
                         help='data path after base dir')
     parser.add_argument('--function_path', type=str, default="predicted_function_contours/GMSloudness/stimulisig",
                         help='snr')
+    parser.add_argument('--save-expression-set', type=Path, default="gridsearch.nkg",
+                        help="Save the results of the gridsearch into an ExpressionSet .nkg file")
+    parser.add_argument('--save-plot', type=Path, default="gridsearch.png",
+                        help="Save an expression plot file")
     parser.add_argument('--function_name', type=str, default="d_IL2",
                         help='function name in stimulisig')
     parser.add_argument('--emeg_file', type=str, default="participant_01-ave",
@@ -62,12 +70,13 @@ def main():
     # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
     inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
+    inverse_operator = None  # set to None/inverse_operator if you want to run on sensor space/source space
 
     # Load data
-    emeg, ch_names = load_emeg_pack(emeg_paths,
+    emeg_values, ch_names = load_emeg_pack(emeg_paths,
                                     need_names=False,
                                     ave_mode=args.ave_mode,
-                                    inverse_operator=None, #inverse_operator, # set to None/inverse_operator if you want to run on sensor space/source space
+                                    inverse_operator=inverse_operator,
                                     p_tshift=None,
                                     snr=args.snr)
 
@@ -77,8 +86,9 @@ def main():
     func = func.downsampled(args.downsample_rate)
 
     es = do_gridsearch(
-        emeg_values=emeg,
-        sensor_names=ch_names,
+        emeg_values=emeg_values,
+        channel_names=ch_names,
+        channel_space="sensor" if inverse_operator is None else "source",
         function=func,
         seconds_per_split=args.seconds_per_split,
         n_derangements=args.n_derangements,
@@ -90,7 +100,11 @@ def main():
         ave_mode=args.ave_mode,
     )
 
-    # expression_plot(es)
+    if args.save_expression_set is not None:
+        save_expression_set(es, args.save_expression_set)
+
+    expression_plot(es, save_to=args.save_plot)
+
 
 if __name__ == '__main__':
     main()

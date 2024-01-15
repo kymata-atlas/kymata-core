@@ -403,6 +403,9 @@ class SensorExpressionSet(ExpressionSet):
         return super()._best_functions_for_layer(LAYER_SCALP)
 
 
+log_base = 10
+
+
 def p_to_logp(arraylike: ArrayLike) -> ArrayLike:
     """The one-stop-shop for converting from p-values to log p-values."""
     return log10(arraylike)
