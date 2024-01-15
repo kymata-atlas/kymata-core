@@ -338,7 +338,7 @@ def plot_top_five_channels_of_gridsearch(
     etc..
     """
 
-    figure, axis = pyplot.subplots(1, 2)
+    figure, axis = pyplot.subplots(1, 2, figsize=(7, 15))
     figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
 
     corr_avrs = np.mean(corrs[:, 0] ** 2, axis=-2)
@@ -368,13 +368,15 @@ def plot_top_five_channels_of_gridsearch(
 
     axis[0].axvline(0, color='k')
     axis[0].legend()
+    axis[0].set_title("Corr coef.")
     #axis[0].xlabel('latencies (ms)')
     #axis[0].ylabel('Corr coef.')
 
     axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
     axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-    #axis[1].axvline(0, color='k')
-    #axis[1].legend()
+    axis[1].axvline(0, color='k')
+    axis[1].legend()
+    axis[1].set_title("p-values")
     #axis[1].xlabel('latencies (ms)')
     #axis[1].ylabel('p-values')
 
