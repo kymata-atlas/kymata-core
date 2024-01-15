@@ -105,6 +105,8 @@ def do_gridsearch(
                                         corrs=corrs,
                                         auto_corrs=auto_corrs,
                                         function=function,
+                                        n_reps=n_reps,
+                                        n_splits=n_splits,
                                         n_samples_per_split=n_samples_per_split,
                                         latencies=latencies,
                                         save_to=plot_location,
