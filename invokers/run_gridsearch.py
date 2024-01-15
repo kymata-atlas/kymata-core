@@ -27,6 +27,7 @@ def main():
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot', type=Path, default="gridsearch.png",
                         help="Save an expression plot file")
+    parser.add_argument('--overwrite-existing', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function_name', type=str, default="d_IL2",
                         help='function name in stimulisig')
     parser.add_argument('--emeg_file', type=str, default="participant_01-ave",
@@ -101,9 +102,9 @@ def main():
     )
 
     if args.save_expression_set is not None:
-        save_expression_set(es, args.save_expression_set)
+        save_expression_set(es, args.save_expression_set, overwrite=args.overwrite_existing)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=args.save_plot)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=args.save_plot, overwrite=args.overwrite_existing)
 
 
 if __name__ == '__main__':

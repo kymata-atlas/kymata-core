@@ -75,6 +75,7 @@ def expression_plot(
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
+        overwrite: bool = True,
 ):
     """
     Generates an expression plot
@@ -274,7 +275,11 @@ def expression_plot(
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
-        pyplot.savefig(Path(save_to), bbox_inches='tight')
+        save_to = Path(save_to)
+
+        if overwrite or not save_to.exists():
+            pyplot.savefig(Path(save_to), bbox_inches='tight')
+        raise FileExistsError(save_to)
 
     pyplot.show()
     pyplot.close()
