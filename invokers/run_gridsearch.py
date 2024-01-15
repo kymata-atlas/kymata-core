@@ -1,11 +1,14 @@
 from pathlib import Path
 import argparse
 
+from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot
+
+_default_output_dir = Path(data_root_path(), "output")
 
 
 def main():
@@ -23,9 +26,9 @@ def main():
                         help='data path after base dir')
     parser.add_argument('--function_path', type=str, default="predicted_function_contours/GMSloudness/stimulisig",
                         help='snr')
-    parser.add_argument('--save-expression-set', type=Path, default="gridsearch.nkg",
+    parser.add_argument('--save-expression-set', type=Path, default=Path(_default_output_dir, "gridsearch.nkg"),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
-    parser.add_argument('--save-plot', type=Path, default="gridsearch.png",
+    parser.add_argument('--save-plot', type=Path, default=Path(_default_output_dir, "gridsearch.png"),
                         help="Save an expression plot file")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function_name', type=str, default="d_IL2",
