@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -20,6 +21,7 @@ def do_gridsearch(
         emeg_t_start: float,    # ms
         add_autocorr: bool,
         plot_name: Optional[str] = None,
+        plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
         audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
         n_derangements: int = 1,
@@ -131,7 +133,10 @@ def do_gridsearch(
         plt.legend()
         plt.xlabel('latencies (ms)')
         plt.ylabel('Corr coef.')
-        plt.savefig(f'{plot_name}_1.png')
+        if plot_location is None:
+            plt.savefig(f'{plot_name}_1.png')
+        else:
+            plt.savefig(Path(plot_location, f'{plot_name}_1.png'))
         plt.clf()
 
         plt.figure(2)
@@ -141,7 +146,10 @@ def do_gridsearch(
         plt.legend()
         plt.xlabel('latencies (ms)')
         plt.ylabel('p-values')
-        plt.savefig(f'{plot_name}_2.png')
+        if plot_location is None:
+            plt.savefig(f'{plot_name}_2.png')
+        else:
+            plt.savefig(Path(plot_location, f'{plot_name}_2.png'))
         plt.clf()
 
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]

@@ -26,6 +26,7 @@ def main():
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot', type=Path, default=Path(_default_output_dir, "gridsearch.png"),
                         help="Save an expression plot file")
+    parser.add_argument("--reality-check-plot-location", type=Path, default=Path(_default_output_dir))
     parser.add_argument("--reality-check-plot-name", type=str, required=False, default=None,
                         help="Save reality-check plots")
     parser.add_argument("--add-autocorr", action="store_true", help="Adds autocorrelation to reality-check plots")
@@ -101,6 +102,7 @@ def main():
         ave_mode=args.ave_mode,
         add_autocorr=args.add_autocorr,
         plot_name=args.reality_check_plot_name,
+        plot_location=args.reality_check_plot_location,
     )
 
     if args.save_expression_set is not None:
