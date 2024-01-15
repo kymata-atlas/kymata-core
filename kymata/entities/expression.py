@@ -92,8 +92,8 @@ class ExpressionSet(ABC):
                 data = data[i]
                 data = self._init_prep_data(data)
                 # Check validity of input data dimensions
-                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}"
-                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}"
+                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}: {len(channels)} {channel_coord_name} versus data shape {data.shape}"
+                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}: {len(latencies)} latencies versus data shape {data.shape}"
                 dataset_dict[layer] = DataArray(
                     data=data,
                     dims=self._dims,

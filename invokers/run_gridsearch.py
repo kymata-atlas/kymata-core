@@ -1,8 +1,6 @@
 from pathlib import Path
 import argparse
 
-from matplotlib import pyplot
-
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import load_emeg_pack
