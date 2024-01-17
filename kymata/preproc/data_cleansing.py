@@ -311,14 +311,19 @@ def estimate_noise_cov(data_root_dir: str,
             for run in range(1, n_runs + 1):
                 raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
                 raw = mne.io.Raw(raw_fname, preload=True)
-                cleaned_raws.append(raw)
-            raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
-            cov = mne.compute_raw_covariance(raw, tmin=300, tmax=310, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-300.fif', cov)
+                raw_cropped = raw.crop(tmin=0, tmax=800)
+                cleaned_raws.append(raw_cropped)
+            raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
+            raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
+            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-grandave.fif', cov)
             
         elif cov_method == 'empty_room':
-            emptyroom_raw = mne.read_raw() 
-            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw)
+            raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run1' + '_cleaned_raw.fif.gz'
+            raw = mne.io.Raw(raw_fname, preload=True)
+            emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room.fif'
+            emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
+            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
@@ -332,8 +337,20 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
-            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=10, return_estimators=True)
+            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, return_estimators=True)
             mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom.fif', cov)
+        
+        elif cov_method == 'run_start':
+            cleaned_raws = []
+            for run in range(1, n_runs + 1):
+                raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw = mne.io.Raw(raw_fname, preload=True)
+                raw_cropped = raw.crop(tmin=0, tmax=20)
+                cleaned_raws.append(raw_cropped)
+            raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
+            raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=20, preload=True, reject_by_annotation=False)
+            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-runstart.fif', cov)
 
 def create_trialwise_data(dataset_directory_name: str,
                         list_of_participants: list[str],

@@ -223,7 +223,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             intrim_preprocessing_directory_name,
             '3_evoked_sensor_data',
             'covariance_grand_average',
-            participant + '-auto-cov-300.fif')))
+            participant + '-auto-cov-grandave.fif')))
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
             Path(path.abspath("")),
@@ -248,7 +248,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-300.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-grandave.fif')), 
                 inverse_operator)
         elif config['meg']:
             mne.minimum_norm.write_inverse_operator(

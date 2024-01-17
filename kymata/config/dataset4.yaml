@@ -20,7 +20,7 @@ number_of_trials: 400                # number of trials
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline
-EMEG_machine_used_to_record_data: 'triux'
+emeg_machine_used_to_record_data: 'triux'
 skip_maxfilter_if_previous_runs_exist: True
 skip_ica_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
