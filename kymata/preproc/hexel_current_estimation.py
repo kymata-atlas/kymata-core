@@ -256,7 +256,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-megonly.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '.fif')), 
                 inverse_operator)
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -264,7 +264,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '.fif')), 
                 inverse_operator)
 
 
