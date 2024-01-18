@@ -2,7 +2,7 @@
 # Config file for Kymata Dataset 4.00
 
 # General
-data_location: "cbu-local"                # local | cbu | cbu-local
+data_location: "cbu"                # local | cbu | cbu-local
 dataset_directory_name: "dataset_4-english-narratives"
 mri_structurals_directory: "raw_mri_structurals"
 
@@ -33,7 +33,7 @@ eeg: True
 meg: True
 
 # Method to estimate noise covariance matrix
-cov_method: 'grand_ave'            # grand_ave | empty_room | run_start
+cov_method: 'runstart'            # grandave | emptyroom | runstart
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
