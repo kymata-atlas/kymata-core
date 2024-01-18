@@ -60,13 +60,13 @@ def main():
 
     # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
-    inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth-runstart.fif")
+    inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
 
     # Load data
     emeg, ch_names = load_emeg_pack(emeg_paths,
                                     need_names=False,
                                     ave_mode=args.ave_mode,
-                                    inverse_operator=inverse_operator, #inverse_operator, # set to None/inverse_operator if you want to run on sensor space/source space
+                                    inverse_operator=None, #inverse_operator, # set to None/inverse_operator if you want to run on sensor space/source space
                                     p_tshift=None,
                                     snr=args.snr)
 
