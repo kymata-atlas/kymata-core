@@ -66,7 +66,7 @@ def main():
     emeg, ch_names = load_emeg_pack(emeg_paths,
                                     need_names=False,
                                     ave_mode=args.ave_mode,
-                                    inverse_operator=None, #inverse_operator, # set to None/inverse_operator if you want to run on sensor space/source space
+                                    inverse_operator=inverse_operator, #inverse_operator, # set to None/inverse_operator if you want to run on sensor space/source space
                                     p_tshift=None,
                                     snr=args.snr)
 
