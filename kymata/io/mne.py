@@ -37,6 +37,7 @@ def inverse_operate(evoked, inverse_operator, snr=4):
     inverse_operator = minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     set_eeg_reference(evoked, projection=True, verbose=False)
     stc = minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
+    print("Inverse operator applied")
     return stc.lh_data, stc.rh_data, evoked.ch_names
 
 
