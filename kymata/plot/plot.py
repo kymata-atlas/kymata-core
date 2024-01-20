@@ -331,7 +331,7 @@ def plot_top_five_channels_of_gridsearch(
         overwrite: bool = True,
 ):
     """
-    Generates plots showing the top five channels of the gridsearch
+    Generates correlation and pvalue plots showing the top five channels of the gridsearch
 
     latencies: ...
     function: ...
@@ -341,7 +341,7 @@ def plot_top_five_channels_of_gridsearch(
     figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
     figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
 
-    corr_avrs = np.mean(corrs[:, 0] ** 2, axis=-2)
+    corr_avrs = np.mean(corrs[:, 0], axis=-2) ** 2 # (n_chans, n_derangs, n_splits, t_steps) ->
     maxs = np.max(corr_avrs, axis=1)
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
