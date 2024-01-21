@@ -57,7 +57,7 @@ def main():
 
     # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
-    if args.inverse_operator is None:
+    if args.inverse_operator_dir is None:
         inverse_operator = None
     else:
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
