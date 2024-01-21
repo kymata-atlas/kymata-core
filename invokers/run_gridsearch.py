@@ -32,7 +32,7 @@ def main():
     parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
-    parser.add_argument('--inverse-operator', type=str, required=False, default=None, help='inverse solution path')
+    parser.add_argument('--inverse-operator-dir', type=str, required=False, default=None, help='inverse solution path')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits', type=int, default=800,
@@ -60,7 +60,7 @@ def main():
     if args.inverse_operator is None:
         inverse_operator = None
     else:
-        inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
+        inverse_operator = Path(args.base_dir, args.inverse_operator_dir, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
 
     # Load data
     emeg_values, ch_names = load_emeg_pack(emeg_paths,
