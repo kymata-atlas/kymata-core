@@ -1,5 +1,6 @@
 from pathlib import Path
 import argparse
+import time
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -57,6 +58,8 @@ def main():
 
     # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
+    start = time.time()
+
     if args.inverse_operator_dir is None:
         inverse_operator = None
     else:
@@ -98,6 +101,8 @@ def main():
         save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
 
     expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
+
+    print(f'Time taken for code to run: {time.time() - start}')
 
 
 if __name__ == '__main__':
