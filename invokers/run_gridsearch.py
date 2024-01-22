@@ -51,7 +51,7 @@ def main():
     emeg_dir = Path(args.base_dir, args.data_path)
     emeg_paths = [Path(emeg_dir, args.emeg_file)]
 
-    participants = ['participant_01']
+    participants = ['participant_01', 'participant_01b']
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
@@ -95,9 +95,9 @@ def main():
     )
 
     if args.save_expression_set_location is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location,'gridsearch.nkg'), overwrite=args.overwrite)
+        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location,'gridsearch.png'), overwrite=args.overwrite)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
 
 
 if __name__ == '__main__':

@@ -382,7 +382,7 @@ def plot_top_five_channels_of_gridsearch(
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
-        save_to = Path(save_to,'gridsearch_top_five_channels.png')
+        save_to = Path(save_to, function.name + '_gridsearch_top_five_channels.png')
 
         if overwrite or not save_to.exists():
             pyplot.savefig(Path(save_to))
