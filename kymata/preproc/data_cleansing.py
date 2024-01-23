@@ -305,6 +305,7 @@ def estimate_noise_cov(data_root_dir: str,
                        n_runs: int,
                        cov_method: str,
                        duration_emp,
+                       reg_method,
                        ):
     for p in list_of_participants:
         if cov_method == 'grandave':
@@ -316,7 +317,7 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
-            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-grandave.fif', cov)
             
         elif cov_method == 'emptyroom':
@@ -337,7 +338,7 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
-            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, return_estimators=True)
+            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
             if duration_emp == None:
                 mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom.fif', cov)
             else:
@@ -352,7 +353,7 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=20, preload=True, reject_by_annotation=False)
-            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-runstart.fif', cov)
 
         elif cov_method == 'fusion':
@@ -366,7 +367,7 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
-            cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 
             # Now calcualte the covariance for MEG using emptyroom
@@ -385,7 +386,7 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
-            cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, return_estimators=True)
+            cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del raw, emptyroom_raw, raw_fif_data_sss
 
             # Now combine the two covariance matrices

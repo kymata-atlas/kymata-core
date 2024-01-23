@@ -34,7 +34,8 @@ meg: True
 
 # Method to estimate noise covariance matrix
 cov_method: 'emptyroom'            # grandave | emptyroom | runstart | fusion
-duration: 30                       # in seconds for the duration of the empty room condition used, can be None for whole duration
+duration: 3                        # in seconds for the duration of the empty room condition used, can be None for whole duration
+reg_method:                        # None | 'auto'
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
