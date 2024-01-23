@@ -328,7 +328,6 @@ def estimate_noise_cov(data_root_dir: str,
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
-
             raw_fif_data_sss = mne.preprocessing.maxwell_filter(
                         emptyroom_raw,
                         cross_talk=crosstalk_file,
@@ -351,6 +350,47 @@ def estimate_noise_cov(data_root_dir: str,
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=20, preload=True, reject_by_annotation=False)
             cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
             mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-runstart.fif', cov)
+
+        elif cov_method == 'fusion':
+
+            # First calculate the covariance for EEG using grandave
+            cleaned_raws = []
+            for run in range(1, n_runs + 1):
+                raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw = mne.io.Raw(raw_fname, preload=True)
+                raw_cropped = raw.crop(tmin=0, tmax=800)
+                cleaned_raws.append(raw_cropped)
+            raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
+            raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
+            cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, return_estimators=True)
+            del cleaned_raws, raw_combined, raw_epoch
+
+            # Now calcualte the covariance for MEG using emptyroom
+            emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room.fif'
+            emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
+            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
+
+            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+  
+            raw_fif_data_sss = mne.preprocessing.maxwell_filter(
+                        emptyroom_raw,
+                        cross_talk=crosstalk_file,
+                        calibration=fine_cal_file,
+                        st_correlation=0.980,
+                        st_duration=10,
+                        verbose=True)
+
+            cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, return_estimators=True)
+            del raw, emptyroom_raw, raw_fif_data_sss
+
+            # Now combine the two covariance matrices
+            cov_data = cov_eeg.data
+            cov_data[64:,64:] = cov_meg.data[64:,64:]
+            cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
+
+            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-fusion.fif', cov)
+
 
 def create_trialwise_data(dataset_directory_name: str,
                         list_of_participants: list[str],

@@ -30,10 +30,10 @@ supress_excessive_plots_and_prompts: True
 
 # Inverse operator
 eeg: True
-meg: False
+meg: True
 
 # Method to estimate noise covariance matrix
-cov_method: 'grandave'            # grandave | emptyroom | runstart
+cov_method: 'fusion'            # grandave | emptyroom | runstart | fusion
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
