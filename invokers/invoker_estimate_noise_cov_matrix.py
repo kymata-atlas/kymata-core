@@ -24,7 +24,8 @@ def main():
                        list_of_participants = config['list_of_participants'],
                        dataset_directory_name  = config['dataset_directory_name'],
                        n_runs = config['number_of_runs'],
-                       cov_method = config['cov_method']
+                       cov_method = config['cov_method'],
+                       duration_emp = config['duration'],
                         )
 
 if __name__ == '__main__':

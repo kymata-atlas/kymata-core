@@ -304,6 +304,7 @@ def estimate_noise_cov(data_root_dir: str,
                        dataset_directory_name: str,
                        n_runs: int,
                        cov_method: str,
+                       duration_emp,
                        ):
     for p in list_of_participants:
         if cov_method == 'grandave':
@@ -336,8 +337,11 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
-            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom.fif', cov)
+            cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, return_estimators=True)
+            if duration_emp == None:
+                mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom.fif', cov)
+            else:
+                mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-auto-cov-emptyroom' + str(duration_emp) + '.fif', cov)
         
         elif cov_method == 'runstart':
             cleaned_raws = []
