@@ -60,7 +60,7 @@ def main():
 
     # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
-    inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth-fusionupdate.fif")
+    inverse_operator = Path(args.base_dir, args.inverse_operator, f"{participants[0]}_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1.fif")
 
     # Load data
     emeg, ch_names = load_emeg_pack(emeg_paths,

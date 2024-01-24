@@ -1,0 +1,4 @@
+Loading apptainer version:
+1.0.3
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata/io/mne.py:44: RuntimeWarning: This filename (/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/participant_01_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1.fif) does not conform to MNE naming conventions. All inverse operator files should end with -inv.fif, -inv.fif.gz, _inv.fif or _inv.fif.gz
+  inverse_operator = minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
