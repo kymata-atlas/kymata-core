@@ -360,7 +360,7 @@ def plot_top_five_channels_of_gridsearch(
     peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-    print(f'{function.name}: peak lat, peak corr, ind:', peak_lat, peak_corr, amax)
+    print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
 
     auto_corrs = np.mean(auto_corrs, axis=0)
     axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',

@@ -99,7 +99,7 @@ def do_gridsearch(
     # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
+    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
     plot_top_five_channels_of_gridsearch(
                                         corrs=corrs,
@@ -108,13 +108,11 @@ def do_gridsearch(
                                         n_reps=n_reps,
                                         n_splits=n_splits,
                                         n_samples_per_split=n_samples_per_split,
-                                        latencies=latencies,
+                                        latencies=latencies_ms,
                                         save_to=plot_location,
                                         log_pvalues=log_pvalues,
                                         overwrite=overwrite,
                                         )
-
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
     if channel_space == "sensor":
         es = SensorExpressionSet(
