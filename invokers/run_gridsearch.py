@@ -52,7 +52,25 @@ def main():
     emeg_dir = Path(args.base_dir, args.data_path)
     emeg_paths = [Path(emeg_dir, args.emeg_file)]
 
-    participants = ['participant_01', 'participant_01b']
+    participants = ['pilot_01',
+                    'pilot_02',
+                    'participant_01',
+                    'participant_02',
+                    'participant_03',
+                    'participant_04',
+                    'participant_05',
+                    'participant_07',
+                    'participant_08',
+                    'participant_09',
+                    'participant_10',
+                    'participant_11',
+                    'participant_12',
+                    'participant_13',
+                    'participant_14',
+                    'participant_15',
+                    'participant_16',
+                    'participant_17'
+                    ]
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
