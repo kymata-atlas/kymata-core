@@ -29,12 +29,12 @@ automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
 
 # Inverse operator
-eeg: False
+eeg: True
 meg: True
 
 # Method to estimate noise covariance matrix
-cov_method: 'emptyroom'            # grandave | emptyroom | runstart | fusion
-duration: 3                        # in seconds for the duration of the empty room condition used, can be None for whole duration
+cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
+duration:                          # in seconds for the duration of the empty room condition used, can be None for whole duration
 reg_method:                        # None | 'auto'
 
 # Creation of evoked trial pipeline

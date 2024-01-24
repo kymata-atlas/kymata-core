@@ -386,7 +386,7 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
-            cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=None, method=reg_method, return_estimators=True)
+            cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
             del raw, emptyroom_raw, raw_fif_data_sss
 
             # Now combine the two covariance matrices
