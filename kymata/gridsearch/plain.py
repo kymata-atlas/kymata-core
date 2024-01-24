@@ -36,7 +36,7 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)  # TODO: implement for general emeg_sample_rate
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 

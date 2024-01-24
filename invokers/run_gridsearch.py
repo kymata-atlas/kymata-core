@@ -34,12 +34,14 @@ def main():
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, required=False, default=None, help='inverse solution path')
+    parser.add_argument('--inverse-operator-name', type=str, default="participant_01_ico5-3L-loose02-cps-nodepth.fif",
+                        help='inverse solution name')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits', type=int, default=800,
                         help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
     parser.add_argument('--n-derangements', type=int, default=1,
-                        help='inverse solution snr')
+                        help='number of deragements for the null distribution')
     parser.add_argument('--start-latency', type=float, default=-100,
                         help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200,
@@ -55,6 +57,7 @@ def main():
     participants = ['pilot_01',
                     'pilot_02',
                     'participant_01',
+                    'participant_01b',
                     'participant_02',
                     'participant_03',
                     'participant_04',
@@ -81,7 +84,7 @@ def main():
     if args.inverse_operator_dir is None:
         inverse_operator = None
     else:
-        inverse_operator = Path(args.base_dir, args.inverse_operator_dir, f"{participants[0]}_ico5-3L-loose02-cps-nodepth.fif")
+        inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
 
     # Load data
     emeg_values, ch_names = load_emeg_pack(emeg_paths,
