@@ -15,6 +15,20 @@ class Function:
             values=self.values[::rate],
             sample_rate=self.sample_rate / rate,
         )
+    
+    def __add__(self, func2):
+        return Function(
+            name=self.name + '+' + func2.name,
+            values=self.values + func2.values,
+            sample_rate=self.sample_rate,
+        )
+
+    def __sub__(self, func2):
+        return Function(
+            name=self.name + '-' + func2.name,
+            values=self.values - func2.values,
+            sample_rate=self.sample_rate,
+        )
 
     @property
     def time_step(self) -> float:

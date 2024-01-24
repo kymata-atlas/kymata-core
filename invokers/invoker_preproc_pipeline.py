@@ -1,5 +1,8 @@
 from colorama import Fore
 
+import sys
+sys.path.append('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox')
+
 from kymata.io.cli import print_with_color
 from kymata.io.yaml import load_config
 from kymata.preproc.data import data_integrety_checks
@@ -12,23 +15,23 @@ def main():
     """The pipeline invoker"""
 
     # Start up
-    _display_welcome_message_to_terminal()
+    # _display_welcome_message_to_terminal()
 
     # Load parameters
-    config = load_config('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata/config/dataset4.yaml')
+    config = load_config('/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox/kymata/config/dataset4.yaml')
 
     # Ensure we have all the data we need
     data_integrety_checks(config=config)
 
     # Preprocess EMEG raw data
-    run_preprocessing(list_of_participants=config['list_of_participants'],
+    """run_preprocessing(list_of_participants=config['list_of_participants'],
                       dataset_directory_name=config['dataset_directory_name'],
                       n_runs=config['number_of_runs'],
                       emeg_machine_used_to_record_data=config['EMEG_machine_used_to_record_data'],
                       remove_ecg=config['remove_ECG'],
                       skip_maxfilter_if_previous_runs_exist=config['skip_maxfilter_if_previous_runs_exist'],
                       remove_veoh_and_heog=config['remove_VEOH_and_HEOG'],
-                      automatic_bad_channel_detection_requested=config['automatic_bad_channel_detection_requested'])
+                      automatic_bad_channel_detection_requested=config['automatic_bad_channel_detection_requested'])"""
 
     # Create Boundary Element Models
     # Average the hexel current reconstructions into a single participant
@@ -39,7 +42,7 @@ def main():
     create_forward_model_and_inverse_solution(config=config)
 
     # Create the hexel current reconstructions, epoched by trial
-    create_hexel_current_files(config=config)
+    #create_hexel_current_files(config=config)
 
     # Average the hexel current reconstructions into a single participant
     #    average_participants_hexel_currents(list_of_participants=list_of_participants, input_stream=input_stream)
@@ -51,7 +54,7 @@ def main():
     #    XYZ
 
     # End code with cleanup
-    _run_cleanup()
+    # _run_cleanup()
 
 
 def _display_welcome_message_to_terminal():

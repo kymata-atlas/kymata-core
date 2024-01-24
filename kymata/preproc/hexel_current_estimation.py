@@ -4,7 +4,7 @@ from pathlib import Path
 import mne
 
 
-def create_current_estimation_prerequisites(config: dict):
+def create_current_estimation_prerequisites(config: dict, suffix='-test'):
     """
     Copy the structurals to the local Kymata folder,
     create the surfaces, the boundary element model solutions, and the source space
@@ -12,11 +12,11 @@ def create_current_estimation_prerequisites(config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(Path(path.abspath("")), "data", dataset_directory_name,
+    intrim_preprocessing_directory_name = Path(Path("/imaging/projects/cbu/kymata"), "data", dataset_directory_name,
                                                "intrim_preprocessing_files")
     mri_structural_type = config['mri_structural_type']
     mri_structurals_directory = config['mri_structurals_directory']
-    mri_structurals_directory = Path(Path(path.abspath("")), "data", dataset_directory_name, mri_structurals_directory)
+    mri_structurals_directory = Path(Path("/imaging/projects/cbu/kymata"), "data", dataset_directory_name, mri_structurals_directory)
 
     '''    
 
@@ -139,7 +139,7 @@ def create_current_estimation_prerequisites(config: dict):
         mne.write_source_spaces(Path(intrim_preprocessing_directory_name,
                                      "4_hexel_current_reconstruction",
                                      "src_files",
-                                     participant + "_ico5-src.fif"), src)
+                                     participant + f"_ico5-src{suffix}.fif"), src)
 
     #        mne.viz.plot_bem(subject=participant,
     #                         subjects_dir=mri_structurals_directory,
@@ -166,7 +166,7 @@ def create_current_estimation_prerequisites(config: dict):
                                         output_filename), bem_sol)
 
 
-def create_forward_model_and_inverse_solution(config: dict):
+def create_forward_model_and_inverse_solution(config: dict, suffix='-test'):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
@@ -196,7 +196,8 @@ def create_forward_model_and_inverse_solution(config: dict):
             verbose=True,
         )
         print(fwd)
-        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
+        print(str(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + f'-fwd{suffix}.fif')))
+        mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + f'-fwd{suffix}.fif'), fwd, overwrite=True)
 
     # Compute inverse operator
 
@@ -205,7 +206,7 @@ def create_forward_model_and_inverse_solution(config: dict):
             intrim_preprocessing_directory_name,
             "4_hexel_current_reconstruction",
             "forward_sol_files",
-            participant + '-fwd.fif'))
+            participant + f'-fwd{suffix}.fif'))
         noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
             '3_evoked_sensor_data',
@@ -217,6 +218,8 @@ def create_forward_model_and_inverse_solution(config: dict):
             intrim_preprocessing_directory_name,
             '2_cleaned',
             participant + '_run1_cleaned_raw.fif.gz'))
+        
+        print(raw.info)
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
             raw.info,  # note this file is only used for the sensor positions.
@@ -224,18 +227,26 @@ def create_forward_model_and_inverse_solution(config: dict):
             noise_cov,
             loose=0.2,
             depth=None,
-            use_cps=True
+            use_cps=True,
+            rank=None,
             # --diagnoise
             # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-lh.label
             # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-rh.label
         )
+        print(str(Path(
+                    intrim_preprocessing_directory_name,
+                    '4_hexel_current_reconstruction',
+                    'inverse-operators',
+                    participant + f'_ico5-3L-loose02-cps-nodepth{suffix}.fif')))
         mne.minimum_norm.write_inverse_operator(
             str(Path(
                 intrim_preprocessing_directory_name,
                 '4_hexel_current_reconstruction',
                 'inverse-operators',
-                participant + '_ico5-3L-loose02-cps-nodepth.fif'),
-            inverse_operator))
+                participant + f'_ico5-3L-loose02-cps-nodepth{suffix}.fif')),
+            inverse_operator,
+            overwrite=True
+            )
 
 
 def create_hexel_current_files(config: dict):

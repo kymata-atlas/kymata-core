@@ -1,6 +1,6 @@
 import os.path
 
-from colorama import Fore, Style
+from colorama import Fore
 import mne
 from numpy import zeros
 
@@ -259,9 +259,6 @@ def create_trialwise_data(dataset_directory_name: str,
 
     global_droplog = []
 
-    data_path = '/imaging/projects/cbu/kymata/data/' + dataset_directory_name
-    save_folder = '3_trialwise_sensorspace'
-
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
     for p in list_of_participants:
@@ -309,7 +306,7 @@ def create_trialwise_data(dataset_directory_name: str,
         #	Correct for audio latency error
         audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
 
-        audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
+        audio_events = np.zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
             print('item: ', item)
             audio_events_raw[run][2] = run # rename the audio events raw to pick apart later
@@ -320,9 +317,8 @@ def create_trialwise_data(dataset_directory_name: str,
                 audio_events[(trial + (number_of_trials * run))][2] = trial
 
         #  Test there are the correct number of events
-        # assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials # TODO handle overlapping visual/audio triggers
-        print(' NUMBER OF REPS FOUND:', audio_events_raw.shape[0])
-
+        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials # TODO handle overlapping visual/audio triggers
+        
         print(f'\n Runs found: {audio_events.shape[0]} \n')
 
         #	Denote picks
@@ -337,7 +333,7 @@ def create_trialwise_data(dataset_directory_name: str,
             else:
                 events = visual_events
 
-            # Extract trial instances ('epochs')
+            #	Extract trial instances ('epochs')
 
             _tmin = -0.2
             _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction

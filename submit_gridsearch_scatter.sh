@@ -7,13 +7,15 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=slurm_log4.txt
-#SBATCH --error=slurm_log4.txt
-# SBATCH --ntasks=1
+#SBATCH --output=log_dIL2_eeg/slurm_log_%A_%a.txt
+#SBATCH --error=log_dIL2_eeg/slurm_log_%A_%a.txt
+#SBATCH --ntasks=1
 #SBATCH --time=05:00:00
-#SBATCH --mem=240G
-#SBATCH --array=0-0
+#SBATCH --mem=1000
+#SBATCH --array=0-153
 #SBATCH --exclusive
+
+# 0-153
 
 conda activate mne_venv
 
@@ -52,14 +54,16 @@ rep_names=("-ave"
 
 ARG="${part_names[$(($SLURM_ARRAY_TASK_ID % 19))]}${rep_names[$(($SLURM_ARRAY_TASK_ID / 19))]}"
 
-inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth.fif"
+# inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth.fif"
 # inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth-test.fif"
 # inv_op_name="meg15_0051_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif"
-# inv_op_name="none"
+inv_op_name="none"
 
 
 python invokers/run_gridsearch.py \
-    --downsample_rate 5 \
-    --inverse_operator_name $inv_op_name
+    --downsample_rate 1 \
+    --emeg_file $ARG \
+    --eeg_meg_only 'eeg_only' \
+    --inverse_operator_name $inv_op_name # >> result_full_dIL2_scatter.txt
 
 conda deactivate
