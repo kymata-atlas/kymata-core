@@ -21,19 +21,19 @@ def main():
                         help='sampling rate of the emeg machine (not implemented yet)')
     parser.add_argument('--snr', type=float, default=3, help='inverse solution snr')
     parser.add_argument('--downsample-rate', type=int, default=5, help='downsample_rate')
-    parser.add_argument('--base-dir', type=str, required=True, help='base data directory')
-    parser.add_argument('--data-path', type=str, required=True, help='data path after base dir')
-    parser.add_argument('--function-path', type=str, required=True, help='location of function stimulisig')
+    parser.add_argument('--base-dir', type=str, default='/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/', help='base data directory')
+    parser.add_argument('--data-path', type=str, default='intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data', help='data path after base dir')
+    parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir),
                         help="Save an expression plots, and other plots, in this location")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
-    parser.add_argument('--function-name', type=str, required=True, help='function name in stimulisig')
-    parser.add_argument('--emeg-file', type=str, required=True, help='emeg_file_name')
+    parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
+    parser.add_argument('--emeg-file', type=str, default="participant_01-ave", help='emeg_file_name')
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
-    parser.add_argument('--inverse-operator-dir', type=str, required=False, default=None, help='inverse solution path')
+    parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
     parser.add_argument('--inverse-operator-name', type=str, default="participant_01_ico5-3L-loose02-cps-nodepth.fif",
                         help='inverse solution name')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
