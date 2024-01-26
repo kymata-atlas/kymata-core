@@ -1,12 +1,11 @@
 from pathlib import Path
 
-from numpy import array, float16, convolve, mean
 import numpy as np
 from numpy.typing import NDArray
 from scipy.io import loadmat
 
-from kymata.entities.functions import Function
-from kymata.io.file import path_type
+from ..entities.functions import Function
+from .file import path_type
 
 
 def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:

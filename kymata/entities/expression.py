@@ -13,10 +13,10 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, Dataset, concat
 
-from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
+from .datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
     Latency
-from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_dataset, sparsify_log_pmatrix
+from .iterables import all_equal
+from .sparse_data import expand_dims, densify_dataset, sparsify_log_pmatrix
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 

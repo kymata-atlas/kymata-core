@@ -1,12 +1,7 @@
-from pathlib import Path
-
 from mne import read_evokeds, minimum_norm, set_eeg_reference
 import numpy as np
 from numpy.typing import NDArray
 from os.path import isfile
-
-from kymata.io.file import path_type
-
 
 
 def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):

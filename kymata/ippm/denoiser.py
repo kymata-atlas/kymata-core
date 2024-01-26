@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler, normalize
+from sklearn.preprocessing import normalize
 
 from .data_tools import IPPMHexel
 

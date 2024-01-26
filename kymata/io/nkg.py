@@ -10,11 +10,11 @@ from zipfile import ZipFile, ZIP_LZMA
 from numpy import ndarray, frombuffer
 from sparse import COO
 
-from kymata.entities.datatypes import HexelDType, LatencyDType, FunctionNameDType, SensorDType
-from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, LAYER_SCALP, HexelExpressionSet, \
+from ..entities.datatypes import HexelDType, LatencyDType, FunctionNameDType, SensorDType
+from ..entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, LAYER_SCALP, HexelExpressionSet, \
     SensorExpressionSet, p_to_logp
-from kymata.entities.sparse_data import expand_dims
-from kymata.io.file import path_type, file_type, open_or_use
+from ..entities.sparse_data import expand_dims
+from .file import path_type, file_type, open_or_use
 
 
 class _Keys(StrEnum):

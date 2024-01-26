@@ -9,9 +9,9 @@ from matplotlib.lines import Line2D
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
+from ..entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
     p_to_logp
-from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
+from .layouts import get_meg_sensor_xy, eeg_sensors
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50

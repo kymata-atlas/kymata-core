@@ -1,12 +1,12 @@
 import numpy as np
 from numpy.typing import NDArray
 from scipy import stats
-
-from kymata.entities.functions import Function
-from kymata.math.combinatorics import generate_derangement
-from kymata.math.vector import normalize, get_stds
-#from kymata.entities.expression import SensorExpressionSet, p_to_logp
 import matplotlib.pyplot as plt
+
+from ..entities.functions import Function
+from ..math.combinatorics import generate_derangement
+from ..math.vector import normalize, get_stds
+#from ..entities.expression import SensorExpressionSet, p_to_logp
 
 
 def do_gridsearch(

@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Optional
 from urllib import request
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
-from kymata.io.file import path_type
-from kymata.io.nkg import load_expression_set
+from ..entities.expression import HexelExpressionSet, SensorExpressionSet
+from ..io.file import path_type
+from ..io.nkg import load_expression_set
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
 _DATA_DIR_NAME = "kymata-toolbox-data/tutorial_nkg_data"

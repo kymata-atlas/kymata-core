@@ -1,20 +1,21 @@
 import json
+import math
 from itertools import cycle
 from statistics import NormalDist
 from typing import Tuple, Dict, List
 
-import matplotlib.colors
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import matplotlib.colors
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import euclidean_distances
-from copy import deepcopy
 import requests
 import seaborn as sns
-from matplotlib.lines import Line2D
-import math
-from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+
+from ..entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+
 
 class IPPMHexel(object):
     """

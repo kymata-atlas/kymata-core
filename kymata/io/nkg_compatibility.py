@@ -6,8 +6,8 @@ from zipfile import ZipFile
 from numpy import frombuffer
 from numpy.typing import NDArray
 
-from kymata.entities.datatypes import LatencyDType, FunctionNameDType, HexelDType
-from kymata.io.file import path_type, file_type, open_or_use
+from ..entities.datatypes import LatencyDType, FunctionNameDType, HexelDType
+from .file import path_type, file_type, open_or_use
 
 
 # Version 0.3: moved to log p-values.
