@@ -20,7 +20,7 @@ conda activate mne_venv
 args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
-python invokers/run_gridsearch.py
+python -m invokers.run_gridsearch
     # --snr $ARG # >> result3.txt
 
 conda deactivate
