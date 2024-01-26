@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy import stats
 
 from kymata.entities.functions import Function
@@ -123,7 +123,7 @@ def do_gridsearch(
         )
     elif channel_space == "source":
 
-        log_pvalues_lh, log_pvalues_rh = np.vsplit(log_pvalues, 2)
+        log_pvalues_lh, log_pvalues_rh = np.split(log_pvalues, 2, axis=0)
 
         es = HexelExpressionSet(
             functions=function.name,
@@ -138,7 +138,8 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True):
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+
     """
     Vectorised Welch's t-test.
     """

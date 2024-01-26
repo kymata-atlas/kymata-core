@@ -5,6 +5,9 @@ from os.path import isfile
 
 
 def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
+    """
+    When using the inverse operator, returns left and right hemispheres concatenated
+    """
     emeg_path_npy = f"{emeg_path}.npy"
     emeg_path_fif = f"{emeg_path}.fif"
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None):
