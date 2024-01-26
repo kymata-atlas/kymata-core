@@ -11,7 +11,7 @@
 #SBATCH --error=slurm_log.txt
 #SBATCH --ntasks=1
 #SBATCH --time=05:00:00
-#SBATCH --mem=160G
+#SBATCH --mem=240G
 #SBATCH --array=1-1
 #SBATCH --exclusive
 

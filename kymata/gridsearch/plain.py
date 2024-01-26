@@ -122,12 +122,15 @@ def do_gridsearch(
             data=log_pvalues,
         )
     elif channel_space == "source":
+
+        log_pvalues_lh, log_pvalues_rh = np.vsplit(log_pvalues, 2)
+
         es = HexelExpressionSet(
-            functions=function.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we have both hemispheres in place
+            functions=function.name,
             latencies=latencies_ms / 1000,  # seconds
             hexels=channel_names,
-            data_lh=log_pvalues,
-            data_rh=log_pvalues,  # TODO: distribute data correctly when we have both hemispheres in place
+            data_lh=log_pvalues_lh,
+            data_rh=log_pvalues_rh,  # TODO: distribute data correctly when we have both hemispheres in place
         )
     else:
         raise NotImplementedError(channel_space)

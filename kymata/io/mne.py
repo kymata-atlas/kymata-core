@@ -20,7 +20,7 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
             #       looks like this will be faster when split up anyway
             #       note, don't run the inv_op twice for rh and lh!
             # TODO: move inverse operator to run after EMEG channel combination
-            emeg = lh_emeg #np.concatenate((lh_emeg, rh_emeg), axis=0)
+            emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
             del lh_emeg, rh_emeg
         else:
             emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
