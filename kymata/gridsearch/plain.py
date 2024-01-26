@@ -130,7 +130,7 @@ def do_gridsearch(
             latencies=latencies_ms / 1000,  # seconds
             hexels=channel_names,
             data_lh=log_pvalues_lh,
-            data_rh=log_pvalues_rh,  # TODO: distribute data correctly when we have both hemispheres in place
+            data_rh=log_pvalues_rh,
         )
     else:
         raise NotImplementedError(channel_space)
