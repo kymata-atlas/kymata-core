@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import time
+from numpy import linspace
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -9,8 +10,6 @@ from kymata.io.mne import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot, plot_top_five_channels_of_gridsearch
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
-
-from numpy import linspace
 
 _default_output_dir = Path(data_root_path(), "output")
 
@@ -56,48 +55,6 @@ def main():
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
 
-    """import numpy as np
-
-    test_dict = {'test_args': {'n_splits': 0}}
-    np.savez('test_temp.npz', **test_dict)
-    test_dict_ = np.load('test_temp.npz', allow_pickle=True)['test_args']
-    print(test_dict_)"""
-
-    emeg_dir = Path(args.base_dir, args.data_path)
-    emeg_paths = [Path(emeg_dir, args.emeg_file)]
-
-    participants = ['pilot_01',
-                    'pilot_02',
-                    'participant_01',
-                    'participant_01b',
-                    'participant_02',
-                    'participant_03',
-                    'participant_04',
-                    'participant_05',
-                    'participant_07',
-                    'participant_08',
-                    'participant_09',
-                    'participant_10',
-                    'participant_11',
-                    'participant_12',
-                    'participant_13',
-                    'participant_14',
-                    'participant_15',
-                    'participant_16',
-                    'participant_17'
-                    ]
-
-    reps = [f'_rep{i}' for i in range(8)] + ['-ave']
-
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
-
-    start = time.time()
-
-    if args.inverse_operator_dir is None:
-        inverse_operator = None
-    else:
-        inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
-
     # Load data
     emeg_values, ch_names = load_emeg_pack(emeg_paths,
                                            need_names=True,
@@ -128,43 +85,9 @@ def main():
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
         ave_mode=args.ave_mode,
+        overwrite=args.overwrite,
     )
 
-    latencies_ms = linspace(args.start_latency, args.start_latency + (args.seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
-    plot_top_five_channels_of_gridsearch(
-                                        corrs=corrs,
-                                        auto_corrs=auto_corrs,
-                                        function=func,
-                                        n_reps=n_reps,
-                                        n_splits=args.n_splits,
-                                        n_samples_per_split=n_samples_per_split,
-                                        latencies=latencies_ms,
-                                        save_to=args.save_plot_location,
-                                        log_pvalues=log_pvalues,
-                                        overwrite=args.overwrite,
-                                        )
-    if channel_space == "sensor":
-        es = SensorExpressionSet(
-            functions=func.name,
-            latencies=latencies_ms / 1000,  # seconds
-            sensors=ch_names,
-            data=log_pvalues,
-        )
-    elif channel_space == "source":
-        es = HexelExpressionSet(
-            functions=func.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we have both hemispheres in place
-            latencies=latencies_ms / 1000,  # seconds
-            hexels=ch_names,
-            data_lh=log_pvalues,
-            data_rh=log_pvalues,  # TODO: distribute data correctly when we have both hemispheres in place
-        )
-    else:
-        raise NotImplementedError(channel_space)
-
-    if args.save_expression_set_location is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
-
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
 
     print(f'Time taken for code to run: {time.time() - start:.4f}')
 

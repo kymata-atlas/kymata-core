@@ -9,12 +9,10 @@ from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
-from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
         function: Function,
-        channel_names: list,
         channel_space: str,
         start_latency: float,   # ms
         emeg_t_start: float,    # ms
@@ -25,7 +23,6 @@ def do_gridsearch(
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
         ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
-        overwrite: bool = True,
 ) -> ExpressionSet:
     """
     Do the Kymata gridsearch over all hexels for all latencies.
@@ -99,40 +96,7 @@ def do_gridsearch(
     # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
-
-    plot_top_five_channels_of_gridsearch(
-                                        corrs=corrs,
-                                        auto_corrs=auto_corrs,
-                                        function=function,
-                                        n_reps=n_reps,
-                                        n_splits=n_splits,
-                                        n_samples_per_split=n_samples_per_split,
-                                        latencies=latencies_ms,
-                                        save_to=plot_location,
-                                        log_pvalues=log_pvalues,
-                                        overwrite=overwrite,
-                                        )
-
-    if channel_space == "sensor":
-        es = SensorExpressionSet(
-            functions=function.name,
-            latencies=latencies_ms / 1000,  # seconds
-            sensors=channel_names,
-            data=log_pvalues,
-        )
-    elif channel_space == "source":
-        es = HexelExpressionSet(
-            functions=function.name + f"_mirrored-lh",  # TODO: revert to just `function.name` when we have both hemispheres in place
-            latencies=latencies_ms / 1000,  # seconds
-            hexels=channel_names,
-            data_lh=log_pvalues,
-            data_rh=log_pvalues,  # TODO: distribute data correctly when we have both hemispheres in place
-        )
-    else:
-        raise NotImplementedError(channel_space)
-
-    return es
+    return log_pvalues, corrs, auto_corrs
 
 
 def _ttest(corrs: NDArray, use_all_lats: bool = True):
