@@ -92,8 +92,8 @@ class ExpressionSet(ABC):
                 data = data[i]
                 data = self._init_prep_data(data)
                 # Check validity of input data dimensions
-                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}"
-                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}"
+                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}: {len(channels)} {channel_coord_name} versus data shape {data.shape}"
+                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}: {len(latencies)} latencies versus data shape {data.shape}"
                 dataset_dict[layer] = DataArray(
                     data=data,
                     dims=self._dims,
@@ -401,6 +401,9 @@ class SensorExpressionSet(ExpressionSet):
         for each sensor, the best function and latency for that sensor, and the associated log p-value
         """
         return super()._best_functions_for_layer(LAYER_SCALP)
+
+
+log_base = 10
 
 
 def p_to_logp(arraylike: ArrayLike) -> ArrayLike:

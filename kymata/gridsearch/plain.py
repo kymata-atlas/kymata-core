@@ -1,35 +1,42 @@
+from pathlib import Path
+from typing import Optional
+
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy import stats
 
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
-#from kymata.entities.expression import SensorExpressionSet, p_to_logp
-import matplotlib.pyplot as plt
-
+from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
+from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
         function: Function,
-        sensor_names: list[str],
+        channel_names: list,
+        channel_space: str,
         start_latency: float,   # ms
         emeg_t_start: float,    # ms
+        plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
         audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
         n_derangements: int = 1,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
         ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
-        add_autocorr: bool = True,
-        plot_name: str = 'example'
-        ):
+        overwrite: bool = True,
+) -> ExpressionSet:
     """
     Do the Kymata gridsearch over all hexels for all latencies.
     """
 
+    channel_space = channel_space.lower()
+    if channel_space not in {"sensor", "source"}:
+        raise NotImplementedError(channel_space)
+
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)  # TODO: implement for general emeg_sample_rate
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
@@ -47,8 +54,10 @@ def do_gridsearch(
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
-    split_initial_timesteps = [int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
-        for i in range(n_splits)]
+    split_initial_timesteps = [
+        int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
+        for i in range(n_splits)
+    ]
 
     emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
     for j in range(n_reps):
@@ -75,80 +84,62 @@ def do_gridsearch(
         deranged_emeg = emeg_reshaped[:, derangement, :]
         corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2] / emeg_stds[:, derangement]
 
-    if add_autocorr:
-        auto_corrs = np.zeros((n_splits, n_samples_per_split//2))
-        noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
-        noisy_func = normalize(np.copy(func)) + noise
-        nn = n_samples_per_split // 2
+    # work out autocorrelation for channel-by-channel plots
+    noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
+    noisy_func = normalize(np.copy(func)) + noise
+    nn = n_samples_per_split // 2
 
-        F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
-        F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
+    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
+    F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
 
-        auto_corrs = np.fft.irfft(F_noisy_func * F_func)
+    auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 
     del F_func, deranged_emeg, emeg_reshaped
 
+    # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
+    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
-    if plot_name:
-        plt.figure(1)
-        corr_avrs = np.mean(corrs[:, 0]**2, axis=-2)
-        maxs = np.max(corr_avrs, axis=1)
-        n_amaxs = 5
-        amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
-        amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
-        amaxs = [i for i in amaxs if i != amax] # + [209]
+    plot_top_five_channels_of_gridsearch(
+                                        corrs=corrs,
+                                        auto_corrs=auto_corrs,
+                                        function=function,
+                                        n_reps=n_reps,
+                                        n_splits=n_splits,
+                                        n_samples_per_split=n_samples_per_split,
+                                        latencies=latencies_ms,
+                                        save_to=plot_location,
+                                        log_pvalues=log_pvalues,
+                                        overwrite=overwrite,
+                                        )
 
-        plt.plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
-        plt.plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
-        std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits) # 3 pop std.s
-        std_real = np.std(corrs[amax, 0], axis=-2).T * 3  / np.sqrt(n_reps * n_splits)
-        av_real = np.mean(corrs[amax, 0], axis=-2).T
-        #print(std_null)
-        plt.fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
-        plt.fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
+    if channel_space == "sensor":
+        es = SensorExpressionSet(
+            functions=function.name,
+            latencies=latencies_ms / 1000,  # seconds
+            sensors=channel_names,
+            data=log_pvalues,
+        )
+    elif channel_space == "source":
 
-        if add_autocorr:
-            peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
-            peak_lat = latencies[peak_lat_ind]
-            peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-            print(f'{function.name}: peak lat, peak corr, ind:', peak_lat, peak_corr, amax)
+        log_pvalues_lh, log_pvalues_rh = np.split(log_pvalues, 2, axis=0)
 
-            auto_corrs = np.mean(auto_corrs, axis=0)
-            plt.plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--', label='func auto-corr')
-
-        plt.axvline(0, color='k')
-        plt.legend()
-        plt.xlabel('latencies (ms)')
-        plt.ylabel('Corr coef.')
-        plt.savefig(f'{plot_name}_1.png')
-        plt.clf()
-
-        plt.figure(2)
-        plt.plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
-        plt.plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-        plt.axvline(0, color='k')
-        plt.legend()
-        plt.xlabel('latencies (ms)')
-        plt.ylabel('p-values')
-        plt.savefig(f'{plot_name}_2.png')
-        plt.clf()
-
-    return
-
-    """es = SensorExpressionSet(
-        functions=function.name,
-        latencies=latencies / 1000,
-        sensors=sensor_names,
-        data=log_pvalues,
-    )"""
+        es = HexelExpressionSet(
+            functions=function.name,
+            latencies=latencies_ms / 1000,  # seconds
+            hexels=channel_names[1,:10239], # TODO: HACK - FIX WITH ISSUE #141
+            data_lh=log_pvalues_lh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
+            data_rh=log_pvalues_rh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
+        )
+    else:
+        raise NotImplementedError(channel_space)
 
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True):
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+
     """
     Vectorised Welch's t-test.
     """
@@ -183,9 +174,11 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True):
     t_stat = numerator / denominator
 
     if np.min(df) <= 300:
-        log_p = np.log(stats.t.sf(np.abs(t_stat), df) * 2)  # two-tailed p-value
+        p = stats.t.sf(np.abs(t_stat), df) * 2  # two-tailed p-value
+        log_p = p_to_logp(p)
     else:
         # norm v good approx for this, (logsf for t not implemented in logspace)
-        log_p = stats.norm.logsf(np.abs(t_stat)) + np.log(2) 
+        log_p = stats.norm.logsf(np.abs(t_stat)) + np.log(2)
+        log_p /= np.log(log_base)  # log base correction
 
-    return log_p / np.log(10)  # log base correction
+    return log_p
