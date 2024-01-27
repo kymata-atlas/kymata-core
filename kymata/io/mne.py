@@ -1,15 +1,13 @@
-from pathlib import Path
-
 from mne import read_evokeds, minimum_norm, set_eeg_reference
 import numpy as np
 from numpy.typing import NDArray
 from os.path import isfile
 
-from kymata.io.file import path_type
-
-
 
 def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
+    """
+    When using the inverse operator, returns left and right hemispheres concatenated
+    """
     emeg_path_npy = f"{emeg_path}.npy"
     emeg_path_fif = f"{emeg_path}.fif"
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None):
@@ -19,16 +17,12 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
         evoked = read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr)
-            # TODO: I think ch_names here is the wrong thing 
-            
-            emeg = None #np.concatenate((lh_emeg, rh_emeg), axis=0)
 
             # TODO: currently this goes OOM (node-h04 atleast):
             #       looks like this will be faster when split up anyway
             #       note, don't run the inv_op twice for rh and lh!
             # TODO: move inverse operator to run after EMEG channel combination
-
-            emeg = lh_emeg
+            emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
             del lh_emeg, rh_emeg
         else:
             emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
@@ -39,12 +33,15 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
         del evoked
     return emeg, ch_names
 
+
 def inverse_operate(evoked, inverse_operator, snr=4):
     lambda2 = 1.0 / snr ** 2
     inverse_operator = minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     set_eeg_reference(evoked, projection=True, verbose=False)
     stc = minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
-    return stc.lh_data, stc.rh_data, evoked.ch_names
+    print("Inverse operator applied")
+    return stc.lh_data, stc.rh_data, stc.vertices
+
 
 def load_emeg_pack(emeg_paths, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4):  # TODO: FIX PRE-AVE-NORMALISATION
     if p_tshift is None:

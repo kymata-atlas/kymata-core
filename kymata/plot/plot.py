@@ -4,6 +4,7 @@ from statistics import NormalDist
 from typing import Optional, Sequence, Dict, NamedTuple
 
 import numpy as np
+from numpy.typing import NDArray
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
 from pandas import DataFrame
@@ -11,6 +12,7 @@ from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
     p_to_logp
+from kymata.entities.functions import Function
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -75,6 +77,7 @@ def expression_plot(
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
+        overwrite: bool = True,
 ):
     """
     Generates an expression plot
@@ -274,7 +277,12 @@ def expression_plot(
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
-        pyplot.savefig(Path(save_to), bbox_inches='tight')
+        save_to = Path(save_to)
+
+        if overwrite or not save_to.exists():
+            pyplot.savefig(Path(save_to), bbox_inches='tight')
+        else:
+            raise FileExistsError(save_to)
 
     pyplot.show()
     pyplot.close()
@@ -308,3 +316,78 @@ def _get_yticks(ylim):
     n_major_ticks = int(ylim / _MAJOR_TICK_SIZE) * -1
     last_major_tick = -1 * n_major_ticks * _MAJOR_TICK_SIZE
     return np.linspace(start=0, stop=last_major_tick, num=n_major_ticks + 1)
+
+def plot_top_five_channels_of_gridsearch(
+        latencies: NDArray[any],
+        corrs:NDArray[any],
+        function:Function,
+        n_samples_per_split:int,
+        n_reps: int,
+        n_splits: int,
+        auto_corrs:NDArray[any],
+        log_pvalues: any,
+        # I/O args
+        save_to: Optional[Path] = None,
+        overwrite: bool = True,
+):
+    """
+    Generates correlation and pvalue plots showing the top five channels of the gridsearch
+
+    latencies: ...
+    function: ...
+    etc..
+    """
+
+    figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
+    figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
+
+    corr_avrs = np.mean(corrs[:, 0], axis=-2) ** 2 # (n_chans, n_derangs, n_splits, t_steps) -> (n_chans, t_steps)
+    maxs = np.max(corr_avrs, axis=1)
+    n_amaxs = 5
+    amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
+    amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
+    amaxs = [i for i in amaxs if i != amax]  # + [209]
+
+    axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
+    axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
+    std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits)  # 3 pop std.s
+    std_real = np.std(corrs[amax, 0], axis=-2).T * 3 / np.sqrt(n_reps * n_splits)
+    av_real = np.mean(corrs[amax, 0], axis=-2).T
+
+    axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
+    axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
+
+    peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
+    peak_lat = latencies[peak_lat_ind]
+    peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
+    print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+
+    auto_corrs = np.mean(auto_corrs, axis=0)
+    axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
+                    label='func auto-corr')
+
+    axis[0].axvline(0, color='k')
+    axis[0].legend()
+    axis[0].set_title("Corr coef.")
+    axis[0].set_xlabel('latencies (ms)')
+    axis[0].set_ylabel('Corr coef.')
+
+    axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
+    axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
+    axis[1].axvline(0, color='k')
+    axis[1].legend()
+    axis[1].set_title("p-values")
+    axis[1].set_xlabel('latencies (ms)')
+    axis[1].set_ylabel('p-values')
+
+    if save_to is not None:
+        pyplot.rcParams['savefig.dpi'] = 300
+        save_to = Path(save_to, function.name + '_gridsearch_top_five_channels.png')
+
+        if overwrite or not save_to.exists():
+            pyplot.savefig(Path(save_to))
+        else:
+            raise FileExistsError(save_to)
+
+    pyplot.clf()
+    pyplot.close()

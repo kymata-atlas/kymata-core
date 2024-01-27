@@ -171,32 +171,32 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
-    # # Compute forward solution
-    # for participant in list_of_participants:
-    #     fwd = mne.make_forward_solution(
-    #         # Path(Path(path.abspath("")), "data",
-    #         Path(data_root_dir,
-    #              dataset_directory_name,
-    #              'raw_emeg', participant, participant +
-    #              '_run1_raw.fif'), # note this file is only used for the sensor positions.
-    #         trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
-    #         src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
-    #         bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
-    #         meg=config['meg'],
-    #         eeg=config['eeg'],
-    #         mindist=5.0,
-    #         n_jobs=None,
-    #         verbose=True,
-    #     )
-    #     print(fwd)
-    #     if config['meg'] and config['eeg']:
-    #         mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
-    #     elif config['meg']:
-    #         mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
-    #     elif config['eeg']:
-    #         mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
-    #     else:
-    #         raise Exception('eeg and meg in the config file cannot be both False')
+    # Compute forward solution
+    for participant in list_of_participants:
+         fwd = mne.make_forward_solution(
+             # Path(Path(path.abspath("")), "data",
+             Path(data_root_dir,
+                  dataset_directory_name,
+                  'raw_emeg', participant, participant +
+                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
+             trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
+             src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
+             bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+             meg=config['meg'],
+             eeg=config['eeg'],
+             mindist=5.0,
+             n_jobs=None,
+             verbose=True,
+         )
+         print(fwd)
+         if config['meg'] and config['eeg']:
+             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
+         elif config['meg']:
+             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
+         elif config['eeg']:
+             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
+         else:
+             raise Exception('eeg and meg in the config file cannot be both False')
 
     # Compute inverse operator
 
@@ -250,9 +250,6 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             loose=0.2,
             depth=None,
             use_cps=True
-            # --diagnoise
-            # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-lh.label
-            # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-rh.label
         )
         if config['meg'] and config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -260,7 +257,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')), 
                 inverse_operator)
         elif config['meg']:
             if config['duration'] == None:
@@ -269,7 +266,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         intrim_preprocessing_directory_name,
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '.fif')), 
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')), 
                     inverse_operator)
             else:
                 mne.minimum_norm.write_inverse_operator(
@@ -277,7 +274,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         intrim_preprocessing_directory_name,
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '.fif')), 
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')), 
                     inverse_operator)               
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -285,7 +282,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')), 
+
                 inverse_operator)
 
 
@@ -343,7 +341,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
             intrim_preprocessing_directory_name,
             '4_hexel_current_reconstruction',
             'inverse-operators',
-            participant + '_ico5-3L-loose02-cps-nodepth.fif')))
+            participant + '_ico5-3L-loose02-cps-nodepth-inv.fif')))
 
         for input_stream in input_streams:
             for trial in range(1,number_of_trials+1):
