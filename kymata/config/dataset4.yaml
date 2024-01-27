@@ -20,7 +20,7 @@ number_of_trials: 400                # number of trials
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline
-EMEG_machine_used_to_record_data: 'triux'
+emeg_machine_used_to_record_data: 'triux'
 skip_maxfilter_if_previous_runs_exist: True
 skip_ica_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True
@@ -34,7 +34,9 @@ meg: True
 inverse_operator: "intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
 # Method to estimate noise covariance matrix
-cov_method: 'grand_ave'            # grand_ave | empty_room | run_start
+cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
+duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
+reg_method: 'empirical'            # None | 'auto'
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds

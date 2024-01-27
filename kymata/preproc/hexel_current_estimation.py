@@ -201,6 +201,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     # Compute inverse operator
 
     for participant in list_of_participants:
+
+        # Read forward solution
         if config['meg'] and config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,
@@ -219,11 +221,21 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
                 participant + '-fwd-eegonly.fif'))
-        noise_cov = mne.read_cov(str(Path(
+            
+        # Read noise covariance matrix
+        if config['duration'] == None:
+            noise_cov = mne.read_cov(str(Path(
+                intrim_preprocessing_directory_name,
+                '3_evoked_sensor_data',
+                'covariance_grand_average',
+                participant + '-auto-cov-' + config['cov_method'] + '.fif')))
+        else:
+            noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
-            '3_evoked_sensor_data',
-            'covariance_grand_average',
-            participant + '-auto-cov-300.fif')))
+                '3_evoked_sensor_data',
+                'covariance_grand_average',
+                participant + '-auto-cov-' + config['cov_method'] + str(config['duration']) + '.fif')))
+        
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
             Path(path.abspath("")),
@@ -245,23 +257,33 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-inv.fif')),
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')), 
                 inverse_operator)
         elif config['meg']:
-            mne.minimum_norm.write_inverse_operator(
-                str(Path(
-                    intrim_preprocessing_directory_name,
-                    '4_hexel_current_reconstruction',
-                    'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-megonly-inv.fif')),
-                inverse_operator)
+            if config['duration'] == None:
+                mne.minimum_norm.write_inverse_operator(
+                    str(Path(
+                        intrim_preprocessing_directory_name,
+                        '4_hexel_current_reconstruction',
+                        'inverse-operators',
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')), 
+                    inverse_operator)
+            else:
+                mne.minimum_norm.write_inverse_operator(
+                    str(Path(
+                        intrim_preprocessing_directory_name,
+                        '4_hexel_current_reconstruction',
+                        'inverse-operators',
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')), 
+                    inverse_operator)               
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-inv.fif')),
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')), 
+
                 inverse_operator)
 
 
