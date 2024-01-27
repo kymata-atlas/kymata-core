@@ -94,7 +94,7 @@ def do_gridsearch(
 
     if plot_name:
         plt.figure(1)
-        corr_avrs = np.mean(corrs[:, 0], axis=-2)**2
+        corr_avrs = np.mean(corrs[:, 0]**2, axis=-2)
         maxs = np.max(corr_avrs, axis=1)
         n_amaxs = 5
         amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
