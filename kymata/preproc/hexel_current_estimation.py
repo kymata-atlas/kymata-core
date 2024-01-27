@@ -238,9 +238,6 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             loose=0.2,
             depth=None,
             use_cps=True
-            # --diagnoise
-            # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-lh.label
-            # --exclude $path${subjects[m]}/label/Destrieux_Atlas/Unknown-rh.label
         )
         if config['meg'] and config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -248,7 +245,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-300.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-inv.fif')),
                 inverse_operator)
         elif config['meg']:
             mne.minimum_norm.write_inverse_operator(
@@ -256,7 +253,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-megonly.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-megonly-inv.fif')),
                 inverse_operator)
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -264,7 +261,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly.fif')), 
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-inv.fif')),
                 inverse_operator)
 
 
@@ -322,7 +319,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
             intrim_preprocessing_directory_name,
             '4_hexel_current_reconstruction',
             'inverse-operators',
-            participant + '_ico5-3L-loose02-cps-nodepth.fif')))
+            participant + '_ico5-3L-loose02-cps-nodepth-inv.fif')))
 
         for input_stream in input_streams:
             for trial in range(1,number_of_trials+1):
