@@ -128,9 +128,9 @@ def do_gridsearch(
         es = HexelExpressionSet(
             functions=function.name,
             latencies=latencies_ms / 1000,  # seconds
-            hexels=channel_names,
-            data_lh=log_pvalues_lh,
-            data_rh=log_pvalues_rh,
+            hexels=channel_names[1,:10239], # TODO: HACK - FIX WITH ISSUE #141
+            data_lh=log_pvalues_lh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
+            data_rh=log_pvalues_rh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
         )
     else:
         raise NotImplementedError(channel_space)

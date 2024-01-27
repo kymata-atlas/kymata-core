@@ -17,7 +17,6 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
         evoked = read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr)
-            # TODO: I think ch_names here is the wrong thing
 
             # TODO: currently this goes OOM (node-h04 atleast):
             #       looks like this will be faster when split up anyway
@@ -41,7 +40,7 @@ def inverse_operate(evoked, inverse_operator, snr=4):
     set_eeg_reference(evoked, projection=True, verbose=False)
     stc = minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     print("Inverse operator applied")
-    return stc.lh_data, stc.rh_data, stc.lh_vertno
+    return stc.lh_data, stc.rh_data, stc.vertices
 
 
 def load_emeg_pack(emeg_paths, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4):  # TODO: FIX PRE-AVE-NORMALISATION

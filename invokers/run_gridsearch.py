@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
-    parser.add_argument('--inverse-operator-name', type=str, default="participant_01_ico5-3L-loose02-cps-nodepth.fif",
+    parser.add_argument('--inverse-operator-name', type=str, default="participant_01_ico5-3L-loose02-cps-nodepth-fusion.fif",
                         help='inverse solution name')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
