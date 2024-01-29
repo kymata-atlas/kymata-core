@@ -1,6 +1,8 @@
 from pathlib import Path
 import argparse
 import time
+import numpy as np
+import subprocess
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -10,7 +12,26 @@ from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot, plot_top_five_channels_of_gridsearch
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
 
-from numpy import linspace
+import re
+
+def submit_job(script_cmd):
+    """Submit an sbatch script and return the job ID."""
+    result = subprocess.run(script_cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise Exception(f"Failed to submit job: {result.stderr}")
+    # Extract job ID from the output
+    match = re.search(r"Submitted batch job (\d+)", result.stdout)
+    if not match:
+        raise Exception("Failed to find job ID in sbatch output")
+    return match.group(1)
+
+def check_job_status(job_id):
+    """Check the status of a job by its ID."""
+    result = subprocess.run(['squeue', '-j', job_id], capture_output=True, text=True)
+    print('RESULT')
+    print(result)
+    return 'invalid' not in result.stdout.lower()
+
 
 _default_output_dir = Path(data_root_path(), "output")
 
@@ -51,17 +72,10 @@ def main():
                         help='start of the emeg evoked files relative to the start of the function')
     parser.add_argument('--audio-shift-correction', type=float, default=0.000_537_5,
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
-    parser.add_argument('--parallel-splits', type=int, default=4,
+    parser.add_argument('--parallel-procs', type=int, default=4,
                         help='split the gridsearch computation across multiple nodes (only used for source space)')
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
-
-    """import numpy as np
-
-    test_dict = {'test_args': {'n_splits': 0}}
-    np.savez('test_temp.npz', **test_dict)
-    test_dict_ = np.load('test_temp.npz', allow_pickle=True)['test_args']
-    print(test_dict_)"""
 
     emeg_dir = Path(args.base_dir, args.data_path)
     emeg_paths = [Path(emeg_dir, args.emeg_file)]
@@ -98,6 +112,10 @@ def main():
     else:
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
 
+    channel_space = "source" if inverse_operator is not None else "sensor"
+    n_reps = len(EMEG_paths) if args.ave_mode == 'add' else 1
+    n_samples_per_split = int(args.seconds_per_split * args.emeg_sample_rate * 2 // args.downsample_rate)
+
     # Load data
     emeg_values, ch_names = load_emeg_pack(emeg_paths,
                                            need_names=True,
@@ -111,9 +129,21 @@ def main():
                          bruce_neurons=(5, 10))
     func = func.downsampled(args.downsample_rate)
 
-    channel_space = "source" if inverse_operator is not None else "sensor"
-    n_reps = len(EMEG_paths) if args.ave_mode == 'add' else 1
-    n_samples_per_split = int(args.seconds_per_split * args.emeg_sample_rate * 2 // args.downsample_rate)
+    if args.parallel_procs > 1: # and channel_space == "source":
+
+        temp_dict_path = 'temp_data_DO_NOT_DELETE.npz'
+        result_dict_path = 'temp_result_data_DO_NOT_DELETE' # _${proc_num}.npz
+        subproc_file = '/imaging/projects/cbu/kymata/analyses/ollie/kymata-toolbox/subproc_grid.sh'
+
+        subproc_nchans = ((emeg_values.shape[0] - 1) // args.parallel_procs) + 1
+        print('subproc_nchans', subproc_nchans)
+        save_dict = {f'emeg_data_{i}': emeg_values[subproc_nchans * i:subproc_nchans * (i + 1)] for i in range(args.parallel_procs)}
+        save_dict['args'] = args
+        np.savez(temp_dict_path, save_dict)
+
+        job_id = submit_job(["/usr/bin/sbatch", subproc_file, str(args.parallel_procs - 1), temp_dict_path, result_dict_path])
+
+        emeg_values = emeg_values[:subproc_nchans]
 
     log_pvalues, corrs, auto_corrs = do_gridsearch(
         emeg_values=emeg_values,
@@ -130,7 +160,28 @@ def main():
         ave_mode=args.ave_mode,
     )
 
-    latencies_ms = linspace(args.start_latency, args.start_latency + (args.seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
+    if args.parallel_procs > 1 and channel_space == "source":
+        
+        # Check job status every 30 seconds
+        while True:
+            if not check_job_status(job_id):
+                print(f"Job {job_id} has finished")
+                break
+            print(f"Job {job_id} is still running...")
+            time.sleep(1)
+
+        print(corrs.shape, 'corrs shape')
+        print(log_pvalues, 'log_pvals.shape')
+        for i in range(1, args.parallel_procs):
+            result_dict = np.load(f'{result_dict_path}_{i}.npz')
+            print(result_dict)
+            log_pvalues = np.concatenate([log_pvalues, result_dict['log_pvalues']], axis=0)
+            corrs = np.concatenate([corrs, result_dict['corrs']], axis=0)
+
+        print(corrs.shape, 'corrs shape')
+        print(log_pvalues, 'log_pvals.shape')
+
+    latencies_ms = np.linspace(args.start_latency, args.start_latency + (args.seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
     plot_top_five_channels_of_gridsearch(
                                         corrs=corrs,
                                         auto_corrs=auto_corrs,
