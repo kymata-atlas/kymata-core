@@ -36,7 +36,7 @@ inverse_operator: "intrim_preprocessing_files/4_hexel_current_reconstruction/inv
 # Method to estimate noise covariance matrix
 cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
 duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
-reg_method: 'empirical'            # None | 'auto'
+reg_method: 'empirical'            # None (or 'empirical') | 'auto'
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:  26        # in milliseconds
