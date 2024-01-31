@@ -83,7 +83,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         cd ../DK_Atlas
         mne_annot2labels --subject ${subjects[m]} --parc aparc
 
-        cd ../DKT_Atlas  # this is the best one to use (at the momment - from the mind-boggle dataset)
+        cd ../DKT_Atlas  # this is the best one to use (at the moment - from the mind-boggle dataset)
         mne_annot2labels --subject ${subjects[m]} --parc aparc.DKTatlas40
 
     # export to .stl file format, to offer it to participant for 3d printing (if requested)
@@ -228,13 +228,13 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + '-auto-cov-' + config['cov_method'] + '.fif')))
+                participant + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + '-auto-cov-' + config['cov_method'] + str(config['duration']) + '.fif')))
+                participant + config['cov_method'] + str(config['duration']) + '-cov.fif')))
         
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
