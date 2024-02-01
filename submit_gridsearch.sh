@@ -7,11 +7,11 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=slurm_log4.txt
-#SBATCH --error=slurm_log4.txt
+#SBATCH --output=slurm_log5.txt
+#SBATCH --error=slurm_log5.txt
 # SBATCH --ntasks=1
 #SBATCH --time=05:00:00
-#SBATCH --mem=240G
+# SBATCH --mem=240G
 #SBATCH --array=0-0
 #SBATCH --exclusive
 
@@ -52,10 +52,11 @@ rep_names=("-ave"
 
 ARG="${part_names[$(($SLURM_ARRAY_TASK_ID % 19))]}${rep_names[$(($SLURM_ARRAY_TASK_ID / 19))]}"
 
-inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth.fif"
+# inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth-inv.fif"
+inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth-fusion-inv.fif"
 # inv_op_name="participant_01_ico5-3L-loose02-cps-nodepth-test.fif"
 # inv_op_name="meg15_0051_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif"
-# inv_op_name="none"
+inv_op_name="none"
 
 
 python invokers/run_gridsearch.py \

@@ -82,7 +82,8 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
+    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[12:13] for r in reps[-1:]]
+    emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
 
     if args.inverse_operator_name.lower() == 'none':
         inverse_operator = None
@@ -90,11 +91,10 @@ def main():
         inverse_operator = Path(args.base_dir, args.inverse_operator_path, args.inverse_operator_name)
     # inverse_operator = Path('/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/meg15_0045_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif')
 
-
-    # args.function_path = 'predicted_function_contours/Bruce_model/neurogramResults'
-    # args.function_name = 'neurogram_mr'
+    #args.function_path = 'predicted_function_contours/Bruce_model/neurogramResults'
+    #args.function_name = 'neurogram_mr'
     # args.function_path = 'predicted_function_contours/asr_models/w2v_convs'
-    # args.function_name = 'conv_layer6'
+    # args.function_name = 'conv_layer3'
 
     # args.n_splits = 400
     # args.seconds_per_split = 1
@@ -105,7 +105,7 @@ def main():
         # print(emeg_paths)
         import sys
         sys.exit(1)
-    
+
     t0 = time.time()
 
     emeg, ch_names = load_emeg_pack(emeg_paths,
@@ -119,8 +119,16 @@ def main():
 
     # args.function_name = 'd_IL2'
 
+    #for nn_neuron in range(512):
+
     # d_STL = load_function(Path(args.base_dir, args.function_path), func_name='d_STL').downsampled(args.downsample_rate)
-    func = load_function(Path(args.base_dir, args.function_path), func_name=args.function_name).downsampled(args.downsample_rate)
+    func = load_function(Path(args.base_dir, args.function_path),
+                        func_name=args.function_name,
+                        n_derivatives=0,
+                        n_hamming=0,
+                        nn_neuron=158,
+                        bruce_neurons=(5, 10)
+                        ).downsampled(args.downsample_rate)
 
     import sys; sys.stdout.flush()
 
@@ -136,7 +144,7 @@ def main():
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
         ave_mode=args.ave_mode,
-        part_name=args.emeg_file,
+        part_name=str(emeg_paths[0]).split('/')[-1],
         )
 
     print(f'Time elapsed: {time.time() - t0:.4f}')

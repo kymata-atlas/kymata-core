@@ -8,7 +8,7 @@ from scipy.io import loadmat
 from kymata.entities.functions import Function
 from kymata.io.file import path_type
 
-def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201) -> Function:
+def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
@@ -16,6 +16,7 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
+            func_name += f'_{str(bruce_neurons[0])}-{str(bruce_neurons[1])}'
         else:
             mat = loadmat(function_path_without_suffix.with_suffix('.mat'))['neurogramResults']
             func_mr = np.array(mat['neurogram_mr'][0][0])
@@ -47,7 +48,11 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
     elif 'asr_models' in str(function_path_without_suffix):
         func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
         func = func_dict[func_name]
-        func = func[nn_neuron]
+        if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+            func = np.mean(func[:, :400_000], axis=0) #func[nn_neuron]
+        else:
+            func = func[nn_neuron, :400_000]
+        func_name += f'_{str(nn_neuron)}'
 
     else:
         if function_path_without_suffix.with_suffix(".npz").exists():
@@ -70,6 +75,11 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
+        func_name = f'd{n_derivatives}_' + func_name
+
+    if n_hamming > 1:
+        func = np.convolve(func, np.hamming(n_hamming), 'same')  # hamming conv (effectively gaussian smoothing)
+        func_name = f'ham{n_hamming}_' + func_name
 
     return Function(
         name=func_name,

@@ -18,7 +18,6 @@ from kymata.math.vector import normalize
 
 
 def main():
-
     parser = argparse.ArgumentParser(description='Gridsearch Params')
     parser.add_argument('--emeg_sample_rate', type=int, default=1000,
                         help='sampling rate of the emeg machine (always 1000 I thought?)')
@@ -79,7 +78,7 @@ def main():
 
     # args.function_path = 'predicted_function_contours/Bruce_model/neurogramResults'
     # args.function_name = 'neurogram_mr'
-    args.function_path = 'predicted_function_contours/asr_models/w2v_convs'
+    args.function_path = 'predicted_function_contours/asr_models/hubert_convs'
     args.function_name = 'conv_layer3'
     func_name = args.function_name
 
@@ -119,41 +118,39 @@ def main():
     def corr(x, y):
         return np.sum(normalize(x) * normalize(y))
 
-    latency = 145
+    latency = 150
     channel = 209
 
-    func = normalize(func) * 700
+    func = normalize(func ** 2) * 700
 
     _emeg_reshaped = emeg_reshaped.reshape(370, 400_500)
-    ridge_model = Ridge(alpha=1e4, positive=False)
+    ridge_model = Ridge(alpha=5e5, positive=False)
 
-    for latency in range(0, 500, 5):
+    emeg_reshaped = _emeg_reshaped[:, latency:400_000 + latency]
 
-        emeg_reshaped = _emeg_reshaped[:, latency:400_000 + latency]
+    # plt.plot(normalize(emeg_reshaped[209,:2000]))
+    # plt.plot(normalize(func[201,:2000]))
+    #plt.plot(normalize(func[11,:2000]))
+    # plt.savefig('example_2.png')
+    # return
 
-        #plt.plot(normalize(emeg_reshaped[209,:2000]))
-        #plt.plot(normalize(func[10,:2000]))
-        #plt.plot(normalize(func[11,:2000]))
-        #plt.savefig('example_2.png')
-        #return
+    emeg_209 = emeg_reshaped[channel]
 
-        emeg_209 = emeg_reshaped[channel]
+    emeg_209 = normalize(emeg_209) * 700
 
-        emeg_209 = normalize(emeg_209) * 700
+    split = 0.8
+    split = int(split * 400_000)
 
-        split = 0.8
-        split = int(split * 400_000)
+    # Fit Ridge Regression
+    ridge_model.fit(func[:, :split].T, emeg_209[:split])
 
-        # Fit Ridge Regression
-        ridge_model.fit(func[:, :split].T, emeg_209[:split])
-
-        print('latency:', latency)
-        print('train r^2:', ridge_model.score(func[:, :split].T, emeg_209[:split])) # = corr^2
-        print('val r^2:  ', ridge_model.score(func[:, split:].T, emeg_209[split:])) # = corr^2
-        print()
+    # print('latency:', latency)
+    print(f'train r: {ridge_model.score(func[:, :split].T, emeg_209[:split]) ** 0.5:.4f}') # = corr^2
+    print(f'val r:   {ridge_model.score(func[:, split:].T, emeg_209[split:]) ** 0.5:.4f}') # = corr^2
 
 
-    """func_ = np.mean(func[5:10], axis=0)
+    #func_ = np.mean(func[5:10], axis=0)
+    """func_ = func[201]
 
     n_splits = 800
     r_func = func_.reshape(n_splits, -1)
