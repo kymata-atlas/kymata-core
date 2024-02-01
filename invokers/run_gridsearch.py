@@ -72,12 +72,14 @@ def main():
                     'participant_14',
                     'participant_15',
                     'participant_16',
-                    'participant_17'
+                    'participant_17',
                     ]
 
-    reps = [f'_rep{i}' for i in range(8)] + ['-ave']
+    # reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
+    # emeg_paths = [Path(emeg_dir, p + r) for p in participants for r in reps[-1:]]
+
+    emeg_paths = [Path(emeg_dir, p + '-ave') for p in participants]
 
     start = time.time()
 

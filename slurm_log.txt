@@ -1,10 +1,7 @@
 Loading apptainer version:
 1.0.3
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/invokers/run_gridsearch.py", line 6, in <module>
-    from kymata.gridsearch.plain import do_gridsearch
-  File "/imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/kymata/gridsearch/plain.py", line 4, in <module>
-    import numpy as np
-ModuleNotFoundError: No module named 'numpy'
+Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data.
+Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
+Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data"
+IL9: peak lat: 125.0,   peak corr: -0.0868   [sensor] ind: 213,   -log(pval): 17.5039
+Time taken for code to run: 71.7036
