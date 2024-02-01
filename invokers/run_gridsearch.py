@@ -77,7 +77,7 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
 
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants[:2] for r in reps[-1:]]
+    # emeg_paths = [Path(emeg_dir, p + r) for p in participants for r in reps[-1:]]
 
     start = time.time()
 
