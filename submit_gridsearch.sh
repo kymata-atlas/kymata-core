@@ -28,9 +28,9 @@ apptainer exec \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --function-name 'IL' \
+        --function-name 'd_IL' \
         --emeg-file 'participant_01-ave' \
         --overwrite \
-        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
   "
+  #  --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
   #  --snr $ARG # >> result3.txt
