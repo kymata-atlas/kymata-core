@@ -34,7 +34,7 @@ def main():
                         help='Supply to run only on one participant')
     parser.add_argument('--morph-path', type=str, required=False, default=None,
                         help="Morph hexel data to fs-average space prior to running gridsearch by using morph maps "
-                             "stored in this relative location.")
+                             "stored in this relative location. Only has an effect if an inverse operator is specified.")
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
