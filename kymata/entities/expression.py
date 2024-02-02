@@ -64,7 +64,6 @@ class ExpressionSet(ABC):
         # Validate arguments
         _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
                                     "or equal-length sequences of the same.")
-        # TODO: test all of these validations
         if isinstance(functions, str):
             # If only one function
             for layer, data in data_layers.items():
