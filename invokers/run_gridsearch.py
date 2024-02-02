@@ -30,7 +30,11 @@ def main():
                         help="Save an expression plots, and other plots, in this location")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
-    parser.add_argument('--emeg-file', type=str, default="participant_01-ave", help='emeg_file_name')
+    parser.add_argument('--emeg-file', type=str, default=None, required=False,
+                        help='Supply to run only on one participant')
+    parser.add_argument('--morph-path', type=str, required=False, default=None,
+                        help="Morph hexel data to fs-average space prior to running gridsearch by using morph maps "
+                             "stored in this relative location.")
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
@@ -51,33 +55,38 @@ def main():
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
 
-    emeg_dir = Path(args.base_dir, args.data_path)
-    emeg_paths = [Path(emeg_dir, args.emeg_file)]
+    participants = [
+        'pilot_01',
+        'pilot_02',
+        'participant_01',
+        'participant_01b',
+        'participant_02',
+        'participant_03',
+        'participant_04',
+        'participant_05',
+        'participant_07',
+        'participant_08',
+        'participant_09',
+        'participant_10',
+        'participant_11',
+        'participant_12',
+        'participant_13',
+        'participant_14',
+        'participant_15',
+        'participant_16',
+        'participant_17',
+    ]
 
-    participants = ['pilot_01',
-                    'pilot_02',
-                    'participant_01',
-                    'participant_01b',
-                    'participant_02',
-                    'participant_03',
-                    'participant_04',
-                    'participant_05',
-                    'participant_07',
-                    'participant_08',
-                    'participant_09',
-                    'participant_10',
-                    'participant_11',
-                    'participant_12',
-                    'participant_13',
-                    'participant_14',
-                    'participant_15',
-                    'participant_16',
-                    'participant_17'
-                    ]
-
+    # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
-
-    # emeg_paths = [Path(emeg_dir, p + r) for p in participants for r in reps[-1:]]
+    if args.emeg_file is not None:
+        emeg_filenames = [args.emeg_file + "-ave"]
+    else:
+        emeg_filenames = [
+            p + r
+            for p in participants
+            for r in reps[-1:]
+        ]
 
     start = time.time()
 
@@ -87,12 +96,17 @@ def main():
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
 
     # Load data
-    emeg_values, ch_names = load_emeg_pack(emeg_paths,
+    emeg_path = Path(args.base_dir, args.data_path)
+    morph_dir = Path(args.base_dir, args.morph_path) if args.morph_path is not None else None
+    emeg_values, ch_names = load_emeg_pack(emeg_filenames,
+                                           emeg_dir=emeg_path,
+                                           morph_dir=morph_dir,
                                            need_names=True,
                                            ave_mode=args.ave_mode,
                                            inverse_operator=inverse_operator,
                                            p_tshift=None,
-                                           snr=args.snr)
+                                           snr=args.snr,
+                                           )
 
     func = load_function(Path(args.base_dir, args.function_path),
                          func_name=args.function_name,

@@ -1,22 +1,26 @@
-from mne import read_evokeds, minimum_norm, set_eeg_reference
-import numpy as np
-from numpy.typing import NDArray
 from os.path import isfile
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import mne
 
 
-def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
+def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None):
     """
     When using the inverse operator, returns left and right hemispheres concatenated
     """
-    emeg_path_npy = f"{emeg_path}.npy"
-    emeg_path_fif = f"{emeg_path}.fif"
-    if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None):
+    emeg_path_npy = emeg_path.with_suffix(".npy")
+    emeg_path_fif = emeg_path.with_suffix(".fif")
+    morph_path = morph_path.with_suffix(".fif")
+    if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
         ch_names: list[str] = []  # TODO: we'll need these
-        emeg: NDArray = np.load(emeg_path_npy)
+        emeg = np.load(emeg_path_npy)
     else:
-        evoked = read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
+        evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
-            lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr)
+            morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
+            lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
 
             # TODO: currently this goes OOM (node-h04 atleast):
             #       looks like this will be faster when split up anyway
@@ -34,31 +38,54 @@ def load_single_emeg(emeg_path, need_names=False, inverse_operator=None, snr=4):
     return emeg, ch_names
 
 
-def inverse_operate(evoked, inverse_operator, snr=4):
+def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     lambda2 = 1.0 / snr ** 2
-    inverse_operator = minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
-    set_eeg_reference(evoked, projection=True, verbose=False)
-    stc = minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
+    inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
+    mne.set_eeg_reference(evoked, projection=True, verbose=False)
+    stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     print("Inverse operator applied")
+
+    if morph_map is not None:
+        stc = morph_map.apply(stc)
+
     return stc.lh_data, stc.rh_data, stc.vertices
 
 
-def load_emeg_pack(emeg_paths, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4):  # TODO: FIX PRE-AVE-NORMALISATION
+def load_emeg_pack(emeg_filenames, emeg_dir, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4,
+                   morph_dir: Path | None = None):
+    # TODO: FIX PRE-AVE-NORMALISATION
+    emeg_paths = [
+        Path(emeg_dir, emeg_fn)
+        for emeg_fn in emeg_filenames
+    ]
+    morph_paths = [
+        Path(morph_dir, _strip_ave(emeg_fn)) if morph_dir is not None else None
+        for emeg_fn in emeg_filenames
+    ]
     if p_tshift is None:
         p_tshift = [0]*len(emeg_paths)
-    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator, snr)
-    emeg = emeg[:,p_tshift[0]:402001 + p_tshift[0]]
+    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator, snr,
+                                        morph_paths[0])[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
     if ave_mode == 'add':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
-            new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr)[0][:,t_shift:402001 + t_shift]
+            new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr,
+                                        morph_paths[i])[0][:, t_shift:402001 + t_shift]
             emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
     elif ave_mode == 'ave':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
-            emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr)[0][:,t_shift:402001 + t_shift], 1)
+            emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr,
+                                                    morph_paths[i])[0][:, t_shift:402001 + t_shift], 1)
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
     return emeg, emeg_names
+
+
+def _strip_ave(name: str) -> str:
+    if name.endswith("-ave"):
+        return name[:-4]
+    else:
+        return name
 
