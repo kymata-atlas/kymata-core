@@ -223,18 +223,18 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 participant + '-fwd-eegonly.fif'))
             
         # Read noise covariance matrix
-        if config['duration'] == None:
+        if config['duration'] == None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + '-auto-cov-' + config['cov_method'] + '.fif')))
+                participant + '-' + config['cov_method'] + '-cov' + '.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + '-auto-cov-' + config['cov_method'] + str(config['duration']) + '.fif')))
+                participant + '-' + config['cov_method'] + str(config['duration']) + '-cov' + '.fif')))
         
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
