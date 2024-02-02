@@ -2,14 +2,14 @@
 # Config file for Kymata Dataset 4.00
 
 # General
-data_location: "cbu-local"                # local | cbu | cbu-local
+data_location: "cbu"                # local | cbu | cbu-local
 dataset_directory_name: "dataset_4-english-narratives"
 mri_structurals_directory: "raw_mri_structurals"
 
 
 # General information related to the dataset
 list_of_participants: [
-                        "participant_01"
+                        "participant_01b"
                         ]
 input_streams: [
                     "auditory"
