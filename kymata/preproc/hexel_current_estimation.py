@@ -223,7 +223,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 participant + '-fwd-eegonly.fif'))
             
         # Read noise covariance matrix
-        if config['duration'] == None:
+        if config['duration'] == None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
