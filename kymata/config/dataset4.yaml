@@ -9,7 +9,7 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 list_of_participants: [
-                        "participant_07"
+                        "participant_01b"
                         ]
 input_streams: [
                     "auditory"
