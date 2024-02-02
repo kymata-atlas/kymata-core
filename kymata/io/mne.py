@@ -12,7 +12,6 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
-    morph_path = morph_path.with_suffix(".fif")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
         ch_names: list[str] = []  # TODO: we'll need these
         emeg = np.load(emeg_path_npy)
@@ -59,7 +58,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, need_names=False, ave_mode=None, in
         for emeg_fn in emeg_filenames
     ]
     morph_paths = [
-        Path(morph_dir, _strip_ave(emeg_fn)) if morph_dir is not None else None
+        Path(morph_dir, f"fsaverage-{_strip_ave(emeg_fn)}-morph.fif") if morph_dir is not None else None
         for emeg_fn in emeg_filenames
     ]
     if p_tshift is None:

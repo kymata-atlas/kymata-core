@@ -21,8 +21,10 @@ def main():
                         help='sampling rate of the emeg machine (not implemented yet)')
     parser.add_argument('--snr', type=float, default=3, help='inverse solution snr')
     parser.add_argument('--downsample-rate', type=int, default=5, help='downsample_rate')
-    parser.add_argument('--base-dir', type=str, default='/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/', help='base data directory')
-    parser.add_argument('--data-path', type=str, default='intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data', help='data path after base dir')
+    parser.add_argument('--base-dir', type=str, default='/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/',
+                        help='base data directory')
+    parser.add_argument('--emeg-dir', type=str, default='intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data/',
+                        help='emeg directory, relative to base dir')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
@@ -32,7 +34,7 @@ def main():
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
     parser.add_argument('--emeg-file', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
-    parser.add_argument('--morph-path', type=str, required=False, default=None,
+    parser.add_argument('--morph-dir', type=str, required=False, default=None,
                         help="Morph hexel data to fs-average space prior to running gridsearch by using morph maps "
                              "stored in this relative location. Only has an effect if an inverse operator is specified.")
     parser.add_argument('--ave-mode', type=str, default="ave",
@@ -96,8 +98,8 @@ def main():
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
 
     # Load data
-    emeg_path = Path(args.base_dir, args.data_path)
-    morph_dir = Path(args.base_dir, args.morph_path) if args.morph_path is not None else None
+    emeg_path = Path(args.base_dir, args.emeg_dir)
+    morph_dir = Path(args.base_dir, args.morph_dir) if args.morph_path is not None else None
     emeg_values, ch_names = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
