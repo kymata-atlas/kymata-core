@@ -50,15 +50,15 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     return stc.lh_data, stc.rh_data, stc.vertices
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4,
-                   morph_dir: Path | None = None):
+def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4,
+                   morph: bool = False):
     # TODO: FIX PRE-AVE-NORMALISATION
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
     ]
     morph_paths = [
-        Path(morph_dir, f"fsaverage-{_strip_ave(emeg_fn)}-morph.fif") if morph_dir is not None else None
+        Path(morph_dir, f"fsaverage-{_strip_ave(emeg_fn)}-morph.fif") if morph else None
         for emeg_fn in emeg_filenames
     ]
     if p_tshift is None:

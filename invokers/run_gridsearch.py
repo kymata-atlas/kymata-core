@@ -8,6 +8,7 @@ from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.mne import load_emeg_pack
 from kymata.io.nkg import save_expression_set
+from kymata.io.yaml import load_config
 from kymata.plot.plot import expression_plot
 
 _default_output_dir = Path(data_root_path(), "output")
@@ -35,9 +36,9 @@ def main():
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
     parser.add_argument('--emeg-file', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
-    parser.add_argument('--morph-dir', type=str, required=False, default=None,
-                        help="Morph hexel data to fs-average space prior to running gridsearch by using morph maps "
-                             "stored in this relative location. Only has an effect if an inverse operator is specified.")
+    parser.add_argument('--morph', type=bool, action="store_true",
+                        help="Morph hexel data to fs-average space prior to running gridsearch. "
+                             "Only has an effect if an inverse operator is specified.")
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
@@ -57,6 +58,8 @@ def main():
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
+    
+    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
     participants = [
         'pilot_01',
@@ -104,10 +107,11 @@ def main():
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
-    morph_dir = Path(args.base_dir, args.morph_dir) if args.morph_path is not None else None
+    morph_dir = Path(args.base_dir, config['mri_structurals_directory'], "morph-maps")
     emeg_values, ch_names = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
+                                           morph=args.morph,
                                            need_names=True,
                                            ave_mode=args.ave_mode,
                                            inverse_operator=inverse_operator,
