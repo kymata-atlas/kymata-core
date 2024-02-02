@@ -58,7 +58,7 @@ def main():
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
     args.base_dir = Path(args.base_dir)
-    
+
     config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
     participants = [
@@ -111,7 +111,7 @@ def main():
     emeg_values, ch_names = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
-                                           morph=args.morph,
+                                           use_morph=args.morph,
                                            need_names=True,
                                            ave_mode=args.ave_mode,
                                            inverse_operator=inverse_operator,
