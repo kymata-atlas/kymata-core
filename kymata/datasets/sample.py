@@ -32,7 +32,7 @@ class SampleDataset(ABC):
         self.remote_root: str = remote_root
 
         # Create the default location, if it's being used
-        if data_root is None:
+        if data_root is not None:
             self.data_root.mkdir(exist_ok=True)
 
         if download:
