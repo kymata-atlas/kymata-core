@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import time
+from warnings import warn
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -96,6 +97,10 @@ def main():
         inverse_operator = None
     else:
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
+
+    if (len(emeg_filenames) > 1) and (args.morph_dir is None) and (args.ave_mode == "ave") and (inverse_operator is not None):
+        warn(f"Averaging without morphing to a common space. "
+             f"If you are averaging over multiple participants you should morph to a common space.")
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
