@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
     parser.add_argument('--emeg-file', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
-    parser.add_argument('--morph', type=bool, action="store_true",
+    parser.add_argument('--morph', action="store_true",
                         help="Morph hexel data to fs-average space prior to running gridsearch. "
                              "Only has an effect if an inverse operator is specified.")
     parser.add_argument('--ave-mode', type=str, default="ave",
@@ -101,7 +101,7 @@ def main():
     else:
         inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
 
-    if (len(emeg_filenames) > 1) and (args.morph_dir is None) and (args.ave_mode == "ave") and (inverse_operator is not None):
+    if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and (inverse_operator is not None):
         warn(f"Averaging without morphing to a common space. "
              f"If you are averaging over multiple participants you should morph to a common space.")
 
