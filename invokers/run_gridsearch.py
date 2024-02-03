@@ -34,7 +34,7 @@ def main():
                         help="Save an expression plots, and other plots, in this location")
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
-    parser.add_argument('--emeg-file', type=str, default=None, required=False,
+    parser.add_argument('--single-participant-override', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
     parser.add_argument('--morph', action="store_true",
                         help="Morph hexel data to fs-average space prior to running gridsearch. "
@@ -72,7 +72,7 @@ def main():
     # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.emeg_file is not None:
-        emeg_filenames = [args.emeg_file + "-ave"]
+        emeg_filenames = [args.single_participant_override + "-ave"]
     else:
         emeg_filenames = [
             p + r
