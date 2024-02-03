@@ -30,7 +30,7 @@ apptainer exec \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
         --function-name 'IL' \
         --overwrite \
-        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/'
+        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
         --morph
   "
   #  --emeg-file 'participant_01' \
