@@ -58,13 +58,13 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         for emeg_fn in emeg_filenames
     ]
     morph_paths = [
-        Path(morph_dir, f"fsaverage-{_strip_ave(emeg_fn)}-morph.fif") if use_morph else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
     ]
     if p_tshift is None:
         p_tshift = [0]*len(emeg_paths)
-    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator, snr,
-                                        morph_paths[0])[:, p_tshift[0]:402001 + p_tshift[0]]
+    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator, snr, morph_paths[0])
+    emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
     if ave_mode == 'add':
         for i in range(1, len(emeg_paths)):

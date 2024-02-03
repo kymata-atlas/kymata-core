@@ -305,7 +305,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
         if not path.isfile(morphmap_filename):
             
             # read the src space not from the original but from the version in fwd or
-            # inv, incase an vertices have been removed due to proximity to the scalp
+            # inv, incase any vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,

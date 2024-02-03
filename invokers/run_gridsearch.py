@@ -66,21 +66,7 @@ def main():
         'pilot_02',
         'participant_01',
         'participant_01b',
-        'participant_02',
-        'participant_03',
-        'participant_04',
-        'participant_05',
         'participant_07',
-        'participant_08',
-        'participant_09',
-        'participant_10',
-        'participant_11',
-        'participant_12',
-        'participant_13',
-        'participant_14',
-        'participant_15',
-        'participant_16',
-        'participant_17',
     ]
 
     # TODO: move ave-vs-reps choice up to the function interface
@@ -107,7 +93,7 @@ def main():
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
-    morph_dir = Path(args.base_dir, config['mri_structurals_directory'], "morph-maps")
+    morph_dir = Path(args.base_dir, "intrim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
     emeg_values, ch_names = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
