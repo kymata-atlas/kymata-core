@@ -106,7 +106,7 @@ def main():
                          bruce_neurons=(5, 10))
     func = func.downsampled(args.downsample_rate)
 
-    channel_space = "source" if inverse_operator is not None else "sensor"
+    channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
 
     es = do_gridsearch(
         emeg_values=emeg_values,
