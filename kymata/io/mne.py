@@ -50,7 +50,7 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     return stc.lh_data, stc.rh_data, stc.vertices
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator=None, p_tshift=None, snr=4,
+def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
                    use_morph: bool = False):
     # TODO: FIX PRE-AVE-NORMALISATION
     emeg_paths = [
@@ -61,21 +61,25 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
     ]
+    inverse_operator_paths = [
+        Path(inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}")
+        for emeg_fn in emeg_filenames
+    ]
     if p_tshift is None:
         p_tshift = [0]*len(emeg_paths)
-    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator, snr, morph_paths[0])
+    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0])
     emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
     if ave_mode == 'add':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
-            new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr,
+            new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
                                         morph_paths[i])[0][:, t_shift:402001 + t_shift]
             emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
     elif ave_mode == 'ave':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
-            emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator, snr,
+            emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
                                                     morph_paths[i])[0][:, t_shift:402001 + t_shift], 1)
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')

@@ -42,8 +42,8 @@ def main():
     parser.add_argument('--ave-mode', type=str, default="ave",
                         help='either ave or add, either average over the list of repetitions or treat them as extra data')
     parser.add_argument('--inverse-operator-dir', type=str, default=None, help='inverse solution path')
-    parser.add_argument('--inverse-operator-name', type=str, default="participant_01_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
-                        help='inverse solution name')
+    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+                        help='inverse solution suffix')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits', type=int, default=800,
@@ -82,12 +82,7 @@ def main():
 
     start = time.time()
 
-    if args.inverse_operator_dir is None:
-        inverse_operator = None
-    else:
-        inverse_operator = Path(args.base_dir, args.inverse_operator_dir, args.inverse_operator_name)
-
-    if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and (inverse_operator is not None):
+    if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and (args.inverse_operator_dir is not None):
         warn(f"Averaging without morphing to a common space. "
              f"If you are averaging over multiple participants you should morph to a common space.")
 
@@ -100,7 +95,8 @@ def main():
                                            use_morph=args.morph,
                                            need_names=True,
                                            ave_mode=args.ave_mode,
-                                           inverse_operator=inverse_operator,
+                                           inverse_operator_dir=args.inverse_operator_dir,
+                                           inverse_operator_suffix= args.inverse_operator_suffix,
                                            p_tshift=None,
                                            snr=args.snr,
                                            )
