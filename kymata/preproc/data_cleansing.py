@@ -408,7 +408,7 @@ def create_trialwise_data(dataset_directory_name: str,
                         eeg_thresh: float,
                         grad_thresh: float,
                         mag_thresh: float,
-                        visual_delivery_latency: float,
+                        visual_delivery_latency: float,  # seconds
                         audio_delivery_latency: float,  # seconds
                         audio_delivery_shift_correction: float,  # seconds
                         tmin: float,
@@ -447,7 +447,9 @@ def create_trialwise_data(dataset_directory_name: str,
         visual_events = mne.pick_events(raw_events, include=[2, 3])
 
         #	Correct for visual equiptment latency error
-        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+        visual_events = mne.event.shift_time_events(visual_events, [2, 3],
+                                                    visual_delivery_latency * 1000,  # convert to milliseconds
+                                                    1)
 
         # trigger_name = 1
         # for trigger in visual_events:
@@ -529,7 +531,7 @@ def create_trials(data_root_dir: str,
                   eeg_thresh: float,
                   grad_thresh: float,
                   mag_thresh: float,
-                  visual_delivery_latency: float,
+                  visual_delivery_latency: float,  # seconds
                   audio_delivery_latency: float,  # seconds
                   audio_delivery_shift_correction: float,  # seconds
                   tmin: float,
@@ -562,7 +564,9 @@ def create_trials(data_root_dir: str,
         visual_events = mne.pick_events(raw_events, include=[2, 3])
 
         # Correct for visual equiptment latency error
-        visual_events = mne.event.shift_time_events(visual_events, [2, 3], visual_delivery_latency, 1)
+        visual_events = mne.event.shift_time_events(visual_events, [2, 3],
+                                                    visual_delivery_latency * 1000,  # convert to milliseconds
+                                                    1)
 
         trigger_name = 1
         for trigger in visual_events:
