@@ -61,10 +61,13 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
     ]
-    inverse_operator_paths = [
-        Path(inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}")
-        for emeg_fn in emeg_filenames
-    ]
+    if inverse_operator_dir is not None:
+        inverse_operator_paths = [
+            Path(inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}")
+            for emeg_fn in emeg_filenames
+        ]
+    else:
+        inverse_operator_paths = [None] * len(emeg_filenames)
     if p_tshift is None:
         p_tshift = [0]*len(emeg_paths)
     emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0])
