@@ -136,6 +136,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
+
 def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                                                       data_root_dir: str,
                                                       dataset_directory_name: str,
@@ -284,6 +285,7 @@ def _remove_ecg(filt_raw, ica):
     # heartbeats
     ica.plot_overlay(filt_raw, exclude=ica.exclude, picks='mag')
 
+
 def _remove_ecg_eog(filt_raw, ica):
     """
     Note: mutates `ica`.
@@ -407,7 +409,7 @@ def create_trialwise_data(dataset_directory_name: str,
                         grad_thresh: float,
                         mag_thresh: float,
                         visual_delivery_latency: float,
-                        audio_delivery_latency: float,
+                        audio_delivery_latency: float,  # seconds
                         audio_delivery_shift_correction: float,  # seconds
                         tmin: float,
                         tmax: float,
@@ -464,7 +466,9 @@ def create_trialwise_data(dataset_directory_name: str,
         audio_events_raw = mne.pick_events(raw_events, include=3)
 
         #	Correct for audio latency error
-        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3],
+                                                       audio_delivery_latency * 1000,  # convert to milliseconds
+                                                       1)
 
         audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
@@ -514,6 +518,7 @@ def create_trialwise_data(dataset_directory_name: str,
             evoked = epochs.average()
             evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
 
+
 def create_trials(data_root_dir: str,
                   dataset_directory_name: str,
                   list_of_participants: list[str],
@@ -525,7 +530,7 @@ def create_trials(data_root_dir: str,
                   grad_thresh: float,
                   mag_thresh: float,
                   visual_delivery_latency: float,
-                  audio_delivery_latency: float,
+                  audio_delivery_latency: float,  # seconds
                   audio_delivery_shift_correction: float,  # seconds
                   tmin: float,
                   tmax: float,
@@ -576,7 +581,9 @@ def create_trials(data_root_dir: str,
         audio_events_raw = mne.pick_events(raw_events, include=3)
 
         # Correct for audio latency error
-        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3], audio_delivery_latency, 1)
+        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3],
+                                                       audio_delivery_latency * 1000,  # convert to milliseconds
+                                                       1)
 
         audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
         for run, item in enumerate(audio_events_raw):
@@ -681,6 +688,7 @@ def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, machine_used
         _plot_bad_chans(auto_scores)
 
     return raw_fif_data
+
 
 def _plot_bad_chans(auto_scores):
 
