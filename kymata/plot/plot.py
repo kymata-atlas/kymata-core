@@ -317,6 +317,7 @@ def _get_yticks(ylim):
     last_major_tick = -1 * n_major_ticks * _MAJOR_TICK_SIZE
     return np.linspace(start=0, stop=last_major_tick, num=n_major_ticks + 1)
 
+
 def plot_top_five_channels_of_gridsearch(
         latencies: NDArray[any],
         corrs:NDArray[any],
