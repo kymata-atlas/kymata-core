@@ -1,7 +1,6 @@
 from pathlib import Path
 import argparse
 import time
-from warnings import warn
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -83,8 +82,9 @@ def main():
     start = time.time()
 
     if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and (args.inverse_operator_dir is not None):
-        warn(f"Averaging without morphing to a common space. "
-             f"If you are averaging over multiple participants you should morph to a common space.")
+        raise ValueError(
+            f"Averaging source-space results without morphing to a common space. "
+            f"If you are averaging over multiple participants you must morph to a common space.")
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
