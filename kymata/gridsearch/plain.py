@@ -8,7 +8,8 @@ from scipy import stats
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
-from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet, p_to_logp, log_base
+from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
+from kymata.math.p_values import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 
@@ -103,17 +104,17 @@ def do_gridsearch(
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
 
     plot_top_five_channels_of_gridsearch(
-                                        corrs=corrs,
-                                        auto_corrs=auto_corrs,
-                                        function=function,
-                                        n_reps=n_reps,
-                                        n_splits=n_splits,
-                                        n_samples_per_split=n_samples_per_split,
-                                        latencies=latencies_ms,
-                                        save_to=plot_location,
-                                        log_pvalues=log_pvalues,
-                                        overwrite=overwrite,
-                                        )
+        corrs=corrs,
+        auto_corrs=auto_corrs,
+        function=function,
+        n_reps=n_reps,
+        n_splits=n_splits,
+        n_samples_per_split=n_samples_per_split,
+        latencies=latencies_ms,
+        save_to=plot_location,
+        log_pvalues=log_pvalues,
+        overwrite=overwrite,
+        )
 
     if channel_space == "sensor":
         es = SensorExpressionSet(
@@ -123,15 +124,13 @@ def do_gridsearch(
             data=log_pvalues,
         )
     elif channel_space == "source":
-
-        log_pvalues_lh, log_pvalues_rh = np.split(log_pvalues, 2, axis=0)
-
         es = HexelExpressionSet(
             functions=function.name,
             latencies=latencies_ms / 1000,  # seconds
-            hexels=channel_names[0][:10239], # TODO: HACK - FIX WITH ISSUE #141
-            data_lh=log_pvalues_lh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
-            data_rh=log_pvalues_rh[:10239,], # TODO: HACK - FIX WITH ISSUE #141
+            hexels_lh=channel_names[0],
+            hexels_rh=channel_names[1],
+            data_lh=log_pvalues[:len(channel_names[0]), :],
+            data_rh=log_pvalues[:len(channel_names[1]), :],
         )
     else:
         raise NotImplementedError(channel_space)

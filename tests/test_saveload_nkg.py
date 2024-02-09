@@ -34,26 +34,86 @@ def test_load_v0_1_nkg():
     assert len(es.functions) == 1
     assert es.functions == ["test function"]
     assert len(es.latencies) == 10
-    assert len(es.hexels) == 100
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
     assert es.left.shape == es.right.shape == (100, 10, 1)
 
 
-def test_load_v0_2_nkg():
+def test_load_v0_2_hexel_nkg():
     from packaging import version
-    v01_path = Path(Path(__file__).parent, "test-data", "version_0_2.nkg")
-    v, _ = _load_data(v01_path)
+    v02_path = Path(Path(__file__).parent, "test-data", "version_0_2_hexel.nkg")
+    v, _ = _load_data(v02_path)
     assert v == version.parse("0.2")
-    es = load_expression_set(v01_path)
+    es = load_expression_set(v02_path)
     assert isinstance(es, HexelExpressionSet)
     assert len(es.functions) == 1
     assert es.functions == ["test function"]
     assert len(es.latencies) == 10
-    assert len(es.hexels) == 100
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
     assert es.left.shape == es.right.shape == (100, 10, 1)
 
 
-def test_load_sensor_nkg():
-    es = load_expression_set(Path(Path(__file__).parent, "test-data", "sensor.nkg"))
+def test_load_v0_2_sensor_nkg():
+    es = load_expression_set(Path(Path(__file__).parent, "test-data", "version_0_2_sensor.nkg"))
+    assert isinstance(es, SensorExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.sensors) == 305
+    assert es.scalp.shape == (305, 10, 1)
+
+
+def test_load_v0_3_hexel_nkg():
+    from packaging import version
+    v03_path = Path(Path(__file__).parent, "test-data", "version_0_3_hexel.nkg")
+    v, _ = _load_data(v03_path)
+    assert v == version.parse("0.3")
+    es = load_expression_set(v03_path)
+    assert isinstance(es, HexelExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
+    assert es.left.shape == es.right.shape == (100, 10, 1)
+
+
+def test_load_v0_3_sensor_nkg():
+    from packaging import version
+    v03_path = Path(Path(__file__).parent, "test-data", "version_0_3_sensor.nkg")
+    v, _ = _load_data(v03_path)
+    assert v == version.parse("0.3")
+    es = load_expression_set(v03_path)
+    assert isinstance(es, SensorExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.sensors) == 305
+    assert es.scalp.shape == (305, 10, 1)
+
+
+def test_load_v0_4_hexel_nkg():
+    from packaging import version
+    v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_hexel.nkg")
+    v, _ = _load_data(v04_path)
+    assert v == version.parse("0.4")
+    es = load_expression_set(v04_path)
+    assert isinstance(es, HexelExpressionSet)
+    assert len(es.functions) == 1
+    assert es.functions == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
+    assert es.left.shape == es.right.shape == (100, 10, 1)
+
+
+def test_load_v0_4_sensor_nkg():
+    from packaging import version
+    v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor.nkg")
+    v, _ = _load_data(v04_path)
+    assert v == version.parse("0.4")
+    es = load_expression_set(v04_path)
     assert isinstance(es, SensorExpressionSet)
     assert len(es.functions) == 1
     assert es.functions == ["test function"]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from numpy import nanmin, greater
 from numpy.typing import NDArray
 import sparse
-from xarray import Dataset
+from xarray import DataArray
 
 
 def expand_dims(x: sparse.COO, axis=-1) -> sparse.COO:
@@ -41,10 +41,9 @@ def sparsify_log_pmatrix(log_pmatrix: NDArray) -> sparse.COO:
     return sparse.COO(log_pmatrix, fill_value=fill_value)
 
 
-def densify_dataset(x: Dataset):
+def densify_data_block(x: DataArray) -> None:
     """
-    Converts data in an xarray.Dataset wrapping a sparse.COO matrix to a dense numpy array.
+    Converts data in an xarray.DataArray wrapping a sparse.COO matrix to a dense numpy array.
     Operates in-place.
     """
-    for var in x.data_vars.keys():
-        x[var].data = x[var].data.todense()
+    x.data = x.data.todense()

@@ -7,7 +7,8 @@ from numpy import nan_to_num, minimum, array
 from scipy.io import loadmat as loadmat_pre_73
 from mat73 import loadmat as loadmat_post_73
 
-from kymata.entities.expression import HexelExpressionSet, p_to_logp
+from kymata.entities.expression import HexelExpressionSet
+from kymata.math.p_values import p_to_logp
 from kymata.entities.iterables import all_equal
 
 
@@ -47,10 +48,11 @@ def load_matab_hexel_expression_files(
         )
 
 
-def _load_matlab_validate(all_mats: tuple[dict, ...]) -> None:
+def _load_matlab_validate(lh_mats: tuple[dict, ...], rh_mats: tuple[dict, ...]) -> None:
     """
     Returns silently unless there are validation errors
     """
+    all_mats = (*lh_mats, *rh_mats)
     assert len(all_mats) in {2, 4}
 
     # All the same function
@@ -65,8 +67,10 @@ def _load_matlab_validate(all_mats: tuple[dict, ...]) -> None:
 
     assert all_mats[0]["outputSTC"]["data"].shape[0] == all_mats[0]["nTimePoints"]
     # Spatial information is the same
-    assert all_equal([mat["nVertices"]                       for mat in all_mats])
-    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in all_mats])
+    assert all_equal([mat["nVertices"]                       for mat in lh_mats])
+    assert all_equal([mat["nVertices"]                       for mat in rh_mats])
+    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in lh_mats])
+    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in rh_mats])
     assert all_equal([mat["outputSTC"]["data"].shape[1]      for mat in all_mats])
     assert all_mats[0]["outputSTC"]["data"].shape[1] == all_mats[0]["nVertices"]
 
@@ -115,13 +119,9 @@ def _load_matab_expression_files_separate_flipped(
     flipped_rh_mat = load_mat(Path(flipped_rh_file))
 
     # Check 4 files are compatible
-    all_mats = (lh_mat, rh_mat, flipped_lh_mat, flipped_rh_mat)
-
-    # Chirality is correct
     assert lh_mat["leftright"] == flipped_lh_mat["leftright"] == "lh"
     assert rh_mat["leftright"] == flipped_rh_mat["leftright"] == "rh"
-
-    _load_matlab_validate(all_mats)
+    _load_matlab_validate(lh_mats=(lh_mat, flipped_lh_mat), rh_mats=(rh_mat, flipped_rh_mat))
 
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
@@ -138,8 +138,8 @@ def _load_matab_expression_files_separate_flipped(
 
     return HexelExpressionSet(
         functions=function_name,
-        hexels=lh_mat["outputSTC"]["vertices"],
-        latencies=lh_mat["latencies"] / 1000,
+        hexels_lh=lh_mat["outputSTC"]["vertices"], hexels_rh=rh_mat["outputSTC"]["vertices"],
+        latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
         data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
     )
 
@@ -160,13 +160,9 @@ def _load_matab_expression_files_combined_flipped(
     rh_mat = load_mat(Path(rh_file))
 
     # Check 2 files are compatible
-    all_mats = (lh_mat, rh_mat)
-
-    # Chirality is correct
+    _load_matlab_validate(lh_mats=(lh_mat,), rh_mats=(rh_mat,))
     assert lh_mat["leftright"] == "lh"
     assert rh_mat["leftright"] == "rh"
-
-    _load_matlab_validate(all_mats)
 
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
@@ -179,8 +175,8 @@ def _load_matab_expression_files_combined_flipped(
 
     return HexelExpressionSet(
         functions=function_name,
-        hexels=lh_mat["outputSTC"]["vertices"],
-        latencies=lh_mat["latencies"] / 1000,
+        hexels_lh=lh_mat["outputSTC"]["vertices"], hexels_rh=rh_mat["outputSTC"]["vertices"],
+        latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
         data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
     )
 
