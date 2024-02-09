@@ -228,13 +228,13 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + config['cov_method'] + '-cov.fif')))
+                participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + config['cov_method'] + str(config['duration']) + '-cov.fif')))
+                participant + "-" + config['cov_method'] + str(config['duration']) + '-cov.fif')))
         
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
@@ -287,17 +287,12 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 inverse_operator)
 
 
-def create_hexel_current_files(data_root_dir, config: dict):
+def create_hexel_morph_maps(data_root_dir, config: dict):
 
-    number_of_trials = config['number_of_trials']
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
-    input_streams = config['input_streams']
-
-    snr = 1 # default is 3
-    lambda2 = 1.0 / snr ** 2
 
     for participant in list_of_participants:
 
@@ -310,7 +305,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
         if not path.isfile(morphmap_filename):
             
             # read the src space not from the original but from the version in fwd or
-            # inv, incase an vertices have been removed due to proximity to the scalp
+            # inv, incase any vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,
@@ -334,36 +329,7 @@ def create_hexel_current_files(data_root_dir, config: dict):
             )
             morph.save(morphmap_filename)
         else:
-            morph = mne.read_source_morph(morphmap_filename)
-
-        # Compute source stcs
-        inverse_operator = mne.minimum_norm.read_inverse_operator(str(Path(
-            intrim_preprocessing_directory_name,
-            '4_hexel_current_reconstruction',
-            'inverse-operators',
-            participant + '_ico5-3L-loose02-cps-nodepth-inv.fif')))
-
-        for input_stream in input_streams:
-            for trial in range(1,number_of_trials+1):
-                # Apply Inverse
-                evoked = mne.read_evokeds(str(Path(
-                        intrim_preprocessing_directory_name,
-                        '3_evoked_sensor_data',
-                        'evoked_data',
-                        input_stream,
-                        participant + '_item' + str(trial) + '-ave.fif')),
-                    condition=0, baseline=None)
-                mne.set_eeg_reference(evoked, projection=True)
-                stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, "MNE", pick_ori='normal')
-
-                # Morph to average
-                stc_morphed_to_fsaverage = morph.apply(stc)
-                stc_morphed_to_fsaverage.save(str(Path(
-                    intrim_preprocessing_directory_name,
-                    '5-single-trial-source-data',
-                    'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
-                    input_stream,
-                    participant + '-' + str(trial))))
+            print("Morph maps already created")
 
 
 def average_participants_hexel_currents(participants, inputstream):

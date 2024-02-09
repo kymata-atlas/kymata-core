@@ -12,6 +12,7 @@ from kymata.entities.expression import ExpressionSet, SensorExpressionSet, Hexel
 from kymata.math.p_values import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
+
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
         function: Function,
