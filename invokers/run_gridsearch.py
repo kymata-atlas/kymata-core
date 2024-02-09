@@ -71,7 +71,7 @@ def main():
 
     # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
-    if args.emeg_file is not None:
+    if args.single_participant_override is not None:
         emeg_filenames = [args.single_participant_override + "-ave"]
     else:
         emeg_filenames = [
