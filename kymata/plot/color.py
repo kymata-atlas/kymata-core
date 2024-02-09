@@ -2,7 +2,7 @@ from matplotlib.colors import to_rgb, to_hex
 from numpy import linspace
 
 
-def gradient_color_dict(functions: list[str], start_color: str, stop_color: str) -> dict[str, str]:
+def gradient_color_dict(functions: list[str], start_color, stop_color) -> dict[str, str]:
     """
     Given a set of function names, and two colours (any matplotlib format), returns a dict mapping the function names
     to a linear gradient between the two colours.
@@ -19,3 +19,12 @@ def gradient_color_dict(functions: list[str], start_color: str, stop_color: str)
         ))
         for i, function in enumerate(functions)
     }
+
+
+def constant_color_dict(functions: list[str], color) -> dict[str, str]:
+    """
+    Given a set of function names, and a colour (any matplotlib format), returns a dict mapping the function names
+    all to the same colour.
+    The dict is compatible with expression_plot colour specifications.
+    """
+    return gradient_color_dict(functions, color, color)
