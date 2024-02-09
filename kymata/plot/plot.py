@@ -10,8 +10,8 @@ from matplotlib.lines import Line2D
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
-    p_to_logp
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION
+from kymata.math.p_values import p_to_logp
 from kymata.entities.functions import Function
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 

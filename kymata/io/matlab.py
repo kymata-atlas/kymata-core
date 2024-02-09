@@ -7,7 +7,8 @@ from numpy import nan_to_num, minimum, array
 from scipy.io import loadmat as loadmat_pre_73
 from mat73 import loadmat as loadmat_post_73
 
-from kymata.entities.expression import HexelExpressionSet, p_to_logp
+from kymata.entities.expression import HexelExpressionSet
+from kymata.math.p_values import p_to_logp
 from kymata.entities.iterables import all_equal
 
 

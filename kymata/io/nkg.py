@@ -11,8 +11,9 @@ from numpy import ndarray, frombuffer
 from sparse import COO
 
 from kymata.entities.datatypes import HexelDType, LatencyDType, FunctionNameDType, SensorDType
-from kymata.entities.expression import ExpressionSet, LAYER_LEFT, LAYER_RIGHT, LAYER_SCALP, HexelExpressionSet, \
-    SensorExpressionSet, p_to_logp
+from kymata.entities.expression import ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, HexelExpressionSet, \
+    SensorExpressionSet
+from kymata.math.p_values import p_to_logp
 from kymata.entities.sparse_data import expand_dims
 from kymata.io.file import path_type, file_type, open_or_use
 
@@ -51,7 +52,7 @@ class _ExpressionSetTypeIdentifier(StrEnum):
 # All distinct versions should be documented.
 #
 # This value should be saved into file called /_metadata/format-version.txt within an archive.
-CURRENT_VERSION = "0.3"
+CURRENT_VERSION = "0.4"
 
 
 def file_version(from_path_or_file: path_type | file_type) -> version.Version:
@@ -71,9 +72,9 @@ def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionS
             functions=data_dict[_Keys.functions],
             hexels=[HexelDType(c) for c in data_dict[_Keys.channels]],
             latencies=data_dict[_Keys.latencies],
-            data_lh=[data_dict[_Keys.data][LAYER_LEFT][:, :, i]
+            data_lh=[data_dict[_Keys.data][BLOCK_LEFT][:, :, i]
                      for i in range(len(data_dict[_Keys.functions]))],
-            data_rh=[data_dict[_Keys.data][LAYER_RIGHT][:, :, i]
+            data_rh=[data_dict[_Keys.data][BLOCK_RIGHT][:, :, i]
                      for i in range(len(data_dict[_Keys.functions]))],
         )
     elif type_identifier == _ExpressionSetTypeIdentifier.sensor:
@@ -81,7 +82,7 @@ def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionS
             functions=data_dict[_Keys.functions],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels]],
             latencies=data_dict[_Keys.latencies],
-            data=[data_dict[_Keys.data][LAYER_SCALP][:, :, i]
+            data=[data_dict[_Keys.data][BLOCK_SCALP][:, :, i]
                   for i in range(len(data_dict[_Keys.functions]))],
         )
 
@@ -109,9 +110,9 @@ def save_expression_set(expression_set: ExpressionSet,
         zf.writestr("/channels.txt",  "\n".join(str(x) for x in expression_set._channels))
         zf.writestr("/latencies.txt", "\n".join(str(x) for x in expression_set.latencies))
         zf.writestr("/functions.txt", "\n".join(str(x) for x in expression_set.functions))
-        zf.writestr("/layers.txt",    "\n".join(str(x) for x in expression_set._layers))
+        zf.writestr("/layers.txt",    "\n".join(str(x) for x in expression_set._block_names))
 
-        for layer in expression_set._layers:
+        for layer in expression_set._block_names:
             zf.writestr(f"/{layer}/coo-coords.bytes", expression_set._data[layer].data.coords.tobytes(order="C"))
             zf.writestr(f"/{layer}/coo-data.bytes", expression_set._data[layer].data.data.tobytes(order="C"))
             # The shape can be inferred, but we save it as an extra validation

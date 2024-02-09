@@ -34,7 +34,8 @@ def test_load_v0_1_nkg():
     assert len(es.functions) == 1
     assert es.functions == ["test function"]
     assert len(es.latencies) == 10
-    assert len(es.hexels) == 100
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
     assert es.left.shape == es.right.shape == (100, 10, 1)
 
 
@@ -48,7 +49,8 @@ def test_load_v0_2_nkg():
     assert len(es.functions) == 1
     assert es.functions == ["test function"]
     assert len(es.latencies) == 10
-    assert len(es.hexels) == 100
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
     assert es.left.shape == es.right.shape == (100, 10, 1)
 
 
