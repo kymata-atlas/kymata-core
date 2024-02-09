@@ -104,7 +104,7 @@ def expression_plot(
         color = {f: color for f in show_only}
     elif isinstance(color, str):
         # List specified, then pair up in order
-        assert len(color) == len(str)
+        assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
 
     # Default colours
@@ -316,6 +316,7 @@ def _get_yticks(ylim):
     n_major_ticks = int(ylim / _MAJOR_TICK_SIZE) * -1
     last_major_tick = -1 * n_major_ticks * _MAJOR_TICK_SIZE
     return np.linspace(start=0, stop=last_major_tick, num=n_major_ticks + 1)
+
 
 def plot_top_five_channels_of_gridsearch(
         latencies: NDArray[any],
