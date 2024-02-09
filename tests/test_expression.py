@@ -94,7 +94,27 @@ def test_ses_validation_duplicated_functions():
                             )
 
 
-def test_hes_validation_input_mismatched_layers():
+def test_hes_validation_input_mismatched_blocks_concordent_channels():
+    HexelExpressionSet(functions="function",
+                       hexels_lh=range(5),
+                       hexels_rh=range(6),
+                       latencies=range(10),
+                       data_lh=np.random.randn(5, 10),
+                       data_rh=np.random.randn(6, 10),
+                       )
+
+
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions():
+    HexelExpressionSet(functions=["first", "second"],
+                       hexels_lh=range(5),
+                       hexels_rh=range(6),
+                       latencies=range(10),
+                       data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
+                       data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+                       )
+
+
+def test_hes_validation_input_mismatched_blocks_discordent_channels():
     with pytest.raises(AssertionError):
         HexelExpressionSet(functions="function",
                            hexels_lh=range(5),
@@ -124,15 +144,4 @@ def test_hes_validation_mixmatched_hexels_between_functions():
                            latencies=range(10),
                            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
                            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
-                           )
-
-
-def test_hes_validation_mixmatched_hexels_between_layers():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels_lh=range(5),
-                           hexels_rh=range(6),
-                           latencies=range(10),
-                           data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
-                           data_rh=[np.random.randn(5, 10), np.random.randn(5, 10)],
                            )
