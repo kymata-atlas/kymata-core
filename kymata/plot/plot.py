@@ -104,7 +104,7 @@ def expression_plot(
         color = {f: color for f in show_only}
     elif isinstance(color, str):
         # List specified, then pair up in order
-        assert len(color) == len(str)
+        assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
 
     # Default colours
