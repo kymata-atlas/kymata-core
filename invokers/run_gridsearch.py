@@ -130,7 +130,7 @@ def main():
 
     expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
 
-    print(f'Time taken for code to run: {time.time() - start:.4f}')
+    print(f'Time taken for code to run: {time.time() - start:.4f} s')
 
 
 if __name__ == '__main__':
