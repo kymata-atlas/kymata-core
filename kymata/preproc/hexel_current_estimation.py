@@ -169,7 +169,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # Compute forward solution
     for participant in list_of_participants:
-         fwd = mne.make_forward_solution(
+
+        fwd = mne.make_forward_solution(
              # Path(Path(path.abspath("")), "data",
              Path(data_root_dir,
                   dataset_directory_name,
@@ -184,15 +185,23 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
              n_jobs=None,
              verbose=True
          )
-         print(fwd)
-         if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
-         elif config['meg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
-         elif config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
-         else:
-             raise Exception('eeg and meg in the config file cannot be both False')
+
+        # restrict forward vertices to those that make up cortex (i.e. all vertices, minus the medial wall)
+        labels = mne.read_labels_from_annot(subject=participant,
+                                            subjects_dir=mri_structurals_directory,
+                                            parc='aparc',
+                                            hemi='both')
+        fwd = mne.forward.restrict_forward_to_label(fwd, labels)
+
+        print(fwd)
+        if config['meg'] and config['eeg']:
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-exclude_medial_wall-fwd.fif'), fwd, overwrite=True)
+        elif config['meg']:
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-exclude_medial_wall-megonly-fwd.fif'), fwd)
+        elif config['eeg']:
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-exclude_medial_wall-eegonly-fwd.fif'), fwd)
+        else:
+           raise Exception('eeg and meg in the config file cannot be both False')
 
     # Compute inverse operator
 
@@ -204,19 +213,19 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd.fif'))
+                participant + '-exclude_medial_wall-fwd.fif'))
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd-megonly.fif'))
+                participant + '-exclude_medial_wall-megonly-fwd.fif'))
         elif config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd-eegonly.fif'))
+                participant + '-exclude_medial_wall-eegonly-fwd.fif'))
             
         # Read noise covariance matrix
         if config['duration'] == None or config['cov_method'] != 'emptyroom':
@@ -253,7 +262,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
                 inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] == None:
@@ -262,7 +271,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         intrim_preprocessing_directory_name,
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')), 
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
                     inverse_operator)
             else:
                 mne.minimum_norm.write_inverse_operator(
@@ -270,7 +279,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         intrim_preprocessing_directory_name,
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')), 
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-exclude_medial_wall-inv.fif')),
                     inverse_operator)               
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
@@ -278,8 +287,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')), 
-
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
                 inverse_operator)
 
 
@@ -307,7 +315,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 intrim_preprocessing_directory_name,
                 "4_hexel_current_reconstruction",
                 "forward_sol_files",
-                participant + '-fwd.fif'))
+                participant + '-exclude_medial_wall-fwd.fif'))
             src_from = fwd['src']
             
             src_to = mne.read_source_spaces(Path(
