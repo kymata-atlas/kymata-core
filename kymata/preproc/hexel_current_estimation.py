@@ -57,9 +57,6 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     for participant in participants
         $ recon-all -s participant_01 -all
 
-        #todo - I think this does everything at once (folders and ), so might be better if there is a python version in the future
-        $ recon-all -i $SUBJECTS_DIR/participant_01/mri/orig/001.mgz -s participant_01 -all
-
     # creates suitable T1, meshes and labels... but using python?
     for participant in participants
         The source space (downsampled version of the cortical surface in Freesurfer), which will be saved in a file ending in *-src.fif, which can be read into Matlab using mne_read_source_spaces.
@@ -161,8 +158,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         bem_sol = mne.make_bem_solution(model)
         output_filename = participant + '-5120-5120-5120-bem-sol.fif'
         mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
-                                        output_filename), bem_sol)
-
+                                        output_filename), bem_sol, overwrite=True)
 
 def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
@@ -186,11 +182,11 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
              eeg=config['eeg'],
              mindist=5.0,
              n_jobs=None,
-             verbose=True,
+             verbose=True
          )
          print(fwd)
          if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd)
+             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
          elif config['meg']:
              mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
          elif config['eeg']:
@@ -223,18 +219,18 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 participant + '-fwd-eegonly.fif'))
             
         # Read noise covariance matrix
-        if config['duration'] == None:
+        if config['duration'] == None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + config['cov_method'] + '-cov.fif')))
+                participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
             intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
-                participant + config['cov_method'] + str(config['duration']) + '-cov.fif')))
+                participant + "-" + config['cov_method'] + str(config['duration']) + '-cov.fif')))
         
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
@@ -257,8 +253,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     intrim_preprocessing_directory_name,
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')), 
-                inverse_operator)
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
+                inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] == None:
                 mne.minimum_norm.write_inverse_operator(

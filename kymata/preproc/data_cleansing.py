@@ -371,7 +371,7 @@ def estimate_noise_cov(data_root_dir: str,
             del cleaned_raws, raw_combined, raw_epoch
 
             # Now calcualte the covariance for MEG using emptyroom
-            emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room.fif'
+            emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room_raw.fif'
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
