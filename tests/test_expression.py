@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 
-from kymata.entities.expression import p_to_logp, logp_to_p, SensorExpressionSet, HexelExpressionSet
+from kymata.entities.expression import SensorExpressionSet, HexelExpressionSet
+from kymata.math.p_values import p_to_logp, logp_to_p
 
 
 def test_log_p_single_value():
@@ -27,7 +28,7 @@ def test_unlog_p_array():
 # Test ExpressionSet arg validations
 
 def test_ses_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         SensorExpressionSet(functions=["first", "second"],
                             sensors=list("abcde"),
                             latencies=range(10),
@@ -44,7 +45,7 @@ def test_ses_validation_input_lengths_two_functions_two_datasets():
 
 
 def test_ses_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         SensorExpressionSet(functions=["first", "second"],
                             sensors=list("abcde"),
                             latencies=range(10),
@@ -53,9 +54,10 @@ def test_ses_validation_input_lengths_two_functions_three_datasets():
 
 
 def test_hes_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         HexelExpressionSet(functions=["first", "second"],
-                           hexels=range(5),
+                           hexels_lh=range(5),
+                           hexels_rh=range(5),
                            latencies=range(10),
                            data_lh=np.random.randn(5, 10),
                            data_rh=np.random.randn(5, 10),
@@ -64,7 +66,8 @@ def test_hes_validation_input_lengths_two_functions_one_dataset():
 
 def test_hes_validation_input_lengths_two_functions_two_datasets():
     HexelExpressionSet(functions=["first", "second"],
-                       hexels=range(5),
+                       hexels_lh=range(5),
+                       hexels_rh=range(5),
                        latencies=range(10),
                        data_lh=[np.random.randn(5, 10) for _ in range(2)],
                        data_rh=[np.random.randn(5, 10) for _ in range(2)],
@@ -72,9 +75,10 @@ def test_hes_validation_input_lengths_two_functions_two_datasets():
 
 
 def test_hes_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         HexelExpressionSet(functions=["first", "second"],
-                           hexels=range(5),
+                           hexels_lh=range(5),
+                           hexels_rh=range(5),
                            latencies=range(10),
                            data_lh=[np.random.randn(5, 10) for _ in range(3)],
                            data_rh=[np.random.randn(5, 10) for _ in range(3)],
@@ -82,7 +86,7 @@ def test_hes_validation_input_lengths_two_functions_three_datasets():
 
 
 def test_ses_validation_duplicated_functions():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         SensorExpressionSet(functions=["dupe", "dupe"],
                             sensors=list("abcde"),
                             latencies=range(10),
@@ -90,10 +94,31 @@ def test_ses_validation_duplicated_functions():
                             )
 
 
-def test_hes_validation_input_mismatched_layers():
-    with pytest.raises(Exception):
+def test_hes_validation_input_mismatched_blocks_concordent_channels():
+    HexelExpressionSet(functions="function",
+                       hexels_lh=range(5),
+                       hexels_rh=range(6),
+                       latencies=range(10),
+                       data_lh=np.random.randn(5, 10),
+                       data_rh=np.random.randn(6, 10),
+                       )
+
+
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions():
+    HexelExpressionSet(functions=["first", "second"],
+                       hexels_lh=range(5),
+                       hexels_rh=range(6),
+                       latencies=range(10),
+                       data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
+                       data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+                       )
+
+
+def test_hes_validation_input_mismatched_blocks_discordent_channels():
+    with pytest.raises(AssertionError):
         HexelExpressionSet(functions="function",
-                           hexels=range(5),
+                           hexels_lh=range(5),
+                           hexels_rh=range(5),
                            latencies=range(10),
                            data_lh=np.random.randn(5, 10),
                            data_rh=np.random.randn(6, 10),
@@ -101,30 +126,22 @@ def test_hes_validation_input_mismatched_layers():
 
 
 def test_hes_validation_mixmatched_latencies_between_functions():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         HexelExpressionSet(functions=["first", "second"],
-                           hexels=range(5),
+                           hexels_lh=range(5),
+                           hexels_rh=range(6),
                            latencies=range(10),
                            data_lh=[np.random.randn(5, 10), np.random.randn(5, 11)],
-                           data_rh=[np.random.randn(5, 10), np.random.randn(5, 11)],
+                           data_rh=[np.random.randn(6, 10), np.random.randn(6, 11)],
                            )
 
 
 def test_hes_validation_mixmatched_hexels_between_functions():
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         HexelExpressionSet(functions=["first", "second"],
-                           hexels=range(5),
+                           hexels_lh=range(5),
+                           hexels_rh=range(6),
                            latencies=range(10),
                            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
-                           data_rh=[np.random.randn(5, 10), np.random.randn(4, 10)],
-                           )
-
-
-def test_hes_validation_mixmatched_hexels_between_layers():
-    with pytest.raises(Exception):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels=range(5),
-                           latencies=range(10),
-                           data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
-                           data_rh=[np.random.randn(4, 10), np.random.randn(4, 10)],
+                           data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
                            )

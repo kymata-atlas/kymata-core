@@ -31,7 +31,7 @@ class SampleDataset(ABC):
         self.data_root: Path = Path(data_root_path(data_root), _SAMPLE_DATA_DIR_NAME)
         self.remote_root: str = remote_root
 
-        # Create the default location, if it's being used
+        # Create the default location, if it's not being overridden
         if data_root is None:
             self.data_root.mkdir(exist_ok=True)
 

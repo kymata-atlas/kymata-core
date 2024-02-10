@@ -7,16 +7,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence, Union, get_args, Tuple
 
-from numpy import array, array_equal, ndarray, log10
-from numpy.typing import NDArray, ArrayLike
+from numpy import array, array_equal, ndarray
+from numpy.typing import NDArray
 from pandas import DataFrame
 from sparse import SparseArray, COO
-from xarray import DataArray, Dataset, concat
+from xarray import DataArray, concat
 
 from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
     Latency
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_dataset, sparsify_log_pmatrix
+from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -26,10 +26,10 @@ DIM_SENSOR = "sensor"
 DIM_LATENCY = "latency"
 DIM_FUNCTION = "function"
 
-# Layer (e.g. hemisphere)
-LAYER_LEFT  = "left"
-LAYER_RIGHT = "right"
-LAYER_SCALP = "scalp"
+# Block (e.g. hemisphere)
+BLOCK_LEFT  = "left"
+BLOCK_RIGHT = "right"
+BLOCK_SCALP = "scalp"
 
 
 class ExpressionSet(ABC):
@@ -43,65 +43,83 @@ class ExpressionSet(ABC):
                  # Metadata
                  latencies: Sequence[Latency],
                  # In general, we will combine flipped and non-flipped versions
-                 # data_arrays contains a dict mapping layer names to data arrays
-                 # e.g.:       "left" → [array(), array(), array()],
+                 # data_blocks contains a dict mapping block names to data arrays
+                 # e.g., in the case there are three functions:
+                 #             "left" → [array(), array(), array()],
                  #        and "right" → [array(), array(), array()]
                  #   or:      "scalp" → [array(), array(), array()]
-                 # All should be the same size
-                 data_layers: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
+                 # All should be the same size.
+                 data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
                  # Supply channels already as an array, i.e.
                  channel_coord_name: str,
                  channel_coord_dtype,
-                 channel_coord_values: Sequence,
+                 channel_coord_values: dict[str, Sequence],
                  ):
-        """data_layers' values should store log10 p-values"""
+        """
+        data_blocks' values should store log10 p-values
+        """
 
-        self._layers: list[str] = list(data_layers.keys())
+        # Canonical order of dimensions
+        self._dims = (channel_coord_name, DIM_LATENCY, DIM_FUNCTION)
 
+        self._block_names: list[str] = list(data_blocks.keys())
         self._channel_coord_name = channel_coord_name
-        self._dims = (channel_coord_name, DIM_LATENCY, DIM_FUNCTION)  # Canonical order of dimensions
 
         # Validate arguments
+        assert set(self._block_names) == set(channel_coord_values.keys()), "Ensure data block names match channel block names"
         _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
                                     "or equal-length sequences of the same.")
         if isinstance(functions, str):
             # If only one function
-            for layer, data in data_layers.items():
-                # Data not a sequence
+            for data in data_blocks.values():
+                # Data should not be a sequence
                 assert isinstance(data, get_args(_InputDataArray)), _length_mismatch_message
             # Wrap into sequences
             functions = [functions]
-            for layer in data_layers.keys():
-                data_layers[layer] = [data_layers[layer]]
+            for bn in self._block_names:
+                data_blocks[bn] = [data_blocks[bn]]
 
         assert len(functions) == len(set(functions)), "Duplicated functions in input"
-        for layer, data in data_layers.items():
+        for data in data_blocks.values():
             assert len(functions) == len(data), _length_mismatch_message
-        assert all_equal([arr.shape for _layer, arrs in data_layers.items() for arr in arrs])
+        assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
 
-        channels  = array(channel_coord_values, dtype=channel_coord_dtype)
+        # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
+        # But latencies and functions do not
+        channels: dict[str, NDArray] = {
+            bn: array(channel_coord_values[bn], dtype=channel_coord_dtype)
+            for bn in self._block_names
+        }
         latencies = array(latencies, dtype=LatencyDType)
         functions = array(functions, dtype=FunctionNameDType)
 
-        datasets = []
-        for i, f in enumerate(functions):
-            dataset_dict = dict()
-            for layer, data in data_layers.items():
-                # Get this function's data
-                data = data[i]
-                data = self._init_prep_data(data)
-                # Check validity of input data dimensions
-                assert len(channels) == data.shape[0], f"{channel_coord_name} mismatch for {f}: {len(channels)} {channel_coord_name} versus data shape {data.shape}"
-                assert len(latencies) == data.shape[1], f"Latencies mismatch for {f}: {len(latencies)} latencies versus data shape {data.shape}"
-                dataset_dict[layer] = DataArray(
-                    data=data,
-                    dims=self._dims,
+        # Input value `data_blocks` has type something like dict[str, list[array]].
+        #  i.e. a dict mapping block names to a list of 2d data volumes, one for each function
+        # We need to eventually get it into `self._data`, which has type dict[str, DataArray]
+        # i.e. a dict mapping block names to a DataArray containing data for all functions
+        self._data: dict[str, DataArray] = dict()
+        for block_name, data_for_functions in data_blocks.items():
+            for function_name, data in zip(functions, data_for_functions):
+                assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
+                assert len(latencies) == data.shape[1], f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
+            data_array: DataArray = concat(
+                (
+                    DataArray(self._init_prep_data(d),
+                              coords={
+                                  channel_coord_name: channels[block_name],
+                                  DIM_LATENCY: latencies,
+                                  DIM_FUNCTION: [function]
+                              })
+                    for function, d in zip(functions, data_for_functions)
+                ),
+                dim=DIM_FUNCTION,
+                data_vars="all",  # Required by concat of DataArrays
                 )
-            datasets.append(
-                Dataset(dataset_dict,
-                        coords={channel_coord_name: channels, DIM_LATENCY: latencies, DIM_FUNCTION: [f]})
-            )
-        self._data = concat(datasets, dim=DIM_FUNCTION)
+            assert data_array.dims == self._dims
+            assert set(data_array.coords.keys()) == set(self._dims)
+            assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
+
+            self._data[block_name] = data_array
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
@@ -113,18 +131,36 @@ class ExpressionSet(ABC):
         return data
 
     @property
-    def _channels(self) -> NDArray:
-        return self._data.coords[self._channel_coord_name].values
+    # block → channels
+    def _channels(self) -> dict[str, NDArray]:
+        return {
+            bn: data.coords[self._channel_coord_name].values
+            for bn, data in self._data.items()
+        }
 
     @property
     def functions(self) -> list[FunctionNameDType]:
         """Function names."""
-        return self._data.coords[DIM_FUNCTION].values.tolist()
+        functions = {
+            bn: data.coords[DIM_FUNCTION].values.tolist()
+            for bn, data in self._data.items()
+        }
+        # Validate that functions are the same for all data blocks
+        assert all_equal(list(functions.values()))
+        # Then just return the first one
+        return functions[self._block_names[0]]
 
     @property
     def latencies(self) -> NDArray[LatencyDType]:
         """Latencies, in seconds."""
-        return self._data.coords[DIM_LATENCY].values
+        latencies = {
+            bn: data.coords[DIM_LATENCY].values
+            for bn, data in self._data.items()
+        }
+        # Validate that latencies are the same for all data blocks
+        assert all_equal(list(latencies.values()))
+        # Then just return the first one
+        return latencies[self._block_names[0]]
 
     @abstractmethod
     def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
@@ -147,38 +183,43 @@ class ExpressionSet(ABC):
             return False
         if not array_equal(self.latencies, other.latencies):
             return False
-        if not array_equal(self._channels, other._channels):
-            return False
+        for bn in self._block_names:
+            if not array_equal(self._channels[bn], other._channels[bn]):
+                return False
         return True
 
-    def _best_functions_for_layer(self, layer: str) -> DataFrame:
+    def _best_functions_for_block(self, block_name: str) -> DataFrame:
         """
         Return a DataFrame containing:
-        for each channel, the best function and latency for that channel, and the associated log p-value
+        for each channel in the block, the best function and latency for that channel, and the associated log p-value
         """
-        # Want, for each channel:
+        # Want, for each channel in the block:
         #  - The name, f, of the function which is best at any latency
         #  - The latency, l, for which f is best
         #  - The log p-value, p, for f at l
 
         # sparse.COO doesn't implement argmin, so we have to do it in a few steps
 
-        data = self._data.copy()
-        densify_dataset(data)
+        data: DataArray = self._data[block_name].copy()
+        densify_data_block(data)
 
-        best_latency = data.idxmin(dim=DIM_LATENCY)    # (channel, function) → l, the best latency
-        logp_at_best_latency = data.min(dim=DIM_LATENCY)  # (channel, function) → log p of best latency for each function
+        # (channel, function) → l, the best latency
+        best_latency = data.idxmin(dim=DIM_LATENCY)
+        # (channel, function) → log p of best latency for each function
+        logp_at_best_latency = data.min(dim=DIM_LATENCY)
 
-        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)  # (channel) → log p of best function (at best latency)
-        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)  # (channel) → f, the best function
+        # (channel) → log p of best function (at best latency)
+        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)
+        # (channel) → f, the best function
+        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)
 
-        # TODO: shame I have to break into the layer structure here,
-        #  but I can't think of a better way to do it
-        logp_vals = logp_at_best_function[layer].data
+        logp_vals = logp_at_best_function.data
+        best_functions = best_function.data
 
-        best_functions = best_function[layer].data
-
-        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, DIM_FUNCTION: best_function[layer]}).data
+        best_latencies = best_latency.sel({
+            self._channel_coord_name: self._channels,
+            DIM_FUNCTION: best_function[block_name]
+        }).data
 
         # Cut out channels which have a best log p-val of 1
         idxs = logp_vals < 1
@@ -205,7 +246,8 @@ class HexelExpressionSet(ExpressionSet):
     def __init__(self,
                  functions: str | Sequence[str],
                  # Metadata
-                 hexels: Sequence[Hexel],
+                 hexels_lh: Sequence[Hexel],
+                 hexels_rh: Sequence[Hexel],
                  latencies: Sequence[Latency],
                  # log p-values
                  # In general, we will combine flipped and non-flipped versions
@@ -216,29 +258,37 @@ class HexelExpressionSet(ExpressionSet):
         super().__init__(
             functions=functions,
             latencies=latencies,
-            data_layers={
-                LAYER_LEFT: data_lh,
-                LAYER_RIGHT: data_rh,
+            data_blocks={
+                BLOCK_LEFT: data_lh,
+                BLOCK_RIGHT: data_rh,
             },
             channel_coord_name=DIM_HEXEL,
             channel_coord_dtype=HexelDType,
-            channel_coord_values=hexels,
+            channel_coord_values={
+                BLOCK_LEFT: hexels_lh,
+                BLOCK_RIGHT: hexels_rh
+            },
         )
 
     @property
-    def hexels(self) -> NDArray[HexelDType]:
+    def hexels_left(self) -> NDArray[HexelDType]:
         """Hexels, canonical ID."""
-        return self._channels
+        return self._channels[BLOCK_LEFT]
+
+    @property
+    def hexels_right(self) -> NDArray[HexelDType]:
+        """Hexels, canonical ID."""
+        return self._channels[BLOCK_RIGHT]
 
     @property
     def left(self) -> DataArray:
         """Left-hemisphere data."""
-        return self._data[LAYER_LEFT]
+        return self._data[BLOCK_LEFT]
 
     @property
     def right(self) -> DataArray:
         """Right-hemisphere data."""
-        return self._data[LAYER_RIGHT]
+        return self._data[BLOCK_RIGHT]
 
     def __getitem__(self, functions: str | Sequence[str]) -> HexelExpressionSet:
         """
@@ -253,23 +303,26 @@ class HexelExpressionSet(ExpressionSet):
                 raise KeyError(f)
         return HexelExpressionSet(
             functions=functions,
-            hexels=self.hexels,
+            hexels_lh=self.hexels_left,
+            hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=[self._data[LAYER_LEFT].sel({DIM_FUNCTION: function}).data for function in functions],
-            data_rh=[self._data[LAYER_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
+            data_lh=[self._data[BLOCK_LEFT].sel({DIM_FUNCTION: function}).data for function in functions],
+            data_rh=[self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
     def __copy__(self):
         return HexelExpressionSet(
             functions=self.functions.copy(),
-            hexels=self.hexels.copy(),
+            hexels_lh=self.hexels_left.copy(),
+            hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            data_lh=self._data[LAYER_LEFT].values.copy(),
-            data_rh=self._data[LAYER_RIGHT].values.copy(),
+            data_lh=self._data[BLOCK_LEFT].values.copy(),
+            data_rh=self._data[BLOCK_RIGHT].values.copy(),
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
-        assert array_equal(self.hexels, other.hexels), "Hexels mismatch"
+        assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
+        assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
         functions = []
@@ -278,11 +331,12 @@ class HexelExpressionSet(ExpressionSet):
         for expr_set in [self, other]:
             for i, function in enumerate(expr_set.functions):
                 functions.append(function)
-                data_lh.append(expr_set._data[LAYER_LEFT].data[:, :, i])
-                data_rh.append(expr_set._data[LAYER_RIGHT].data[:, :, i])
+                data_lh.append(expr_set._data[BLOCK_LEFT].data[:, :, i])
+                data_rh.append(expr_set._data[BLOCK_RIGHT].data[:, :, i])
         return HexelExpressionSet(
             functions=functions,
-            hexels=self.hexels, latencies=self.latencies,
+            hexels_lh=self.hexels_left, hexels_rh=self.hexels_right,
+            latencies=self.latencies,
             data_lh=data_lh, data_rh=data_rh,
         )
 
@@ -301,8 +355,8 @@ class HexelExpressionSet(ExpressionSet):
         for each hexel, the best function and latency for that hexel, and the associated log p-value
         """
         return (
-            super()._best_functions_for_layer(LAYER_LEFT),
-            super()._best_functions_for_layer(LAYER_RIGHT),
+            super()._best_functions_for_block(BLOCK_LEFT),
+            super()._best_functions_for_block(BLOCK_RIGHT),
         )
 
 
@@ -327,23 +381,23 @@ class SensorExpressionSet(ExpressionSet):
         super().__init__(
             functions=functions,
             latencies=latencies,
-            data_layers={
-                LAYER_SCALP: data
+            data_blocks={
+                BLOCK_SCALP: data
             },
             channel_coord_name=DIM_SENSOR,
             channel_coord_dtype=SensorDType,
-            channel_coord_values=sensors,
+            channel_coord_values={BLOCK_SCALP: sensors},
         )
 
     @property
     def sensors(self) -> NDArray[SensorDType]:
         """Channel names."""
-        return self._channels
+        return self._channels[BLOCK_SCALP]
 
     @property
     def scalp(self) -> DataArray:
         """Left-hemisphere data."""
-        return self._data[LAYER_SCALP]
+        return self._data[BLOCK_SCALP]
 
     def __eq__(self, other: SensorExpressionSet) -> bool:
         if not super().__eq__(other):
@@ -357,7 +411,7 @@ class SensorExpressionSet(ExpressionSet):
             functions=self.functions.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
-            data=self._data[LAYER_SCALP].values.copy(),
+            data=self._data[BLOCK_SCALP].values.copy(),
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
@@ -369,7 +423,7 @@ class SensorExpressionSet(ExpressionSet):
         for expr_set in [self, other]:
             for i, function in enumerate(expr_set.functions):
                 functions.append(function)
-                data.append(expr_set._data[LAYER_SCALP].data[:, :, i])
+                data.append(expr_set._data[BLOCK_SCALP].data[:, :, i])
         return SensorExpressionSet(
             functions=functions,
             sensors=self.sensors, latencies=self.latencies,
@@ -391,7 +445,7 @@ class SensorExpressionSet(ExpressionSet):
             functions=functions,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[LAYER_SCALP].sel({DIM_FUNCTION: function}).data for function in functions],
+            data=[self._data[BLOCK_SCALP].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
     def best_functions(self) -> DataFrame:
@@ -399,17 +453,4 @@ class SensorExpressionSet(ExpressionSet):
         Return a DataFrame containing:
         for each sensor, the best function and latency for that sensor, and the associated log p-value
         """
-        return super()._best_functions_for_layer(LAYER_SCALP)
-
-
-log_base = 10
-
-
-def p_to_logp(arraylike: ArrayLike) -> ArrayLike:
-    """The one-stop-shop for converting from p-values to log p-values."""
-    return log10(arraylike)
-
-
-def logp_to_p(arraylike: ArrayLike) -> ArrayLike:
-    """The one-stop-shop for converting from log p-values to p-values."""
-    return float(10) ** arraylike
+        return super()._best_functions_for_block(BLOCK_SCALP)
