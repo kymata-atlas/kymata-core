@@ -303,7 +303,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
         morphmap_filename = Path(intrim_preprocessing_directory_name,
                                  "4_hexel_current_reconstruction",
                                  "morph_maps",
-                                 participant + "_fsaverage_morph.h5")
+                                 participant + "_fsaverage_exclude_medial_wall_morph.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
