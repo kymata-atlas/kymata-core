@@ -166,19 +166,29 @@ class ExpressionSet(ABC):
         data = self._data.copy()
         densify_dataset(data)
 
-        best_latency = data.idxmin(dim=DIM_LATENCY)    # (channel, function) → l, the best latency
-        logp_at_best_latency = data.min(dim=DIM_LATENCY)  # (channel, function) → log p of best latency for each function
+        # [l/r](channel, function) → l, the best latency
+        best_latency = data.idxmin(dim=DIM_LATENCY)
+        # [l/r](channel, function) → log p of best latency for each function
+        logp_at_best_latency = data.min(dim=DIM_LATENCY)
 
-        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)  # (channel) → log p of best function (at best latency)
-        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)  # (channel) → f, the best function
+        # [l/r](channel) → log p of best function (at best latency)
+        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)
+        # [l/r](channel) → f, the best function
+        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)
 
         # TODO: shame I have to break into the layer structure here,
         #  but I can't think of a better way to do it
+        # (channel) -> logp of the best function (at the best latency) for this layer
         logp_vals = logp_at_best_function[layer].data
-
+        # (channel) -> best function name (at the best latency) for this layer
         best_functions = best_function[layer].data
 
-        best_latencies = best_latency[layer].sel({self._channel_coord_name: self._channels, DIM_FUNCTION: best_function[layer]}).data
+        best_latencies = best_latency[layer].sel({
+            # e.g. hexels          -> array([0, ..., 10241])
+            self._channel_coord_name: self._channels,
+            #          -> DataArray((hexel) -> function)
+            DIM_FUNCTION: best_function[layer]
+        }).data
 
         # Cut out channels which have a best log p-val of 1
         idxs = logp_vals < 1
