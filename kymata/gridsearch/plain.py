@@ -129,8 +129,9 @@ def do_gridsearch(
             latencies=latencies_ms / 1000,  # seconds
             hexels_lh=channel_names[0],
             hexels_rh=channel_names[1],
+            # Unstack the data
             data_lh=log_pvalues[:len(channel_names[0]), :],
-            data_rh=log_pvalues[:len(channel_names[1]), :],
+            data_rh=log_pvalues[len(channel_names[0]):, :],
         )
     else:
         raise NotImplementedError(channel_space)

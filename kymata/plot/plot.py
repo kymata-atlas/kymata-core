@@ -113,13 +113,6 @@ def expression_plot(
         if function not in color:
             color[function] = colors.to_hex(next(cycol))
 
-    if isinstance(expression_set, HexelExpressionSet):
-        channels = expression_set.hexels
-    elif isinstance(expression_set, SensorExpressionSet):
-        channels = expression_set.sensors
-    else:
-        raise NotImplementedError()
-
     best_functions = expression_set.best_functions()
 
     if paired_axes:
@@ -143,11 +136,18 @@ def expression_plot(
         else:
             raise NotImplementedError()
 
+    if isinstance(expression_set, HexelExpressionSet):
+        n_channels = len(expression_set.hexels_left) + len(expression_set.hexels_right)
+    elif isinstance(expression_set, SensorExpressionSet):
+        n_channels = len(expression_set.sensors)
+    else:
+        raise NotImplementedError()
+
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
                  * len(expression_set.latencies)
-                 * len(channels)
+                 * n_channels
                  * len(show_only))))
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
