@@ -213,12 +213,16 @@ class ExpressionSet(ABC):
         # (channel) → f, the best function
         best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)
 
+        # (channel) -> logp of the best function (at the best latency)
         logp_vals = logp_at_best_function.data
+        # (channel) -> best function name (at the best latency)
         best_functions = best_function.data
 
         best_latencies = best_latency.sel({
+            # e.g. hexels          -> array([0, ..., 10241])
             self._channel_coord_name: self._channels,
-            DIM_FUNCTION: best_function[block_name]
+            #          -> DataArray((hexel) -> function)
+            DIM_FUNCTION: best_function
         }).data
 
         # Cut out channels which have a best log p-val of 1
