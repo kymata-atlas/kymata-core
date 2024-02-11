@@ -217,10 +217,10 @@ class ExpressionSet(ABC):
         logp_vals = logp_at_best_function.data
         # (channel) -> best function name (at the best latency)
         best_functions = best_function.data
-
+        # (channel) -> latency of the best function
         best_latencies = best_latency.sel({
             # e.g. hexels          -> array([0, ..., 10241])
-            self._channel_coord_name: self._channels,
+            self._channel_coord_name: self._channels[block_name],
             #          -> DataArray((hexel) -> function)
             DIM_FUNCTION: best_function
         }).data
@@ -229,7 +229,7 @@ class ExpressionSet(ABC):
         idxs = logp_vals < 1
 
         return DataFrame.from_dict({
-            self._channel_coord_name: self._channels[idxs],
+            self._channel_coord_name: self._channels[block_name][idxs],
             DIM_FUNCTION: best_functions[idxs],
             DIM_LATENCY: best_latencies[idxs],
             "value": logp_vals[idxs],
