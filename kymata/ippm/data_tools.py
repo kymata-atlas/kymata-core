@@ -238,9 +238,11 @@ def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str,
 
     return causality_violations / total_arrows if total_arrows != 0 else 0
 
-def channel_sensitivity(hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_dict: Dict[str, Node], hemi: str) -> Tuple[float]:
+def function_recall(hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_dict: Dict[str, Node], hemi: str) -> Tuple[float]:
     """
-        This is the second scoring metric: channel sensitivity. It illustrates what proportion out of channels in the noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = channel sensitivity. Use this along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses.
+        This is the second scoring metric: function recall. It illustrates what proportion out of functions in the noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses. 
+        
+        One thing to note is that the recall depends upon the nature of the dataset. If certain functions have no significant spikes, there is an inherent bias present in the dataset. We can never get the function recall to be perfect no matter what algorithm we employ. Therefore, the function recall is based on what we can actually do with a dataset. E.g., 9 functions in the hierarchy but in the noisy hexels we find only 7 of the 9 functions. Moreover, after denoising we find that there are only 6 functions in the hierarchy. The recall will be 6/7 rather than 6/9 since there were only 7 to be found to begin with.
 
         Params
         ------

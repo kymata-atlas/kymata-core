@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, channel_sensitivity
+=======
+from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, function_recall
+>>>>>>> 923c8f3 (Added channel sensitivity)
 from collections import namedtuple
 import kymata.ippm.data_tools as data_tools
 import pytest
@@ -86,19 +90,19 @@ def test_causalityViolation_With_SingleEdge_Should_Return0():
 
     assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere') == 0)
 
-def test_channelSensitivity_With_NoFuncs_Should_Return0():
+def test_functionRecall_With_NoFuncs_Should_Return0():
     test_hexels = {'f1' : IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
     test_hexels['f1'].left_best_pairings = []
     test_hexels['f2'].left_best_pairings = [(10, 1e-1)] # should be > alpha, so not significant
     test_ippm = {}
     funcs = ['f1', 'f2']
-    ratio, numer, denom = channel_sensitivity(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 0)
     assert(numer == 0)
     assert(denom == 0)
 
-def test_channelSensitivity_With_AllFuncsFound_Should_Return1():
+def test_functionRecall_With_AllFuncsFound_Should_Return1():
     test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
     test_hexels['f1'].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
     test_hexels['f2'].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
@@ -108,17 +112,17 @@ def test_channelSensitivity_With_AllFuncsFound_Should_Return1():
         'f2-0': Node(1e-50, 25, ['f1-1'])
     }
     funcs = ['f1', 'f2']
-    ratio, numer, denom = channel_sensitivity(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 1)
     assert(numer == 2)
     assert(denom == 2)
 
-def test_channelSensitivity_With_InvalidHemiInput_Should_RaiseException():
+def test_functionRecall_With_InvalidHemiInput_Should_RaiseException():
     with pytest.raises(AssertionError):
-        channel_sensitivity({}, [], {}, 'invalidHemisphere')
+        function_recall({}, [], {}, 'invalidHemisphere')
 
-def test_channelSensitivity_With_ValidInputRightHemi_Should_ReturnSuccess():
+def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
     test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
     test_hexels['f1'].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
     test_hexels['f2'].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
@@ -127,7 +131,7 @@ def test_channelSensitivity_With_ValidInputRightHemi_Should_ReturnSuccess():
         'f1-1': Node(1e-35, 15, ['f1-0'])
     }
     funcs = ['f1', 'f2']
-    ratio, numer, denom = channel_sensitivity(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 1/2)
     assert(numer == 1)
