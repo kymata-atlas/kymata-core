@@ -95,6 +95,9 @@ def main():
                                            inverse_operator=inverse_operator,
                                            p_tshift=None,
                                            snr=args.snr)
+    
+    emeg_values = emeg_values[:64, :, :]
+    ch_names = ch_names[:64]
 
     func = load_function(Path(args.base_dir, args.function_path),
                          func_name=args.function_name,
