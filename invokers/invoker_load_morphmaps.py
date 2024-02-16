@@ -79,4 +79,6 @@ def main():
 
 if __name__ == '__main__':
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
+    _logger.info("Starting..")
     main()
+    _logger.info("Done!")
