@@ -4,7 +4,7 @@ from logging import getLogger, basicConfig, INFO
 
 from kymata.datasets.data_root import data_root_path
 from kymata.io.cli import log_message, date_format
-from kymata.io.mne import load_emeg_pack
+from kymata.preproc.source import load_emeg_pack
 
 _default_output_dir = Path(data_root_path(), "output")
 

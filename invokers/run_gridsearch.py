@@ -5,7 +5,7 @@ import time
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
-from kymata.io.mne import load_emeg_pack
+from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.io.yaml import load_config
 from kymata.plot.plot import expression_plot
