@@ -1,9 +1,12 @@
 from os.path import isfile
 from pathlib import Path
 from typing import Optional
+from logging import getLogger
 
 import numpy as np
 import mne
+
+_logger = getLogger(__name__)
 
 
 def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None):
@@ -16,8 +19,10 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
         ch_names: list[str] = []  # TODO: we'll need these
         emeg = np.load(emeg_path_npy)
     else:
+        _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
         evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
+            _logger.info(f"Reading source morph from {morph_path}")
             morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
 
@@ -39,12 +44,15 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
 
 def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     lambda2 = 1.0 / snr ** 2
+    _logger.info(f"Reading inverse operator from {inverse_operator}")
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     mne.set_eeg_reference(evoked, projection=True, verbose=False)
+    _logger.info(f"Applying inverse operator")
     stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     print("Inverse operator applied")
 
     if morph_map is not None:
+        _logger.info("Applying morph map")
         stc = morph_map.apply(stc)
 
     return stc.lh_data, stc.rh_data, stc.vertices
