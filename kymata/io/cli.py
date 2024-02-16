@@ -2,6 +2,10 @@ from sys import stdout
 from colorama import Style
 
 
+log_message = '%(asctime)s | %(levelname).2s | %(filename)s:%(lineno)d | \t%(message)s'
+date_format = "%Y-%m-%d %H:%M:%S"
+
+
 def print_with_color(message: str, fore_color, style=Style.BRIGHT):
     """Print a message in a bright style"""
     print(f"{fore_color}{style}{message}{Style.RESET_ALL}")
