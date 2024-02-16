@@ -21,7 +21,7 @@ apptainer exec \
   bash -c \
     " cd /imaging/projects/cbu/kymata/analyses/cai/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
-      \$VENV_PATH/bin/poetry run python -m invokers.invoker_load_morphmap \
+      \$VENV_PATH/bin/poetry run python -m invokers.invoker_load_morphmaps \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
         --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
         --morph
