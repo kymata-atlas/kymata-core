@@ -60,12 +60,15 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.Sou
 
 def apply_morph_map(morph_map: mne.SourceMorph, stc: mne.VectorSourceEstimate):
     _logger.info("Applying morph map")
+    # morph_map.apply() is very slow in some cases, for unknown reasons.
+    # So we instead use a copied, patched version of the same code to make it faster,
+    # at the cost of somewhat increased memory usage.
     # stc = morph_map.apply(stc)
-    stc = _morph_apply(morph_map, stc)
+    stc = __morph_apply(morph_map, stc)
     return stc
 
 
-def _morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=False, mri_space=None, verbose=None):
+def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=False, mri_space=None, verbose=None):
     """A copy of mne.SourceMorph.apply, for optimisation."""
     import copy
     from mne.morph import _morphed_stc_as_volume
@@ -91,7 +94,7 @@ def _morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=
             "morph.subject_from must match. (%s != %s)"
             % (stc.subject, morph.subject_from)
         )
-    out = _mne_apply_morph_data(morph, stc)
+    out = __mne_apply_morph_data(morph, stc)
     if output != "stc":  # convert to volume
         out = _morphed_stc_as_volume(
             morph,
@@ -103,7 +106,7 @@ def _morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=
     return out
 
 
-def _mne_apply_morph_data(morph, stc_from):
+def __mne_apply_morph_data(morph, stc_from):
     """A copy of mne.morph._apply_morph_data, for optimisation."""
     from mne.morph import _BaseSurfaceSourceEstimate, _BaseVolSourceEstimate, _check_vertices_match, \
         _VOL_MAT_CHECK_RATIO
