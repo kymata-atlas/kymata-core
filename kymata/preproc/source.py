@@ -52,10 +52,15 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     print("Inverse operator applied")
 
     if morph_map is not None:
-        _logger.info("Applying morph map")
-        stc = morph_map.apply(stc)
+        stc = apply_morph_map(morph_map, stc)
 
     return stc.lh_data, stc.rh_data, stc.vertices
+
+
+def apply_morph_map(morph_map, stc):
+    _logger.info("Applying morph map")
+    stc = morph_map.apply(stc)
+    return stc
 
 
 def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
