@@ -66,7 +66,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         for emeg_fn in emeg_filenames
     ]
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_excluding_medial_wall_fsaverage_morph.h5") if use_morph else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_excluding_medial_wall_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
