@@ -2,6 +2,7 @@ from os.path import isfile
 from pathlib import Path
 from typing import Optional
 from logging import getLogger
+from warnings import warn
 
 import numpy as np
 import mne
@@ -42,13 +43,13 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     return emeg, ch_names
 
 
-def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
+def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None):
     lambda2 = 1.0 / snr ** 2
     _logger.info(f"Reading inverse operator from {inverse_operator}")
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     mne.set_eeg_reference(evoked, projection=True, verbose=False)
     _logger.info(f"Applying inverse operator")
-    stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
+    stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     print("Inverse operator applied")
 
     if morph_map is not None:
@@ -57,10 +58,156 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map = None):
     return stc.lh_data, stc.rh_data, stc.vertices
 
 
-def apply_morph_map(morph_map, stc):
+def apply_morph_map(morph_map: mne.SourceMorph, stc: mne.VectorSourceEstimate):
     _logger.info("Applying morph map")
-    stc = morph_map.apply(stc)
+    # stc = morph_map.apply(stc)
+    stc = _morph_apply(morph_map, stc)
     return stc
+
+
+def _morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=False, mri_space=None, verbose=None):
+    """A copy of mne.SourceMorph.apply, for optimisation."""
+    import copy
+    from mne.morph import _morphed_stc_as_volume
+    # _validate_type(output, str, "output")
+    # _validate_type(stc_from, _BaseSourceEstimate, "stc_from", "source estimate")
+    # if isinstance(stc_from, _BaseSurfaceSourceEstimate):
+    #     allowed_kinds = ("stc",)
+    #     extra = "when stc is a surface source estimate"
+    # else:
+    #     allowed_kinds = ("stc", "nifti1", "nifti2")
+    #     extra = ""
+    # _check_option("output", output, allowed_kinds, extra)
+    stc = copy.deepcopy(stc_from)
+
+    mri_space = mri_resolution if mri_space is None else mri_space
+    if stc.subject is None:
+        stc.subject = morph.subject_from
+    if morph.subject_from is None:
+        morph.subject_from = stc.subject
+    if stc.subject != morph.subject_from:
+        raise ValueError(
+            "stc_from.subject and "
+            "morph.subject_from must match. (%s != %s)"
+            % (stc.subject, morph.subject_from)
+        )
+    out = _mne_apply_morph_data(morph, stc)
+    if output != "stc":  # convert to volume
+        out = _morphed_stc_as_volume(
+            morph,
+            out,
+            mri_resolution=mri_resolution,
+            mri_space=mri_space,
+            output=output,
+        )
+    return out
+
+
+def _mne_apply_morph_data(morph, stc_from):
+    """A copy of mne.morph._apply_morph_data, for optimisation."""
+    from mne.morph import _BaseSurfaceSourceEstimate, _BaseVolSourceEstimate, _check_vertices_match, \
+        _VOL_MAT_CHECK_RATIO
+    if stc_from.subject is not None and stc_from.subject != morph.subject_from:
+        raise ValueError(
+            "stc.subject (%s) != morph.subject_from (%s)"
+            % (stc_from.subject, morph.subject_from)
+        )
+    # _check_option("morph.kind", morph.kind, ("surface", "volume", "mixed"))
+    # if morph.kind == "surface":
+    #     _validate_type(
+    #         stc_from,
+    #         _BaseSurfaceSourceEstimate,
+    #         "stc_from",
+    #         "volume source estimate when using a surface morph",
+    #     )
+    # elif morph.kind == "volume":
+    #     _validate_type(
+    #         stc_from,
+    #         _BaseVolSourceEstimate,
+    #         "stc_from",
+    #         "surface source estimate when using a volume morph",
+    #     )
+    # else:
+    #     assert morph.kind == "mixed"  # can handle any
+    #     _validate_type(
+    #         stc_from,
+    #         _BaseSourceEstimate,
+    #         "stc_from",
+    #         "source estimate when using a mixed source morph",
+    #     )
+
+    # figure out what to actually morph
+    do_vol = not isinstance(stc_from, _BaseSurfaceSourceEstimate)
+    do_surf = not isinstance(stc_from, _BaseVolSourceEstimate)
+
+    vol_src_offset = 2 if do_surf else 0
+    from_surf_stop = sum(len(v) for v in stc_from.vertices[:vol_src_offset])
+    to_surf_stop = sum(len(v) for v in morph.vertices_to[:vol_src_offset])
+    from_vol_stop = stc_from.data.shape[0]
+    vertices_to = morph.vertices_to
+    if morph.kind == "mixed":
+        vertices_to = vertices_to[0 if do_surf else 2: None if do_vol else 2]
+    to_vol_stop = sum(len(v) for v in vertices_to)
+
+    mesg = "Ori × Time" if stc_from.data.ndim == 3 else "Time"
+    data_from = np.reshape(stc_from.data, (stc_from.data.shape[0], -1))
+    n_times = data_from.shape[1]  # oris treated as times
+    data = np.empty((to_vol_stop, n_times), stc_from.data.dtype)
+    to_used = np.zeros(data.shape[0], bool)
+    from_used = np.zeros(data_from.shape[0], bool)
+    if do_vol:
+        stc_from_vertices = stc_from.vertices[vol_src_offset:]
+        vertices_from = morph._vol_vertices_from
+        for ii, (v1, v2) in enumerate(zip(vertices_from, stc_from_vertices)):
+            _check_vertices_match(v1, v2, "volume[%d]" % (ii,))
+        from_sl = slice(from_surf_stop, from_vol_stop)
+        assert not from_used[from_sl].any()
+        from_used[from_sl] = True
+        to_sl = slice(to_surf_stop, to_vol_stop)
+        assert not to_used[to_sl].any()
+        to_used[to_sl] = True
+        # Loop over time points to save memory
+        if morph.vol_morph_mat is None and n_times >= _VOL_MAT_CHECK_RATIO * (
+                to_vol_stop - to_surf_stop
+        ):
+            warn(
+                "Computing a sparse volume morph matrix will save time over "
+                "directly morphing, calling morph.compute_vol_morph_mat(). "
+                "Consider (re-)saving your instance to disk to avoid "
+                "subsequent recomputation."
+            )
+            morph.compute_vol_morph_mat()
+        if morph.vol_morph_mat is None:
+            _logger.debug("Using individual volume morph")
+            data[to_sl, :] = morph._morph_vols(data_from[from_sl], mesg)
+        else:
+            _logger.debug("Using sparse volume morph matrix")
+            data[to_sl, :] = morph.vol_morph_mat @ data_from[from_sl]
+    if do_surf:
+        for hemi, v1, v2 in zip(
+                ("left", "right"), morph.src_data["vertices_from"], stc_from.vertices[:2]
+        ):
+            _check_vertices_match(v1, v2, "%s hemisphere" % (hemi,))
+        from_sl = slice(0, from_surf_stop)
+        assert not from_used[from_sl].any()
+        from_used[from_sl] = True
+        to_sl = slice(0, to_surf_stop)
+        assert not to_used[to_sl].any()
+        to_used[to_sl] = True
+        #
+        #
+        # Our modification
+        # data[to_sl] = morph.morph_mat * data_from[from_sl]
+        data[to_sl] = morph.morph_mat.todense() @ data_from[from_sl]
+        #
+        #
+        #
+    assert to_used.all()
+    assert from_used.all()
+    data.shape = (data.shape[0],) + stc_from.data.shape[1:]
+    klass = stc_from.__class__
+    stc_to = klass(data, vertices_to, stc_from.tmin, stc_from.tstep, morph.subject_to)
+    return stc_to
 
 
 def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
