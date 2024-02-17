@@ -5,7 +5,7 @@ import time
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
-from kymata.io.mne import load_emeg_pack
+from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.io.yaml import load_config
 from kymata.plot.plot import expression_plot
@@ -47,7 +47,7 @@ def main():
                         help='`ave`: average over the list of repetitions. `add`: treat them as extra data.')
     parser.add_argument('--inverse-operator-dir', type=str, default=None,
                         help='inverse solution path')
-    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-exclude_medial_wall-inv.fif",
                         help='inverse solution suffix')
     parser.add_argument('--seconds-per-split', type=float, default=0.5,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
