@@ -23,7 +23,7 @@ def main():
 
     create_forward_model_and_inverse_solution(data_root_dir, config=config)
 
-    create_hexel_morph_maps(data_root_dir, config=config)
+    create_hexel_morph_maps(data_root_dir, config=config) 
 
 
 def _display_welcome_message_to_terminal():
