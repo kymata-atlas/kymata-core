@@ -1,7 +1,6 @@
 # Kymata Toolbox Readme
 
 [![Perform unit tests](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
-[![CodeFactor](https://www.codefactor.io/repository/github/kymata-atlas/kymata-toolbox/badge?s=505bc9b116c7f7159aa33f4b30863a31e9e7bc62)](https://www.codefactor.io/repository/github/kymata-atlas/kymata-toolbox)
 
 Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
 
