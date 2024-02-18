@@ -2,6 +2,7 @@ import json
 from itertools import cycle
 from statistics import NormalDist
 from typing import Tuple, Dict, List
+from collections import namedtuple
 
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -15,6 +16,8 @@ import seaborn as sns
 from matplotlib.lines import Line2D
 import math
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+
+Node = namedtuple('Node', 'magnitude position in_edges')
 
 class IPPMHexel(object):
     """
@@ -234,6 +237,49 @@ def causality_violation_score(hexels: Dict[str, IPPMHexel], hierarchy: Dict[str,
             total_arrows += 1
 
     return causality_violations / total_arrows if total_arrows != 0 else 0
+
+def function_recall(hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_dict: Dict[str, Node], hemi: str) -> Tuple[float]:
+    """
+        This is the second scoring metric: function recall. It illustrates what proportion out of functions in the noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses. 
+        
+        One thing to note is that the recall depends upon the nature of the dataset. If certain functions have no significant spikes, there is an inherent bias present in the dataset. We can never get the function recall to be perfect no matter what algorithm we employ. Therefore, the function recall is based on what we can actually do with a dataset. E.g., 9 functions in the hierarchy but in the noisy hexels we find only 7 of the 9 functions. Moreover, after denoising we find that there are only 6 functions in the hierarchy. The recall will be 6/7 rather than 6/9 since there were only 7 to be found to begin with.
+
+        Params
+        ------
+        hexels: the noisy hexels that we denoise and feed into IPPMBuilder. It must be the same dataset.
+        funcs: list of functions that are in our hierarchy. Don't include the input function, e.g., input_cochlear.
+        ippm_dict: the return value from IPPMBuilder. It contains node names as keys and Node objects as values.
+        hemi: leftHemisphere or rightHemisphere
+
+        Returns
+        -------
+        A ratio indicating how many channels were incorporated into the IPPM out of all relevant channels.
+    """
+    assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
+
+    # Step 1: Identify how many significant functions out of funcs there are.
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      
+    bonferroni_corrected_alpha = 1-(pow((1-alpha),(1/(2*201*200000))))
+    funcs_present_in_data = 0
+    detected_funcs = 0
+    for func in funcs:
+        pairings = hexels[func].right_best_pairings if hemi == 'rightHemisphere' else hexels[func].left_best_pairings
+        for latency, spike in pairings:
+            if spike <= alpha:
+                funcs_present_in_data += 1
+                
+                # Step 2: Found a function, look in ippm_dict.keys() for the function.
+                for node_name in ippm_dict.keys():
+                    if func in node_name:
+                        detected_funcs += 1
+                        break
+                break
+
+    # Step 3: Return [ratio, numerator, denominator] primarily because both the denominator and numerator can vary.
+    return (detected_funcs / funcs_present_in_data if funcs_present_in_data > 0 else 0, 
+            detected_funcs, 
+            funcs_present_in_data)
+    
 
 def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
     for func, hexel in hexels.items():
