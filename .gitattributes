@@ -2,4 +2,4 @@
 * text=auto
 
 # Ignore demos folder when calculating the Github language statistics
-demos/* linguist-vendored
+demos/** linguist-vendored
