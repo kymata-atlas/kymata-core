@@ -37,7 +37,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
 
                 # Load data
-                print_with_color(f"   Loading Raw data...", Fore.GREEN)
+                print_with_color("   Loading Raw data...", Fore.GREEN)
 
                 raw_fif_data = mne.io.Raw(
                     data_root_dir + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
@@ -62,20 +62,20 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 raw_fif_data.rename_channels(ecg_and_eog_channel_name_overwrites, allow_duplicates=False)
 
                 # Set bad channels (manually)
-                print_with_color(f"   Setting bad channels...", Fore.GREEN)
-                print_with_color(f"   ...manual", Fore.GREEN)
+                print_with_color("   Setting bad channels...", Fore.GREEN)
+                print_with_color("   ...manual", Fore.GREEN)
 
                 raw_fif_data.info['bads'] = recording_config['bad_channels']
 
                 response = input_with_color(
-                    f"Would you like to see the raw data? Recommended if you want to confirm"
-                    f" ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    f" (y/n)", Fore.MAGENTA)
+                    "Would you like to see the raw data? Recommended if you want to confirm"
+                    " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                    " (y/n)", Fore.MAGENTA)
                 if response == "y":
-                    print(f"...Plotting Raw data.")
+                    print("...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings='auto', block=True)
                 else:
-                    print(f"...assuming you want to continue without looking at the raw data.")
+                    print("...assuming you want to continue without looking at the raw data.")
 
                 # Write back selected bad channels back to participant's config .yaml file
                 modify_param_config(
@@ -89,12 +89,12 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
                 head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
 
-                print_with_color(f"   Removing CHPI ...", Fore.GREEN)
+                print_with_color("   Removing CHPI ...", Fore.GREEN)
 
                 # Remove hpi & line
                 raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
 
-                print_with_color(f"   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
+                print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
 
                 raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
@@ -110,11 +110,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
 
                 if automatic_bad_channel_detection_requested:
-                    print_with_color(f"   ...automatic", Fore.GREEN)
+                    print_with_color("   ...automatic", Fore.GREEN)
                     raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, emeg_machine_used_to_record_data)
 
                 # Apply SSS and movement compensation
-                print_with_color(f"   Applying SSS and movement compensation...", Fore.GREEN)
+                print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
 
                 fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
                 crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
@@ -166,22 +166,22 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                     run) + '_raw_sss.fif'
 
                 # Load data
-                print_with_color(f"   Loading Raw data...", Fore.GREEN)
+                print_with_color("   Loading Raw data...", Fore.GREEN)
 
                 raw_fif_data_sss_movecomp_tr = mne.io.Raw(saved_maxfiltered_filename, preload=True)
 
                 if not supress_excessive_plots_and_prompts:
                     response = input_with_color(
-                        f"Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
                         Fore.MAGENTA)
                     if response == "y":
-                        print(f"...Plotting Raw data.")
+                        print("...Plotting Raw data.")
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
                     else:
-                        print(f"[y] not pressed. Assuming you want to continue without looking at the raw data.")
+                        print("[y] not pressed. Assuming you want to continue without looking at the raw data.")
 
                 # EEG channel interpolation
-                print_with_color(f"   Interpolating EEG...", Fore.GREEN)
+                print_with_color("   Interpolating EEG...", Fore.GREEN)
 
                 print("Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"]))
 
@@ -192,12 +192,12 @@ def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
                                                                                             mode='accurate')
 
                 # Use common average reference, not the nose reference.
-                print_with_color(f"   Use common average EEG reference...", Fore.GREEN)
+                print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
                 # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
                 # remove very slow drift
-                print_with_color(f"   Removing slow drift...", Fore.GREEN)
+                print_with_color("   Removing slow drift...", Fore.GREEN)
                 raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(l_freq=0.1, h_freq=None, picks=None)
 
                 # Remove ECG, VEOH and HEOG
@@ -244,7 +244,7 @@ def _remove_veoh_and_heog(filt_raw, ica):
     """
     Note: mutates `ica`.
     """
-    print(f"   ...Starting EOG removal.")
+    print("   ...Starting EOG removal.")
     eog_evoked = mne.preprocessing.create_eog_epochs(filt_raw).average()
     eog_evoked.apply_baseline(baseline=(None, -0.2))
     eog_evoked.plot_joint()
@@ -267,7 +267,7 @@ def _remove_ecg(filt_raw, ica):
     """
     Note: mutates `ica`.
     """
-    print_with_color(f"   Starting ECG removal...", Fore.GREEN)
+    print_with_color("   Starting ECG removal...", Fore.GREEN)
     ecg_evoked = mne.preprocessing.create_ecg_epochs(filt_raw).average()
     ecg_evoked.apply_baseline(baseline=(None, -0.2))
     ecg_evoked.plot_joint()
@@ -290,7 +290,7 @@ def _remove_ecg_eog(filt_raw, ica):
     """
     Note: mutates `ica`.
     """
-    print_with_color(f"   Starting ECG and EOG removal...", Fore.GREEN)
+    print_with_color("   Starting ECG and EOG removal...", Fore.GREEN)
     ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
     eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
     ica.exclude = ecg_indices
@@ -488,7 +488,7 @@ def create_trialwise_data(dataset_directory_name: str,
         print(f'\n Runs found: {audio_events.shape[0]} \n')
 
         #	Denote picks
-        include = [];  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
@@ -541,11 +541,11 @@ def create_trials(data_root_dir: str,
 
     global_droplog = []
 
-    print_with_color(f"Starting trials and ", Fore.GREEN)
+    print_with_color("Starting trials and ", Fore.GREEN)
 
     for p in list_of_participants:
 
-        print_with_color(f"...Concatenating trials", Fore.GREEN)
+        print_with_color("...Concatenating trials", Fore.GREEN)
 
         cleaned_raws = []
 
@@ -558,7 +558,7 @@ def create_trials(data_root_dir: str,
 
         raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
 
-        print_with_color(f"...finding visual events", Fore.GREEN)
+        print_with_color("...finding visual events", Fore.GREEN)
 
         # Extract visual events
         visual_events = mne.pick_events(raw_events, include=[2, 3])
@@ -579,7 +579,7 @@ def create_trials(data_root_dir: str,
         #  Test there are the correct number of events
         assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
 
-        print_with_color(f"...finding audio events", Fore.GREEN)
+        print_with_color("...finding audio events", Fore.GREEN)
 
         # Extract audio events
         audio_events_raw = mne.pick_events(raw_events, include=3)
@@ -604,7 +604,7 @@ def create_trials(data_root_dir: str,
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
         picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
 
-        print_with_color(f"... extract and save evoked data", Fore.GREEN)
+        print_with_color("... extract and save evoked data", Fore.GREEN)
 
         for input_stream in input_streams:
 

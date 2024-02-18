@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler, normalize
+from sklearn.preprocessing import normalize
 
 from .data_tools import IPPMHexel
 
@@ -155,7 +155,7 @@ class DenoisingStrategy(object):
             ------
             ValueError if invalid hemi input.
         """
-        if not hemi in ['rightHemisphere', 'leftHemisphere']:
+        if hemi not in ['rightHemisphere', 'leftHemisphere']:
             print('Hemisphere needs to be rightHemisphere or leftHemisphere')
             raise ValueError
     
@@ -206,7 +206,7 @@ class DenoisingStrategy(object):
                 # label = -1 indicates anomaly, so exclude.
                 continue
                 
-            if not label in class_mins.keys():
+            if label not in class_mins.keys():
                 # first time seeing this class.
                 class_mins[label] = [float(row['Mag']), float(row['Latency'])]
             elif class_mins[label][0] > row['Mag']:
@@ -237,8 +237,8 @@ class MaxPooler(DenoisingStrategy):
                      the size, in ms, of a bin.
         """
         
-        self._threshold = 15 if not 'threshold' in kwargs.keys() else kwargs['threshold']
-        self._bin_sz = 25 if not 'bin_sz' in kwargs.keys() else kwargs['bin_sz']
+        self._threshold = 15 if 'threshold' not in kwargs.keys() else kwargs['threshold']
+        self._bin_sz = 25 if 'bin_sz' not in kwargs.keys() else kwargs['bin_sz']
         if type(self._threshold) != int:
             print('Threshold needs to be an integer.')
             raise ValueError
@@ -425,19 +425,19 @@ class GMM(DenoisingStrategy):
                            set this if you want your results to be reproducible.
         """
         # we are instantiating multiple models, so save hyperparameters instead of clusterer object.
-        self._max_gaussians = 5 if not 'max_gaussians' in kwargs.keys() else kwargs['max_gaussians']
-        self._covariance_type = 'full' if not 'covariance_type' in kwargs.keys() else kwargs['covariance_type']
-        self._max_iter = 1000 if not 'max_iter' in kwargs.keys() else kwargs['max_iter']
-        self._n_init = 8 if not 'n_init' in kwargs.keys() else kwargs['n_init']
-        self._init_params = 'kmeans' if not 'init_params' in kwargs.keys() else kwargs['init_params']
-        self._random_state = None if not 'random_state' in kwargs.keys() else kwargs['random_state']
-        self._is_aic = False if not 'is_aic' in kwargs.keys() else kwargs['is_aic'] # default is BIC since it is better for explanatory models, since it assumes reality lies within the hypothesis space.
+        self._max_gaussians = 5 if 'max_gaussians' not in kwargs.keys() else kwargs['max_gaussians']
+        self._covariance_type = 'full' if 'covariance_type' not in kwargs.keys() else kwargs['covariance_type']
+        self._max_iter = 1000 if 'max_iter' not in kwargs.keys() else kwargs['max_iter']
+        self._n_init = 8 if 'n_init' not in kwargs.keys() else kwargs['n_init']
+        self._init_params = 'kmeans' if 'init_params' not in kwargs.keys() else kwargs['init_params']
+        self._random_state = None if 'random_state' not in kwargs.keys() else kwargs['random_state']
+        self._is_aic = False if 'is_aic' not in kwargs.keys() else kwargs['is_aic'] # default is BIC since it is better for explanatory models, since it assumes reality lies within the hypothesis space.
 
         invalid = False
         if type(self._max_gaussians) != int:
             print('Max Gaussians must be of type int.')
             invalid = True
-        if not self._covariance_type in ['full', 'tied', 'diag', 'spherical']:
+        if self._covariance_type not in ['full', 'tied', 'diag', 'spherical']:
             print('Covariance type must be one of {full, tied, diag, spherical}')
             invalid = True
         if type(self._max_iter) != int:
@@ -446,7 +446,7 @@ class GMM(DenoisingStrategy):
         if type(self._n_init) != int:
             print('Number of initialisations must be of type int.')
             invalid = True
-        if not self._init_params in ['kmeans', 'k-means++', 'random', 'random_from_data']:
+        if self._init_params not in ['kmeans', 'k-means++', 'random', 'random_from_data']:
             print('Initalisation of parameter strategy must be one of {kmeans, k-means++, random, random_from_data}')
             invalid = True
         if self._random_state != None and type(self._random_state) != int:
@@ -555,13 +555,13 @@ class DBSCAN(DenoisingStrategy):
                  the number of processors to use. -1 means use all available ones
     """
     def __init__(self, **kwargs):
-        eps = 10 if not 'eps' in kwargs.keys() else kwargs['eps']
-        min_samples = 2 if not 'min_samples' in kwargs.keys() else kwargs['min_samples']
-        metric = 'euclidean' if not 'metric' in kwargs.keys() else kwargs['metric']
-        metric_params = None if not 'metric_params' in kwargs.keys() else kwargs['metric_params']
-        algorithm = 'auto' if not 'algorithm' in kwargs.keys() else kwargs['algorithm']
-        leaf_size = 30 if not 'leaf_size' in kwargs.keys() else kwargs['leaf_size']
-        n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']
+        eps = 10 if 'eps' not in kwargs.keys() else kwargs['eps']
+        min_samples = 2 if 'min_samples' not in kwargs.keys() else kwargs['min_samples']
+        metric = 'euclidean' if 'metric' not in kwargs.keys() else kwargs['metric']
+        metric_params = None if 'metric_params' not in kwargs.keys() else kwargs['metric_params']
+        algorithm = 'auto' if 'algorithm' not in kwargs.keys() else kwargs['algorithm']
+        leaf_size = 30 if 'leaf_size' not in kwargs.keys() else kwargs['leaf_size']
+        n_jobs = -1 if 'n_jobs' not in kwargs.keys() else kwargs['n_jobs']
 
         invalid = False
         if type(eps) != int and type(eps) != float:
@@ -576,7 +576,7 @@ class DBSCAN(DenoisingStrategy):
         if metric_params != None and type(metric_params) != dict:
             print('Metric params must be a dict or None.')
             invalid = True
-        if not algorithm in ['auto', 'ball_tree', 'kd_tree', 'brute']:
+        if algorithm not in ['auto', 'ball_tree', 'kd_tree', 'brute']:
             print('Algorithm must be one of {auto, ball_tree, kd_tree, brute}')
             invalid = True
         if type(leaf_size) != int:
@@ -619,11 +619,11 @@ class MeanShift(DenoisingStrategy):
                  the number of processors used. -1 means use all available processors.
     """
     def __init__(self, **kwargs):
-        cluster_all = False if not 'cluster_all' in kwargs.keys() else kwargs['cluster_all']
-        bandwidth = 30 if not 'bandwidth' in kwargs.keys() else kwargs['bandwidth']
-        seeds = None if not 'seeds' in kwargs.keys() else kwargs['seeds']
-        min_bin_freq = 2 if not 'min_bin_freq' in kwargs.keys() else kwargs['min_bin_freq']
-        n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']
+        cluster_all = False if 'cluster_all' not in kwargs.keys() else kwargs['cluster_all']
+        bandwidth = 30 if 'bandwidth' not in kwargs.keys() else kwargs['bandwidth']
+        seeds = None if 'seeds' not in kwargs.keys() else kwargs['seeds']
+        min_bin_freq = 2 if 'min_bin_freq' not in kwargs.keys() else kwargs['min_bin_freq']
+        n_jobs = -1 if 'n_jobs' not in kwargs.keys() else kwargs['n_jobs']
         
         invalid = False
         if type(cluster_all) != bool:

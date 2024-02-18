@@ -248,7 +248,7 @@ def expression_plot(
         bottom_ax.text(s=axes_names[1],
                        x=-180, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
-    fig.supylabel(f'p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
+    fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
     bottom_ax.text(s='   onset of environment   ',
                    x=0, y=0 if paired_axes else ylim/2,  # vertically centred
                    color='white', fontsize='x-small',

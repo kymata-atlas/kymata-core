@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import euclidean_distances
-from copy import deepcopy
 import requests
 import seaborn as sns
 from matplotlib.lines import Line2D
@@ -102,7 +101,7 @@ def build_hexel_dict_from_expression_set(expression_set: HexelExpressionSet) -> 
             func = row[DIM_FUNCTION]
             latency = row[DIM_LATENCY] * 1000  # convert to ms
             pval = row["value"]
-            if not func in hexels:
+            if func not in hexels:
                 hexels[func] = IPPMHexel(func)
             hexels[func].add_pairing(hemi, (latency, pval))
     return hexels
@@ -127,7 +126,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
         for (_, latency, pval, func) in dict_[hemi]:
             # we have id, latency (ms), pvalue (log_10), function name.
             # discard id as it conveys no useful information
-            if not func in hexels:
+            if func not in hexels:
                 # first time seeing function, so create key and hexel object.
                 hexels[func] = IPPMHexel(func)
             
@@ -209,7 +208,7 @@ def stem_plot(
     right_hem_expression_plot.invert_yaxis()
     left_hem_expression_plot.text(-180, y_limit * 10000000, 'left hemisphere', style='italic', verticalalignment='center')
     right_hem_expression_plot.text(-180, y_limit * 10000000, 'right hemisphere', style='italic', verticalalignment='center')
-    y_axis_label = f'p-value (with α at 5-sigma, Bonferroni corrected)'
+    y_axis_label = 'p-value (with α at 5-sigma, Bonferroni corrected)'
     left_hem_expression_plot.text(-275, 1, y_axis_label, verticalalignment='center',rotation='vertical')
     right_hem_expression_plot.text(0, 1, '   onset of environment   ', color='white', fontsize='x-small', bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center', horizontalalignment='center', rotation='vertical')
     left_hem_expression_plot.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', bbox_to_anchor=(1.2, 1))
@@ -291,7 +290,7 @@ def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
 def remove_excess_funcs(to_retain: List[str], hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
     funcs = list(hexels.keys())
     for func in funcs:
-        if not func in to_retain:
+        if func not in to_retain:
             # delete
             hexels.pop(func)
     return hexels

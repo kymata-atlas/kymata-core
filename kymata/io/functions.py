@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from numpy import array, float16, convolve, mean
 import numpy as np
 from numpy.typing import NDArray
 from scipy.io import loadmat
