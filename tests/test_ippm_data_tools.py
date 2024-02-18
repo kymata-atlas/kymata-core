@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, channel_sensitivity
-=======
 from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, function_recall
->>>>>>> 923c8f3 (Added channel sensitivity)
 from collections import namedtuple
 import kymata.ippm.data_tools as data_tools
 import pytest
