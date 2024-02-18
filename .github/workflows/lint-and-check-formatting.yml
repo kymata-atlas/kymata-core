@@ -1,4 +1,4 @@
-name: Lint and check formatting using Ruff
+name: Perform linting checks
 on: [ push, pull_request ]
 jobs:
   ruff:
