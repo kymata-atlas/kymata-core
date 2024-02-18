@@ -3,3 +3,4 @@
 
 # Ignore demos folder when calculating the Github language statistics
 demos/** linguist-vendored
+kymata/ippm/hyperparameter_tuning.ipynb -linguist-vendored
