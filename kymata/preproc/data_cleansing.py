@@ -496,30 +496,30 @@ def create_trialwise_data(dataset_directory_name: str,
 
         for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
             if input_stream == 'auditory':
-                #events = audio_events
-            #else:
-            #    events = visual_events
+                # events = audio_events
+                # else:
+                #    events = visual_events
 
-            #	Extract trial instances ('epochs')
+                #	Extract trial instances ('epochs')
 
-            _tmin = -0.2
-            _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction
-            epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
+                _tmin = -0.2
+                _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction
+                epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
                                 baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
                                 preload=True)
 
-            # 	Log which channels are worst
-            dropfig = epochs.plot_drop_log(subject=p)
-            dropfig.savefig(f'{data_path}/intrim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
+                # 	Log which channels are worst
+                dropfig = epochs.plot_drop_log(subject=p)
+                dropfig.savefig(f'{data_path}/intrim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
 
-            global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
+                global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
 
-            for i in range(len(audio_events_raw)):
-                evoked = epochs[str(i)].average()
-                evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
+                for i in range(len(audio_events_raw)):
+                    evoked = epochs[str(i)].average()
+                    evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
 
-            evoked = epochs.average()
-            evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
+                evoked = epochs.average()
+                evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
 
 
 def create_trials(data_root_dir: str,

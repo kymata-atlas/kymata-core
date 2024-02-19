@@ -236,10 +236,12 @@ class MaxPooler(DenoisingStrategy):
             bin_sz : int
                      the size, in ms, of a bin.
         """
-        
+
         self._threshold = 15 if 'threshold' not in kwargs.keys() else kwargs['threshold']
         self._bin_sz = 25 if 'bin_sz' not in kwargs.keys() else kwargs['bin_sz']
         if not isinstance(self._threshold, int):
+            # edge case with isinstance: bool is subtype of int, so technically a user can pass in a boolean value for an integer
+            # True = 1, False = 0.
             print('Threshold needs to be an integer.')
             raise ValueError
         if not isinstance(self._bin_sz, int):
@@ -368,13 +370,13 @@ class AdaptiveMaxPooler(DenoisingStrategy):
             end_ptr = 1 # guarenteed to have > 1 data point. delineates end of bin
             start_ptr = 0
             total_bins = 1000 / self._base_bin_sz
-            prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+            prev_bin_min, prev_bin_lat_min = get_default_vals()
             prev_signi = False
             ret = []
             while df_ptr < len(df) and start_ptr < total_bins:
                 end_ms = end_ptr * self._base_bin_sz
                 num_in_bin = 0
-                cur_bin_min, cur_bin_lat_min = get_default_vals('a')
+                cur_bin_min, cur_bin_lat_min = get_default_vals()
                 while df_ptr < len(df) and df.iloc[df_ptr, 0] < end_ms:
                     if df.iloc[df_ptr, 1] < cur_bin_min:
                         cur_bin_min, cur_bin_lat_min = df.iloc[df_ptr, 1], df.iloc[df_ptr, 0]
@@ -389,14 +391,14 @@ class AdaptiveMaxPooler(DenoisingStrategy):
                     if prev_signi:
                         # start_ptr to end_ptr is significant
                         ret.append((prev_bin_lat_min, prev_bin_min))
-                        prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+                        prev_bin_min, prev_bin_lat_min = get_default_vals()
                         prev_signi = False
                     start_ptr = end_ptr
                     end_ptr += 1
             if prev_signi:
                 # last bin was significant and we expanded
                 ret.append((prev_bin_lat_min, prev_bin_min))
-                prev_bin_min, prev_bin_lat_min = get_default_vals('a')
+                prev_bin_min, prev_bin_lat_min = get_default_vals()
                 prev_signi = False
             hexels = super()._update_pairings(hexels, func, ret, hemi)
         return hexels if not posterior_pooling else super()._posterior_pooling(hexels, hemi)
@@ -439,7 +441,7 @@ class GMM(DenoisingStrategy):
         if not isinstance(self._max_gaussians, int):
             print('Max Gaussians must be of type int.')
             invalid = True
-        if not self._covariance_type in ['full', 'tied', 'diag', 'spherical']:
+        if self._covariance_type not in ['full', 'tied', 'diag', 'spherical']:
             print('Covariance type must be one of {full, tied, diag, spherical}')
             invalid = True
         if not isinstance(self._max_iter, int):
@@ -448,10 +450,10 @@ class GMM(DenoisingStrategy):
         if not isinstance(self._n_init, int):
             print('Number of initialisations must be of type int.')
             invalid = True
-        if not self._init_params in ['kmeans', 'k-means++', 'random', 'random_from_data']:
+        if self._init_params not in ['kmeans', 'k-means++', 'random', 'random_from_data']:
             print('Initalisation of parameter strategy must be one of {kmeans, k-means++, random, random_from_data}')
             invalid = True
-        if self._random_state != None and not isinstance(self._random_state, int):
+        if self._random_state is not None and not isinstance(self._random_state, int):
             print('Random state must be none or int.')
             invalid = True
         
@@ -557,13 +559,13 @@ class DBSCAN(DenoisingStrategy):
                  the number of processors to use. -1 means use all available ones
     """
     def __init__(self, **kwargs):
-        eps = 10 if not 'eps' in kwargs.keys() else kwargs['eps']
-        min_samples = 2 if not 'min_samples' in kwargs.keys() else kwargs['min_samples']
-        metric = 'euclidean' if not 'metric' in kwargs.keys() else kwargs['metric']
-        metric_params = None if not 'metric_params' in kwargs.keys() else kwargs['metric_params']
-        algorithm = 'auto' if not 'algorithm' in kwargs.keys() else kwargs['algorithm']
-        leaf_size = 30 if not 'leaf_size' in kwargs.keys() else kwargs['leaf_size']
-        n_jobs = -1 if not 'n_jobs' in kwargs.keys() else kwargs['n_jobs']
+        eps = 10 if 'eps' not in kwargs.keys() else kwargs['eps']
+        min_samples = 2 if 'min_samples' not in kwargs.keys() else kwargs['min_samples']
+        metric = 'euclidean' if 'metric' not in kwargs.keys() else kwargs['metric']
+        metric_params = None if 'metric_params' not in kwargs.keys() else kwargs['metric_params']
+        algorithm = 'auto' if 'algorithm' not in kwargs.keys() else kwargs['algorithm']
+        leaf_size = 30 if 'leaf_size' not in kwargs.keys() else kwargs['leaf_size']
+        n_jobs = -1 if 'n_jobs' not in kwargs.keys() else kwargs['n_jobs']
 
         invalid = False
         if not (isinstance(eps, int) or isinstance(eps, float)):
@@ -575,10 +577,10 @@ class DBSCAN(DenoisingStrategy):
         if not isinstance(metric, str):
             print('Metric must be a string. It should be one from https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise_distances.html#sklearn.metrics.pairwise_distances')
             invalid = True
-        if metric_params != None and not isinstance(metric_params, str):
+        if metric_params is not None and not isinstance(metric_params, dict):
             print('Metric params must be a dict or None.')
             invalid = True
-        if not algorithm in ['auto', 'ball_tree', 'kd_tree', 'brute']:
+        if algorithm not in ['auto', 'ball_tree', 'kd_tree', 'brute']:
             print('Algorithm must be one of {auto, ball_tree, kd_tree, brute}')
             invalid = True
         if not isinstance(leaf_size, int):
@@ -631,10 +633,10 @@ class MeanShift(DenoisingStrategy):
         if not isinstance(cluster_all, bool):
             print('Cluster_all must be of type bool.')
             invalid = True
-        if not isinstance(bandwidth, float) and not isinstance(bandwidth, int) and bandwidth != None:
+        if not isinstance(bandwidth, float) and not isinstance(bandwidth, int) and bandwidth is not None:
             print('bandwidth must be None or float.')
             invalid = True
-        if not isinstance(seeds, list) and seeds != None:
+        if not isinstance(seeds, list) and seeds is not None:
             print('Seeds must be a list or None.')
             invalid = True
         if not isinstance(min_bin_freq, int):

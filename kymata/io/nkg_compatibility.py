@@ -76,7 +76,7 @@ def _load_data_0_2(from_path_or_file: path_type | file_type) -> dict[str, Any]:
         with TextIOWrapper(zf.open("_metadata/expression-set-type.txt"), encoding="utf-8") as f:
             return_dict["expressionset-type"] = str(f.read()).strip()
         with TextIOWrapper(zf.open("/layers.txt"), encoding="utf-8") as f:
-            layers = [str(line.strip()) for linew in f.readlines()]
+            layers = [str(line.strip()) for line in f.readlines()]
         with TextIOWrapper(zf.open("/channels.txt"), encoding="utf-8") as f:
             return_dict["channels"] = [c.strip() for c in f.readlines()]
         with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:

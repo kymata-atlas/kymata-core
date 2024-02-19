@@ -7,7 +7,6 @@ from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
-from kymata.io.yaml import load_config
 from kymata.plot.plot import expression_plot
 
 _default_output_dir = Path(data_root_path(), "output")

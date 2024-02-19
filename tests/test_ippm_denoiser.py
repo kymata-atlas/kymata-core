@@ -54,7 +54,7 @@ def test_Should_maxPoolerThrowError_When_invalidParams():
     with pytest.raises(ValueError):
         denoiser.MaxPooler(bin_sz='abc')
     with pytest.raises(ValueError):
-        denoiser.MaxPooler(threshold=False)
+        denoiser.MaxPooler(threshold='lmpq')
 
 
 def test_Should_gmmHaveDefaultParams_When_noParams():
