@@ -13,7 +13,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
-    mri_structural_type = config['mri_structural_type'] 
+    #mri_structural_type = config['mri_structural_type'] 
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     '''    
@@ -219,7 +219,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 participant + '-fwd-eegonly.fif'))
             
         # Read noise covariance matrix
-        if config['duration'] == None or config['cov_method'] != 'emptyroom':
+        if config['duration'] is None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
                 intrim_preprocessing_directory_name,
                 '3_evoked_sensor_data',
@@ -256,7 +256,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
                 inverse_operator, overwrite=True)
         elif config['meg']:
-            if config['duration'] == None:
+            if config['duration'] is None:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
                         intrim_preprocessing_directory_name,

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from numpy import array, float16, convolve, mean
 import numpy as np
 from numpy.typing import NDArray
 from scipy.io import loadmat
@@ -26,7 +25,6 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             n_chans = func.shape[0]
             new_mr_arr = np.zeros((n_chans, 400_000))
             new_ft_arr = np.zeros((n_chans, 400_000))
-            T_end = tt[0, -1]
             if func_name == 'neurogram_mr':
                 for i in range(n_chans):
                     new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt[0], func[i])

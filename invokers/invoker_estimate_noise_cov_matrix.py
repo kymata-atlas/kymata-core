@@ -1,8 +1,6 @@
 from pathlib import Path
-from colorama import Fore
 
 from kymata.io.yaml import load_config
-from kymata.io.cli import print_with_color
 from kymata.preproc.data_cleansing import estimate_noise_cov
 
 

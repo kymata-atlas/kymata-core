@@ -263,7 +263,7 @@ def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, An
         with TextIOWrapper(zf.open("_metadata/expression-set-type.txt"), encoding="utf-8") as f:
             return_dict[_Keys.expressionset_type] = str(f.read()).strip()
         with TextIOWrapper(zf.open("/blocks.txt"), encoding="utf-8") as f:
-            blocks = [str(l.strip()) for l in f.readlines()]
+            blocks = [str(line.strip()) for line in f.readlines()]
         with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
             return_dict[_Keys.latencies] = [LatencyDType(lat.strip()) for lat in f.readlines()]
         with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
