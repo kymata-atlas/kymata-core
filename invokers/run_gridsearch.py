@@ -102,7 +102,6 @@ def main():
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
-    n_reps = emeg_path
     morph_dir = Path(args.base_dir, "intrim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
@@ -137,7 +136,6 @@ def main():
         emeg_t_start=args.emeg_t_start,
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
-        ave_mode=args.ave_mode,
         overwrite=args.overwrite,
     )
 

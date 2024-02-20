@@ -27,7 +27,6 @@ def do_gridsearch(
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
         n_reps: int = 1,
-        ave_mode: str = 'ave',  # either ave or concatenate, for averaging over input files or concatenating in as extra evidence
         overwrite: bool = True,
 ) -> ExpressionSet:
     """
