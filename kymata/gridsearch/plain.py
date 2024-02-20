@@ -43,7 +43,7 @@ def do_gridsearch(
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
     if ave_mode == 'add':
-        # commented this out to fix EMEG_paths undefined error. Assuming it is defined as # of EMEG chans?
+        # TODO:  hard-code hack, fix as part of https://github.com/kymata-atlas/kymata-toolbox/issues/128
         #n_reps = len(EMEG_paths)
         n_reps = 1
     else:
