@@ -42,8 +42,8 @@ def main():
     parser.add_argument('--morph', action="store_true",
                         help="Morph hexel data to fs-average space prior to running gridsearch. "
                              "Only has an effect if an inverse operator is specified.")
-    parser.add_argument('--ave-mode', type=str, default="ave", choices=["ave", "add"],
-                        help='`ave`: average over the list of repetitions. `add`: treat them as extra data.')
+    parser.add_argument('--ave-mode', type=str, default="ave", choices=["ave", "concatenate"],
+                        help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
     parser.add_argument('--inverse-operator-dir', type=str, default=None,
                         help='inverse solution path')
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
@@ -103,7 +103,7 @@ def main():
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
     morph_dir = Path(args.base_dir, "intrim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
-    emeg_values, ch_names = load_emeg_pack(emeg_filenames,
+    emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
                                            use_morph=args.morph,
@@ -130,12 +130,12 @@ def main():
         seconds_per_split=args.seconds_per_split,
         n_derangements=args.n_derangements,
         n_splits=args.n_splits,
+        n_reps=n_reps,
         start_latency=args.start_latency,
         plot_location=args.save_plot_location,
         emeg_t_start=args.emeg_t_start,
         emeg_sample_rate=args.emeg_sample_rate,
         audio_shift_correction=args.audio_shift_correction,
-        ave_mode=args.ave_mode,
         overwrite=args.overwrite,
     )
 

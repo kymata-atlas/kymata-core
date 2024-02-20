@@ -26,7 +26,7 @@ def do_gridsearch(
         n_derangements: int = 1,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
-        ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
+        n_reps: int = 1,
         overwrite: bool = True,
 ) -> ExpressionSet:
     """
@@ -41,13 +41,6 @@ def do_gridsearch(
     downsample_rate: int = int(emeg_sample_rate / function.sample_rate)  # TODO: implement for general emeg_sample_rate
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
-
-    if ave_mode == 'add':
-        # TODO:  hard-code hack, fix as part of https://github.com/kymata-atlas/kymata-toolbox/issues/128
-        #n_reps = len(EMEG_paths)
-        n_reps = 1
-    else:
-        n_reps = 1
 
     func_length = n_splits * n_samples_per_split // 2
     if func_length < function.values.shape[0]:
