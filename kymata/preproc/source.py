@@ -236,7 +236,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
     emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0])
     emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
-    if ave_mode == 'add':
+    if ave_mode == 'concatenate':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
             new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
