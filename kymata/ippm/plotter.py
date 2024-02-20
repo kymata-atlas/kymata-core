@@ -183,13 +183,13 @@ class IPPMPlotter(object):
         x = ctr_points[:, 0]
         y = ctr_points[:, 1]
 
-        l = len(x)
-        t = np.linspace(0, 1, l - 2, endpoint=True)
+        length = len(x)
+        t = np.linspace(0, 1, length - 2, endpoint=True)
         t = np.append([0, 0, 0], t)
         t = np.append(t, [1, 1, 1])
 
         tck = [t, [x, y], 3]
-        u3 = np.linspace(0, 1, (max(l * 2, 70)), endpoint=True)
+        u3 = np.linspace(0, 1, (max(length * 2, 70)), endpoint=True)
         bspline_path = splev(u3, tck)
 
         return bspline_path

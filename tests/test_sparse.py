@@ -50,12 +50,11 @@ def test_expand_dims_too_big():
     matrix = COO.from_numpy(rand(3, 3, 3))
 
     with pytest.raises(ValueError):
-        expanded_matrix = expand_dims(matrix, -1)
-
+        expand_dims(matrix, -1)
 
 def test_expand_dims_much_too_big():
 
     matrix = COO.from_numpy(rand(3, 4, 5, 6, 7))
 
     with pytest.raises(ValueError):
-        expanded_matrix = expand_dims(matrix, -1)
+        expand_dims(matrix, -1)

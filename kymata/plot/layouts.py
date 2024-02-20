@@ -24,7 +24,8 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
     with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations", "Vectorview-all.lout").open("r") as layout_file:
         _ = layout_file.readline()  # First line is nothing
         for line in layout_file:
-            if not line: continue  # Skip blank lines
+            if not line: 
+                continue  # Skip blank lines
             match = layout_line_re.match(line)
             sensor = match.group("sensor")
             sensor = sensor.replace(" ", "")

@@ -141,7 +141,7 @@ def delete_dataset(local_dataset: SampleDataset):
     # Make sure it's not silent
     print(f"Deleting dataset {local_dataset.name}")
     # Only allow deletion if the specified url is within the data dir
-    assert data_root_path() in local_dataset.path.parents, f"Cannot delete dataset outside of data root directory"
+    assert data_root_path() in local_dataset.path.parents, "Cannot delete dataset outside of data root directory"
     if not local_dataset.path.exists():
         # Nothing to delete
         print(f"{str(local_dataset.path)} doesn't exist")

@@ -7,7 +7,6 @@ from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
-from kymata.io.yaml import load_config
 from kymata.plot.plot import expression_plot
 
 _default_output_dir = Path(data_root_path(), "output")
@@ -64,7 +63,7 @@ def main():
     args = parser.parse_args()
 
     # TODO: use config for ppt lists etc
-    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+    #config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
     participants = [
         'pilot_01',
@@ -98,8 +97,8 @@ def main():
 
     if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and (args.inverse_operator_dir is not None):
         raise ValueError(
-            f"Averaging source-space results without morphing to a common space. "
-            f"If you are averaging over multiple participants you must morph to a common space.")
+            "Averaging source-space results without morphing to a common space. " +
+            "If you are averaging over multiple participants you must morph to a common space.")
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)

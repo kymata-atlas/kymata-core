@@ -1,5 +1,3 @@
-from numpy import log10
-
 from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks
 
 

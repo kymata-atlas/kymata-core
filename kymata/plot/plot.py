@@ -153,7 +153,8 @@ def expression_plot(
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
-    if isinstance(axes, pyplot.Axes): axes = (axes, )  # Wrap if necessary
+    if isinstance(axes, pyplot.Axes): 
+        axes = (axes, )  # Wrap if necessary
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
@@ -248,7 +249,7 @@ def expression_plot(
         bottom_ax.text(s=axes_names[1],
                        x=-180, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
-    fig.supylabel(f'p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
+    fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
     bottom_ax.text(s='   onset of environment   ',
                    x=0, y=0 if paired_axes else ylim/2,  # vertically centred
                    color='white', fontsize='x-small',

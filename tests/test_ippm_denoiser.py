@@ -54,7 +54,7 @@ def test_Should_maxPoolerThrowError_When_invalidParams():
     with pytest.raises(ValueError):
         denoiser.MaxPooler(bin_sz='abc')
     with pytest.raises(ValueError):
-        denoiser.MaxPooler(threshold=False)
+        denoiser.MaxPooler(threshold='lmpq')
 
 
 def test_Should_gmmHaveDefaultParams_When_noParams():
@@ -233,7 +233,7 @@ def test_Should_clusterBinsExit_When_emptyBin():
     denoiser_ = denoiser.MaxPooler(threshold=3)  # bin_sz = 25, threshold = 15 by default
     bin_min, lat_min, num_seen, r_idx = denoiser_._cluster_bin(df, r_idx=4, latency=275)
     assert bin_min == float('inf')
-    assert lat_min == None  # 1e-20 is out of latency bin, so it should terminate early
+    assert lat_min is None  # 1e-20 is out of latency bin, so it should terminate early
     assert num_seen == 0
     assert r_idx == 4
 
