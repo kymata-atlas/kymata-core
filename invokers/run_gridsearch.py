@@ -43,7 +43,7 @@ def main():
                         help="Morph hexel data to fs-average space prior to running gridsearch. "
                              "Only has an effect if an inverse operator is specified.")
     parser.add_argument('--ave-mode', type=str, default="ave", choices=["ave", "add"],
-                        help='`ave`: average over the list of repetitions. `add`: treat them as extra data.')
+                        help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
     parser.add_argument('--inverse-operator-dir', type=str, default=None,
                         help='inverse solution path')
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
