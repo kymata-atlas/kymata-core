@@ -220,6 +220,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
     ]
+    n_reps = len(emeg_paths)
     morph_paths = [
         Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
@@ -247,9 +248,10 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
             t_shift = p_tshift[i]
             emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
                                                     morph_paths[i])[0][:, t_shift:402001 + t_shift], 1)
+        n_reps = 1 # n_reps is now 1 as all averaged
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
-    return emeg, emeg_names
+    return emeg, emeg_names, n_reps
 
 
 def _strip_ave(name: str) -> str:

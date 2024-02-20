@@ -102,8 +102,9 @@ def main():
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
+    n_reps = emeg_path
     morph_dir = Path(args.base_dir, "intrim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
-    emeg_values, ch_names = load_emeg_pack(emeg_filenames,
+    emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
                                            use_morph=args.morph,
@@ -130,6 +131,7 @@ def main():
         seconds_per_split=args.seconds_per_split,
         n_derangements=args.n_derangements,
         n_splits=args.n_splits,
+        n_reps=n_reps,
         start_latency=args.start_latency,
         plot_location=args.save_plot_location,
         emeg_t_start=args.emeg_t_start,
