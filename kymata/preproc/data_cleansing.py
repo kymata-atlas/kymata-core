@@ -26,7 +26,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
         for run in range(1, n_runs + 1):
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+            saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                 run) + '_raw_sss.fif'
 
             if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
@@ -138,15 +138,15 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
 
 
-def run_second_pass_cleansing_and_EOG_removal(list_of_participants: list[str],
-                                                      data_root_dir: str,
-                                                      dataset_directory_name: str,
-                                                      n_runs: int,
-                                                      remove_ecg: bool,
-                                                      remove_veoh_and_heog: bool,
-                                                      skip_ica_if_previous_runs_exist: bool,
-                                                      supress_excessive_plots_and_prompts: bool,
-                                                      ):
+def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
+                                              data_root_dir: str,
+                                              dataset_directory_name: str,
+                                              n_runs: int,
+                                              remove_ecg: bool,
+                                              remove_veoh_and_heog: bool,
+                                              skip_ica_if_previous_runs_exist: bool,
+                                              supress_excessive_plots_and_prompts: bool,
+                                              ):
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
 

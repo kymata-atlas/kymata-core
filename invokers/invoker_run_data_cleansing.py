@@ -3,7 +3,7 @@ from colorama import Fore
 
 from kymata.io.yaml import load_config
 from kymata.io.cli import print_with_color
-from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_filtering, run_second_pass_cleansing_and_EOG_removal
+from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_filtering, run_second_pass_cleansing_and_eog_removal
 
 
 # noinspection DuplicatedCode
@@ -29,7 +29,7 @@ def main(config: dict):
         supress_excessive_plots_and_prompts=config['supress_excessive_plots_and_prompts'],
     )
 
-    run_second_pass_cleansing_and_EOG_removal(
+    run_second_pass_cleansing_and_eog_removal(
         data_root_dir=data_root_dir,
         list_of_participants=config['participants'],
         dataset_directory_name=config['dataset_directory_name'],
