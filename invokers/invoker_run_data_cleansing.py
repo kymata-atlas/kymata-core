@@ -7,8 +7,7 @@ from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_f
 
 
 # noinspection DuplicatedCode
-def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
+def main(config: dict):
 
     if config['data_location'] == "local":
         data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
@@ -17,7 +16,7 @@ def main():
     elif config['data_location'] == "cbu-local":
         data_root_dir = '//cbsu/data/imaging/projects/cbu/kymata/data/'
     else:
-        raise Exception("The 'data_location' parameter in the dataset_config file must be either 'cbu' or 'local' or 'cbu-local'.")
+        raise Exception("The `data_location` parameter in the dataset_config file must be either 'cbu' or 'local' or 'cbu-local'.")
 
     run_first_pass_cleansing_and_maxwell_filtering(
         data_root_dir = data_root_dir,
@@ -41,6 +40,7 @@ def main():
         supress_excessive_plots_and_prompts=config['supress_excessive_plots_and_prompts'],
     )
 
+
 def _display_welcome_message_to_terminal():
     """Runs welcome message"""
     print_with_color("-----------------------------------------------", Fore.BLUE)
@@ -48,9 +48,18 @@ def _display_welcome_message_to_terminal():
     print_with_color("-----------------------------------------------", Fore.BLUE)
     print_with_color("", Fore.BLUE)
 
+
 def _run_cleanup():
     """Runs clean up"""
     print_with_color("Exited successfully.", Fore.GREEN)
 
+
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config-location", type=Path, help="Path to the appropriate dataset config .yaml file",
+                        default=Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml"))
+    args = parser.parse_args()
+
+    main(config=load_config(str(args.config_location)))

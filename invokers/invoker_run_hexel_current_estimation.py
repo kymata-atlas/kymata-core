@@ -33,6 +33,7 @@ def _display_welcome_message_to_terminal():
     print_with_color("-----------------------------------------------", Fore.BLUE)
     print_with_color("", Fore.BLUE)
 
+
 def _run_cleanup():
     """Runs clean up"""
     print_with_color("Exited successfully.", Fore.GREEN)
