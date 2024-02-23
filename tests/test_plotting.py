@@ -1,4 +1,6 @@
-from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks
+from numpy import array, array_equal
+
+from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks, _get_xticks
 
 
 def test_best_best_ylim_returns_supplied_ylim():
@@ -18,3 +20,18 @@ def test_small_data_gets_at_least_one_tick():
     ylim = _get_best_ylim(ylim=None, data_y_min=data_y_min)
     y_ticks = _get_yticks(ylim)
     assert len(y_ticks) >= 2
+
+
+def get_x_ticks_standard():
+    x_ticks = _get_xticks((-200, 800))
+    assert array_equal(x_ticks, array([-200, -100, 0, 100, 200, 300, 400, 500, 600, 700, 800]))
+
+
+def get_x_ticks_smaller():
+    x_ticks = _get_xticks((-100, 700))
+    assert array_equal(x_ticks, array([-100, 0, 100, 200, 300, 400, 500, 600, 700]))
+
+
+def get_x_ticks_non_multiples():
+    x_ticks = _get_xticks((-150, 750))
+    assert array_equal(x_ticks, array([-100, 0, 100, 200, 300, 400, 500, 600, 700]))
