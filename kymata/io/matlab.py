@@ -91,7 +91,6 @@ def _prep_matlab_data(data, n_latencies, downsample_ratio):
         # Some hexels are all nans because they're on the medial wall
         # or otherwise intentionally excluded from the analysis;
         # we replace those with p=1.0 to ignore
-        # TODO: could also delete
         nan_to_num(
             nan=1.0,
             x=_downsample_data(data, downsample_ratio)
