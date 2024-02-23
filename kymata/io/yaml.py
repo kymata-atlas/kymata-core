@@ -2,9 +2,10 @@ import yaml
 
 
 def load_config(config_location: str):
-    """Load dataset_config parameters"""
+    """Load config parameters"""
     with open(config_location, "r") as stream:
         return yaml.safe_load(stream)
+
 
 def modify_param_config(config_location: str, key: str, value):
     with open(config_location, 'r') as stream:

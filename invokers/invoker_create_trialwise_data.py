@@ -9,7 +9,7 @@ def main():
 
     create_trialwise_data(
         dataset_directory_name=config['dataset_directory_name'],
-        list_of_participants=config['list_of_participants'],
+        list_of_participants=config['participants'],
         repetitions_per_runs=config['repetitions_per_runs'],
         number_of_runs=config['number_of_runs'],
         number_of_trials=config['number_of_trials'],

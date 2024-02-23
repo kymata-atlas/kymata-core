@@ -21,7 +21,7 @@ def main():
 
     run_first_pass_cleansing_and_maxwell_filtering(
         data_root_dir = data_root_dir,
-        list_of_participants=config['list_of_participants'],
+        list_of_participants=config['participants'],
         dataset_directory_name=config['dataset_directory_name'],
         n_runs=config['number_of_runs'],
         emeg_machine_used_to_record_data=config['EMEG_machine_used_to_record_data'],
@@ -32,7 +32,7 @@ def main():
 
     run_second_pass_cleansing_and_EOG_removal(
         data_root_dir=data_root_dir,
-        list_of_participants=config['list_of_participants'],
+        list_of_participants=config['participants'],
         dataset_directory_name=config['dataset_directory_name'],
         n_runs=config['number_of_runs'],
         remove_ecg=config['remove_ECG'],

@@ -5,6 +5,7 @@ import time
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
+from kymata.io.yaml import load_config
 from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot
@@ -62,25 +63,9 @@ def main():
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
 
-    # TODO: use config for ppt lists etc
-    #dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
+    dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
 
-    participants = [
-        'pilot_01',
-        'pilot_02',
-        'participant_01',
-        'participant_01b',
-        'participant_02',
-        'participant_03',
-        'participant_04',
-        'participant_05',
-        'participant_07',
-        'participant_08',
-        'participant_09',
-        'participant_11',
-        'participant_12',
-        'participant_13',
-    ]
+    participants = dataset_config['participants']
 
     # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']

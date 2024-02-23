@@ -19,7 +19,7 @@ def main():
 
     estimate_noise_cov( data_root_dir = data_root_dir,
                        emeg_machine_used_to_record_data = config['emeg_machine_used_to_record_data'],
-                       list_of_participants = config['list_of_participants'],
+                       list_of_participants = config['participants'],
                        dataset_directory_name  = config['dataset_directory_name'],
                        n_runs = config['number_of_runs'],
                        cov_method = config['cov_method'],

@@ -10,7 +10,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     create the surfaces, the boundary element model solutions, and the source space
     """
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
     #mri_structural_type = config['mri_structural_type'] 
@@ -162,7 +162,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
 def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
@@ -285,7 +285,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
 def create_hexel_morph_maps(data_root_dir, config: dict):
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
