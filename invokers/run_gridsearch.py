@@ -62,7 +62,6 @@ def main():
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
 
-    # TODO: use config for ppt lists etc
     #config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
     participants = [
@@ -82,7 +81,6 @@ def main():
         'participant_13',
     ]
 
-    # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.single_participant_override is not None:
         emeg_filenames = [args.single_participant_override + "-ave"]
