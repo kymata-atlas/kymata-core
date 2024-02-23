@@ -1,4 +1,5 @@
 import os.path
+from typing import Optional
 
 from colorama import Fore, Style
 import mne
@@ -13,23 +14,30 @@ from kymata.io.yaml import load_config, modify_param_config
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
-                      data_root_dir: str,
-                      dataset_directory_name: str,
-                      n_runs: int,
-                      emeg_machine_used_to_record_data: str,
-                      skip_maxfilter_if_previous_runs_exist: bool,
-                      automatic_bad_channel_detection_requested: bool,
-                      supress_excessive_plots_and_prompts: bool,
-                      ):
+                                                   data_root_dir: str,
+                                                   dataset_directory_name: str,
+                                                   n_runs: int,
+                                                   emeg_machine_used_to_record_data: str,
+                                                   skip_maxfilter_if_previous_runs_exist: bool,
+                                                   automatic_bad_channel_detection_requested: bool,
+                                                   supress_excessive_plots_and_prompts: bool,
+                                                   raw_emeg_path: Optional[Path] = None,
+                                                   processed_path: Optional[Path] = None,
+                                                   ) -> None:
+
+    if raw_emeg_path is None:
+        raw_emeg_path = Path(data_root_dir, dataset_directory_name, "raw_emeg")
+    if processed_path is None:
+        processed_path = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "1_maxfiltered")
 
     for participant in list_of_participants:
+        config_path = Path(raw_emeg_path, participant, f"{participant}_recording_config.yaml")
         for run in range(1, n_runs + 1):
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
-                run) + '_raw_sss.fif'
+            saved_maxfiltered_path = Path(processed_path, f"{participant}_run{run!s}_raaw_sss.fif")
 
-            if skip_maxfilter_if_previous_runs_exist and os.path.isfile(saved_maxfiltered_filename):
+            if skip_maxfilter_if_previous_runs_exist and saved_maxfiltered_path.exists():
 
                 print_with_color(f"Skipping first pass filtering and Maxfiltering for {participant} [Run {str(run)}]...", Fore.GREEN)
 
@@ -40,13 +48,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 # Load data
                 print_with_color("   Loading Raw data...", Fore.GREEN)
 
-                raw_fif_data = mne.io.Raw(
-                    data_root_dir + dataset_directory_name + "/raw_emeg/" + participant + "/" + participant + "_run" + str(
-                        run) + "_raw.fif", preload=True)
+                raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_run{run!s}_raw.fif"),
+                                          preload=True)
 
                 # Rename any channels that require it, and their type
-                recording_config = load_config(
-                    data_root_dir + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml')
+                recording_config = load_config(config_path)
                 ecg_and_eog_channel_name_and_type_overwrites = recording_config[
                     'ECG_and_EOG_channel_name_and_type_overwrites']
 
@@ -79,11 +85,9 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     print("...assuming you want to continue without looking at the raw data.")
 
                 # Write back selected bad channels back to participant's config .yaml file
-                modify_param_config(
-                    data_root_dir + dataset_directory_name + '/raw_emeg/' + participant + "/" + participant + '_recording_config.yaml',
-                    'bad_channels',
-                    [str(item) for item in sorted(raw_fif_data.info['bads'])]
-                )
+                modify_param_config(config_path,
+                                    'bad_channels',
+                                    [str(item) for item in sorted(raw_fif_data.info['bads'])])
 
                 # Get the head positions
                 chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
@@ -135,7 +139,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     destination=(0, 0, 0.04),
                     verbose=True)
 
-                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_filename, fmt='short')
+                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
 
 def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],

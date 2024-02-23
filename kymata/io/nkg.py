@@ -16,7 +16,7 @@ from kymata.entities.expression import ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT, B
     SensorExpressionSet
 from kymata.math.p_values import p_to_logp
 from kymata.entities.sparse_data import expand_dims
-from kymata.io.file import path_type, file_type, open_or_use
+from kymata.io.file import PathType, FileType, open_or_use
 
 
 class _Keys(StrEnum):
@@ -64,14 +64,14 @@ class _ExpressionSetTypeIdentifier(StrEnum):
 CURRENT_VERSION = "0.4"
 
 
-def file_version(from_path_or_file: path_type | file_type) -> version.Version:
+def file_version(from_path_or_file: PathType | FileType) -> version.Version:
     with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
         with TextIOWrapper(zf.open("_metadata/format-version.txt"), encoding="utf-8") as f:
             return version.parse(str(f.read()).strip())
 
 
 # TODO: Could maybe improve this using generics when dropping support for Python version <3.12
-def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionSet:
+def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet:
     _v, data_dict = _load_data(from_path_or_file)
 
     type_identifier = data_dict[_Keys.expressionset_type]
@@ -98,7 +98,7 @@ def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionS
 
 
 def save_expression_set(expression_set: ExpressionSet,
-                        to_path_or_file: path_type | file_type,
+                        to_path_or_file: PathType | FileType,
                         compression=ZIP_LZMA,
                         overwrite: bool = False):
     """
@@ -129,7 +129,7 @@ def save_expression_set(expression_set: ExpressionSet,
             zf.writestr(f"/{block_name}/coo-shape.txt", "\n".join(str(x) for x in expression_set._data[block_name].data.shape))
 
 
-def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Version, dict[str, Any]]:
+def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version, dict[str, Any]]:
     """
     Load an ExpressionSet from an open file, or the file at the specified path.
 
@@ -253,7 +253,7 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
 
 
 # noinspection DuplicatedCode
-def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, Any]:
+def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]:
     """
     Load data from current version
     """

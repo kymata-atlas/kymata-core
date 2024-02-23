@@ -6,7 +6,7 @@ from urllib import request
 
 from kymata.datasets.data_root import data_root_path
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
-from kymata.io.file import path_type
+from kymata.io.file import PathType
 from kymata.io.nkg import load_expression_set
 
 _SAMPLE_DATA_DIR_NAME = "tutorial_nkg_data"
@@ -23,7 +23,7 @@ class SampleDataset(ABC):
     def __init__(self,
                  name: str,
                  filenames: list[str],
-                 data_root: Optional[path_type],
+                 data_root: Optional[PathType],
                  remote_root: Optional[str],
                  download: bool):
         self.name: str = name
@@ -62,7 +62,7 @@ class SampleDataset(ABC):
 
 
 class KymataMirror2023Q3Dataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "kymata_mirror_Q3_2023"
         super().__init__(
             name=name,
@@ -81,7 +81,7 @@ class KymataMirror2023Q3Dataset(SampleDataset):
 
 
 class TVLInsLoudnessOnlyDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_ins_loudness_only"
         super().__init__(
             name=name,
@@ -100,7 +100,7 @@ class TVLInsLoudnessOnlyDataset(SampleDataset):
 
 
 class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only"
         super().__init__(
             name=name,
@@ -119,7 +119,7 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
 
 
 class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors"
         super().__init__(
             name=name,
