@@ -5,7 +5,7 @@ from kymata.preproc.data_cleansing import create_trialwise_data
 
 # noinspection DuplicatedCode
 def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
 
     create_trialwise_data(
         dataset_directory_name=config['dataset_directory_name'],

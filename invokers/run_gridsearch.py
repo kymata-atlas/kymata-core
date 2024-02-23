@@ -63,7 +63,7 @@ def main():
     args = parser.parse_args()
 
     # TODO: use config for ppt lists etc
-    #config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+    #dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
 
     participants = [
         'pilot_01',

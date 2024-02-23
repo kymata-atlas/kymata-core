@@ -6,7 +6,7 @@ from kymata.preproc.data_cleansing import estimate_noise_cov
 
 # noinspection DuplicatedCode
 def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
 
     if config['data_location'] == "local":
         data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
@@ -15,7 +15,7 @@ def main():
     elif config['data_location'] == "cbu-local":
         data_root_dir = '//cbsu/data/imaging/projects/cbu/kymata/data/'
     else:
-        raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local' or 'cbu-local'.")
+        raise Exception("The 'data_location' parameter in the dataset_config file must be either 'cbu' or 'local' or 'cbu-local'.")
 
     estimate_noise_cov( data_root_dir = data_root_dir,
                        emeg_machine_used_to_record_data = config['emeg_machine_used_to_record_data'],

@@ -674,10 +674,10 @@ def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, machine_used
     raw_check = raw_fif_data.copy()
 
     fine_cal_file = Path(Path(__file__).parent.parent,
-                         'config', 'cbu_specific_files',
+                         'kymata-toolbox-data', 'cbu_specific_files',
                          'sss_cal' + machine_used + '.dat')
     crosstalk_file = Path(Path(__file__).parent.parent,
-                          'config', 'cbu_specific_files',
+                          'kymata-toolbox-data', 'cbu_specific_files',
                           'ct_sparse' + machine_used + '.fif')
 
     auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(
