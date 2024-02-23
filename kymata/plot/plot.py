@@ -7,12 +7,14 @@ import numpy as np
 from numpy.typing import NDArray
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FixedLocator
 from pandas import DataFrame
 from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION
 from kymata.math.p_values import p_to_logp
 from kymata.entities.functions import Function
+from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -240,21 +242,22 @@ def expression_plot(
         top_ax = bottom_ax = axes[0]
     top_ax.set_title('Function Expression')
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
-    # TODO: hard-coded?
-    bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
+    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
+    bottom_ax.xaxis.set_major_locator(FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax))))
     if paired_axes:
         top_ax.text(s=axes_names[0],
-                    x=-180, y=ylim * 0.95,
+                    x=bottom_ax_xmin + 20, y=ylim * 0.95,
                     style='italic', verticalalignment='center')
         bottom_ax.text(s=axes_names[1],
-                       x=-180, y=ylim * 0.95,
+                       x=bottom_ax_xmin + 20, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
     fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
-    bottom_ax.text(s='   onset of environment   ',
-                   x=0, y=0 if paired_axes else ylim/2,  # vertically centred
-                   color='white', fontsize='x-small',
-                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                   horizontalalignment='center', rotation='vertical')
+    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
+        bottom_ax.text(s='   onset of environment   ',
+                       x=0, y=0 if paired_axes else ylim/2,  # vertically centred
+                       color='white', fontsize='x-small',
+                       bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
+                       horizontalalignment='center', rotation='vertical')
 
     # Legend for plotted function
     split_legend_at_n_functions = 15
@@ -311,6 +314,15 @@ def _get_best_ylim(ylim: float | None, data_y_min):
     major_tick = np.floor(ylim / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
     ylim = major_tick
     return ylim
+
+
+def _get_xticks(xlims: tuple[float, float]):
+    xmin, xmax = xlims
+    # Round to the nearest 100
+    step = 100
+    xmin = round_up(xmin, step)
+    xmax = round_down(xmax, step)
+    return np.arange(xmin, xmax + 1, step)
 
 
 def _get_yticks(ylim):
