@@ -75,7 +75,7 @@ def expression_plot(
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
+        xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
@@ -220,7 +220,7 @@ def expression_plot(
         ax.set_ylim((0, ylim))
         ax.axvline(x=0, color='k', linestyle='dotted')
         ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
-        ax.text(-100, sidak_corrected_alpha, 'α*',
+        ax.text(-50, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         ax.text(600, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
@@ -253,10 +253,15 @@ def expression_plot(
     fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
     if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
         bottom_ax.text(s='   onset of environment   ',
-                       x=0, y=0 if paired_axes else ylim/2,  # vertically centred
-                       color='white', fontsize='x-small',
-                       bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                       horizontalalignment='center', rotation='vertical')
+                       x=0, y=0 if paired_axes else ylim/2,
+                       color='black', fontsize='x-small',
+                       bbox={'facecolor': 'white',
+                             'edgecolor': 'none',
+                             'pad':2
+                             },
+                       verticalalignment='center',
+                       horizontalalignment='center',
+                       rotation='vertical')
 
     # Legend for plotted function
     split_legend_at_n_functions = 15
