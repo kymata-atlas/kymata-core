@@ -102,7 +102,6 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     for participant in list_of_participants:
         #        # andy is using:
         #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
-        #        # todo -  AT has used the commandline version to create the BEMSs: do and then compare
         #
         #        if mri_structural_type == 'T1':
         #            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
@@ -122,7 +121,6 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #            )
         #
         #        elif mri_structural_type == 'Flash':
-        #            # todo add & test flash
         #            # mne.bem.make_flash_bem().
         #            print("Flash not yet implemented.")
 

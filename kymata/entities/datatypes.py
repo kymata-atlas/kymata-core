@@ -1,7 +1,7 @@
 from numpy import int_, str_, float_
 
 
-Hexel = int  # Todo: change this and others to `type Hexel = int` on dropping support for python <3.12
+Hexel = int
 Sensor = str
 Latency = float
 

@@ -56,7 +56,7 @@ _left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x <= 0
-                   ] + eeg_sensors()),  # TODO: these EEGs aren't split appropriately
+                   ] + eeg_sensors()),
     AxisAssignment(axis_name="right",
                    axis_channels=[
                        sensor
@@ -129,7 +129,6 @@ def expression_plot(
             raise NotImplementedError()
     else:
         if isinstance(expression_set, HexelExpressionSet):
-            # TODO: if we ever want to, we could implement collapsing sensor expression plots
             raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("", )

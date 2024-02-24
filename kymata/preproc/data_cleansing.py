@@ -484,7 +484,7 @@ def create_trialwise_data(dataset_directory_name: str,
                 audio_events[(trial + (number_of_trials * run))][2] = trial
 
         #  Test there are the correct number of events
-        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials # TODO handle overlapping visual/audio triggers
+        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
         
         print(f'\n Runs found: {audio_events.shape[0]} \n')
 
@@ -494,7 +494,7 @@ def create_trialwise_data(dataset_directory_name: str,
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
+        for input_stream in input_streams:
             if input_stream == 'auditory':
                 # events = audio_events
                 # else:

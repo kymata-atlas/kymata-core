@@ -32,7 +32,6 @@ class IPPMPlotter(object):
                     width
         """
         # first lets aggregate all of the information.
-        # TODO: refactor to generate BSplines in the first loop, so we dont have to loop again.
         hexel_x = [_ for _ in range(len(graph.keys()))]                  
         hexel_y = [_ for _ in range(len(graph.keys()))]                 
         node_colors = [_ for _ in range(len(graph.keys()))]              
@@ -41,7 +40,7 @@ class IPPMPlotter(object):
         edge_colors = []
         for i, node in enumerate(graph.keys()):
             for function, color in colors.items():
-                # search for function color. TODO: handle missing colors.
+                # search for function color.
                 if function in node:
                     node_colors[i] = color
                     break

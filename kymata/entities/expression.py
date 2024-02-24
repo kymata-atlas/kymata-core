@@ -380,7 +380,6 @@ class SensorExpressionSet(ExpressionSet):
                  # In general, we will combine flipped and non-flipped versions
                  data: _InputDataArray | Sequence[_InputDataArray],
                  ):
-        # TODO: Docstring
 
         super().__init__(
             functions=functions,
