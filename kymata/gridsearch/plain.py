@@ -111,6 +111,7 @@ def do_gridsearch(
                                         latencies=latencies_ms,
                                         save_to=plot_location,
                                         log_pvalues=log_pvalues,
+                                        sensors=channel_names,
                                         overwrite=overwrite,
                                         )
 
