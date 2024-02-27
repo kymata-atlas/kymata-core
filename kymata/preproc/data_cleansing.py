@@ -429,6 +429,7 @@ def create_trialwise_data(dataset_directory_name: str,
 
         for run in range(1, number_of_runs + 1):
             raw_fname = f'{data_path}/intrim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
+            import ipdb;ipdb.set_trace()
             if os.path.isfile(raw_fname):
                 raw = mne.io.Raw(raw_fname, preload=True)
                 events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
