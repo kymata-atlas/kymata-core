@@ -73,6 +73,8 @@ def main():
                     'participant_15',
                     'participant_16',
                     'participant_17',
+                    'participant_18',
+                    'participant_19',
                     ]
 
     # reps = [f'_rep{i}' for i in range(8)] + ['-ave']

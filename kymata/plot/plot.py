@@ -326,6 +326,7 @@ def plot_top_five_channels_of_gridsearch(
         n_splits: int,
         auto_corrs:NDArray[any],
         log_pvalues: any,
+        sensors: list,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -346,8 +347,8 @@ def plot_top_five_channels_of_gridsearch(
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
     amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
-    # amaxs = [i for i in amaxs if i != amax]  # + [209]
-    amaxs = [30]
+    amaxs = [i for i in amaxs if i != amax] + [30]
+    # amaxs = [30]
 
     axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
     axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
@@ -361,7 +362,10 @@ def plot_top_five_channels_of_gridsearch(
     peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-    print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+    print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f},   [sensor] ind: {amax},   sensor name: {sensors[amax]},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+    # peak_lat_ind = np.argmax(corr_avrs[30, :]) % (n_samples_per_split // 2)
+    # peak_lat = latencies[peak_lat_ind]
+    # print(f'{function.name}: peak lat: {peak_lat:.1f}')
 
     auto_corrs = np.mean(auto_corrs, axis=0)
     axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
