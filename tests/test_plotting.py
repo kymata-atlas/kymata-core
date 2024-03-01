@@ -22,16 +22,16 @@ def test_small_data_gets_at_least_one_tick():
     assert len(y_ticks) >= 2
 
 
-def get_x_ticks_standard():
+def test_get_x_ticks_standard():
     x_ticks = _get_xticks((-200, 800))
     assert array_equal(x_ticks, array([-200, -100, 0, 100, 200, 300, 400, 500, 600, 700, 800]))
 
 
-def get_x_ticks_smaller():
+def test_get_x_ticks_smaller():
     x_ticks = _get_xticks((-100, 700))
     assert array_equal(x_ticks, array([-100, 0, 100, 200, 300, 400, 500, 600, 700]))
 
 
-def get_x_ticks_non_multiples():
+def test_get_x_ticks_non_multiples():
     x_ticks = _get_xticks((-150, 750))
     assert array_equal(x_ticks, array([-100, 0, 100, 200, 300, 400, 500, 600, 700]))
