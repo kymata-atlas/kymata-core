@@ -4,21 +4,77 @@ from statistics import NormalDist
 from typing import Optional, Sequence, Dict, NamedTuple
 
 import numpy as np
-from numpy.typing import NDArray
-from matplotlib import pyplot, colors
+from matplotlib import pyplot
+from matplotlib.colors import to_hex, LinearSegmentedColormap
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator
+from mne import SourceEstimate
+from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION
-from kymata.math.p_values import p_to_logp
+from kymata.entities.expression import HexelExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
 from kymata.entities.functions import Function
+from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
+
+
+class _Ax:
+    """Canonical names for the axes."""
+    top = "top"
+    bottom = "bottom"
+    main = "main"
+    minimap = "minimap"
+
+
+def _get_mosaic_spec(paired_axes: bool, minimap: bool) -> list[list[str]]:
+    if paired_axes:
+        if minimap:
+            return [
+                [_Ax.top,    _Ax.minimap],
+                [_Ax.bottom, _Ax.minimap],
+            ]
+        else:
+            return [
+                [_Ax.top],
+                [_Ax.bottom],
+            ]
+    else:
+        if minimap:
+            return [
+                [_Ax.main, _Ax.minimap],
+            ]
+        else:
+            return [
+                [_Ax.main],
+            ]
+
+
+def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -> tuple[NDArray, NDArray]:
+    """
+    Returns a (left/right pair of) arrays, of length equal to the number of hexels, where each entry is either:
+     - 0, if no function is ever significant for this hexel
+     - i + 1, where i is index of the function which is significant for this hexel
+    """
+    data_left = np.zeros((len(expression_set.hexels_left),))
+    data_right = np.zeros((len(expression_set.hexels_right),))
+    best_functions_left, best_functions_right = expression_set.best_functions()
+    best_functions_left = best_functions_left[best_functions_left["value"] < alpha_logp]
+    best_functions_right = best_functions_right[best_functions_right["value"] < alpha_logp]
+    for function_i, function in enumerate(expression_set.functions, start=1):
+        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][DIM_HEXEL]
+        hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
+        data_left[hexel_idxs_left] = function_i
+
+        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][DIM_HEXEL]
+        hexel_idxs_right = np.searchsorted(expression_set.hexels_left, significant_hexel_names_right.to_numpy())
+        data_right[hexel_idxs_right] = function_i
+
+    return data_left, data_right
 
 
 def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame, color, sidak_corrected_alpha: float, filled: bool):
@@ -66,6 +122,30 @@ _left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
 )
 
 
+def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp: float):
+    raise NotImplementedError()
+
+
+def _plot_minimap_hexel(expression_set: HexelExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp: float):
+    colormap = LinearSegmentedColormap.from_list("custom",
+                                                 colors=[colors[f] for f in expression_set.functions],
+                                                 N=len(expression_set.functions))
+    data_left, data_right = _hexel_minimap_data(expression_set, alpha_logp=alpha_logp)
+    stc = SourceEstimate(data=np.concatenate([data_left, data_right]),
+                         vertices=[expression_set.hexels_left, expression_set.hexels_right],
+                         tmin=0, tstep=1)
+    minimap_axis.imshow(stc.plot(hemi="split", colormap=colormap).to_image())
+
+
+def _plot_minimap(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp):
+    if isinstance(expression_set, SensorExpressionSet):
+        _plot_minimap_sensor(expression_set, minimap_axis, colors, alpha_logp)
+    elif isinstance(expression_set, HexelExpressionSet):
+        _plot_minimap_hexel(expression_set, minimap_axis, colors, alpha_logp)
+    else:
+        raise NotImplementedError()
+
+
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
@@ -77,6 +157,8 @@ def expression_plot(
         ylim: Optional[float] = None,
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
+        # Display options
+        minimap: bool = False,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -113,7 +195,7 @@ def expression_plot(
     cycol = cycle(color_palette("Set1"))
     for function in show_only:
         if function not in color:
-            color[function] = colors.to_hex(next(cycol))
+            color[function] = to_hex(next(cycol))
 
     best_functions = expression_set.best_functions()
 
@@ -153,15 +235,21 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
+    mosaic = _get_mosaic_spec(paired_axes=paired_axes, minimap=minimap)
+
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
     expression_axes_list: list[pyplot.Axes]
     if paired_axes:
-        fig, axes = pyplot.subplot_mosaic([["top"], ["bottom"]], figsize=(12, 7))
-        expression_axes_list = [axes["top"], axes["bottom"]]  # For iterating over in a predictable order
+        fig, axes = pyplot.subplot_mosaic(mosaic,
+                                          width_ratios=[3, 1] if minimap else None,
+                                          figsize=(12, 7))
+        expression_axes_list = [axes[_Ax.top], axes[_Ax.bottom]]  # For iterating over in a predictable order
     else:
-        fig, axes = pyplot.subplot_mosaic([["main"]], figsize=(12, 7))
-        expression_axes_list = [axes["main"]]
+        fig, axes = pyplot.subplot_mosaic(mosaic,
+                                          width_ratios=[3, 1] if minimap else None,
+                                          figsize=(12, 7))
+        expression_axes_list = [axes[_Ax.main]]
 
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
@@ -239,14 +327,19 @@ def expression_plot(
         ]
         ax.set_yticklabels(pval_labels)
 
+    # Plot minimap
+    if minimap:
+        _plot_minimap(expression_set=expression_set, minimap_axis=axes[_Ax.minimap], colors=color,
+                      alpha_logp=sidak_corrected_alpha)
+
     # format one-off axis qualities
     if paired_axes:
-        top_ax = axes["top"]
-        bottom_ax = axes["bottom"]
+        top_ax = axes[_Ax.top]
+        bottom_ax = axes[_Ax.bottom]
         top_ax.set_xticklabels([])
         bottom_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes["main"]
+        top_ax = bottom_ax = axes[_Ax.main]
     top_ax.set_title('Function Expression')
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
@@ -417,3 +510,19 @@ def plot_top_five_channels_of_gridsearch(
 
     pyplot.clf()
     pyplot.close()
+
+
+# TODO: remove this bit
+if __name__ == '__main__':
+    from kymata.datasets.sample import KymataMirror2023Q3Dataset
+    from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
+
+    expression_data_kymata_mirror: HexelExpressionSet = KymataMirror2023Q3Dataset().to_expressionset()
+    expression_plot(expression_data_kymata_mirror[
+                        'CIECAM02 A',
+                        'CIECAM02 a',
+                        'CIELAB a*',
+                        'CIELAB L'
+                    ],
+                    minimap=True
+                    )
