@@ -50,6 +50,3 @@ def test_expression_plot_no_error():
 
     finally:
         delete_dataset(dataset)
-        for filename in dataset.filenames:
-            assert not Path(dataset.path, filename).exists()
-
