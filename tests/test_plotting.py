@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from numpy import array, array_equal
 
-from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks, _get_xticks
+from kymata.datasets.sample import delete_dataset
+from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks, _get_xticks, expression_plot
 
 
 def test_best_best_ylim_returns_supplied_ylim():
@@ -35,3 +38,18 @@ def test_get_x_ticks_smaller():
 def test_get_x_ticks_non_multiples():
     x_ticks = _get_xticks((-150, 750))
     assert array_equal(x_ticks, array([-100, 0, 100, 200, 300, 400, 500, 600, 700]))
+
+
+def test_expression_plot_no_error():
+    from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
+    dataset = TVLInsLoudnessOnlyDataset(download=False)
+    try:
+        dataset.download()
+
+        expression_plot(dataset.to_expressionset())
+
+    finally:
+        delete_dataset(dataset)
+        for filename in dataset.filenames:
+            assert not Path(dataset.path, filename).exists()
+
