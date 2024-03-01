@@ -64,4 +64,5 @@ if __name__ == '__main__':
                         default=Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml"))
     args = parser.parse_args()
 
+    # TODO: revert this
     main(config=load_config(str(argv[1])))

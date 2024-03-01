@@ -35,7 +35,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
         for run in range(1, n_runs + 1):
 
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_path = Path(processed_path, f"{participant}_run{run!s}_raaw_sss.fif")
+            saved_maxfiltered_path = Path(processed_path, f"{participant}_run{run!s}_raw_sss.fif")
 
             if skip_maxfilter_if_previous_runs_exist and saved_maxfiltered_path.exists():
 

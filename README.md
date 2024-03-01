@@ -22,7 +22,8 @@ Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL &
 
 You'll need the following files:
 
-- ?
+- <participant_name>_run1_raw.fif
+- <participant_name>_recording_config.yaml
 
 ### 2. Preprocess the data
 
@@ -35,6 +36,11 @@ The output of this code is the input to `kymata-web`.
 Run the following invokers from `invokers/` in order:
 
 - `invoker_run_data_cleansing.py`
+  - This does:
+    1. first-pass filtering 
+    2. maxfiltering
+    3. second-pass filtering
+    4. eog removal
 - `invoker_create_trialwise_data.py`
 - `invoker_run_hexel_current_estimation.py`
 - `invoker_estimate_noise_covariance.py`
