@@ -1,4 +1,6 @@
 from pathlib import Path
+from sys import argv
+
 from colorama import Fore
 
 from kymata.io.yaml import load_config
@@ -62,4 +64,4 @@ if __name__ == '__main__':
                         default=Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml"))
     args = parser.parse_args()
 
-    main(config=load_config(str(args.config_location)))
+    main(config=load_config(str(argv[1])))
