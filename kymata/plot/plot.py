@@ -153,9 +153,16 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
-    fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
-    if isinstance(axes, pyplot.Axes): 
-        axes = (axes, )  # Wrap if necessary
+    fig: pyplot.Figure
+    axes: dict[str, pyplot.Axes]
+    expression_axes_list: list[pyplot.Axes]
+    if paired_axes:
+        fig, axes = pyplot.subplot_mosaic([["top"], ["bottom"]], figsize=(12, 7))
+        expression_axes_list = [axes["top"], axes["bottom"]]  # For iterating over in a predictable order
+    else:
+        fig, axes = pyplot.subplot_mosaic([["main"]], figsize=(12, 7))
+        expression_axes_list = [axes["main"]]
+
     fig.subplots_adjust(hspace=0)
     fig.subplots_adjust(right=0.84, left=0.08)
 
@@ -180,7 +187,7 @@ def expression_plot(
             top_chans -= both_chans
             bottom_chans -= both_chans
             chans = (top_chans, bottom_chans)
-            for ax, best_funs_this_ax, chans_this_ax in zip(axes, best_functions, chans):
+            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, chans):
                 # Plot filled
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
@@ -203,7 +210,7 @@ def expression_plot(
         # With non-sensor data, or non-paired axes, we can treat these cases together
         else:
             # As normal, plot appropriate filled points in each axis
-            for ax, best_funs_this_ax in zip(axes, best_functions):
+            for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[best_funs_this_ax[DIM_FUNCTION] == function],
                     color=color[function],
@@ -213,7 +220,7 @@ def expression_plot(
                 data_y_min = min(data_y_min, y_min)
 
     # format shared axis qualities
-    for ax in axes:
+    for ax in expression_axes_list:
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
         ax.set_xlim(*xlims)
@@ -234,11 +241,12 @@ def expression_plot(
 
     # format one-off axis qualities
     if paired_axes:
-        top_ax, bottom_ax = axes
+        top_ax = axes["top"]
+        bottom_ax = axes["bottom"]
         top_ax.set_xticklabels([])
         bottom_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes[0]
+        top_ax = bottom_ax = axes["main"]
     top_ax.set_title('Function Expression')
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
