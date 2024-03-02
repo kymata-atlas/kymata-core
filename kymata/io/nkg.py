@@ -70,7 +70,6 @@ def file_version(from_path_or_file: path_type | file_type) -> version.Version:
             return version.parse(str(f.read()).strip())
 
 
-# TODO: Could maybe improve this using generics when dropping support for Python version <3.12
 def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionSet:
     _v, data_dict = _load_data(from_path_or_file)
 

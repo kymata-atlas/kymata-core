@@ -7,12 +7,14 @@ import numpy as np
 from numpy.typing import NDArray
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FixedLocator
 from pandas import DataFrame
 from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, ExpressionSet, SensorExpressionSet, DIM_SENSOR, DIM_FUNCTION
 from kymata.math.p_values import p_to_logp
 from kymata.entities.functions import Function
+from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -54,7 +56,7 @@ _left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x <= 0
-                   ] + eeg_sensors()),  # TODO: these EEGs aren't split appropriately
+                   ] + eeg_sensors()),
     AxisAssignment(axis_name="right",
                    axis_channels=[
                        sensor
@@ -73,7 +75,7 @@ def expression_plot(
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
+        xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
@@ -127,7 +129,6 @@ def expression_plot(
             raise NotImplementedError()
     else:
         if isinstance(expression_set, HexelExpressionSet):
-            # TODO: if we ever want to, we could implement collapsing sensor expression plots
             raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("", )
@@ -219,7 +220,7 @@ def expression_plot(
         ax.set_ylim((0, ylim))
         ax.axvline(x=0, color='k', linestyle='dotted')
         ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
-        ax.text(-100, sidak_corrected_alpha, 'α*',
+        ax.text(-50, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         ax.text(600, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
@@ -240,21 +241,27 @@ def expression_plot(
         top_ax = bottom_ax = axes[0]
     top_ax.set_title('Function Expression')
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
-    # TODO: hard-coded?
-    bottom_ax.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
+    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
+    bottom_ax.xaxis.set_major_locator(FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax))))
     if paired_axes:
         top_ax.text(s=axes_names[0],
-                    x=-180, y=ylim * 0.95,
+                    x=bottom_ax_xmin + 20, y=ylim * 0.95,
                     style='italic', verticalalignment='center')
         bottom_ax.text(s=axes_names[1],
-                       x=-180, y=ylim * 0.95,
+                       x=bottom_ax_xmin + 20, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
     fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
-    bottom_ax.text(s='   onset of environment   ',
-                   x=0, y=0 if paired_axes else ylim/2,  # vertically centred
-                   color='white', fontsize='x-small',
-                   bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                   horizontalalignment='center', rotation='vertical')
+    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
+        bottom_ax.text(s='   onset of environment   ',
+                       x=0, y=0 if paired_axes else ylim/2,
+                       color='black', fontsize='x-small',
+                       bbox={'facecolor': 'white',
+                             'edgecolor': 'none',
+                             'pad':2
+                             },
+                       verticalalignment='center',
+                       horizontalalignment='center',
+                       rotation='vertical')
 
     # Legend for plotted function
     split_legend_at_n_functions = 15
@@ -311,6 +318,15 @@ def _get_best_ylim(ylim: float | None, data_y_min):
     major_tick = np.floor(ylim / _MAJOR_TICK_SIZE) * _MAJOR_TICK_SIZE
     ylim = major_tick
     return ylim
+
+
+def _get_xticks(xlims: tuple[float, float]):
+    xmin, xmax = xlims
+    # Round to the nearest 100
+    step = 100
+    xmin = round_up(xmin, step)
+    xmax = round_down(xmax, step)
+    return np.arange(xmin, xmax + 1, step)
 
 
 def _get_yticks(ylim):

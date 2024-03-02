@@ -17,7 +17,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
-        ch_names: list[str] = []  # TODO: we'll need these
+        ch_names: list[str] = []
         emeg = np.load(emeg_path_npy)
     else:
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
@@ -26,11 +26,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
             _logger.info(f"Reading source morph from {morph_path}")
             morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
-
-            # TODO: currently this goes OOM (node-h04 atleast):
-            #       looks like this will be faster when split up anyway
-            #       note, don't run the inv_op twice for rh and lh!
-            # TODO: move inverse operator to run after EMEG channel combination
+            # Stack into a single matrix, to be split after gridsearch
             emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
             del lh_emeg, rh_emeg
         else:
@@ -215,11 +211,12 @@ def __mne_apply_morph_data(morph, stc_from):
 
 def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
                    use_morph: bool = False):
-    # TODO: FIX PRE-AVE-NORMALISATION
+
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
     ]
+    n_reps = len(emeg_paths)
     morph_paths = [
         Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
         for emeg_fn in emeg_filenames
@@ -236,7 +233,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
     emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0])
     emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
-    if ave_mode == 'add':
+    if ave_mode == 'concatenate':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
             new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
@@ -247,9 +244,10 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
             t_shift = p_tshift[i]
             emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
                                                     morph_paths[i])[0][:, t_shift:402001 + t_shift], 1)
+        n_reps = 1 # n_reps is now 1 as all averaged
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
-    return emeg, emeg_names
+    return emeg, emeg_names, n_reps
 
 
 def _strip_ave(name: str) -> str:

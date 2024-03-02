@@ -310,6 +310,7 @@ class DenoisingStrategy(object):
             For each class, the most significant spike and the associated latency.
         """
         class_mins = {}
+
         mins = df.loc[df.groupby('Label')['Mag'].idxmin()]
         mins = mins[mins['Label'] != -1] # filter out anomalies
         return list(zip(mins['Latency'], mins['Mag']))
@@ -336,12 +337,14 @@ class MaxPooler(DenoisingStrategy):
 
         self._threshold = 15 if 'threshold' not in kwargs.keys() else kwargs['threshold']
         self._bin_sz = 25 if 'bin_sz' not in kwargs.keys() else kwargs['bin_sz']
+
         
         if not isinstance(self._threshold, int) or isinstance(self._threshold, bool):
             # edge case with isinstance: bool is subtype of int, so technically a user can pass in a boolean value for an integer
             # True = 1, False = 0.
             print('Threshold needs to be an integer.')
             raise ValueError
+
         if not isinstance(self._bin_sz, int) or isinstance(self._bin_sz, bool):
             print('Bin size needs to be an integer.')
             raise ValueError
@@ -564,6 +567,7 @@ class AdaptiveMaxPooler(DenoisingStrategy):
 
             # Step 2: Sort the pairings so that we can loop through them in one go.
             df = df.sort_values(by='Latency')
+
 
             # Step 3: Loop through and expand significant bins until there aren't anymore significant ones. Take the min over the expanded bin.
             df_ptr = 0                                          # Pointer to where we are in the dataframe.

@@ -42,7 +42,7 @@ class IPPMPlotter(object):
         bsplines = []
         for i, node in enumerate(graph.keys()):
             for function, color in colors.items():
-                # search for function color. TODO: handle missing colors.
+                # search for function color.
                 if function in node:
                     node_colors[i] = color
                     break

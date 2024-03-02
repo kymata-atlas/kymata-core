@@ -22,11 +22,11 @@ def do_gridsearch(
         emeg_t_start: float,    # ms
         plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
-        audio_shift_correction: float = 0.000_537_5,  # seconds/second  # TODO: describe in which direction?
+        audio_shift_correction: float = 0.000_537_5,  # seconds/second
         n_derangements: int = 1,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
-        ave_mode: str = 'ave',  # either ave or add, for averaging over input files or adding in as extra evidence
+        n_reps: int = 1,
         overwrite: bool = True,
 ) -> ExpressionSet:
     """
@@ -38,9 +38,10 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)  # TODO: implement for general emeg_sample_rate
+    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
+
 
     if ave_mode == 'add':
         # commented this out to fix EMEG_paths undefined error. Assuming it is defined as # of EMEG chans?
@@ -157,7 +158,6 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
     true_n = n_splits
 
     # Recompute mean and var for null correlations
-    # TODO: why looking at only 1 in the n_derangements dimension?
     if use_all_lats:
         rand_mean = np.mean(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1).reshape(n_channels, 1)
         rand_var = np.var(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1, ddof=1).reshape(n_channels, 1)
