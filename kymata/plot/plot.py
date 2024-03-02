@@ -4,6 +4,7 @@ from statistics import NormalDist
 from typing import Optional, Sequence, Dict, NamedTuple
 
 import numpy as np
+import os
 from matplotlib import pyplot
 from matplotlib.colors import to_hex, LinearSegmentedColormap
 from matplotlib.lines import Line2D
@@ -13,7 +14,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
@@ -71,7 +72,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -
         data_left[hexel_idxs_left] = function_i
 
         significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][DIM_HEXEL]
-        hexel_idxs_right = np.searchsorted(expression_set.hexels_left, significant_hexel_names_right.to_numpy())
+        hexel_idxs_right = np.searchsorted(expression_set.hexels_right, significant_hexel_names_right.to_numpy())
         data_right[hexel_idxs_right] = function_i
 
     return data_left, data_right
@@ -134,7 +135,13 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet, minimap_axis: pyplot
     stc = SourceEstimate(data=np.concatenate([data_left, data_right]),
                          vertices=[expression_set.hexels_left, expression_set.hexels_right],
                          tmin=0, tstep=1)
-    minimap_axis.imshow(stc.plot(hemi="split", colormap=colormap).to_image())
+    minimap_axis.imshow(stc.plot(subject='participant_01',
+                                 hemi="split",
+                                 colormap=colormap,
+                                 smoothing_steps = 2,
+                                 background="white",
+                                 spacing="ico5"
+                                 ).to_image())
 
 
 def _plot_minimap(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp):
@@ -158,7 +165,7 @@ def expression_plot(
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # Display options
-        minimap: bool = False,
+        minimap: Optional[str | Dict[str, str] | list[str]] = None,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -328,7 +335,9 @@ def expression_plot(
         ax.set_yticklabels(pval_labels)
 
     # Plot minimap
-    if minimap:
+
+    if minimap is not None:
+        os.environ["SUBJECTS_DIR"] = Path(minimap.data_root_dir, minimap.mri_structurals_directory)
         _plot_minimap(expression_set=expression_set, minimap_axis=axes[_Ax.minimap], colors=color,
                       alpha_logp=sidak_corrected_alpha)
 
