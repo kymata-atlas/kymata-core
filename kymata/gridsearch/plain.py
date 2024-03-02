@@ -42,13 +42,7 @@ def do_gridsearch(
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
-
-    if ave_mode == 'add':
-        # commented this out to fix EMEG_paths undefined error. Assuming it is defined as # of EMEG chans?
-        #n_reps = len(EMEG_paths)
-        n_reps = 1
-    else:
-        n_reps = 1
+    n_reps = 1
 
     func_length = n_splits * n_samples_per_split // 2
     if func_length < function.values.shape[0]:

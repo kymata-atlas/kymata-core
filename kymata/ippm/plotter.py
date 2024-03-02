@@ -37,7 +37,6 @@ class IPPMPlotter(object):
         hexel_y = [_ for _ in range(len(graph.keys()))]                    # y coordinates for nodes
         node_colors = [_ for _ in range(len(graph.keys()))]                # color for nodes
         node_sizes = [_ for _ in range(len(graph.keys()))]                 # size of nodes
-        hexel_coordinate_pairs = []  # [[start_coord, end_coord], ..]      # edges
         edge_colors = []
         bsplines = []
         for i, node in enumerate(graph.keys()):

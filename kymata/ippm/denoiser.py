@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import normalize
 
-import multiprocessing
+#import multiprocessing
 
 from .data_tools import IPPMHexel
 
@@ -309,8 +309,6 @@ class DenoisingStrategy(object):
             -------
             For each class, the most significant spike and the associated latency.
         """
-        class_mins = {}
-
         mins = df.loc[df.groupby('Label')['Mag'].idxmin()]
         mins = mins[mins['Label'] != -1] # filter out anomalies
         return list(zip(mins['Latency'], mins['Mag']))
