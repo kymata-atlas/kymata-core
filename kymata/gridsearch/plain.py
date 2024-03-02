@@ -42,8 +42,6 @@ def do_gridsearch(
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
-    n_reps = 1
-
     func_length = n_splits * n_samples_per_split // 2
     if func_length < function.values.shape[0]:
         func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
