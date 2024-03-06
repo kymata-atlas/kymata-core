@@ -5,7 +5,7 @@ from kymata.plot.plot import expression_plot
 
 # template invoker for printing out expression set .nkgs
 
-path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
+path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output")
 
 expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
 expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
@@ -31,4 +31,4 @@ expression_plot(expression_data, color = {
                     'IL8': '#a201e9',
                     'IL9': '#a201e9',
                     'STL': '#d388b5'
-                  })
+                  }, ylim=-200, save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/plot/MEG_source.jpg"))

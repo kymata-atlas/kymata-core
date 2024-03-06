@@ -79,6 +79,12 @@ def main():
         'participant_11',
         'participant_12',
         'participant_13',
+        'participant_14',
+        'participant_15',
+        'participant_16',
+        'participant_17',
+        'participant_18',
+        'participant_19',
     ]
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
@@ -112,10 +118,17 @@ def main():
                                            p_tshift=None,
                                            snr=args.snr,
                                            )
+    
+    # emeg_values = emeg_values[:64, :, :]
+    # ch_names = ch_names[:64]
 
-    func = load_function(Path(args.base_dir, args.function_path),
+    # func = load_function(Path(args.base_dir, args.function_path),
+    #                      func_name=args.function_name,
+    #                      bruce_neurons=(5, 10))
+    func = load_function(args.function_path,
                          func_name=args.function_name,
                          bruce_neurons=(5, 10))
+    
     func = func.downsampled(args.downsample_rate)
 
     channel_space = "source" if args.inverse_operator_dir is not None else "sensor"

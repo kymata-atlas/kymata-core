@@ -75,7 +75,7 @@ def expression_plot(
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
+        xlims: tuple[Optional[float], Optional[float]] = (-200, 800),
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
@@ -364,7 +364,7 @@ def plot_top_five_channels_of_gridsearch(
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
     amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
-    amaxs = [i for i in amaxs if i != amax]  # + [209]
+    amaxs = [i for i in amaxs if i != amax]   + [30]
 
     axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
     axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
