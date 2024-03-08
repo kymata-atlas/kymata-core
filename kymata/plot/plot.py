@@ -423,6 +423,7 @@ def expression_plot(
 
     if minimap_config is not None:
         os.environ["SUBJECTS_DIR"] = str(Path(get_root_dir(minimap_config),
+                                              minimap_config["dataset_directory_name"],
                                               minimap_config["mri_structurals_directory"]))
 
         if isinstance(expression_set, SensorExpressionSet):
