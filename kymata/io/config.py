@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from file import path_type, file_type, open_or_use
+from kymata.io.file import path_type, file_type, open_or_use
 
 
 def load_config(config_location: path_type | file_type):
