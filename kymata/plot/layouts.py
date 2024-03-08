@@ -42,13 +42,13 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
             parts = line.strip().split("\t")
             x = float(parts[1])
             y = float(parts[2])
-            name = parts[-1].lower()
+            name = parts[-1].upper()
             d[name] = Point2d(x, y)
     # Get name mapping
     with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
               "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
         mapping = yaml.safe_load(eeg_name_mapping_file)
-    mapping = {k.lower(): v.lower() for k, v in mapping.items()}
+    mapping = {k.upper(): v.upper() for k, v in mapping.items()}
     inverted_mapping = {v: k for k, v in mapping.items()}
     # Apply name mapping
     new_d = {
