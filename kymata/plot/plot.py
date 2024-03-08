@@ -116,7 +116,9 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -
     best_functions_left, best_functions_right = expression_set.best_functions()
     best_functions_left = best_functions_left[best_functions_left["value"] < alpha_logp]
     best_functions_right = best_functions_right[best_functions_right["value"] < alpha_logp]
-    for function_i, function in enumerate(expression_set.functions, start=1):
+    for function_i, function in enumerate(expression_set.functions,
+                                          # 1-indexed, as 0 will refer to transparent
+                                          start=1):
         significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][DIM_HEXEL]
         hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
         data_left[hexel_idxs_left] = function_i
@@ -181,9 +183,13 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
                         lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
                         view: str,
                         colors: dict[str, str], alpha_logp: float):
+    # segment at index 0 will map to transparent
+    # segment at index i will map to function of index i-1
     colormap = LinearSegmentedColormap.from_list("custom",
-                                                 colors=[colors[f] for f in expression_set.functions],
-                                                 N=len(expression_set.functions))
+                                                 # Insert transparent for index 0
+                                                 colors=[(0, 0, 0, 0)] + [colors[f] for f in expression_set.functions],
+                                                 # +1 for the transparency
+                                                 N=len(expression_set.functions)+1)
     data_left, data_right = _hexel_minimap_data(expression_set, alpha_logp=alpha_logp)
     stc = SourceEstimate(data=np.concatenate([data_left, data_right]),
                          vertices=[expression_set.hexels_left, expression_set.hexels_right],
@@ -194,12 +200,16 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
         surface="inflated",
         views=view,
         colormap=colormap,
-        smoothing_steps=2,
+        smoothing_steps=1,
         background="white",
         spacing="ico5",
         brain_kwargs={"offscreen": True},
         time_viewer=False,
         colorbar=False,
+        transparent=False,
+        clim=dict(
+            kind="value",
+            lims=[0, len(expression_set.functions)/2, len(expression_set.functions)])
     )
     # Plot left view
     lh_brain = stc.plot(hemi="lh", **plot_kwargs)
