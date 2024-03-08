@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 from kymata.io.cli import print_with_color, input_with_color
-from kymata.io.yaml import load_config, modify_param_config
+from kymata.io.config import load_config, modify_param_config
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],

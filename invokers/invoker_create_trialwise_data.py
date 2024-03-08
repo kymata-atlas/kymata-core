@@ -1,9 +1,9 @@
 from pathlib import Path
-from kymata.io.yaml import load_config
+
+from kymata.io.config import load_config
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
-# noinspection DuplicatedCode
 def main():
     config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
