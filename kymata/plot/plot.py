@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, Dict, NamedTuple
+from typing import Optional, Sequence, NamedTuple
 from warnings import warn
 
 import numpy as np
@@ -20,6 +20,7 @@ from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
 from kymata.entities.functions import Function
+from kymata.io.config import get_root_dir
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
@@ -28,12 +29,14 @@ from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
 _MAJOR_TICK_SIZE = 50
 
 
-class _Ax:
+class _AxName:
     """Canonical names for the axes."""
-    top = "top"
+    top    = "top"
     bottom = "bottom"
-    main = "main"
-    minimap = "minimap"
+    main   = "main"
+    minimap_top    = "minimap top"
+    minimap_bottom = "minimap bottom"
+    minimap_main   = "minimap main"
 
 
 @dataclass
@@ -54,13 +57,13 @@ class _MosaicSpec:
             figsize=self.fig_size)
 
 
-def _minimap_mosaic(paired_axes: bool, minimap: bool) -> _MosaicSpec:
+def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
     # Set defaults:
-    if minimap:
+    if show_minimap:
         width_ratios = [1, 3]
         fig_size = (12, 7)
         subplots_adjust = {
-            "hspace": 0, "wspace": 0.1,
+            "hspace": 0, "wspace": 0.2,
             "left": 0.04, "right": 0.8,
         }
     else:
@@ -73,24 +76,24 @@ def _minimap_mosaic(paired_axes: bool, minimap: bool) -> _MosaicSpec:
 
 
     if paired_axes:
-        if minimap:
+        if show_minimap:
             spec = [
-                [_Ax.minimap, _Ax.top],
-                [_Ax.minimap, _Ax.bottom],
+                [_AxName.minimap_top, _AxName.top],
+                [_AxName.minimap_bottom, _AxName.bottom],
             ]
         else:
             spec = [
-                [_Ax.top],
-                [_Ax.bottom],
+                [_AxName.top],
+                [_AxName.bottom],
             ]
     else:
-        if minimap:
+        if show_minimap:
             spec = [
-                [_Ax.minimap, _Ax.main],
+                [_AxName.minimap_main, _AxName.main],
             ]
         else:
             spec = [
-                [_Ax.main],
+                [_AxName.main],
             ]
 
     return _MosaicSpec(mosaic=spec, width_ratios=width_ratios, fig_size=fig_size,
@@ -169,7 +172,9 @@ def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axe
     raise NotImplementedError()
 
 
-def _plot_minimap_hexel(expression_set: HexelExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp: float):
+def _plot_minimap_hexel(expression_set: HexelExpressionSet,
+                        lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
+                        colors: dict[str, str], alpha_logp: float):
     colormap = LinearSegmentedColormap.from_list("custom",
                                                  colors=[colors[f] for f in expression_set.functions],
                                                  N=len(expression_set.functions))
@@ -178,16 +183,25 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet, minimap_axis: pyplot
                          vertices=[expression_set.hexels_left, expression_set.hexels_right],
                          tmin=0, tstep=1)
     warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
-    p = stc.plot(subject='fsaverage',
-                 hemi="split",
-                 colormap=colormap,
-                 smoothing_steps = 2,
-                 background="white",
-                 spacing="ico5",
-                 brain_kwargs={"offscreen": True},
-                 )
-    minimap_axis.imshow(p.screenshot(), aspect="auto")
-    hide_axes(minimap_axis)
+    plot_kwargs = dict(
+        subject='fsaverage',
+        surface="inflated",
+        colormap=colormap,
+        smoothing_steps=2,
+        background="white",
+        spacing="ico5",
+        brain_kwargs={"offscreen": True},
+        time_viewer=False,
+        colorbar=False,
+    )
+    # Plot left view
+    lh_brain = stc.plot(hemi="lh", **plot_kwargs)
+    lh_minimap_axis.imshow(lh_brain.screenshot())
+    hide_axes(lh_minimap_axis)
+    # Plot right view
+    rh_brain = stc.plot(hemi="rh", **plot_kwargs)
+    rh_minimap_axis.imshow(rh_brain.screenshot())
+    hide_axes(rh_minimap_axis)
 
 
 def hide_axes(axes: pyplot.Axes):
@@ -197,15 +211,6 @@ def hide_axes(axes: pyplot.Axes):
     axes.axis("off")
 
 
-def _plot_minimap(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp):
-    if isinstance(expression_set, SensorExpressionSet):
-        _plot_minimap_sensor(expression_set, minimap_axis, colors, alpha_logp)
-    elif isinstance(expression_set, HexelExpressionSet):
-        _plot_minimap_hexel(expression_set, minimap_axis, colors, alpha_logp)
-    else:
-        raise NotImplementedError()
-
-
 def expression_plot(
         expression_set: ExpressionSet,
         show_only: Optional[str | Sequence[str]] = None,
@@ -213,12 +218,12 @@ def expression_plot(
         # Statistical kwargs
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
-        color: Optional[str | Dict[str, str] | list[str]] = None,
+        color: Optional[str | dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # Display options
-        minimap: Optional[str | Dict[str, str] | list[str]] = None,
+        minimap_config: Optional[dict[str, str]] = None,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -231,6 +236,7 @@ def expression_plot(
 
     color: colour name, function_name → colour name, or list of colour names
     xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
+    minimap: To display a minimap, supply an appropriately loaded config dict. Or supply None to hide the minimap.
     """
 
     # Default arg values
@@ -295,7 +301,7 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
-    mosaic = _minimap_mosaic(paired_axes=paired_axes, minimap=minimap)
+    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap_config is not None)
 
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
@@ -303,9 +309,9 @@ def expression_plot(
 
     expression_axes_list: list[pyplot.Axes]
     if paired_axes:
-        expression_axes_list = [axes[_Ax.top], axes[_Ax.bottom]]  # For iterating over in a predictable order
+        expression_axes_list = [axes[_AxName.top], axes[_AxName.bottom]]  # For iterating over in a predictable order
     else:
-        expression_axes_list = [axes[_Ax.main]]
+        expression_axes_list = [axes[_AxName.main]]
 
     fig.subplots_adjust(**mosaic.subplots_adjust_kwargs)
 
@@ -384,19 +390,29 @@ def expression_plot(
 
     # Plot minimap
 
-    if minimap is not None:
-        os.environ["SUBJECTS_DIR"] = str(Path(minimap["data_root_dir"], minimap["mri_structurals_directory"]))
-        _plot_minimap(expression_set=expression_set, minimap_axis=axes[_Ax.minimap], colors=color,
-                      alpha_logp=sidak_corrected_alpha)
+    if minimap_config is not None:
+        os.environ["SUBJECTS_DIR"] = str(Path(get_root_dir(minimap_config),
+                                              minimap_config["mri_structurals_directory"]))
+
+        if isinstance(expression_set, SensorExpressionSet):
+            _plot_minimap_sensor(expression_set, minimap_axis=axes[_AxName.minimap_main],
+                                 colors=color, alpha_logp=sidak_corrected_alpha)
+        elif isinstance(expression_set, HexelExpressionSet):
+            _plot_minimap_hexel(expression_set,
+                                lh_minimap_axis=axes[_AxName.minimap_top],
+                                rh_minimap_axis=axes[_AxName.minimap_bottom],
+                                colors=color, alpha_logp=sidak_corrected_alpha)
+        else:
+            raise NotImplementedError()
 
     # format one-off axis qualities
     if paired_axes:
-        top_ax = axes[_Ax.top]
-        bottom_ax = axes[_Ax.bottom]
+        top_ax = axes[_AxName.top]
+        bottom_ax = axes[_AxName.bottom]
         top_ax.set_xticklabels([])
         bottom_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes[_Ax.main]
+        top_ax = bottom_ax = axes[_AxName.main]
     top_ax.set_title('Function Expression')
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()

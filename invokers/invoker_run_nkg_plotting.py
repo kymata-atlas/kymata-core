@@ -1,17 +1,13 @@
 from pathlib import Path
 from os import path
 
-from kymata.io.config import load_config, get_root_dir
+from kymata.io.config import load_config
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot
 
 # template invoker for printing out expression set .nkgs
 def main():
     config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
-
-    data_root_dir = get_root_dir(config)
-
-    mri_structurals_directory = config['mri_structurals_directory']
 
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
 
@@ -41,8 +37,5 @@ def main():
                         'IL9': '#a201e9',
                         'STL': '#d388b5'
                         },
-                    minimap = {
-                        'data_root_dir': data_root_dir,
-                        'mri_structurals_directory': mri_structurals_directory
-                        }
+                    minimap_config=config,
                     )

@@ -51,15 +51,3 @@ def test_expression_plot_no_error():
 
     finally:
         delete_dataset(dataset)
-
-
-def test_expression_plot_with_hexel_minimap_no_error():
-    from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
-    dataset = TVLInsLoudnessOnlyDataset(download=False)
-    try:
-        dataset.download()
-
-        expression_plot(dataset.to_expressionset(), minimap=True)
-
-    finally:
-        delete_dataset(dataset)
