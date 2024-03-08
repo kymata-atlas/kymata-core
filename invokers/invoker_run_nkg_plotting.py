@@ -1,4 +1,3 @@
-from os import path
 from pathlib import Path
 
 from kymata.datasets.sample import KymataMirror2023Q3Dataset
@@ -14,11 +13,10 @@ def main():
 
     expression_plot(expression_data,
                     show_only=[
-                        'CIECAM02 A',
-                        'CIECAM02 a',
+                        'vibration detection (LH-Th/P/M)',
                     ],
                     minimap_config=config,
-                    minimap_view="caudal",
+                    minimap_view="lateral",
                     minimap_surface="inflated",
                     )
 
