@@ -1,21 +1,15 @@
 from pathlib import Path
 from os import path
+
+from kymata.io.config import load_config, get_root_dir
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot
-from kymata.io.yaml import load_config
 
 # template invoker for printing out expression set .nkgs
 def main():
     config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
-    if config['data_location'] == "local":
-        data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
-    elif config['data_location'] == "cbu":
-        data_root_dir = '/imaging/projects/cbu/kymata/data/'
-    elif config['data_location'] == "cbu-local":
-        data_root_dir = '//cbsu/data/imaging/projects/cbu/kymata/data/'
-    else:
-        raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local' or 'cbu-local'.")
+    data_root_dir = get_root_dir(config)
 
     mri_structurals_directory = config['mri_structurals_directory']
 
