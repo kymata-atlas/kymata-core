@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple
+from typing import Optional, Sequence, NamedTuple, Any
 from warnings import warn
 
 import numpy as np
@@ -105,7 +105,7 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
                        expression_yaxis_label_xpos=yaxis_label_xpos)
 
 
-def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -> tuple[NDArray, NDArray]:
+def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float, show_functions: list[str]) -> tuple[NDArray, NDArray]:
     """
     Returns a (left/right pair of) arrays, of length equal to the number of hexels, where each entry is either:
      - 0, if no function is ever significant for this hexel
@@ -119,6 +119,8 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -
     for function_i, function in enumerate(expression_set.functions,
                                           # 1-indexed, as 0 will refer to transparent
                                           start=1):
+        if function not in show_functions:
+            continue
         significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][DIM_HEXEL]
         hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
         data_left[hexel_idxs_left] = function_i
@@ -180,17 +182,27 @@ def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axe
 
 
 def _plot_minimap_hexel(expression_set: HexelExpressionSet,
+                        show_functions: list[str],
                         lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
                         view: str,
-                        colors: dict[str, str], alpha_logp: float):
+                        colors: dict[str, Any], alpha_logp: float):
+    transparent = (0, 0, 0, 0)
+
+    # Functions which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
+    # as transparent
+    colors = colors.copy()
+    for function in expression_set.functions:
+        if function not in show_functions:
+            colors[function] = transparent
+
     # segment at index 0 will map to transparent
     # segment at index i will map to function of index i-1
     colormap = LinearSegmentedColormap.from_list("custom",
                                                  # Insert transparent for index 0
-                                                 colors=[(0, 0, 0, 0)] + [colors[f] for f in expression_set.functions],
+                                                 colors=[transparent] + [colors[f] for f in expression_set.functions],
                                                  # +1 for the transparency
                                                  N=len(expression_set.functions)+1)
-    data_left, data_right = _hexel_minimap_data(expression_set, alpha_logp=alpha_logp)
+    data_left, data_right = _hexel_minimap_data(expression_set, alpha_logp=alpha_logp, show_functions=show_functions)
     stc = SourceEstimate(data=np.concatenate([data_left, data_right]),
                          vertices=[expression_set.hexels_left, expression_set.hexels_right],
                          tmin=0, tstep=1)
@@ -417,6 +429,7 @@ def expression_plot(
                                  colors=color, alpha_logp=sidak_corrected_alpha)
         elif isinstance(expression_set, HexelExpressionSet):
             _plot_minimap_hexel(expression_set,
+                                show_functions=show_only,
                                 lh_minimap_axis=axes[_AxName.minimap_top],
                                 rh_minimap_axis=axes[_AxName.minimap_bottom],
                                 view=minimap_view,
