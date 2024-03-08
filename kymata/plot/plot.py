@@ -64,11 +64,11 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
         width_ratios = [1, 3]
         fig_size = (12, 7)
         subplots_adjust = {
-            "hspace": 0, "wspace": 0.2,
+            "hspace": 0, "wspace": 0.25,
             "left": 0.02, "right": 0.8,
         }
         # Place next to the expression plot yaxis
-        yaxis_label_xpos = width_ratios[0]/(width_ratios[1]+width_ratios[0]) - 0.02
+        yaxis_label_xpos = width_ratios[0]/(width_ratios[1]+width_ratios[0]) - 0.04
     else:
         width_ratios = None
         fig_size = (12, 7)
@@ -82,7 +82,7 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
     if paired_axes:
         if show_minimap:
             spec = [
-                [_AxName.minimap_top, _AxName.top],
+                [_AxName.minimap_top,    _AxName.top],
                 [_AxName.minimap_bottom, _AxName.bottom],
             ]
         else:
@@ -179,6 +179,7 @@ def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axe
 
 def _plot_minimap_hexel(expression_set: HexelExpressionSet,
                         lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
+                        view: str,
                         colors: dict[str, str], alpha_logp: float):
     colormap = LinearSegmentedColormap.from_list("custom",
                                                  colors=[colors[f] for f in expression_set.functions],
@@ -191,6 +192,7 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
     plot_kwargs = dict(
         subject='fsaverage',
         surface="inflated",
+        views=view,
         colormap=colormap,
         smoothing_steps=2,
         background="white",
@@ -229,6 +231,7 @@ def expression_plot(
         hidden_functions_in_legend: bool = True,
         # Display options
         minimap_config: Optional[dict[str, str]] = None,
+        minimap_view: str = "lateral",
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -406,6 +409,7 @@ def expression_plot(
             _plot_minimap_hexel(expression_set,
                                 lh_minimap_axis=axes[_AxName.minimap_top],
                                 rh_minimap_axis=axes[_AxName.minimap_bottom],
+                                view=minimap_view,
                                 colors=color, alpha_logp=sidak_corrected_alpha)
         else:
             raise NotImplementedError()
