@@ -15,7 +15,7 @@ from kymata.entities.expression import HexelExpressionSet, ExpressionSet, Sensor
 from kymata.math.p_values import p_to_logp
 from kymata.entities.functions import Function
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors, get_eeg_sensor_xy
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50

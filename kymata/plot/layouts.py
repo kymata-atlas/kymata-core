@@ -59,11 +59,6 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
     return new_d
 
 
-def eeg_sensors() -> list[str]:
-    """The names of all EEG sensors."""
-    return [f"EEG{i:03}" for i in range(1, 65)]
-
-
 def plot_eeg_sensor_positions(raw_fif: Raw):
     """Plot Sensor positions"""
     fig = plt.figure()
