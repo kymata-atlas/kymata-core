@@ -1,8 +1,6 @@
 from pathlib import Path
-from colorama import Fore
 
 from kymata.io.config import load_config, get_root_dir
-from kymata.io.cli import print_with_color
 from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, create_hexel_morph_maps
 
 

@@ -1,9 +1,8 @@
 from pathlib import Path
-from colorama import Fore
 
 from kymata.io.config import load_config, get_root_dir
-from kymata.io.cli import print_with_color
-from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_filtering, run_second_pass_cleansing_and_EOG_removal
+from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_filtering, \
+    run_second_pass_cleansing_and_EOG_removal
 
 
 def main():
