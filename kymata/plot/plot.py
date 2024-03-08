@@ -44,6 +44,7 @@ class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
     fig_size: tuple[float, float]
+    expression_yaxis_label_xpos: float
     subplots_adjust_kwargs: dict[str, float] = None
 
     def __post_init__(self):
@@ -64,8 +65,10 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
         fig_size = (12, 7)
         subplots_adjust = {
             "hspace": 0, "wspace": 0.2,
-            "left": 0.04, "right": 0.8,
+            "left": 0.02, "right": 0.8,
         }
+        # Place next to the expression plot yaxis
+        yaxis_label_xpos = width_ratios[0]/(width_ratios[1]+width_ratios[0]) - 0.02
     else:
         width_ratios = None
         fig_size = (12, 7)
@@ -73,6 +76,7 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
             "hspace": 0,
             "left": 0.08, "right": 0.84,
         }
+        yaxis_label_xpos = 0.04
 
 
     if paired_axes:
@@ -97,7 +101,8 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
             ]
 
     return _MosaicSpec(mosaic=spec, width_ratios=width_ratios, fig_size=fig_size,
-                       subplots_adjust_kwargs=subplots_adjust)
+                       subplots_adjust_kwargs=subplots_adjust,
+                       expression_yaxis_label_xpos=yaxis_label_xpos)
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float) -> tuple[NDArray, NDArray]:
@@ -424,10 +429,9 @@ def expression_plot(
         bottom_ax.text(s=axes_names[1],
                        x=bottom_ax_xmin + 20, y=ylim * 0.95,
                        style='italic', verticalalignment='center')
-    # TODO: revert this
-    # fig.text(x=0.04, y=0.5,
-    #          s='p-value (with α at 5-sigma, Šidák corrected)',
-    #          ha="center", va="center", rotation="vertical")
+    fig.text(x=mosaic.expression_yaxis_label_xpos, y=0.5,
+             s='p-value (with α at 5-sigma, Šidák corrected)',
+             ha="center", va="center", rotation="vertical")
     if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
         bottom_ax.text(s='   onset of environment   ',
                        x=0, y=0 if paired_axes else ylim/2,
