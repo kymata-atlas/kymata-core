@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 
+from kymata.datasets.data_root import data_root_path
 from kymata.io.file import path_type, file_type, open_or_use
 
 
@@ -25,7 +26,7 @@ def modify_param_config(config_location: str, key: str, value):
 
 def get_root_dir(config: dict) -> str:
     if config['data_location'] == "local":
-        return str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
+        return str(Path(data_root_path(), "emeg_study_data")) + "/"
     elif config['data_location'] == "cbu":
         return '/imaging/projects/cbu/kymata/data/'
     elif config['data_location'] == "cbu-local":
