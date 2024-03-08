@@ -184,7 +184,7 @@ def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axe
 def _plot_minimap_hexel(expression_set: HexelExpressionSet,
                         show_functions: list[str],
                         lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
-                        view: str,
+                        view: str, surface: str,
                         colors: dict[str, Any], alpha_logp: float):
     transparent = (0, 0, 0, 0)
 
@@ -209,7 +209,7 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
     warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
     plot_kwargs = dict(
         subject='fsaverage',
-        surface="inflated",
+        surface=surface,
         views=view,
         colormap=colormap,
         smoothing_steps=1,
@@ -254,6 +254,7 @@ def expression_plot(
         # Display options
         minimap_config: Optional[dict[str, str]] = None,
         minimap_view: str = "lateral",
+        minimap_surface: str = "inflated",
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -432,7 +433,7 @@ def expression_plot(
                                 show_functions=show_only,
                                 lh_minimap_axis=axes[_AxName.minimap_top],
                                 rh_minimap_axis=axes[_AxName.minimap_bottom],
-                                view=minimap_view,
+                                view=minimap_view, surface=minimap_surface,
                                 colors=color, alpha_logp=sidak_corrected_alpha)
         else:
             raise NotImplementedError()

@@ -1,41 +1,26 @@
-from pathlib import Path
 from os import path
+from pathlib import Path
 
+from kymata.datasets.sample import KymataMirror2023Q3Dataset
 from kymata.io.config import load_config
-from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot
+
 
 # template invoker for printing out expression set .nkgs
 def main():
     config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
 
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
-
-    expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL1_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL2_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL3_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL4_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL5_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL6_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL7_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL8_gridsearch.nkg"))
-    expression_data += load_expression_set(Path( path_to_nkg_files, "IL9_gridsearch.nkg"))
+    expression_data = KymataMirror2023Q3Dataset().to_expressionset()
 
     expression_plot(expression_data,
-                    color = {
-                        'IL': '#b11e34',
-                        'IL1': '#a201e9',
-                        'IL2': '#a201e9',
-                        'IL3': '#a201e9',
-                        'IL4': '#a201e9',
-                        'IL5': '#a201e9',
-                        'IL6': '#a201e9',
-                        'IL7': '#a201e9',
-                        'IL8': '#a201e9',
-                        'IL9': '#a201e9',
-                        'STL': '#d388b5'
-                        },
+                    show_only=[
+                        'CIECAM02 A',
+                        'CIECAM02 a',
+                    ],
                     minimap_config=config,
+                    minimap_view="caudal",
+                    minimap_surface="inflated",
                     )
+
+if __name__ == '__main__':
+    main()
