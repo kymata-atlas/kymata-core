@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from numpy import array, array_equal
 
 from kymata.datasets.sample import delete_dataset
