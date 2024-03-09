@@ -42,7 +42,7 @@ def main():
                         'TVL loudness (instantaneous)',
                     ], color="red")
                     | constant_color_dict([
-                        'TVL loudness (short-term)1',
+                        'TVL loudness (short-term)',
                     ], color="pink"),
                     minimap_config=config,
                     minimap_view="lateral",
