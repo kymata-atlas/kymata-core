@@ -20,10 +20,12 @@ from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
 from kymata.entities.functions import Function
-from kymata.io.config import get_root_dir
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
+
+
+transparent = (0, 0, 0, 0)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -186,7 +188,10 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
                         lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
                         view: str, surface: str,
                         colors: dict[str, Any], alpha_logp: float):
-    transparent = (0, 0, 0, 0)
+    # Ensure we have the FSAverage dataset downloaded
+    from kymata.datasets.fsaverage import FSAverageDataset
+    fsaverage = FSAverageDataset(download=True)
+    os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
     # Functions which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
     # as transparent
@@ -252,7 +257,7 @@ def expression_plot(
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # Display options
-        minimap_config: Optional[dict[str, str]] = None,
+        minimap: bool = False,
         minimap_view: str = "lateral",
         minimap_surface: str = "inflated",
         # I/O args
@@ -267,7 +272,7 @@ def expression_plot(
 
     color: colour name, function_name → colour name, or list of colour names
     xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
-    minimap: To display a minimap, supply an appropriately loaded config dict. Or supply None to hide the minimap.
+    minimap (bool): Display a minimap
     """
 
     # Default arg values
@@ -332,7 +337,7 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
-    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap_config is not None)
+    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap)
 
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
@@ -421,10 +426,7 @@ def expression_plot(
 
     # Plot minimap
 
-    if minimap_config is not None:
-        os.environ["SUBJECTS_DIR"] = str(Path(get_root_dir(minimap_config),
-                                              minimap_config["dataset_directory_name"],
-                                              minimap_config["mri_structurals_directory"]))
+    if minimap:
 
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(expression_set, minimap_axis=axes[_AxName.minimap_main],
