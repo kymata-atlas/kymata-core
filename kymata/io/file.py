@@ -2,12 +2,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO, BinaryIO, Union
 
-file_type = Union[TextIO, BinaryIO]
-path_type = Union[str, Path]
+FileType = Union[TextIO, BinaryIO]
+PathType = Union[str, Path]
 
 
 @contextmanager
-def open_or_use(path_or_file: path_type | file_type, mode: str = "r") -> file_type:
+def open_or_use(path_or_file: PathType | FileType, mode: str = "r") -> FileType:
     """
     If passed a path, will open it and return the file handle, and close when done.
     if passed a file handle, will keep it open, and return it when done.
