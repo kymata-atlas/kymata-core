@@ -35,6 +35,10 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
 
 
 def get_eeg_sensor_xy() -> dict[str, Point2d]:
+    with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
+              "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
+        mapping = yaml.safe_load(eeg_name_mapping_file)
+    mapping = {k.upper(): v.upper() for k, v in mapping.items()}
     d = dict()
     with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
               "EEG1005.lay").open("r") as layout_file:
@@ -44,19 +48,11 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
             y = float(parts[2])
             name = parts[-1].upper()
             d[name] = Point2d(x, y)
-    # Get name mapping
-    with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
-              "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
-        mapping = yaml.safe_load(eeg_name_mapping_file)
-    mapping = {k.upper(): v.upper() for k, v in mapping.items()}
-    inverted_mapping = {v: k for k, v in mapping.items()}
-    # Apply name mapping
-    new_d = {
-        inverted_mapping[name]: point
-        for name, point in d.items()
-        if name in inverted_mapping.keys()
+    our_sensor_d = {
+        our_name: d[their_name]
+        for our_name, their_name in mapping.items()
     }
-    return new_d
+    return our_sensor_d
 
 
 def plot_eeg_sensor_positions(raw_fif: Raw):
