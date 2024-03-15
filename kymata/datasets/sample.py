@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from os import remove, rmdir
 from pathlib import Path
 from typing import Optional
 from urllib import request
@@ -56,12 +55,14 @@ class SampleDataset(ABC):
                 print(f"Downloading {remote} to {local}")
                 request.urlretrieve(remote, local)
 
+
+class SampleExpressionDataset(SampleDataset, ABC):
     @abstractmethod
     def to_expressionset(self) -> HexelExpressionSet:
         raise NotImplementedError()
 
 
-class KymataMirror2023Q3Dataset(SampleDataset):
+class KymataMirror2023Q3Dataset(SampleExpressionDataset):
     def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "kymata_mirror_Q3_2023"
         super().__init__(
@@ -80,7 +81,7 @@ class KymataMirror2023Q3Dataset(SampleDataset):
         return es
 
 
-class TVLInsLoudnessOnlyDataset(SampleDataset):
+class TVLInsLoudnessOnlyDataset(SampleExpressionDataset):
     def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_ins_loudness_only"
         super().__init__(
@@ -99,7 +100,7 @@ class TVLInsLoudnessOnlyDataset(SampleDataset):
         return es
 
 
-class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
+class TVLDeltaInsTC1LoudnessOnlyDataset(SampleExpressionDataset):
     def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only"
         super().__init__(
@@ -118,7 +119,7 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
         return es
 
 
-class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
+class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleExpressionDataset):
     def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors"
         super().__init__(
@@ -138,6 +139,7 @@ class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
 
 
 def delete_dataset(local_dataset: SampleDataset):
+    from shutil import rmtree
     # Make sure it's not silent
     print(f"Deleting dataset {local_dataset.name}")
     # Only allow deletion if the specified url is within the data dir
@@ -147,9 +149,5 @@ def delete_dataset(local_dataset: SampleDataset):
         print(f"{str(local_dataset.path)} doesn't exist")
         return
 
-    for file in local_dataset.filenames:
-        to_delete = Path(local_dataset.path, file)
-        print(f"Deleting file {str(to_delete)}")
-        remove(to_delete)
-    print(f"Deleting directory {str(local_dataset.path)}")
-    rmdir(local_dataset.path)
+    # We passed the checks, do the delete
+    rmtree(local_dataset.path)
