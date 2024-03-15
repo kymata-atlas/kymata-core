@@ -441,3 +441,20 @@ def test_meg_correct_sensors(meg_sensors):
         "MEG2643",
         "MEG2641",
     ])
+
+
+def test_eeg_left_right_medial_count(eeg_sensors):
+    from kymata.plot.plot import sensor_left_right_assignment
+    top_chans = set(sensor_left_right_assignment[0].axis_channels)
+    bottom_chans = set(sensor_left_right_assignment[1].axis_channels)
+    both_chans = top_chans & bottom_chans
+    top_chans -= both_chans
+    bottom_chans -= both_chans
+
+    top_eeg = [e for e in eeg_sensors if e in top_chans]
+    bottom_eeg = [e for e in eeg_sensors if e in bottom_chans]
+    both_eeg = [e for e in eeg_sensors if e in both_chans]
+
+    assert len(both_eeg) == 10
+    assert len(top_eeg) == 27
+    assert len(bottom_eeg) == 27
