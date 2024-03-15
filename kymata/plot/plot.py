@@ -50,7 +50,7 @@ class AxisAssignment(NamedTuple):
     axis_channels: list
 
 
-_left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
+sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(axis_name="left",
                    axis_channels=[
                        sensor
@@ -179,7 +179,7 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            assign_left_right_channels = _left_right_sensors
+            assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels)
             bottom_chans = set(assign_left_right_channels[1].axis_channels)

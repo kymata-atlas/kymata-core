@@ -1,18 +1,32 @@
+import pytest
+
 from kymata.entities.iterables import all_equal
 
 
-def test_all_0s_are_equal():
-    all_zeros = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    assert all_equal(all_zeros)
+@pytest.fixture
+def all_0s():
+    return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
-def test_0s_and_a_1_are_not_equal():
-    all_zeros_and_a_one = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
-    assert not all_equal(all_zeros_and_a_one)
+@pytest.fixture
+def all_0s_and_a_1():
+    return [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
 
 
-def test_all_nones_are_equal():
-    all_nones = [None, None, None, None, None, None, None, None]
+@pytest.fixture
+def all_nones():
+    return [None, None, None, None, None, None, None, None]
+
+
+def test_all_0s_are_equal(all_0s):
+    assert all_equal(all_0s)
+
+
+def test_0s_and_a_1_are_not_equal(all_0s_and_a_1):
+    assert not all_equal(all_0s_and_a_1)
+
+
+def test_all_nones_are_equal(all_nones):
     assert all_equal(all_nones)
 
 
