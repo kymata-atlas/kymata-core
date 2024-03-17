@@ -122,12 +122,12 @@ def main():
     # emeg_values = emeg_values[:64, :, :]
     # ch_names = ch_names[:64]
 
-    # func = load_function(Path(args.base_dir, args.function_path),
+    func = load_function(Path(args.base_dir, args.function_path),
+                         func_name=args.function_name,
+                         bruce_neurons=(13, 14))
+    # func = load_function(args.function_path,
     #                      func_name=args.function_name,
     #                      bruce_neurons=(5, 10))
-    func = load_function(args.function_path,
-                         func_name=args.function_name,
-                         bruce_neurons=(5, 10))
     
     func = func.downsampled(args.downsample_rate)
 

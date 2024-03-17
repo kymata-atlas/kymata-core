@@ -27,10 +27,12 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
-        --function-path '/imaging/projects/cbu/kymata/data/open-source/ERP_CORE/MMN All Data and Scripts/functions/kymata_mr' \
-        --function-name 'IL' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/Bruce_model/neurogramResults_an_full' \
+        --function-name 'aneurogram_mean_mr' \
   "
   #  --snr $ARG # >> result3.txt
         # --single-participant-override 'participant_01' \
         # --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
         # --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1-inv.fif'
+  
+  #  --function-path '/imaging/projects/cbu/kymata/data/open-source/ERP_CORE/MMN All Data and Scripts/functions/kymata_mr' \

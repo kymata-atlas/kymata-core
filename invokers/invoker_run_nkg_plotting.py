@@ -5,30 +5,20 @@ from kymata.plot.plot import expression_plot
 
 # template invoker for printing out expression set .nkgs
 
-path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output")
+path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/all_participant_sensor")
 
-expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL1_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL2_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL3_gridsearch.nkg"))
+# expression_data = load_expression_set(Path( path_to_nkg_files, "d_IL_gridsearch.nkg"))
+expression_data = load_expression_set(Path( path_to_nkg_files, "d_IL4_gridsearch.nkg"))
+expression_data += load_expression_set(Path( path_to_nkg_files, "d_STL_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
 expression_data += load_expression_set(Path( path_to_nkg_files, "IL4_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL5_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL6_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL7_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL8_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL9_gridsearch.nkg"))
+expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
 
 expression_plot(expression_data, color = {
-                    'IL': '#b11e34',
-                    'IL1': '#a201e9',
-                    'IL2': '#a201e9',
-                    'IL3': '#a201e9',
-                    'IL4': '#a201e9',
-                    'IL5': '#a201e9',
-                    'IL6': '#a201e9',
-                    'IL7': '#a201e9',
-                    'IL8': '#a201e9',
-                    'IL9': '#a201e9',
-                    'STL': '#d388b5'
-                  }, ylim=-200, save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/plot/MEG_source.jpg"))
+                    # 'd_IL': '#1f77b4',
+                    'd_IL4': '#ff7f0e',
+                    'd_STL': '#2ca02c',
+                    # 'IL': '#d62728',
+                    'IL4': '#9467bd',
+                    'STL': '#8c564b'
+                  }, ylim=-200, save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/all_participant_erp.jpg"))
