@@ -13,11 +13,7 @@ This package forms part of the Kymata Atlas codebase.
 
 //Add pictures
 
-## kymata-preprocessing
-
-The repository holds the Kymata preprocessing code that runs on the MRC-CBU HPC system. This code comprises most of the 'Kymata back-end', including preprocessing steps and statistical procedures. The output of this code is the input to kymata-web.
-
-<img src="assets/overview_graphic.png" width="400" height="754">
+The repository holds the Kymata preprocessing code that can run  either locally or on the MRC-CBU HPC system. This code comprises most of the 'Kymata back-end', including preprocessing steps, gridsearch procedures, expression plotting and IPPM generation. The output of this code is the input to kymata-web.
 
 ## Setting up to run with Poetry
 
