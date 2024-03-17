@@ -28,10 +28,8 @@ You'll need the following files:
 ### 2. Preprocess the data
 
 The repository holds the Kymata preprocessing code that runs on the MRC-CBU HPC system.
-This code comprises most of the 'Kymata back-end', including preprocessing steps and statistical procedures.
-The output of this code is the input to `kymata-web`.
 
-<img src="assets/overview_graphic.png" width="400" height="754">
+This code comprises the 'Kymata back-end', including preprocessing steps, gridsearch procedures, expression plotting and IPPM generation.
 
 Run the following invokers from `invokers/` in order:
 
