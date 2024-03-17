@@ -74,7 +74,7 @@ def test_eeg_correct_sensors(eeg_sensors):
         "EEG007",
         "EEG008",
         "EEG009",
-        "EEG000",
+        "EEG010",
         "EEG011",
         "EEG012",
         "EEG013",
