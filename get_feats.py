@@ -75,17 +75,32 @@ func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 # plt.plot(func_a.values[a:b] / np.max(func_a.values[a:b]))
 # plt.plot(func_b.values[a:b] / np.max(func_b.values[a:b]))
 # plt.savefig('example_1.png')
+features = {}
+
+def get_features(name):
+  def hook(model, input, output):
+    features[name] = output
+  return hook
 
 ########
 
 if whisper_outs:
   processor = WhisperProcessor.from_pretrained("openai/whisper-base.en")
   model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en")
+  # import ipdb;ipdb.set_trace()
+  # for layer in model.children():
+  #   layer.register_forward_hook(get_features("feats"))
+  for name, layer in model.named_modules():
+    # import ipdb;ipdb.set_trace()
+    if isinstance(layer, torch.nn.Module):
+        layer.register_forward_hook(get_features(name))
   inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
+  # inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
   generated_ids = model.generate(**inputs)
   transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
+  FEATS = features
   import ipdb;ipdb.set_trace()
-
+  
 ########
 
 if w2v_outs:
