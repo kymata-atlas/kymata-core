@@ -1,9 +1,10 @@
-
 from transformers import AutoProcessor, Wav2Vec2Model
+from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
+import whisper
 
 from kymata.io.functions import load_function
 
@@ -11,14 +12,15 @@ import librosa
 # dataset, sampling_rate = librosa.load('/content/drive/MyDrive/Colab Notebooks/kymata/stimulus.wav', sr=16_000)
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
-save_outs = False
+whisper_outs = True
+save_outs = True
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 
 dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
-processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
 
-inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
+# processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
+# inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
 
 T_max = 401 #seconds
 
@@ -32,47 +34,57 @@ func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 # (512, 40152) /2   100 Hz
 # (512, 20076) /2   20 Hz
 
-d_STL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
-                      func_name='d_STL',
-                      bruce_neurons=(5, 10)
-                      )
+# d_STL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
+#                       func_name='d_STL',
+#                       bruce_neurons=(5, 10)
+#                       )
 
-IL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
-                    func_name='IL9',
-                    bruce_neurons=(5, 10)
-                    )
+# IL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
+#                     func_name='IL9',
+#                     bruce_neurons=(5, 10)
+#                     )
 
-func2 = load_function(f'{func_dir}/predicted_function_contours/asr_models/w2v_convs',
-                      func_name='conv_layer3',
-                      n_derivatives=0,
-                      n_hamming=0,
-                      nn_neuron=158, # 201, 158
-                      )
+# func2 = load_function(f'{func_dir}/predicted_function_contours/asr_models/w2v_convs',
+#                       func_name='conv_layer3',
+#                       n_derivatives=0,
+#                       n_hamming=0,
+#                       nn_neuron=158, # 201, 158
+#                       )
 
-func3 = load_function(f'{func_dir}/predicted_function_contours/Bruce_model/neurogramResults',
-                      func_name='neurogram_mr',
-                      n_derivatives=0,
-                      n_hamming=0,
-                      nn_neuron=158,
-                      bruce_neurons=(5, 10)
-                      )
+# func3 = load_function(f'{func_dir}/predicted_function_contours/Bruce_model/neurogramResults',
+#                       func_name='neurogram_mr',
+#                       n_derivatives=0,
+#                       n_hamming=0,
+#                       nn_neuron=158,
+#                       bruce_neurons=(5, 10)
+#                       )
 
-a = 300_000
-b = a + 1000
+# a = 300_000
+# b = a + 1000
 
-for func in (d_STL, IL, func2, func3):
-  func.values /= np.max(func.values)
-  func.values /= np.sqrt(np.sum(func.values ** 2))
+# for func in (d_STL, IL, func2, func3):
+#   func.values /= np.max(func.values)
+#   func.values /= np.sqrt(np.sum(func.values ** 2))
 
 
-func_a = IL
-func_b = func2 #d_STL + IL
+# func_a = IL
+# func_b = func2 #d_STL + IL
 
-print(np.sum(func_a.values * func_b.values))
+# print(np.sum(func_a.values * func_b.values))
 
-plt.plot(func_a.values[a:b] / np.max(func_a.values[a:b]))
-plt.plot(func_b.values[a:b] / np.max(func_b.values[a:b]))
-plt.savefig('example_1.png')
+# plt.plot(func_a.values[a:b] / np.max(func_a.values[a:b]))
+# plt.plot(func_b.values[a:b] / np.max(func_b.values[a:b]))
+# plt.savefig('example_1.png')
+
+########
+
+if whisper_outs:
+  processor = WhisperProcessor.from_pretrained("openai/whisper-base.en")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en")
+  inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
+  generated_ids = model.generate(**inputs)
+  transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
+  import ipdb;ipdb.set_trace()
 
 ########
 
