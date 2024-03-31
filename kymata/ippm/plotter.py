@@ -73,8 +73,6 @@ class IPPMPlotter(object):
         plt.legend(handles=legend, loc='upper left')
         plt.title(title)
 
-        # for some unknown reason, I can set the x-axis ticks to be off but if I try with 
-        # the y-axis it ignores the changes :D
         ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
         ax.set_yticklabels([])
         ax.yaxis.set_visible(False)
@@ -86,7 +84,7 @@ class IPPMPlotter(object):
         fig.set_figheight(figheight)
         fig.set_figwidth(figwidth)
         
-        plt.show()
+        #plt.show()
 
     def _make_bspline_paths(self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
         """

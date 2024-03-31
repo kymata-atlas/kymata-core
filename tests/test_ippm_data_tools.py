@@ -50,7 +50,7 @@ def test_causalityViolation_With_RightHemi_Should_Succeed():
         'f1' : []
     }
 
-    assert(causality_violation_score(test_hexels, test_hierarchy, 'rightHemisphere') == 0.5)
+    assert(causality_violation_score(test_hexels, test_hierarchy, 'rightHemisphere', ['f1']) == (0.25, 1, 4))
 
 def test_causalityViolation_With_LeftHemi_Should_Succeed():
     test_hexels = {
@@ -69,14 +69,14 @@ def test_causalityViolation_With_LeftHemi_Should_Succeed():
         'f2' : ['f1'],
         'f1' : []
     }
-    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere') == 0.5)
+    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere', ['f1']) == (0.25, 1, 4))
 
 def test_causalityViolation_With_SingleFunction_Should_Return0():
     test_hexels = {'f1' : IPPMHexel('f1')}
     test_hexels['f1'].left_best_pairings = [(50, 1e-50), (100, 1e-25)]
     test_hierarchy = {'f1' : []}
 
-    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere') == 0)
+    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere', ['f1']) == (0, 0, 0))
 
 def test_causalityViolation_With_SingleEdge_Should_Return0():
     test_hexels = {'f1' : IPPMHexel('f1'), 'f2' : IPPMHexel('f2')}
@@ -84,7 +84,7 @@ def test_causalityViolation_With_SingleEdge_Should_Return0():
     test_hexels['f2'].left_best_pairings = [(110, 1e-50)]
     test_hierarchy = {'f2' : ['f1'], 'f1' : []}
 
-    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere') == 0)
+    assert(causality_violation_score(test_hexels, test_hierarchy, 'leftHemisphere', ['f1']) == (0, 0, 1))
 
 def test_functionRecall_With_NoFuncs_Should_Return0():
     test_hexels = {'f1' : IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
