@@ -215,7 +215,7 @@ def stem_plot(
 
     plt.show()
 
-def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: Dict[str, List[str]], hemi: str):
+def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: Dict[str, List[str]], hemi: str, inputs: List[str]) -> Tuple[float, int, int]:
     """
         Assumption: hexels are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy hexels.
 
@@ -249,14 +249,44 @@ def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: 
     for func, inc_edges in hierarchy.items():
         # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in time.
         # arrows go from latest inc_edge spike to the earliest func spike
-        child_latency = get_latency(denoised_hexels[func], mini=True)
+
+        if func in inputs:
+            continue
+
+        if hemi == 'leftHemisphere':
+            if len(denoised_hexels[func].left_best_pairings) == 0:
+                continue
+        else:
+            if len(denoised_hexels[func].right_best_pairings) == 0:
+                continue
+        
+        child_latency = get_latency(denoised_hexels[func], mini=True)[0]
         for inc_edge in inc_edges:
-            parent_latency = get_latency(denoised_hexels[inc_edge], mini=False)
+            if inc_edge in inputs:
+                # input node, so parent latency is 0
+                parent_latency = 0
+                if child_latency < parent_latency:
+                    causality_violations += 1
+                total_arrows += 1
+                continue
+
+            # We need to ensure the function has significant spikes
+            if hemi == 'leftHemisphere':
+                if len(denoised_hexels[inc_edge].left_best_pairings) == 0:
+                    continue
+            else:
+                if len(denoised_hexels[inc_edge].right_best_pairings) == 0:
+                    continue
+                    
+            parent_latency = get_latency(denoised_hexels[inc_edge], mini=False)[0]
             if child_latency < parent_latency:
                 causality_violations += 1
             total_arrows += 1
 
-    return causality_violations / total_arrows if total_arrows != 0 else 0
+    return (
+        causality_violations / total_arrows if total_arrows != 0 else 0,
+        causality_violations,
+        total_arrows)
 
 def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_dict: Dict[str, Node], hemi: str) -> Tuple[float]:
     """

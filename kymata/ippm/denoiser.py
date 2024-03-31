@@ -7,6 +7,8 @@ import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import normalize
+from sklearn.utils._testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 
 #import multiprocessing
 
@@ -679,7 +681,8 @@ class GMM(DenoisingStrategy):
         
         if invalid:
             raise ValueError
-        
+
+    @ignore_warnings(category=ConvergenceWarning)
     def cluster(
         self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
         cluster_latency: bool = False, posterior_pooling: bool = False
@@ -708,7 +711,7 @@ class GMM(DenoisingStrategy):
                 
             if len(df) == 1:
                 # no point clustering, just return the single data point.
-                ret = [(df.iloc[0, 'Latency'], df.iloc[0, 'Mag'])]
+                ret = [(df.iloc[0, 0], df.iloc[0, 1])]
                 hexels = super()._update_pairings(hexels, func, ret, hemi)
                 continue
 
