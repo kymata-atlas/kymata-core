@@ -32,7 +32,6 @@ class IPPMPlotter(object):
                     width
         """
         # first lets aggregate all of the information.
-        # TODO: refactor to generate BSplines in the first loop, so we dont have to loop again.
         hexel_x = [_ for _ in range(len(graph.keys()))]                    # x coordinates for nodes e.g., (x, y) = (hexel_x[i], hexel_y[i])
         hexel_y = [_ for _ in range(len(graph.keys()))]                    # y coordinates for nodes
         node_colors = [_ for _ in range(len(graph.keys()))]                # color for nodes
@@ -61,24 +60,31 @@ class IPPMPlotter(object):
             bsplines += self._make_bspline_paths(pairs)
         
         fig, ax = plt.subplots()
-        fig.set_figheight(figheight)
-        fig.set_figwidth(figwidth)
-        plt.axis('on')
+    
         for path, color in zip(bsplines, edge_colors):
             ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
-        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
-        ax.tick_params(bottom=True, labelbottom=True, left=False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Latency (ms)')
 
+        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
+        
         legend = []
         for f in colors.keys():
             legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=colors[f], markersize=15))
 
         plt.legend(handles=legend, loc='upper left')
         plt.title(title)
+
+        ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
+        ax.set_yticklabels([])
+        ax.yaxis.set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xlabel('Latency (ms)')
+        
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
+        
+        #plt.show()
 
     def _make_bspline_paths(self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
         """
