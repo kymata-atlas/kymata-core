@@ -12,7 +12,7 @@ jobs:
           ref: ${{ github.head_ref }} # be sure to add this ref on your checkout
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.9.6' # Define your project python version
+          python-version: '3.11' # Define your project python version
       - id: run-tests
         uses: JotaFan/pycoverage@v1.0.0
         with:
