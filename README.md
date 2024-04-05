@@ -1,5 +1,6 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
+[![Coverage](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/pycoverage.yml/coverage.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/pycoverage.yml)
 
 # Kymata Toolbox Readme
 
