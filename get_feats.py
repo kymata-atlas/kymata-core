@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import whisper
 import time
+import os
 
 from kymata.io.functions import load_function, load_function_pre
 
@@ -62,9 +63,9 @@ func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 #                       bruce_neurons=(5, 10)
 #                       )
 
-whisper_out = load_function_pre(f'{func_dir}/predicted_function_contours/asr_models/whisper_all',
-                      func_name='model.decoder.embed_tokens',
-                      )
+# whisper_out = load_function_pre(f'{func_dir}/predicted_function_contours/asr_models/whisper_all',
+#                       func_name='model.decoder.embed_tokens',
+#                       )
 
 # a = 300_000
 # b = a + 1000
@@ -104,7 +105,7 @@ def get_features(name):
 
 ########
 
-if whisper_outs:
+if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape.npz'):
 
   dataset = dataset[:T_max*16_000]
 
@@ -132,9 +133,11 @@ if whisper_outs:
   end_time = time.time()
   execution_time = end_time - start_time
   print(f"Execution time: {execution_time} seconds")
-  
-  import ipdb;ipdb.set_trace()
-  FEATS = features
+
+else:
+
+  features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape.npz')
+
   # import ipdb;ipdb.set_trace()
   
 ########
@@ -232,5 +235,44 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
           place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
       func_dict[f'conv_layer{i}'] = place_holder
 
-  np.savez(f'{data_path}/predicted_function_contours/asr_models/hubert_convs.npz', **func_dict)
 
+
+if whisper_outs and save_outs:
+
+  s_num = T_max * 1000
+
+  func_dict = {}
+  for name,val in features.items():
+    if 'decoder' in name or name == 'proj_out':
+      print(name)
+      if 'conv' in name or val.shape[0] != 1:
+        place_holder = np.zeros((val.shape[1], s_num))
+      else:
+        place_holder = np.zeros((val.shape[2], s_num))
+      for j in range(place_holder.shape[0]):
+        if 'conv' in name:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
+        elif val.shape[0] != 1:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
+        else:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
+      func_dict[name] = place_holder
+  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_decoder.npz', **func_dict)
+
+  func_dict = {}
+  for name,val in features.items():
+    if 'decoder' not in name and 'encoder' in name:
+      print(name)
+      if 'conv' in name or val.shape[0] != 1:
+        place_holder = np.zeros((val.shape[1], s_num))
+      else:
+        place_holder = np.zeros((val.shape[2], s_num))
+      for j in range(place_holder.shape[0]):
+        if 'conv' in name:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
+        elif val.shape[0] != 1:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
+        else:
+          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
+      func_dict[name] = place_holder
+  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_encoder.npz', **func_dict)
