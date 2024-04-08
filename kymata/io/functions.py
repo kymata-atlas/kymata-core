@@ -86,3 +86,10 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
         values=func.flatten().squeeze(),
         sample_rate=1000,
     )
+
+def load_function_pre(function_path_without_suffix: path_type, func_name: str):
+    function_path_without_suffix = Path(function_path_without_suffix)
+    func: NDArray
+    func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+    func = func_dict[func_name]
+    return func

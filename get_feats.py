@@ -5,11 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
 import whisper
+import time
 
-from kymata.io.functions import load_function
+from kymata.io.functions import load_function, load_function_pre
 
 import librosa
 # dataset, sampling_rate = librosa.load('/content/drive/MyDrive/Colab Notebooks/kymata/stimulus.wav', sr=16_000)
+
+start_time = time.time()
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
@@ -59,6 +62,10 @@ func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 #                       bruce_neurons=(5, 10)
 #                       )
 
+whisper_out = load_function_pre(f'{func_dir}/predicted_function_contours/asr_models/whisper_all',
+                      func_name='model.decoder.embed_tokens',
+                      )
+
 # a = 300_000
 # b = a + 1000
 
@@ -79,27 +86,56 @@ features = {}
 
 def get_features(name):
   def hook(model, input, output):
-    features[name] = output
+    if isinstance(output,torch.Tensor):
+      if name in features.keys():
+        if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
+        # import ipdb;ipdb.set_trace()
+          features[name] = torch.cat((features[name], output), -1)
+        else:
+          features[name] = torch.cat((features[name], output), -2)
+      else:
+        features[name] = output
   return hook
+
+# def get_features(name):
+#   def hook(model, input, output):
+#       features[name] = output
+#   return hook
 
 ########
 
 if whisper_outs:
+
+  dataset = dataset[:T_max*16_000]
+
   processor = WhisperProcessor.from_pretrained("openai/whisper-base.en")
   model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
+
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()
     if isinstance(layer, torch.nn.Module):
         layer.register_forward_hook(get_features(name))
-  inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
-  # inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
-  generated_ids = model.generate(**inputs)
-  transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
-  FEATS = features
+
+  for i in range(14):
+    if i == 13:
+      segment = dataset[i*30*16_000:]
+    else:
+      segment = dataset[i*30*16_000:(i+1)*30*16_000]
+    # inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
+    inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
+    generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    # transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
+
+  end_time = time.time()
+  execution_time = end_time - start_time
+  print(f"Execution time: {execution_time} seconds")
+  
   import ipdb;ipdb.set_trace()
+  FEATS = features
+  # import ipdb;ipdb.set_trace()
   
 ########
 
