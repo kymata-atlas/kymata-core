@@ -52,7 +52,7 @@ def main():
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits', type=int, default=400,
                         help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
-    parser.add_argument('--n-derangements', type=int, default=5,
+    parser.add_argument('--n-derangements', type=int, default=1,
                         help='number of deragements for the null distribution')
     parser.add_argument('--start-latency', type=float, default=-200,
                         help='earliest latency to check in cross correlation')
