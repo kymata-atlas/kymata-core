@@ -48,13 +48,13 @@ def main():
                         help='inverse solution path')
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
                         help='inverse solution suffix')
-    parser.add_argument('--seconds-per-split', type=float, default=0.5,
+    parser.add_argument('--seconds-per-split', type=float, default=1,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits', type=int, default=800,
+    parser.add_argument('--n-splits', type=int, default=400,
                         help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
     parser.add_argument('--n-derangements', type=int, default=1,
                         help='number of deragements for the null distribution')
-    parser.add_argument('--start-latency', type=float, default=-100,
+    parser.add_argument('--start-latency', type=float, default=-200,
                         help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200,
                         help='start of the emeg evoked files relative to the start of the function')
