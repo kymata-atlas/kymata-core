@@ -46,13 +46,38 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
 
     elif 'asr_models' in str(function_path_without_suffix):
-        func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
-        func = func_dict[func_name]
-        if nn_neuron in ('avr', 'ave', 'mean', 'all'):
-            func = np.mean(func[:, :400_000], axis=0) #func[nn_neuron]
+        if 'whisper_all_no_reshape' in str(function_path_without_suffix):
+            func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+            func = func_dict[func_name]
+
+            T_max = 401
+            s_num = T_max * 1000
+            if 'conv' in func_name or func.shape[0] != 1:
+                place_holder = np.zeros((func.shape[1], s_num))
+            else:
+                place_holder = np.zeros((func.shape[2], s_num))
+            for j in range(place_holder.shape[0]):
+                if 'conv' in func_name:
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[2]), func[0, j, :])
+                elif func.shape[0] != 1:
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
+                else:
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
+            
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
+            else:
+                func = place_holder[nn_neuron, :400_000]
+            func_name += f'_{str(nn_neuron)}'
+
         else:
-            func = func[nn_neuron, :400_000]
-        func_name += f'_{str(nn_neuron)}'
+            func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+            func = func_dict[func_name]
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(func[:, :400_000], axis=0) #func[nn_neuron]
+            else:
+                func = func[nn_neuron, :400_000]
+            func_name += f'_{str(nn_neuron)}'
 
     else:
         if function_path_without_suffix.with_suffix(".npz").exists():

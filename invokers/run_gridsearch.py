@@ -124,6 +124,7 @@ def main():
 
     func = load_function(Path(args.base_dir, args.function_path),
                          func_name=args.function_name,
+                         nn_neuron='ave',
                          bruce_neurons=(13, 14))
     # func = load_function(args.function_path,
     #                      func_name=args.function_name,
@@ -151,9 +152,9 @@ def main():
     )
 
     if args.save_expression_set_location is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
+        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, func.name + '_gridsearch.nkg'), overwrite=args.overwrite)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
+    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, func.name + '_gridsearch.png'), overwrite=args.overwrite)
 
     print(f'Time taken for code to run: {time.time() - start:.4f} s')
 

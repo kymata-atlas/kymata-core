@@ -137,6 +137,7 @@ if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours
 else:
 
   features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape.npz')
+  # features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_decoder.npz')
 
   # import ipdb;ipdb.set_trace()
   
@@ -235,44 +236,44 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
           place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
       func_dict[f'conv_layer{i}'] = place_holder
 
-
+import ipdb;ipdb.set_trace()
 
 if whisper_outs and save_outs:
 
   s_num = T_max * 1000
 
-  func_dict = {}
-  for name,val in features.items():
-    if 'decoder' in name or name == 'proj_out':
-      print(name)
-      if 'conv' in name or val.shape[0] != 1:
-        place_holder = np.zeros((val.shape[1], s_num))
-      else:
-        place_holder = np.zeros((val.shape[2], s_num))
-      for j in range(place_holder.shape[0]):
-        if 'conv' in name:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
-        elif val.shape[0] != 1:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
-        else:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
-      func_dict[name] = place_holder
-  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_decoder.npz', **func_dict)
+  # func_dict = {}
+  # for name,val in features.items():
+  #   if 'decoder' in name or name == 'proj_out':
+  #     print(name)
+  #     if 'conv' in name or val.shape[0] != 1:
+  #       place_holder = np.zeros((val.shape[1], s_num))
+  #     else:
+  #       place_holder = np.zeros((val.shape[2], s_num))
+  #     for j in range(place_holder.shape[0]):
+  #       if 'conv' in name:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
+  #       elif val.shape[0] != 1:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
+  #       else:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
+  #     func_dict[name] = place_holder
+  # np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_decoder.npz', **func_dict)
 
-  func_dict = {}
-  for name,val in features.items():
-    if 'decoder' not in name and 'encoder' in name:
-      print(name)
-      if 'conv' in name or val.shape[0] != 1:
-        place_holder = np.zeros((val.shape[1], s_num))
-      else:
-        place_holder = np.zeros((val.shape[2], s_num))
-      for j in range(place_holder.shape[0]):
-        if 'conv' in name:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
-        elif val.shape[0] != 1:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
-        else:
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
-      func_dict[name] = place_holder
-  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_encoder.npz', **func_dict)
+  # func_dict = {}
+  # for name,val in features.items():
+  #   if ('decoder' not in name) and ('encoder' in name):
+  #     print(name)
+  #     if 'conv' in name or val.shape[0] != 1:
+  #       place_holder = np.zeros((val.shape[1], s_num))
+  #     else:
+  #       place_holder = np.zeros((val.shape[2], s_num))
+  #     for j in range(place_holder.shape[0]):
+  #       if 'conv' in name:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[2]), val[0, j, :])
+  #       elif val.shape[0] != 1:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[0]), val[:, j])
+  #       else:
+  #         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, val.shape[1]), val[0, :, j])
+  #     func_dict[name] = place_holder
+  # np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_encoder.npz', **func_dict)
