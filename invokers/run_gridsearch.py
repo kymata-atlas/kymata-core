@@ -37,6 +37,8 @@ def main():
                         help="Silently overwrite existing files.")
     parser.add_argument('--function-name', type=str, default="IL",
                         help='function name in stimulisig')
+    parser.add_argument('--asr-option', type=str, default="ave",
+                        help='Whether to get the output from all neurons or do the average')
     parser.add_argument('--single-participant-override', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
     parser.add_argument('--morph', action="store_true",
@@ -48,13 +50,13 @@ def main():
                         help='inverse solution path')
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
                         help='inverse solution suffix')
-    parser.add_argument('--seconds-per-split', type=float, default=0.5,
+    parser.add_argument('--seconds-per-split', type=float, default=1,
                         help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits', type=int, default=800,
+    parser.add_argument('--n-splits', type=int, default=400,
                         help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
     parser.add_argument('--n-derangements', type=int, default=1,
                         help='number of deragements for the null distribution')
-    parser.add_argument('--start-latency', type=float, default=-100,
+    parser.add_argument('--start-latency', type=float, default=-200,
                         help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200,
                         help='start of the emeg evoked files relative to the start of the function')
@@ -122,34 +124,83 @@ def main():
     # emeg_values = emeg_values[:64, :, :]
     # ch_names = ch_names[:64]
 
-    func = load_function(Path(args.base_dir, args.function_path),
-                         func_name=args.function_name,
-                         nn_neuron='ave',
-                         bruce_neurons=(13, 14))
-    # func = load_function(args.function_path,
-    #                      func_name=args.function_name,
-    #                      bruce_neurons=(5, 10))
-    
-    func = func.downsampled(args.downsample_rate)
+    if args.asr_option == 'all' and 'asr' in args.function_path:
 
-    channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
+        for nn_i in range(0, 512):
+            func = load_function(Path(args.base_dir, args.function_path),
+                                func_name=args.function_name,
+                                nn_neuron=nn_i,
+                                )
+        # func = load_function(args.function_path,
+        #                      func_name=args.function_name,
+        #                      bruce_neurons=(5, 10))
+        
+            func = func.downsampled(args.downsample_rate)
 
-    es = do_gridsearch(
-        emeg_values=emeg_values,
-        channel_names=ch_names,
-        channel_space=channel_space,
-        function=func,
-        seconds_per_split=args.seconds_per_split,
-        n_derangements=args.n_derangements,
-        n_splits=args.n_splits,
-        n_reps=n_reps,
-        start_latency=args.start_latency,
-        plot_location=args.save_plot_location,
-        emeg_t_start=args.emeg_t_start,
-        emeg_sample_rate=args.emeg_sample_rate,
-        audio_shift_correction=args.audio_shift_correction,
-        overwrite=args.overwrite,
-    )
+            channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
+
+            if nn_i == 0:
+                es = do_gridsearch(
+                    emeg_values=emeg_values,
+                    channel_names=ch_names,
+                    channel_space=channel_space,
+                    function=func,
+                    seconds_per_split=args.seconds_per_split,
+                    n_derangements=args.n_derangements,
+                    n_splits=args.n_splits,
+                    n_reps=n_reps,
+                    start_latency=args.start_latency,
+                    plot_location=args.save_plot_location,
+                    emeg_t_start=args.emeg_t_start,
+                    emeg_sample_rate=args.emeg_sample_rate,
+                    audio_shift_correction=args.audio_shift_correction,
+                    overwrite=args.overwrite,
+                )
+            else:
+                es += do_gridsearch(
+                emeg_values=emeg_values,
+                channel_names=ch_names,
+                channel_space=channel_space,
+                function=func,
+                seconds_per_split=args.seconds_per_split,
+                n_derangements=args.n_derangements,
+                n_splits=args.n_splits,
+                n_reps=n_reps,
+                start_latency=args.start_latency,
+                plot_location=args.save_plot_location,
+                emeg_t_start=args.emeg_t_start,
+                emeg_sample_rate=args.emeg_sample_rate,
+                audio_shift_correction=args.audio_shift_correction,
+                overwrite=args.overwrite,
+                )
+
+    else:
+
+        func = load_function(Path(args.base_dir, args.function_path),
+                            func_name=args.function_name,
+                            nn_neuron='ave',
+                            )
+        
+        func = func.downsampled(args.downsample_rate)
+
+        channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
+
+        es = do_gridsearch(
+                            emeg_values=emeg_values,
+                            channel_names=ch_names,
+                            channel_space=channel_space,
+                            function=func,
+                            seconds_per_split=args.seconds_per_split,
+                            n_derangements=args.n_derangements,
+                            n_splits=args.n_splits,
+                            n_reps=n_reps,
+                            start_latency=args.start_latency,
+                            plot_location=args.save_plot_location,
+                            emeg_t_start=args.emeg_t_start,
+                            emeg_sample_rate=args.emeg_sample_rate,
+                            audio_shift_correction=args.audio_shift_correction,
+                            overwrite=args.overwrite,
+                        )
 
     if args.save_expression_set_location is not None:
         save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, func.name + '_gridsearch.nkg'), overwrite=args.overwrite)

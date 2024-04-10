@@ -1,2 +1,7 @@
 Loading apptainer version:
 1.0.3
+Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data.
+Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
+Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data"
+model.encoder.layers.5.final_layer_norm_ave: peak lat: 140.0,   peak corr: -0.1940   [sensor] ind: 97,   -log(pval): 49.4028
+Time taken for code to run: 75.7524 s

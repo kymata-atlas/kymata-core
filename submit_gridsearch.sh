@@ -27,8 +27,9 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
-        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/Bruce_model/neurogramResults_an_full' \
-        --function-name 'aneurogram_mean_mr' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/asr_models/whisper_all_no_reshape' \
+        --function-name 'model.encoder.layers.5.final_layer_norm' \
+        --asr-option 'ave' \
   "
   #  --snr $ARG # >> result3.txt
         # --single-participant-override 'participant_01' \
