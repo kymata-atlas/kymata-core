@@ -7,16 +7,16 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=output/whisper_log/encoder_all/slurm_log_%a.txt
-#SBATCH --error=output/whisper_log/encoder_all/slurm_log_%a.txt
+#SBATCH --output=kymata-toolbox-data/output/whisper_log/decoder_v/slurm_log_%a.txt
+#SBATCH --error=kymata-toolbox-data/output/whisper_log/decoder_v/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=05:00:00
 #SBATCH --mem=240G
-#SBATCH --array=0-2
+#SBATCH --array=0-5
 #SBATCH --exclusive
 
 # args=(5)
-layer_num=("model.encoder.conv1" "model.encoder.conv2" "model.encoder.layers.0.final_layer_norm")
+layer_num=("model.decoder.layers.0.encoder_attn.v_proj" "model.decoder.layers.1.encoder_attn.v_proj" "model.decoder.layers.2.encoder_attn.v_proj" "model.decoder.layers.3.encoder_attn.v_proj" "model.decoder.layers.4.encoder_attn.v_proj" "model.decoder.layers.5.encoder_attn.v_proj")
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 module load apptainer
