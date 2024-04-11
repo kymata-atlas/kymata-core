@@ -27,10 +27,10 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
-        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/GMSloudness/stimulisig_tianyi' \
-        --function-name 'd_STL_pos' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/Bruce_model/IL_from_Bruce_tianyi' \
+        --function-name 'IL4_Bruce' \
   "
-        # --asr-option 'ave' \ss
+        # --asr-option 'ave' \
         
   #  --snr $ARG # >> result3.txt
         # --single-participant-override 'participant_01' \

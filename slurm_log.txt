@@ -3,5 +3,5 @@ Loading apptainer version:
 Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data.
 Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
 Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data"
-d_STL_pos: peak lat: 60.0,   peak corr: 0.1603   [sensor] ind: 193,   -log(pval): 84.3513
-Time taken for code to run: 69.5995 s
+IL4_Bruce: peak lat: 45.0,   peak corr: -0.2909   [sensor] ind: 210,   -log(pval): 177.0884
+Time taken for code to run: 15.8820 s

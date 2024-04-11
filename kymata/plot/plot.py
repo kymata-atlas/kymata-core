@@ -74,7 +74,7 @@ def expression_plot(
         alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,
-        ylim: Optional[float] = None,
+        ylim: Optional[float] = -250,
         xlims: tuple[Optional[float], Optional[float]] = (-200, 800),
         hidden_functions_in_legend: bool = True,
         # I/O args

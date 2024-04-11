@@ -8,10 +8,10 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((1, 8, 512, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_log/decoder_k/'
+    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_log/encoder_all/'
 
     n = 1
-    for i in range(6):
+    for i in range(8):
         file_name = f'slurm_log_{i}.txt'
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
@@ -53,9 +53,10 @@ def asr_models_loop_full():
     plt.ylabel('Layer number')
     plt.xlabel('Latencies (ms)')
     plt.title(f'Threshold -log(p-value): {thres}')
+    plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig('kymata-toolbox-data/output/whisper/whisper_decoder_k.png', dpi=600)
+    plt.savefig('kymata-toolbox-data/output/whisper/whisper_encoder.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
