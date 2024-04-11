@@ -33,7 +33,7 @@ def asr_models_loop_full():
 
     lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
 
-    thres = 50
+    thres = 20
 
     #lat_i = np.argmax(lat_sig[i, :, :, 3], axis=1)
     #print(lat_i)
@@ -44,7 +44,7 @@ def asr_models_loop_full():
     _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
     stds.append(np.std(_lats[:, 0]))
 
-    scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 3], cmap='viridis', marker='x')
+    scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 3], cmap='viridis', marker='.', s=11)
     cbar = plt.colorbar(scatter, ax=ax, label='-log(p-values)')
     # ax.scatter(lat_sig[i, :1, 0], lat_sig[i, :1, 3], marker='o')
     #for j in range(_lats.shape[0]):
@@ -55,7 +55,7 @@ def asr_models_loop_full():
     plt.title(f'Threshold -log(p-value): {thres}')
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig('asr_models_testing_full.png', dpi=600)
+    plt.savefig('kymata-toolbox-data/output/whisper/whisper_decoder_k.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
