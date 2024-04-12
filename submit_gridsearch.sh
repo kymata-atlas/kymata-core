@@ -7,8 +7,8 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=slurm_log.txt
-#SBATCH --error=slurm_log.txt
+#SBATCH --output=slurm_log-%x.%j.out.txt
+#SBATCH --error=slurm_log-%x.%j.err.txt
 #SBATCH --ntasks=1
 #SBATCH --time=05:00:00
 #SBATCH --mem=240G
