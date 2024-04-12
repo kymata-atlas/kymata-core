@@ -31,7 +31,7 @@ apptainer exec \
         --function-name 'IL' \
         --single-participant-override 'participant_01' \
         --overwrite \
-        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
+        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
         --morph
   "
   #  --snr $ARG # >> result3.txt

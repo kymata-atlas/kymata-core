@@ -154,7 +154,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
 
-            saved_cleaned_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
+            saved_cleaned_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
                 run) + '_cleaned_raw.fif.gz'
             
             if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_filename):
@@ -167,7 +167,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                 print_with_color(f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN)
 
                 # set filename. (Use .fif.gz extension to use gzip to compress)
-                saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
+                saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                     run) + '_raw_sss.fif'
 
                 # Load data
@@ -240,7 +240,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
                 raw_fif_data_sss_movecomp_tr.save(
-                    data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
+                    data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + participant + "_run" + str(
                         run) + '_cleaned_raw.fif.gz',
                     overwrite=True)
 
@@ -318,17 +318,17 @@ def estimate_noise_cov(data_root_dir: str,
         if cov_method == 'grandave':
             cleaned_raws = []
             for run in range(1, n_runs + 1):
-                raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw_fname = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
                 raw = mne.io.Raw(raw_fname, preload=True)
                 raw_cropped = raw.crop(tmin=0, tmax=800)
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
             cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-cov.fif', cov)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-cov.fif', cov)
             
         elif cov_method == 'emptyroom':
-            raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run1' + '_cleaned_raw.fif.gz'
+            raw_fname = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + p + '_run1' + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room.fif'
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
@@ -347,28 +347,28 @@ def estimate_noise_cov(data_root_dir: str,
 
             cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
             if duration_emp is None:
-                mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-emptyroom-cov.fif', cov)
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-emptyroom-cov.fif', cov)
             else:
-                mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-emptyroom' + str(duration_emp) + '-cov.fif', cov)
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-emptyroom' + str(duration_emp) + '-cov.fif', cov)
         
         elif cov_method == 'runstart':
             cleaned_raws = []
             for run in range(1, n_runs + 1):
-                raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw_fname = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
                 raw = mne.io.Raw(raw_fname, preload=True)
                 raw_cropped = raw.crop(tmin=0, tmax=20)
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=20, preload=True, reject_by_annotation=False)
             cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-runstart-cov.fif', cov)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-runstart-cov.fif', cov)
 
         elif cov_method == 'fusion':
 
             # First calculate the covariance for EEG using grandave
             cleaned_raws = []
             for run in range(1, n_runs + 1):
-                raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+                raw_fname = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
                 raw = mne.io.Raw(raw_fname, preload=True)
                 raw_cropped = raw.crop(tmin=0, tmax=800)
                 cleaned_raws.append(raw_cropped)
@@ -401,7 +401,7 @@ def estimate_noise_cov(data_root_dir: str,
             cov_data[64:,64:] = cov_meg.data[64:,64:]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
 
-            mne.write_cov(data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-fusion-cov.fif', cov)
+            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-fusion-cov.fif', cov)
 
 
 def create_trialwise_data(dataset_directory_name: str,
@@ -435,7 +435,7 @@ def create_trialwise_data(dataset_directory_name: str,
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = f'{data_path}/intrim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
+            raw_fname = f'{data_path}/interim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
             if os.path.isfile(raw_fname):
                 raw = mne.io.Raw(raw_fname, preload=True)
                 #events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
@@ -514,16 +514,16 @@ def create_trialwise_data(dataset_directory_name: str,
 
                 # 	Log which channels are worst
                 dropfig = epochs.plot_drop_log(subject=p)
-                dropfig.savefig(f'{data_path}/intrim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
+                dropfig.savefig(f'{data_path}/interim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
 
                 global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
 
                 for i in range(len(audio_events_raw)):
                     evoked = epochs[str(i)].average()
-                    evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
+                    evoked.save(f'{data_path}/interim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
 
                 evoked = epochs.average()
-                evoked.save(f'{data_path}/intrim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
+                evoked.save(f'{data_path}/interim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
 
 
 def create_trials(data_root_dir: str,
@@ -555,7 +555,7 @@ def create_trials(data_root_dir: str,
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_fname = data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
+            raw_fname = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/2_cleaned/' + p + '_run' + str(run) + '_cleaned_raw.fif.gz'
             raw = mne.io.Raw(raw_fname, preload=True)
             cleaned_raws.append(raw)
 
@@ -626,7 +626,7 @@ def create_trials(data_root_dir: str,
             # 	Log which channels are worst
             dropfig = epochs.plot_drop_log(subject=p)
             dropfig.savefig(
-                data_root_dir + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
+                data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/logs/' + input_stream + '_drop-log_' + p + '.jpg')
 
             global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
 
@@ -637,7 +637,7 @@ def create_trials(data_root_dir: str,
 
 #                evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
 #                evoked.save(
-#                    'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
+#                    'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
 #                        i) + '-ave.fif', overwrite=True)
 
         # save grand average
@@ -645,11 +645,11 @@ def create_trials(data_root_dir: str,
 #
 #        evoked_grandaverage = epochs.average()
 #        evoked_grandaverage.save(
-#            'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
+#            'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
 #            overwrite=True)
 
 # Save global droplog
-#    with open('data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
+#    with open('data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
 #        file.write('Average drop rate for each participant\n')
 #        for item in global_droplog:
 #            file.write(item + '/n')
@@ -663,13 +663,13 @@ def create_trials(data_root_dir: str,
 #            evokeds_list = []
 #            for p in list_of_participants:
 ##                individual_evoked = mne.read_evokeds(
-#                    'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
+#                    'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
 ##                        trial) + '-ave.fif', condition=str(trial))
 #                evokeds_list.append(individual_evoked)
 #
 ##            average_participant_evoked = mne.combine_evoked(evokeds_list, weights="nave")
 #            average_participant_evoked.save(
-#                'data/' + dataset_directory_name + '/intrim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
+#                'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
 #                    trial) + '-ave.fif', overwrite=True)
 
 

@@ -26,7 +26,7 @@ def main():
                         help='downsample_rate')
     parser.add_argument('--base-dir', type=Path, default=Path('/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/'),
                         help='base data directory')
-    parser.add_argument('--emeg-dir', type=str, default='intrim_preprocessing_files/3_trialwise_sensorspace/evoked_data/',
+    parser.add_argument('--emeg-dir', type=str, default='interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/',
                         help='emeg directory, relative to base dir')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig',
                         help='location of function stimulisig')
@@ -87,7 +87,7 @@ def main():
 
     # Load data
     emeg_path = Path(args.base_dir, args.emeg_dir)
-    morph_dir = Path(args.base_dir, "intrim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
+    morph_dir = Path(args.base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                            emeg_dir=emeg_path,
                                            morph_dir=morph_dir,
