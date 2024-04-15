@@ -5,13 +5,15 @@ import re
 from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
+
+    layer = 8
     
-    lat_sig = np.zeros((1, 8, 512, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
+    lat_sig = np.zeros((1, layer, 512, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
     log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_log/encoder_all/'
 
     n = 1
-    for i in range(8):
+    for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
@@ -32,6 +34,20 @@ def asr_models_loop_full():
     stds = []
 
     lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
+
+    # import ipdb;ipdb.set_trace()
+
+    # Neuron selection
+    col_2 = lat_sig[:, :, 2]
+    col_3 = lat_sig[:, :, 3]
+    unique_values = np.unique(col_2)
+    max_indices = []
+    for val in unique_values:
+        indices = np.where(col_2 == val)
+        col_3_subset = col_3[indices]
+        max_index = indices[1][np.argmax(col_3_subset)]
+        max_indices.append(max_index)
+    lat_sig = lat_sig[:, max_indices, :]
 
     thres = 20
 
@@ -56,7 +72,7 @@ def asr_models_loop_full():
     plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig('kymata-toolbox-data/output/whisper/whisper_encoder.png', dpi=600)
+    plt.savefig('kymata-toolbox-data/output/whisper/whisper_encoder_p20_select.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
