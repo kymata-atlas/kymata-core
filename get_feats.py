@@ -105,12 +105,12 @@ def get_features(name):
 
 ########
 
-if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape.npz'):
+if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz'):
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-base.en")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -127,16 +127,18 @@ if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours
       segment = dataset[i*30*16_000:(i+1)*30*16_000]
     # inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
     inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
+    
     generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
 
   end_time = time.time()
   execution_time = end_time - start_time
   print(f"Execution time: {execution_time} seconds")
+  # import ipdb;ipdb.set_trace()
 
 else:
 
-  features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape.npz')
+  features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz')
   # features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_decoder.npz')
 
   # import ipdb;ipdb.set_trace()
@@ -236,11 +238,13 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
           place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
       func_dict[f'conv_layer{i}'] = place_holder
 
-import ipdb;ipdb.set_trace()
+# import ipdb;ipdb.set_trace()
 
 if whisper_outs and save_outs:
 
-  s_num = T_max * 1000
+  # s_num = T_max * 1000
+
+  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
 
   # func_dict = {}
   # for name,val in features.items():

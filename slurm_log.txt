@@ -1,7 +1,29 @@
 Loading apptainer version:
 1.0.3
-Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data.
-Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
-Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data"
-IL4_Bruce: peak lat: 45.0,   peak corr: -0.2909   [sensor] ind: 210,   -log(pval): 177.0884
-Time taken for code to run: 15.8820 s
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+Due to a bug fix in https://github.com/huggingface/transformers/pull/28687 transcription using a multilingual Whisper will default to language detection followed by transcription instead of translation to English.This might be a breaking change for your use case. If you want to instead always translate your audio to English, make sure to pass `language='en'`.
+WhisperModel is using WhisperSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `layer_head_mask` not None. Falling back to the manual attention implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/get_feats.py", line 247, in <module>
+    np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
+  File "/home/cy02/.cache/pypoetry/virtualenvs/kymata-toolbox-d2x9x_IK-py3.11/lib/python3.11/site-packages/numpy/lib/npyio.py", line 639, in savez
+    _savez(file, args, kwds, False)
+  File "/home/cy02/.cache/pypoetry/virtualenvs/kymata-toolbox-d2x9x_IK-py3.11/lib/python3.11/site-packages/numpy/lib/npyio.py", line 743, in _savez
+    format.write_array(fid, val,
+  File "/home/cy02/.cache/pypoetry/virtualenvs/kymata-toolbox-d2x9x_IK-py3.11/lib/python3.11/site-packages/numpy/lib/format.py", line 735, in write_array
+    fp.write(chunk.tobytes('C'))
+  File "/usr/local/lib/python3.11/zipfile.py", line 1169, in write
+    self._fileobj.write(data)
+OSError: [Errno 28] No space left on device
+Execution time: 887.1348233222961 seconds
+Exception ignored in: <function ZipFile.__del__ at 0x7f8983708180>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/zipfile.py", line 1874, in __del__
+    self.close()
+  File "/usr/local/lib/python3.11/zipfile.py", line 1896, in close
+    self._fpclose(fp)
+  File "/usr/local/lib/python3.11/zipfile.py", line 1996, in _fpclose
+    fp.close()
+OSError: [Errno 28] No space left on device

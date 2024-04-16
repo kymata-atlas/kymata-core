@@ -6,11 +6,11 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 8
+    layer = 6
     
     lat_sig = np.zeros((1, layer, 512, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_log/encoder_all/'
+    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_log/decoder_v/'
 
     n = 1
     for i in range(layer):
@@ -72,7 +72,7 @@ def asr_models_loop_full():
     plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig('kymata-toolbox-data/output/whisper/whisper_encoder_p20_select.png', dpi=600)
+    plt.savefig('kymata-toolbox-data/output/whisper/whisper_decoder_v_p20_select.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

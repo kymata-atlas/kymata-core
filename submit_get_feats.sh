@@ -1,12 +1,12 @@
 #!/bin/bash
 
 ###
-# To run gridsearch on the queue at the CBU, run the following command in command line:
+# To run get_feats on the queue at the CBU, run the following command in command line:
 #   sbatch submit_get_feats.sh
 ###
 
 
-#SBATCH --job-name=gridsearch
+#SBATCH --job-name=get_feats
 #SBATCH --output=slurm_log.txt
 #SBATCH --error=slurm_log.txt
 #SBATCH --ntasks=1
