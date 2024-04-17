@@ -13,7 +13,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
     intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
-    #mri_structural_type = config['mri_structural_type'] 
+    mri_structural_type = config['mri_structural_type'] 
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     '''    
@@ -103,26 +103,26 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #        # andy is using:
         #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
         #
-        #        if mri_structural_type == 'T1':
-        #            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                copy=True,
-        #                overwrite=True,
-        #                show=True,
-        #            )
-        #
-        #            mne.bem.make_scalp_surfaces(
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                no_decimate=True,
-        #                force=True,
-        #                overwrite=True,
-        #            )
-        #
-        #        elif mri_structural_type == 'Flash':
-        #            # mne.bem.make_flash_bem().
-        #            print("Flash not yet implemented.")
+        if mri_structural_type == 'T1':
+            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                copy=True,
+                overwrite=True,
+                show=True,
+            )
+
+            mne.bem.make_scalp_surfaces(
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                no_decimate=True,
+                force=True,
+                overwrite=True,
+            )
+
+        elif mri_structural_type == 'Flash':
+            # mne.bem.make_flash_bem().
+            print("Flash not yet implemented.")
 
         # produce the source space (downsampled version of the cortical surface in Freesurfer), which
         # will be saved in a file ending in *-src.fif
@@ -146,17 +146,17 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     #    mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
 
     ### #Computing the actual BEM solution
-    for participant in list_of_participants:
-        # conductivity = (0.3)  # for single layer
-        conductivity = (0.3, 0.006, 0.3)  # for three layers
-        # Note that only ico=4 is required here: Https://mail.nmr.mgh.harvard.edu/pipermail//mne_analysis/2012-June/001102.html
-        model = mne.make_bem_model(subject=participant, ico=4,
-                                   conductivity=conductivity,
-                                   subjects_dir=mri_structurals_directory)
-        bem_sol = mne.make_bem_solution(model)
-        output_filename = participant + '-5120-5120-5120-bem-sol.fif'
-        mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
-                                        output_filename), bem_sol, overwrite=True)
+    # for participant in list_of_participants:
+    #     # conductivity = (0.3)  # for single layer
+    #     conductivity = (0.3, 0.006, 0.3)  # for three layers
+    #     # Note that only ico=4 is required here: Https://mail.nmr.mgh.harvard.edu/pipermail//mne_analysis/2012-June/001102.html
+    #     model = mne.make_bem_model(subject=participant, ico=4,
+    #                                conductivity=conductivity,
+    #                                subjects_dir=mri_structurals_directory)
+    #     bem_sol = mne.make_bem_solution(model)
+    #     output_filename = participant + '-5120-5120-5120-bem-sol.fif'
+    #     mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
+    #                                     output_filename), bem_sol, overwrite=True)
 
 def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 

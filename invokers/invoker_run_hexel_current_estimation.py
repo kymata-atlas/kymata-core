@@ -3,7 +3,7 @@ from colorama import Fore
 
 from kymata.io.yaml import load_config
 from kymata.io.cli import print_with_color
-from kymata.preproc.hexel_current_estimation import create_forward_model_and_inverse_solution, create_hexel_morph_maps
+from kymata.preproc.hexel_current_estimation import create_current_estimation_prerequisites, create_forward_model_and_inverse_solution, create_hexel_morph_maps
 
 
 # noinspection DuplicatedCode
@@ -19,11 +19,11 @@ def main():
     else:
         raise Exception("The 'data_location' parameter in the config file must be either 'cbu' or 'local' or 'cbu-local'.")
 
-    # create_current_estimation_prerequisites(data_root_dir, config=config)
+    create_current_estimation_prerequisites(data_root_dir, config=config)
 
-    create_forward_model_and_inverse_solution(data_root_dir, config=config)
+    # create_forward_model_and_inverse_solution(data_root_dir, config=config)
 
-    create_hexel_morph_maps(data_root_dir, config=config)
+    # create_hexel_morph_maps(data_root_dir, config=config)
 
 
 def _display_welcome_message_to_terminal():
