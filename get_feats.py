@@ -1,7 +1,6 @@
 from transformers import AutoProcessor, Wav2Vec2Model
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
 import whisper
@@ -29,7 +28,7 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16
 T_max = 401 #seconds
 
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
-func_dir = '/imaging/woolgar/projects/Tianyi/data/'
+func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -245,7 +244,15 @@ if whisper_outs and save_outs:
 
   # s_num = T_max * 1000
 
-  np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
+  # Check if the directory exists, if not, create it
+  directory = f'{func_dir}/predicted_function_contours/asr_models/'
+  if not os.path.exists(directory):
+    os.makedirs(directory)
+
+  # Now save the data
+  np.savez(f'{directory}whisper_all_no_reshape_large_v2.npz', **features)
+
+  # np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
 
   # func_dict = {}
   # for name,val in features.items():
