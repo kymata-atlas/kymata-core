@@ -28,7 +28,8 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16
 
 T_max = 401 #seconds
 
-func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+# func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+func_dir = '/imaging/woolgar/projects/Tianyi/data/'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -105,7 +106,7 @@ def get_features(name):
 
 ########
 
-if whisper_outs and not os.path.isfile(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz'):
+if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz'):
 
   dataset = dataset[:T_max*16_000]
 
@@ -244,7 +245,7 @@ if whisper_outs and save_outs:
 
   # s_num = T_max * 1000
 
-  np.savez(f'{data_path}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
+  np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
 
   # func_dict = {}
   # for name,val in features.items():

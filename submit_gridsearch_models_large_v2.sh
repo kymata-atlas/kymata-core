@@ -2,22 +2,25 @@
 
 ###
 # To run gridsearch on the queue at the CBU, run the following command in command line:
-#   sbatch submit_gridsearch_models.sh
+#   sbatch submit_gridsearch_models_large_v2.sh
 ###
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-toolbox-data/output/whisper_log/encoder_all_der_5/slurm_log_%a.txt
-#SBATCH --error=kymata-toolbox-data/output/whisper_log/encoder_all_der_5/slurm_log_%a.txt
+#SBATCH --output=kymata-toolbox-data/output/whisper_large_v2_log/encoder_all_der_5/slurm_log_%a.txt
+#SBATCH --error=kymata-toolbox-data/output/whisper_large_v2_log/encoder_all_der_5/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=240G
-#SBATCH --array=0-7
+#SBATCH --array=0-33
 #SBATCH --exclusive
 
 # args=(5)
-layer_num=("model.encoder.conv1" "model.encoder.conv2" "model.encoder.layers.0.final_layer_norm" "model.encoder.layers.1.final_layer_norm" "model.encoder.layers.2.final_layer_norm" "model.encoder.layers.3.final_layer_norm" "model.encoder.layers.4.final_layer_norm" "model.encoder.layers.5.final_layer_norm")
+layer_num=("model.encoder.conv1" "model.encoder.conv2")
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
+for ((i=0; i<32; i++)); do
+    layer_num+=("model.encoder.layers.$i.final_layer_norm")
+done
 
 module load apptainer
 apptainer exec \
