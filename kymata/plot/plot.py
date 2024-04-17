@@ -80,6 +80,7 @@ def expression_plot(
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
+        show_legend: bool = True,
 ):
     """
     Generates an expression plot
@@ -278,10 +279,11 @@ def expression_plot(
                                handlelength=0, handletextpad=0)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
-    top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                  title="Plotted functions",
-                  ncol=legend_n_col,
-                  loc="upper left", bbox_to_anchor=(1.02, 1.02))
+    if show_legend:
+        top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
+                    title="Plotted functions",
+                    ncol=legend_n_col,
+                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
