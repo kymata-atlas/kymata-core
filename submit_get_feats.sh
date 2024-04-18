@@ -20,6 +20,7 @@ ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 module load apptainer
 apptainer exec \
+  -B /imaging/woolgar/projects/Tianyi/ \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
@@ -27,3 +28,5 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m get_feats \
   "
+
+# -B /imaging/projects/cbu/kymata/ \
