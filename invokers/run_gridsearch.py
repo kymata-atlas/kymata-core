@@ -39,6 +39,8 @@ def main():
                         help='function name in stimulisig')
     parser.add_argument('--asr-option', type=str, default="ave",
                         help='Whether to get the output from all neurons or do the average')
+    parser.add_argument('--num-neurons', type=int, default=512,
+                        help='Number of neurons in each layer')
     parser.add_argument('--single-participant-override', type=str, default=None, required=False,
                         help='Supply to run only on one participant')
     parser.add_argument('--morph', action="store_true",
@@ -126,7 +128,7 @@ def main():
 
     if args.asr_option == 'all' and 'asr' in args.function_path:
 
-        for nn_i in range(0, 512):
+        for nn_i in range(0, args.num_neurons):
             # func = load_function(Path(args.base_dir, args.function_path),
             func = load_function(args.function_path,
                                 func_name=args.function_name,

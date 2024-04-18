@@ -36,4 +36,7 @@ apptainer exec \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
         --asr-option 'all' \
+        --num-neurons 1280 \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/plot' \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/expression_set' \
   "

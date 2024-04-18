@@ -241,7 +241,7 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
           place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
       func_dict[f'conv_layer{i}'] = place_holder
 
-# import ipdb;ipdb.set_trace()
+import ipdb;ipdb.set_trace()
 
 if whisper_outs and save_outs:
 
