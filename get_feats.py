@@ -27,8 +27,8 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16
 
 T_max = 401 #seconds
 
-func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
-# func_dir = '/imaging/woolgar/projects/Tianyi/data'
+# func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 func_name = 'whisper_all_no_reshape_large_v2'

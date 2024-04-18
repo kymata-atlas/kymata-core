@@ -127,7 +127,8 @@ def main():
     if args.asr_option == 'all' and 'asr' in args.function_path:
 
         for nn_i in range(0, 512):
-            func = load_function(Path(args.base_dir, args.function_path),
+            # func = load_function(Path(args.base_dir, args.function_path),
+            func = load_function(args.function_path,
                                 func_name=args.function_name,
                                 nn_neuron=nn_i,
                                 )
@@ -176,7 +177,8 @@ def main():
 
     else:
 
-        func = load_function(Path(args.base_dir, args.function_path),
+        # func = load_function(Path(args.base_dir, args.function_path),
+        func = load_function(args.function_path,
                             func_name=args.function_name,
                             nn_neuron='ave',
                             )
