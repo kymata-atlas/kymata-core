@@ -28,7 +28,7 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/ ; \
+    " cd /imaging/woolgar/projects/Tianyi/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
@@ -40,3 +40,5 @@ apptainer exec \
         --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/plot' \
         --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/expression_set' \
   "
+
+# cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/
