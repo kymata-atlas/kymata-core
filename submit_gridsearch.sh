@@ -25,6 +25,7 @@ apptainer exec \
   bash -c \
     " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
+      export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
         --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/predicted_function_contours/Bruce_model/IL_from_Bruce_tianyi' \

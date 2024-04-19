@@ -30,6 +30,7 @@ apptainer exec \
   bash -c \
     " cd /imaging/woolgar/projects/Tianyi/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
+      export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
         --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2' \
