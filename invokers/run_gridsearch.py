@@ -38,7 +38,7 @@ def main():
     parser.add_argument('--function-name', type=str, default="IL",
                         help='function name in stimulisig')
     parser.add_argument('--asr-option', type=str, default="ave",
-                        help='Whether to get the output from all neurons or do the average')
+                        help='Whether to get the output from all neurons (all) or do the average (ave)')
     parser.add_argument('--num-neurons', type=int, default=512,
                         help='Number of neurons in each layer')
     parser.add_argument('--single-participant-override', type=str, default=None, required=False,

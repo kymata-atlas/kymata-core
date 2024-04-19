@@ -50,6 +50,8 @@ def do_gridsearch(
         func = function.values.reshape(n_splits, n_samples_per_split // 2)
     n_channels = emeg_values.shape[0]
 
+    import ipdb;ipdb.set_trace()
+
     # Reshape EMEG into splits of `seconds_per_split` s
     split_initial_timesteps = [
         int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
