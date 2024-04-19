@@ -50,6 +50,8 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
 
+            import ipdb;ipdb.set_trace()
+
             T_max = 401
             s_num = T_max * 1000
             if 'conv' in func_name or func.shape[0] != 1:

@@ -35,10 +35,10 @@ apptainer exec \
         --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2' \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
-        --asr-option 'all' \
+        --asr-option 'ave' \
         --num-neurons 1280 \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/plot' \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/expression_set' \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/plot' \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_v2/encoder_all_der_5/expression_set' \
   "
 
 # cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/
