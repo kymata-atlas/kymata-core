@@ -49,7 +49,6 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
         if 'whisper_all_no_reshape' in str(function_path_without_suffix):
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
-
             T_max = 401
             s_num = T_max * 1000
             if 'conv' in func_name or func.shape[0] != 1:
@@ -69,6 +68,8 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             else:
                 func = place_holder[nn_neuron, :400_000]
             func_name += f'_{str(nn_neuron)}'
+
+            # import ipdb;ipdb.set_trace()
 
         else:
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))

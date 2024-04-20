@@ -31,7 +31,7 @@ T_max = 401 #seconds
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
-func_name = 'whisper_all_no_reshape_large_v2'
+func_name = 'whisper_all_no_reshape_large'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -109,11 +109,12 @@ def get_features(name):
 ########
 
 if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
+# if True:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -240,8 +241,6 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
       for j in range(conv_outs[i].shape[0]):
           place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
       func_dict[f'conv_layer{i}'] = place_holder
-
-import ipdb;ipdb.set_trace()
 
 if whisper_outs and save_outs:
 
