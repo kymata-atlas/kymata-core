@@ -11,7 +11,7 @@
 #SBATCH --error=kymata-toolbox-data/output/whisper_large_v2_log/encoder_all_der_5/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
-#SBATCH --mem=240G
+#SBATCH --mem=10G
 #SBATCH --array=0-33
 #SBATCH --exclusive
 
