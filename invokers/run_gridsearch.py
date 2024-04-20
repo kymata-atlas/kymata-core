@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import time
+import os
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -67,6 +68,12 @@ def main():
     args = parser.parse_args()
 
     #config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+
+    if not os.path.exists(args.save_plot_location):
+        os.makedirs(args.save_plot_location)
+
+    if not os.path.exists(args.save_expression_set_location):
+        os.makedirs(args.save_expression_set_location)
 
     participants = [
         'pilot_01',
