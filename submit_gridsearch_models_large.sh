@@ -7,12 +7,12 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-toolbox-data/output/whisper_large_log/encoder_all_der_5/slurm_log_%a.txt
-#SBATCH --error=kymata-toolbox-data/output/whisper_large_log/encoder_all_der_5/slurm_log_%a.txt
+#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_log/encoder_all_der_5/slurm_log_%a.txt
+#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_log/encoder_all_der_5/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
-#SBATCH --mem=240G
-#SBATCH --array=0-33
+#SBATCH --mem=10G
+#SBATCH --array=8-33
 #SBATCH --exclusive
 
 # args=(5)
