@@ -31,7 +31,7 @@ T_max = 401 #seconds
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
-func_name = 'whisper_all_no_reshape_small_en'
+func_name = 'whisper_all_no_reshape_tiny_multi'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -113,8 +113,8 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-small.en")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small.en")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -132,7 +132,9 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     # inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
     inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
     
-    generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    # import ipdb;ipdb.set_trace()
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
 
   end_time = time.time()

@@ -2,12 +2,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def normalize(x: NDArray) -> NDArray:
+def normalize(x: NDArray, eps: float = 1e-7) -> NDArray:
     """
     Remove the mean and divide by the Euclidean magnitude.
     """
     x -= np.mean(x, axis=-1, keepdims=True)
-    x /= np.sqrt(np.sum(x**2, axis=-1, keepdims=True))
+    x /= np.sqrt(np.sum(x**2, axis=-1, keepdims=True)) + eps
     return x
 
 

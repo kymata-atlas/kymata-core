@@ -26,6 +26,7 @@ apptainer exec \
   bash -c \
     " cd /imaging/woolgar/projects/Tianyi/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
+      export HF_HOME=/imaging/woolgar/projects/Tianyi/models ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m get_feats \
   "
