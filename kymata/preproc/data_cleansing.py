@@ -416,8 +416,8 @@ def create_trialwise_data(dataset_directory_name: str,
                         visual_delivery_latency: float,  # seconds
                         audio_delivery_latency: float,  # seconds
                         audio_delivery_shift_correction: float,  # seconds
-                        tmin: float,
-                        tmax: float,
+                        tmin: float,  # seconds
+                        tmax: float,  # seconds
                         ):
     """Create trials objects from the raw data files (still in sensor space)"""
 
@@ -436,6 +436,7 @@ def create_trialwise_data(dataset_directory_name: str,
 
         for run in range(1, number_of_runs + 1):
             raw_fname = f'{data_path}/interim_preprocessing_files/2_cleaned/{p}_run{run}_cleaned_raw.fif.gz'
+            print(f"Loading {raw_fname}...")
             if os.path.isfile(raw_fname):
                 raw = mne.io.Raw(raw_fname, preload=True)
                 #events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
@@ -507,7 +508,7 @@ def create_trialwise_data(dataset_directory_name: str,
                 #	Extract trial instances ('epochs')
 
                 _tmin = -0.2
-                _tmax = 400 + 0.8 + 2 # Extra space to account for audio file latency correction
+                _tmax = 400 + 0.8 + 2 # Extra space to account forf audio file latency correction
                 epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
                                 baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
                                 preload=True)
