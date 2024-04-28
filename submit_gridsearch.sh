@@ -26,12 +26,9 @@ apptainer exec \
     " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
+        --config dataset4.yaml \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
         --function-name 'IL' \
-        --single-participant-override 'participant_01' \
-        --overwrite \
-        --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \
-        --morph
+        --overwrite
   "
   #  --snr $ARG # >> result3.txt

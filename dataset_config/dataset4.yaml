@@ -1,4 +1,3 @@
-
 # Config file for Kymata Dataset 4.00
 
 # General
@@ -8,15 +7,27 @@ mri_structurals_directory: "raw_mri_structurals"
 
 
 # General information related to the dataset
-list_of_participants: [
-                        "participant_01"
-                        ]
-input_streams: [
-                    "auditory"
-                ]                    # auditory | visual
+participants: [
+                'pilot_01',
+                'pilot_02',
+                'participant_01',
+                'participant_01b',
+                'participant_02',
+                'participant_03',
+                'participant_04',
+                'participant_05',
+                'participant_07',
+                'participant_08',
+                'participant_09',
+                'participant_11',
+                'participant_12',
+                'participant_13',
+              ]
+input_streams: [ "auditory" ]        # auditory | visual
 number_of_runs: 4                    # number of runs
 repetitions_per_runs: 2              # number of repetitions per run
 number_of_trials: 400                # number of trials
+trial_length: 1                      # seconds
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline
@@ -31,7 +42,7 @@ supress_excessive_plots_and_prompts: True
 # Inverse operator
 eeg: True
 meg: True
-inverse_operator: "intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
+inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
 # Method to estimate noise covariance matrix
 cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
@@ -43,8 +54,7 @@ audio_delivery_latency:   0.026     # in seconds
 visual_delivery_latency:  0.017     # in seconds
 tactile_delivery_latency: 0.00      # in seconds
 audio_delivery_shift_correction: 0.0005375   # in seconds per second
-tmin: -0.2  # seconds
-tmax: 1.8   # seconds
+latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
 
 eeg_thresh: 1 #200e-6
 grad_thresh: 1 #4000e-13

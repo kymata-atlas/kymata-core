@@ -15,15 +15,15 @@ To evaluate the denoising strategies, we need to identify prototypical clusterin
 
 ### Prototypical Sparse Cluster: TVL loudness (short-term)
 
-![TVL loudness (short-term)](tvl_l_short.png)
+![TVL loudness (short-term)](pictures/tvl_l_short.png)
 
 ### Prototypical Multiple Peaks Cluster: TVL loudness chan 2 (instantaneous)
 
-![TVL loudness chan 2 (instantaneous)](tvl_l_chan2_instant.png)
+![TVL loudness chan 2 (instantaneous)](pictures/tvl_l_chan2_instant.png)
 
 ### Prototypical Blurred Cluster: Heeger horizontal ME GP2
 
-![Heeger horizontal ME GP2](heeger_hori_me_gp2.png)
+![Heeger horizontal ME GP2](pictures/heeger_hori_me_gp2.png)
 
 ## Max Pooling
 

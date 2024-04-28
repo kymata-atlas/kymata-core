@@ -17,11 +17,11 @@ from numpy import frombuffer
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import LatencyDType, FunctionNameDType, HexelDType
-from kymata.io.file import path_type, file_type, open_or_use
+from kymata.io.file import PathType, FileType, open_or_use
 
 
 # noinspection DuplicatedCode
-def _load_data_0_3(from_path_or_file: path_type | file_type) -> dict[str, Any]:
+def _load_data_0_3(from_path_or_file: PathType | FileType) -> dict[str, Any]:
     """
     This is a function which loads data format 0.3.
 
@@ -60,7 +60,7 @@ def _load_data_0_3(from_path_or_file: path_type | file_type) -> dict[str, Any]:
 
 
 # noinspection DuplicatedCode
-def _load_data_0_2(from_path_or_file: path_type | file_type) -> dict[str, Any]:
+def _load_data_0_2(from_path_or_file: PathType | FileType) -> dict[str, Any]:
     """
     This is a function which loads data format 0.2.
 
@@ -99,7 +99,7 @@ def _load_data_0_2(from_path_or_file: path_type | file_type) -> dict[str, Any]:
 
 
 # noinspection DuplicatedCode
-def _load_data_0_1(from_path_or_file: path_type | file_type) -> dict[str, Any]:
+def _load_data_0_1(from_path_or_file: PathType | FileType) -> dict[str, Any]:
     """
     This is a function which loads data format 0.1.
 

@@ -35,9 +35,6 @@ class DenoisingStrategy(object):
             Next, we do any optional preprocessing and cluster using self._clusterer. Finally, it locates the minimum 
             (most significant) point for each cluster and saves it. Optionally, the user can choose to constrain the number of spikes to 1.
             Preprocessing includes scaling the data to have unit length or cluster only on latency (Density based clustering).
-            
-            TODO: could we instead average over points in a cluster? Minimum makes most sense because it is the best match and corresponds to an
-                  actual match.
 
             This can be overridden if using a custom clustering strategy but as it is, it works well sklearn clustering techniques. As a result,
             additional algorithms from sklearn can be easily incorporated.
