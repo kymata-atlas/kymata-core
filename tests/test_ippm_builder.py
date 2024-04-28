@@ -21,8 +21,8 @@ def test_sort_by_latency():
     test_hexels['f1'].right_best_pairings = [(100, 42), (20, 41), (50, 33)]
 
     builder = IPPMBuilder()
-    sorted = builder._sort_by_latency(test_hexels, 'leftHemisphere')
-    sorted = builder._sort_by_latency(sorted, 'rightHemisphere')
+    sorted = builder._sort_by_latency(test_hexels, 'leftHemisphere', ['f1'])
+    sorted = builder._sort_by_latency(sorted, 'rightHemisphere', ['f1'])
 
     assert [(-12, 43), (21, 21), (46, 23), (143, 2)] == sorted['f1'].left_best_pairings
     assert [(20, 41), (50, 33), (100, 42)] == sorted['f1'].right_best_pairings

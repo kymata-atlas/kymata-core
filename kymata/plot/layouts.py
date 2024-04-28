@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from typing import NamedTuple
 
+import yaml
 from mne.io import Raw
 from matplotlib import pyplot as plt
 
@@ -33,9 +34,25 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
     return d
 
 
-def eeg_sensors() -> list[str]:
-    """The names of all EEG sensors."""
-    return [f"EEG{i:03}" for i in range(1, 65)]
+def get_eeg_sensor_xy() -> dict[str, Point2d]:
+    with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
+              "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
+        mapping = yaml.safe_load(eeg_name_mapping_file)
+    mapping = {k.upper(): v.upper() for k, v in mapping.items()}
+    d = dict()
+    with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
+              "EEG1005.lay").open("r") as layout_file:
+        for line in layout_file:
+            parts = line.strip().split("\t")
+            x = float(parts[1])
+            y = float(parts[2])
+            name = parts[-1].upper()
+            d[name] = Point2d(x, y)
+    our_sensor_d = {
+        our_name: d[their_name]
+        for our_name, their_name in mapping.items()
+    }
+    return our_sensor_d
 
 
 def plot_eeg_sensor_positions(raw_fif: Raw):

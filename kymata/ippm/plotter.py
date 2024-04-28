@@ -32,16 +32,15 @@ class IPPMPlotter(object):
                     width
         """
         # first lets aggregate all of the information.
-        # TODO: refactor to generate BSplines in the first loop, so we dont have to loop again.
-        hexel_x = [_ for _ in range(len(graph.keys()))]                  
-        hexel_y = [_ for _ in range(len(graph.keys()))]                 
-        node_colors = [_ for _ in range(len(graph.keys()))]              
-        node_sizes = [_ for _ in range(len(graph.keys()))]
-        hexel_coordinate_pairs = []  # [[start_coord, end_coord], ..]
+        hexel_x = [_ for _ in range(len(graph.keys()))]                    # x coordinates for nodes e.g., (x, y) = (hexel_x[i], hexel_y[i])
+        hexel_y = [_ for _ in range(len(graph.keys()))]                    # y coordinates for nodes
+        node_colors = [_ for _ in range(len(graph.keys()))]                # color for nodes
+        node_sizes = [_ for _ in range(len(graph.keys()))]                 # size of nodes
         edge_colors = []
+        bsplines = []
         for i, node in enumerate(graph.keys()):
             for function, color in colors.items():
-                # search for function color. TODO: handle missing colors.
+                # search for function color.
                 if function in node:
                     node_colors[i] = color
                     break
@@ -49,35 +48,43 @@ class IPPMPlotter(object):
             node_sizes[i] = graph[node].magnitude
             hexel_x[i] = graph[node].position[0]
             hexel_y[i] = graph[node].position[1]
-            
+
+            pairs = []
             for inc_edge in graph[node].in_edges:
                 # save edge coordinates and color the edge the same color as the finishing node.
                 start = graph[inc_edge].position
                 end = graph[node].position
-                hexel_coordinate_pairs.append([(start[0], start[1]), (end[0], end[1])])
+                pairs.append([(start[0], start[1]), (end[0], end[1])])
                 edge_colors.append(node_colors[i])
 
-        bspline_path_array = self._make_bspline_paths(hexel_coordinate_pairs)
+            bsplines += self._make_bspline_paths(pairs)
         
         fig, ax = plt.subplots()
-        fig.set_figheight(figheight)
-        fig.set_figwidth(figwidth)
-        plt.axis('on')
-        for path, color in zip(bspline_path_array, edge_colors):
+    
+        for path, color in zip(bsplines, edge_colors):
             ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
-        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
-        ax.tick_params(bottom=True, labelbottom=True, left=False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Latency (ms)')
 
+        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
+        
         legend = []
         for f in colors.keys():
             legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=colors[f], markersize=15))
 
         plt.legend(handles=legend, loc='upper left')
         plt.title(title)
+
+        ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
+        ax.set_yticklabels([])
+        ax.yaxis.set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xlabel('Latency (ms)')
+        
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
+        
+        #plt.show()
 
     def _make_bspline_paths(self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
         """

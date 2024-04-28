@@ -19,7 +19,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
-        ch_names: list[str] = []  # TODO: we'll need these
+        ch_names: list[str] = []
         emeg = np.load(emeg_path_npy)
     else:
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
@@ -28,11 +28,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
             _logger.info(f"Reading source morph from {morph_path}")
             morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
-
-            # TODO: currently this goes OOM (node-h04 atleast):
-            #       looks like this will be faster when split up anyway
-            #       note, don't run the inv_op twice for rh and lh!
-            # TODO: move inverse operator to run after EMEG channel combination
+            # Stack into a single matrix, to be split after gridsearch
             emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
             del lh_emeg, rh_emeg
         else:
@@ -217,6 +213,7 @@ def __mne_apply_morph_data(morph, stc_from):
 
 def load_emeg_pack(emeg_filenames, emeg_dir, inverse_operator_dir: Optional[PathType], morph_dir: Optional[PathType] = None, need_names=False, ave_mode=None, inverse_operator_suffix=None, p_tshift=None, snr=4):
     # TODO: FIX PRE-AVE-NORMALISATION
+
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames

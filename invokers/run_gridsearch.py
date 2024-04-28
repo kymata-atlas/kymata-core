@@ -70,7 +70,6 @@ def main():
     base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
     inverse_operator_dir = dataset_config.get('inverse operator')
 
-    # TODO: move ave-vs-reps choice up to the function interface
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.single_participant_override is not None:
         emeg_filenames = [args.single_participant_override + "-ave"]

@@ -15,7 +15,7 @@ from kymata.entities.expression import HexelExpressionSet, ExpressionSet, Sensor
 from kymata.math.p_values import p_to_logp
 from kymata.entities.functions import Function
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -50,19 +50,27 @@ class AxisAssignment(NamedTuple):
     axis_channels: list
 
 
-_left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
+sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(axis_name="left",
                    axis_channels=[
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x <= 0
-                   ] + eeg_sensors()),  # TODO: these EEGs aren't split appropriately
+                   ] + [
+                       sensor
+                       for sensor, (x, y) in get_eeg_sensor_xy().items()
+                       if x <= 0
+                   ]),
     AxisAssignment(axis_name="right",
                    axis_channels=[
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x >= 0
-                   ] + eeg_sensors()),
+                   ] + [
+                       sensor
+                       for sensor, (x, y) in get_eeg_sensor_xy().items()
+                       if x >= 0
+                   ]),
 )
 
 
@@ -75,7 +83,7 @@ def expression_plot(
         # Style kwargs
         color: Optional[str | Dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: Optional[tuple[Optional[float], Optional[float]]] = None,
+        xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         # I/O args
         save_to: Optional[Path] = None,
@@ -129,7 +137,6 @@ def expression_plot(
             raise NotImplementedError()
     else:
         if isinstance(expression_set, HexelExpressionSet):
-            # TODO: if we ever want to, we could implement collapsing sensor expression plots
             raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("", )
@@ -172,7 +179,7 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            assign_left_right_channels = _left_right_sensors
+            assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels)
             bottom_chans = set(assign_left_right_channels[1].axis_channels)
@@ -221,7 +228,7 @@ def expression_plot(
         ax.set_ylim((0, ylim))
         ax.axvline(x=0, color='k', linestyle='dotted')
         ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
-        ax.text(-100, sidak_corrected_alpha, 'α*',
+        ax.text(-50, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
         ax.text(600, sidak_corrected_alpha, 'α*',
                 bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
@@ -254,10 +261,15 @@ def expression_plot(
     fig.supylabel('p-value (with α at 5-sigma, Šidák corrected)', x=0, y=0.5)
     if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
         bottom_ax.text(s='   onset of environment   ',
-                       x=0, y=0 if paired_axes else ylim/2,  # vertically centred
-                       color='white', fontsize='x-small',
-                       bbox={'facecolor': 'grey', 'edgecolor': 'none'}, verticalalignment='center',
-                       horizontalalignment='center', rotation='vertical')
+                       x=0, y=0 if paired_axes else ylim/2,
+                       color='black', fontsize='x-small',
+                       bbox={'facecolor': 'white',
+                             'edgecolor': 'none',
+                             'pad':2
+                             },
+                       verticalalignment='center',
+                       horizontalalignment='center',
+                       rotation='vertical')
 
     # Legend for plotted function
     split_legend_at_n_functions = 15

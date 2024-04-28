@@ -1,11 +1,10 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from kymata.io.yaml import load_config
+from kymata.io.config import load_config
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
-# noinspection DuplicatedCode
 def main(config_filename: str):
     config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
