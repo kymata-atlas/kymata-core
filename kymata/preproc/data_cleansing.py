@@ -416,8 +416,8 @@ def create_trialwise_data(dataset_directory_name: str,
                         visual_delivery_latency: float,  # seconds
                         audio_delivery_latency: float,  # seconds
                         audio_delivery_shift_correction: float,  # seconds
-                        tmin: float,  # seconds
-                        tmax: float,  # seconds
+                        trial_length: float,  # seconds
+                        latency_range: tuple[float, float]  # seconds
                         ):
     """Create trials objects from the raw data files (still in sensor space)"""
 
@@ -516,8 +516,12 @@ def create_trialwise_data(dataset_directory_name: str,
 
                 #	Extract trial instances ('epochs')
 
-                _tmin = -0.2
-                _tmax = 400 + 0.8 + 2 # Extra space to account forf audio file latency correction
+                _tmin = latency_range[0]
+                _tmax = (number_of_trials * trial_length
+                         # extra padding at the end to accomodate range of latencies
+                         + latency_range[1]
+                         # Extra space to account for audio latency drift
+                         + 2)
                 epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
                                 baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
                                 preload=True)

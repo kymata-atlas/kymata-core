@@ -22,8 +22,8 @@ def main(config_filename: str):
         visual_delivery_latency=config['visual_delivery_latency'],
         audio_delivery_latency=config['audio_delivery_latency'],
         audio_delivery_shift_correction=config['audio_delivery_shift_correction'],
-        tmin=config['tmin'],
-        tmax=config['tmax'],
+        trial_length=config["trial_length"],
+        latency_range=config["latency_range"],
     )
 
 
