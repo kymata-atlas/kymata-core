@@ -9,9 +9,7 @@ bash
 
 ## You see `/lib64/libm.so.6: version 'GLIBC_2.29' not found` when running gridsearch
 
-You could try it on `lws-gpu02`.
-
-Alternatively, consider if this needs to be run locally, or if you can instead use `submit_gridsearch.sh`. 
+You are running it on a cbu node that does not have the right libraries installed. You could try it on a node which does (such as `lws-gpu02`), or (prefered) use `submit_gridsearch.sh` which will implement apptainer which layers the right libraries over the top of the node. 
 
 ## You see `ModuleNotFoundError: No module named 'numpy'`
 
