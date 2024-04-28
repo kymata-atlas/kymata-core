@@ -3,10 +3,10 @@ from pathlib import Path
 import yaml
 
 from kymata.datasets.data_root import data_root_path
-from kymata.io.file import path_type, file_type, open_or_use
+from kymata.io.file import PathType, FileType, open_or_use
 
 
-def load_config(config_location: path_type | file_type):
+def load_config(config_location: PathType | FileType):
     """Load config parameters"""
     with open_or_use(config_location) as stream:
         return yaml.safe_load(stream)

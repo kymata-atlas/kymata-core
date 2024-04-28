@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from kymata.io.config import load_config, get_root_dir
-from kymata.io.yaml import load_config
 from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_filtering, \
     run_second_pass_cleansing_and_eog_removal
 
