@@ -23,12 +23,12 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/cai/kymata-toolbox/ ; \
+    " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --config dataset3.yaml \
+        --config dataset4.yaml \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --function-name 'ins_loudness' \
+        --function-name 'IL' \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
