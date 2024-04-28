@@ -212,8 +212,6 @@ def __mne_apply_morph_data(morph, stc_from):
 
 
 def load_emeg_pack(emeg_filenames, emeg_dir, inverse_operator_dir: Optional[PathType], morph_dir: Optional[PathType] = None, need_names=False, ave_mode=None, inverse_operator_suffix=None, p_tshift=None, snr=4):
-    # TODO: FIX PRE-AVE-NORMALISATION
-
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
