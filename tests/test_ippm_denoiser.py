@@ -8,13 +8,13 @@ import numpy as np
 from copy import deepcopy
 
 from kymata.ippm import denoiser
-from kymata.ippm.data_tools import IPPMHexel
+from kymata.ippm.data_tools import Spike
 
 # Set up shared test hexels
 self_test_hexels = {
-    'func1' : IPPMHexel('func1'),
-    'func2' : IPPMHexel('func2'),
-    'func3' : IPPMHexel('func3')
+    'func1' : Spike('func1'),
+    'func2' : Spike('func2'),
+    'func3' : Spike('func3')
 }
 self_test_hexels['func1'].left_best_pairings = [
     (20, 1e-66), (35, 1e-50)
@@ -243,7 +243,7 @@ def test_Should_estimateAlpha():
     assert isclose(alpha, predicted_alpha, abs_tol=1e-15)
 
 def test_Should_hexelsToDf_When_validInput():
-    test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
+    test_hexels = {'f1': Spike('f1'), 'f2': Spike('f2')}
     test_hexels['f1'].right_best_pairings = [(10, 1e-25), (25, 1e-23)]
     test_hexels['f2'].right_best_pairings = [(50, 1e-10), (55, 1e-44)]
     denoiser_ = denoiser.DenoisingStrategy()
@@ -263,7 +263,7 @@ def test_Should_hexelsToDf_When_validInput():
         i += 1
 
 def test_Should_hexelsToDf_When_leftHemisphere():
-    test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
+    test_hexels = {'f1': Spike('f1'), 'f2': Spike('f2')}
     test_hexels['f1'].left_best_pairings = [(10, 1e-25), (25, 1e-23)]
     test_hexels['f2'].left_best_pairings = [(50, 1e-10), (55, 1e-44)]
     denoiser_ = denoiser.DenoisingStrategy()
@@ -283,14 +283,14 @@ def test_Should_hexelsToDf_When_leftHemisphere():
         i += 1
 
 def test_Should_hexelsToDf_When_emptyInput():
-    test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
+    test_hexels = {'f1': Spike('f1'), 'f2': Spike('f2')}
     denoiser_ = denoiser.DenoisingStrategy()
     alpha = denoiser_._estimate_alpha()
     for _, df in denoiser_._hexels_to_df(test_hexels, 'leftHemisphere', alpha):
         assert len(df) == 0
 
 def test_Should_updatePairings_When_validInput():
-    test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
+    test_hexels = {'f1': Spike('f1'), 'f2': Spike('f2')}
     test_hexels['f1'].right_best_pairings = [(10, 1e-20), (15, 1e-2)]
     test_hexels['f2'].right_best_pairings = [(200, 1e-1), (250, 1e-50)]
     denoised = [(10, 1e-20)]
@@ -300,7 +300,7 @@ def test_Should_updatePairings_When_validInput():
     assert hexels['f2'].right_best_pairings == [(200, 1e-1), (250, 1e-50)]
 
 def test_Should_updatePairings_When_leftHemisphere():
-    test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
+    test_hexels = {'f1': Spike('f1'), 'f2': Spike('f2')}
     test_hexels['f1'].left_best_pairings = [(10, 1e-20), (15, 1e-2)]
     test_hexels['f2'].left_best_pairings = [(200, 1e-1), (250, 1e-50)]
     denoised = [(10, 1e-20)]

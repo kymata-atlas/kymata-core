@@ -13,6 +13,7 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
+from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
     Latency
 from kymata.entities.iterables import all_equal
@@ -27,8 +28,8 @@ DIM_LATENCY = "latency"
 DIM_FUNCTION = "function"
 
 # Block (e.g. hemisphere)
-BLOCK_LEFT  = "left"
-BLOCK_RIGHT = "right"
+BLOCK_LEFT  = HEMI_LEFT
+BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
 

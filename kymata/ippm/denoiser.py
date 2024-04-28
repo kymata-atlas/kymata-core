@@ -12,7 +12,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 #import multiprocessing
 
-from .data_tools import IPPMHexel
+from .data_tools import Spike
 
 
 class DenoisingStrategy(object):
@@ -27,9 +27,9 @@ class DenoisingStrategy(object):
         self._clusterer = None
     
     def cluster(
-        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False, cluster_latency: bool = False,
+        self, hexels: Dict[str, Spike], hemi: str, normalise: bool = False, cluster_latency: bool = False,
         posterior_pooling: bool = False
-    ) -> Dict[str, IPPMHexel]:
+    ) -> Dict[str, Spike]:
         """
             For each function in hemi, it will attempt to construct a dataframe that holds significant spikes (i.e., abova alpha).
             Next, we do any optional preprocessing and cluster using self._clusterer. Finally, it locates the minimum 
@@ -170,7 +170,7 @@ class DenoisingStrategy(object):
         """
         return np.reshape(df['Latency'], (-1, 1))
 
-    def _posterior_pooling(self, hexels: Dict[str, IPPMHexel], hemi: str, func: str) -> Dict[str, IPPMHexel]:
+    def _posterior_pooling(self, hexels: Dict[str, Spike], hemi: str, func: str) -> Dict[str, Spike]:
         """
             Optional max pooling over the entire latency done at the end of clustering. It enforces the constraint that there is only one
             spike per function. 
@@ -194,7 +194,7 @@ class DenoisingStrategy(object):
                 hexels[func].right_best_pairings = [min(hexels[func].right_best_pairings, key=lambda x: x[1])]
         return hexels
     
-    def _hexels_to_df(self, hexels: Dict[str, IPPMHexel], hemi: str, alpha: float) -> pd.DataFrame:
+    def _hexels_to_df(self, hexels: Dict[str, Spike], hemi: str, alpha: float) -> pd.DataFrame:
         """
             A generator used to build a dataframe of significant points only. For each call, it returns the dataframe
             for the next function in hexels.keys().
@@ -272,7 +272,7 @@ class DenoisingStrategy(object):
             print('Hemisphere needs to be rightHemisphere or leftHemisphere')
             raise ValueError
     
-    def _update_pairings(self, hexels: Dict[str, IPPMHexel], func: str, denoised: List[Tuple[float, float]], hemi: str) -> Dict[str, IPPMHexel]:
+    def _update_pairings(self, hexels: Dict[str, Spike], func: str, denoised: List[Tuple[float, float]], hemi: str) -> Dict[str, Spike]:
         """
             Overwrite the previous pairings with the new denoised version. 
 
@@ -350,9 +350,9 @@ class MaxPooler(DenoisingStrategy):
             raise ValueError
 
     def cluster(
-        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        self, hexels: Dict[str, Spike], hemi: str, normalise: bool = False,
         cluster_latency: bool = False, posterior_pooling: bool = False
-    ) -> Dict[str, IPPMHexel]:
+    ) -> Dict[str, Spike]:
         """  
             Custom clustering method since it differs from other unsupervised techniques. 
             
@@ -484,9 +484,9 @@ class AdaptiveMaxPooler(DenoisingStrategy):
             raise ValueError
         
     def cluster(
-        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        self, hexels: Dict[str, Spike], hemi: str, normalise: bool = False,
         cluster_latency: bool = False, posterior_pooling: bool = False
-    ) -> Dict[str, IPPMHexel]:
+    ) -> Dict[str, Spike]:
         """
             Time complexity is O(f(nlogn + n)). f = # of funcs, n = # of hexels/spikes = 10000. Final: O(f * nlogn)
 
@@ -684,9 +684,9 @@ class GMM(DenoisingStrategy):
 
     @ignore_warnings(category=ConvergenceWarning)
     def cluster(
-        self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
+        self, hexels: Dict[str, Spike], hemi: str, normalise: bool = False,
         cluster_latency: bool = False, posterior_pooling: bool = False
-    ) -> Dict[str, IPPMHexel]:
+    ) -> Dict[str, Spike]:
         """
             Overriding the superclass cluster function because we want to perform a grid-search over the number of clusters to locate the optimal one.
             It works similarly to the superclass.cluster method but it performs it multiple times. It stops if the number of data points < number of clusters as

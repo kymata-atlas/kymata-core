@@ -3,7 +3,7 @@ from typing import List, Dict
 
 import numpy as np
 
-from .data_tools import IPPMHexel, IPPMNode
+from .data_tools import Spike, IPPMNode
 
 
 class IPPMBuilder(object):
@@ -14,7 +14,7 @@ class IPPMBuilder(object):
     pass
 
 
-def build_ippm_graph(hexels: Dict[str, IPPMHexel],
+def build_ippm_graph(hexels: Dict[str, Spike],
                      function_hier : Dict[str, List[str]],
                      inputs : List[str],
                      hemi : str) -> Dict[str, IPPMNode]:
@@ -185,7 +185,7 @@ def _get_top_level_functions(hier: Dict[str, List[str]]) -> set:
     return set(funcs_leftover).difference(set(parent_funcs))
 
 
-def _sort_by_latency(hexels: Dict[str, IPPMHexel], hemi: str, functions: List[str]) -> Dict[str, IPPMHexel]:
+def _sort_by_latency(hexels: Dict[str, Spike], hemi: str, functions: List[str]) -> Dict[str, Spike]:
     """
         Sort pairings by latency in increasing order inplace.
 

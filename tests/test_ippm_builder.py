@@ -1,5 +1,5 @@
 from kymata.ippm.builder import _get_top_level_functions, _sort_by_latency, build_ippm_graph
-from kymata.ippm.data_tools import IPPMHexel
+from kymata.ippm.data_tools import Spike
 
 
 def test_get_top_level_functions():
@@ -15,7 +15,7 @@ def test_get_top_level_functions():
 
 
 def test_sort_by_latency():
-    test_hexels = {'f1': IPPMHexel('f1')}
+    test_hexels = {'f1': Spike('f1')}
     test_hexels['f1'].left_best_pairings = [(-12, 43), (143, 2), (46, 23), (21, 21)]
     test_hexels['f1'].right_best_pairings = [(100, 42), (20, 41), (50, 33)]
 
@@ -28,7 +28,7 @@ def test_sort_by_latency():
 
 def test_build_graph():
     test_hexels = {
-        'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2'), 'f3': IPPMHexel('f3')
+        'f1': Spike('f1'), 'f2': Spike('f2'), 'f3': Spike('f3')
     }
     test_hexels['f1'].right_best_pairings = [(100, 1e-10)]
     test_hexels['f2'].right_best_pairings = [(90, 1e-15)]
