@@ -54,7 +54,7 @@ audio_delivery_latency:   0.026     # in seconds
 visual_delivery_latency:  0.017     # in seconds
 tactile_delivery_latency: 0.00      # in seconds
 audio_delivery_shift_correction: 0.0005375   # in seconds per second
-latency_range: [ -0.2, 0.8 ]  # range of latencies to check, in seconds
+latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
 
 eeg_thresh: 1 #200e-6
 grad_thresh: 1 #4000e-13
