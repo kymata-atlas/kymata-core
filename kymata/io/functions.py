@@ -44,7 +44,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
     else:
         if not function_path_without_suffix.with_suffix(".npz").exists():
             if function_path_without_suffix.with_suffix(".mat").exists():
-                convert_to_npz_on_disk(function_path_without_suffix)
+                convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix)
             else:
                 raise FileNotFoundError(function_path_without_suffix.with_suffix(".npz"))
 
@@ -66,7 +66,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
     )
 
 
-def convert_to_npz_on_disk(function_path_without_suffix):
+def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
     mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
     func_dict = {}
     for key in mat.dtype.names:
