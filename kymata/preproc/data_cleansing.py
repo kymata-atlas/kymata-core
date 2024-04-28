@@ -502,11 +502,12 @@ def create_trialwise_data(dataset_directory_name: str,
         for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
 
             output_path = Path(data_path, "interim_preprocessing_files", save_folder)
-            logs_path = Path(output_path, "logs")
             evoked_path = Path(output_path, "evoked_data")
+            logs_path = Path(output_path, "logs")
 
-            logs_path.mkdir(exist_ok=True)
+            output_path.mkdir(exist_ok=True)
             evoked_path.mkdir(exist_ok=True)
+            logs_path.mkdir(exist_ok=True)
 
             if input_stream == 'auditory':
                 # events = audio_events
