@@ -40,6 +40,9 @@ Run the following invokers from `invokers/` in order:
     3. second-pass filtering
     4. eog removal
 - `invoker_create_trialwise_data.py`
+  - This does:
+    1. Splits the data into trials
+  - **This is all you need for sensor-space gridsearch.**
 - `invoker_run_hexel_current_estimation.py`
 - `invoker_estimate_noise_covariance.py`
   - This is only necessary if running the gridsearch in source space (hexels).
@@ -48,6 +51,11 @@ Run the following invokers from `invokers/` in order:
 
 - `run_gridsearch.py`
   - This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_load.ipynb`).
+
+#### Doing this at the CBU
+
+An easier way to do this (see [Troubleshooting](docs/troubleshooting_cbu.md)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
+Either run it locally with `./submit_gridsearch.sh`, or run it on the CBU queue with `sbatch submit_gridsearch.sh`.
 
 ### 4. Plot the results
 
@@ -97,16 +105,3 @@ To run the tests, run:
 ```
 $ poetry run pytest
 ```
-
-## Troubleshooting
-
-### You see `pyenv: Command not found`, `poetry: Command not found`
-
-On the CBU nodes, `pyenv` only works in `bash`, so make sure you are using this.
-```
-bash
-```
-
-### You see `/lib64/libm.so.6: version 'GLIBC_2.29' not found`
-
-You need to be on `lws-gpu02`.
