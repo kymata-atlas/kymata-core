@@ -14,6 +14,9 @@ _default_output_dir = Path(data_root_path(), "output")
 
 
 def get_config_value_with_fallback(config: dict, config_key: str, fallback):
+    """
+    Get a value from the config, with a default fallback, and a notification explaining this.
+    """
     try:
         return config[config_key]
     except KeyError:
