@@ -15,7 +15,7 @@ Alternatively, consider if this needs to be run locally, or if you can instead u
 
 ## You see `ModuleNotFoundError: No module named 'numpy'`
 
-You are probably running `submit_gridsearch.py`, and it currently has Andy's toolbox location hard-coded.
+You are probably running `submit_gridsearch.sh`, and it currently has Andy's toolbox location hard-coded.
 Update to point it at your copy.
 
 ## You see `ModuleNotFoundError: No module named 'kymata'`
