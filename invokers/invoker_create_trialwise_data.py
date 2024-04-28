@@ -1,11 +1,13 @@
+from argparse import ArgumentParser
 from pathlib import Path
+
 from kymata.io.yaml import load_config
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
 # noinspection DuplicatedCode
-def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
+def main(config_filename: str):
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     create_trialwise_data(
         dataset_directory_name=config['dataset_directory_name'],
@@ -26,4 +28,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = ArgumentParser(description='Create Trialwise Data')
+    parser.add_argument('--config-file', type=str, default="dataset4.yaml")
+    args = parser.parse_args()
+    main(config_filename=args.config_file)
