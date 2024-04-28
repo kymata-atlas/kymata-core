@@ -28,7 +28,7 @@ def main():
     parser = argparse.ArgumentParser(description='Gridsearch Params')
 
     # Dataset specific
-    parser.add_argument('--config-file', type=str, required=True)
+    parser.add_argument('--config', type=str, required=True)
 
     parser.add_argument('--emeg-dir', default='interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/', type=str, help='emeg directory, relative to base dir')
 
@@ -62,7 +62,7 @@ def main():
 
     args = parser.parse_args()
 
-    dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", args.config_file)))
+    dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", args.config)))
 
     # Config defaults
     participants = dataset_config.get('participants')
