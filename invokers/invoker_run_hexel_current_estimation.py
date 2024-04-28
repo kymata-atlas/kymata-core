@@ -7,8 +7,8 @@ from kymata.preproc.hexel_current_estimation import create_forward_model_and_inv
 
 
 # noinspection DuplicatedCode
-def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml")))
+def main(config_filename: str):
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     if config['data_location'] == "local":
         data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
@@ -40,4 +40,10 @@ def _run_cleanup():
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, help="Path to the appropriate dataset config .yaml file", default="dataset4.yaml")
+    args = parser.parse_args()
+
+    main(config_filename=args.config)

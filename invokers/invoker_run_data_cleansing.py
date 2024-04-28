@@ -9,7 +9,8 @@ from kymata.preproc.data_cleansing import run_first_pass_cleansing_and_maxwell_f
 
 
 # noinspection DuplicatedCode
-def main(config: dict):
+def main(config_filename: str):
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     if config['data_location'] == "local":
         data_root_dir = str(Path(Path(__file__).parent.parent, "kymata-toolbox-data", "emeg_study_data")) + "/"
@@ -60,9 +61,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("config-location", type=Path, help="Path to the appropriate dataset config .yaml file",
-                        default=Path(Path(__file__).parent.parent, "dataset_config", "dataset4.yaml"))
+    parser.add_argument("--config", type=str, help="Path to the appropriate dataset config .yaml file", default="dataset4.yaml")
     args = parser.parse_args()
 
-    # TODO: revert this
-    main(config=load_config(str(argv[1])))
+    main(config_filename=args.config)
