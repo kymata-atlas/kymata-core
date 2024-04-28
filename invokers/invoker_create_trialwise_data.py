@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from kymata.io.config import load_config
+from kymata.io.config import load_config, get_root_dir
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
@@ -9,6 +9,7 @@ def main(config_filename: str):
     config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     create_trialwise_data(
+        data_root_dir = get_root_dir(config),
         dataset_directory_name=config['dataset_directory_name'],
         list_of_participants=config['participants'],
         repetitions_per_runs=config['repetitions_per_runs'],
