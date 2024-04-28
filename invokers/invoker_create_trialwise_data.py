@@ -29,6 +29,6 @@ def main(config_filename: str):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Create Trialwise Data')
-    parser.add_argument('--config-file', type=str, default="dataset4.yaml")
+    parser.add_argument('--config', type=str, default="dataset4.yaml")
     args = parser.parse_args()
     main(config_filename=args.config_file)

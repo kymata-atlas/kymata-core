@@ -500,6 +500,14 @@ def create_trialwise_data(dataset_directory_name: str,
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
         for input_stream in input_streams: # TODO n.b. not setup for visual/tactile stream yet
+
+            output_path = Path(data_path, "interim_preprocessing_files", save_folder)
+            logs_path = Path(output_path, "logs")
+            evoked_path = Path(output_path, "evoked_data")
+
+            logs_path.mkdir(exist_ok=True)
+            evoked_path.mkdir(exist_ok=True)
+
             if input_stream == 'auditory':
                 # events = audio_events
                 # else:
@@ -515,16 +523,16 @@ def create_trialwise_data(dataset_directory_name: str,
 
                 # 	Log which channels are worst
                 dropfig = epochs.plot_drop_log(subject=p)
-                dropfig.savefig(f'{data_path}/interim_preprocessing_files/{save_folder}/logs/f{input_stream}_drop-log_{p}.jpg')
+                dropfig.savefig(Path(logs_path, f"f{input_stream}_drop-log_{p}.jpg"))
 
                 global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
 
                 for i in range(len(audio_events_raw)):
                     evoked = epochs[str(i)].average()
-                    evoked.save(f'{data_path}/interim_preprocessing_files/{save_folder}/evoked_data/{p}_rep{i}.fif', overwrite=True)
+                    evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
                 evoked = epochs.average()
-                evoked.save(f'{data_path}/interim_preprocessing_files/{save_folder}/evoked_data/{p}-ave.fif', overwrite=True)
+                evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
 
 def create_trials(data_root_dir: str,
