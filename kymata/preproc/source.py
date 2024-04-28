@@ -7,6 +7,8 @@ from warnings import warn
 import numpy as np
 import mne
 
+from kymata.io.file import PathType
+
 _logger = getLogger(__name__)
 
 
@@ -213,8 +215,7 @@ def __mne_apply_morph_data(morph, stc_from):
     return stc_to
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
-                   use_morph: bool = False):
+def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir: Optional[PathType] = None, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4):
     # TODO: FIX PRE-AVE-NORMALISATION
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
@@ -222,7 +223,7 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
     ]
     n_reps = len(emeg_paths)
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if morph_dir is not None else None
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:

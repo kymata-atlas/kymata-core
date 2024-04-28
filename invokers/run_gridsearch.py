@@ -89,16 +89,15 @@ def main():
     emeg_path = Path(args.base_dir, args.emeg_dir)
     morph_dir = Path(args.base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
-                                           emeg_dir=emeg_path,
-                                           morph_dir=morph_dir,
-                                           use_morph=args.morph,
-                                           need_names=True,
-                                           ave_mode=args.ave_mode,
-                                           inverse_operator_dir=args.inverse_operator_dir,
-                                           inverse_operator_suffix= args.inverse_operator_suffix,
-                                           p_tshift=None,
-                                           snr=args.snr,
-                                           )
+                                                   emeg_dir=emeg_path,
+                                                   morph_dir=morph_dir if args.morph else None,
+                                                   need_names=True,
+                                                   ave_mode=args.ave_mode,
+                                                   inverse_operator_dir=args.inverse_operator_dir,
+                                                   inverse_operator_suffix= args.inverse_operator_suffix,
+                                                   p_tshift=None,
+                                                   snr=args.snr,
+                                                   )
 
     func = load_function(Path(args.base_dir, args.function_path),
                          func_name=args.function_name,
