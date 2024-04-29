@@ -7,6 +7,8 @@ import whisper
 import time
 import os
 
+# import ipdb;ipdb.set_trace()
+
 from kymata.io.functions import load_function, load_function_pre
 
 import librosa
