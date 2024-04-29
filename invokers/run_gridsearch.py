@@ -46,10 +46,10 @@ def main():
     parser.add_argument('--snr', type=float, default=3, help='inverse solution snr')
     parser.add_argument('--downsample-rate', type=int, default=5, help='downsample_rate')
 
-    parser.add_argument('--seconds-per-split', type=float, default=0.5, help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits', type=int, default=800, help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
-    parser.add_argument('--n-derangements', type=int, default=1, help='number of deragements for the null distribution')
-    parser.add_argument('--start-latency', type=float, default=-100, help='earliest latency to check in cross correlation')
+    parser.add_argument('--seconds-per-split', type=float, default=1, help='seconds in each split of the recording, also maximum range of latencies being checked')
+    parser.add_argument('--n-splits', type=int, default=400, help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
+    parser.add_argument('--n-derangements', type=int, default=5, help='number of deragements for the null distribution')
+    parser.add_argument('--start-latency', type=float, default=-200, help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
 
     parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
