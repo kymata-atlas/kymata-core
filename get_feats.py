@@ -33,7 +33,7 @@ T_max = 401 #seconds
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
-func_name = 'whisper_all_no_reshape_large_v3_multi'
+func_name = 'whisper_all_no_reshape_base_multi_timestamp'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -89,13 +89,14 @@ func_name = 'whisper_all_no_reshape_large_v3_multi'
 # plt.plot(func_b.values[a:b] / np.max(func_b.values[a:b]))
 # plt.savefig('example_1.png')
 features = {}
+timestamps = []
 
 def get_features(name):
   def hook(model, input, output):
     if isinstance(output,torch.Tensor):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
-        # import ipdb;ipdb.set_trace()
+          # import ipdb;ipdb.set_trace()
           features[name] = torch.cat((features[name], output), -1)
         else:
           features[name] = torch.cat((features[name], output), -2)
@@ -115,8 +116,8 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v3")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v3")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-base")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -136,13 +137,14 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    # import ipdb;ipdb.set_trace()
+    # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    timestamps.append(generated_ids['token_timestamps'].numpy() + i * 30)
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
 
   end_time = time.time()
   execution_time = end_time - start_time
   print(f"Execution time: {execution_time} seconds")
-  # import ipdb;ipdb.set_trace()
+  import ipdb;ipdb.set_trace()
 
 else:
 
