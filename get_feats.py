@@ -111,8 +111,8 @@ def get_features(name):
 
 ########
 
-if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
-# if True:
+# if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
+if True:
 
   dataset = dataset[:T_max*16_000]
 
@@ -138,13 +138,14 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    timestamps.append(generated_ids['token_timestamps'].numpy() + i * 30)
+    import ipdb;ipdb.set_trace()
+    timestamps.append(generated_ids['token_timestamps'].numpy()[:, 1:] + i * 30)
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
 
   end_time = time.time()
   execution_time = end_time - start_time
   print(f"Execution time: {execution_time} seconds")
-  import ipdb;ipdb.set_trace()
+  # import ipdb;ipdb.set_trace()
 
 else:
 
