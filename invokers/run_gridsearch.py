@@ -71,7 +71,7 @@ def main():
     participants = dataset_config.get('participants')
     audio_shift_correction = get_config_value_with_fallback(dataset_config, "audio_delivery_shift_correction", 0)
     base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
-    inverse_operator_dir = dataset_config.get('inverse operator')
+    inverse_operator_dir = dataset_config.get('inverse_operator')
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.single_participant_override is not None:
@@ -93,6 +93,8 @@ def main():
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
     morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
+    inverse_operator_dir = Path(base_dir, inverse_operator_dir)
+    print("args.use_inverse_operator" + args.use_inverse_operator)
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                                    emeg_dir=emeg_path,
                                                    morph_dir=morph_dir
