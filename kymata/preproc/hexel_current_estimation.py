@@ -326,7 +326,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
             morph = mne.compute_source_morph(
                 src_from,
-                subject_from=participant,
+                subject_from=participant[-4:],
                 subject_to="fsaverage",
                 src_to=src_to,
                 subjects_dir=mri_structurals_directory,
