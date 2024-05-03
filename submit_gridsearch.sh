@@ -26,11 +26,9 @@ apptainer exec \
     " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/ ; \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --config dataset3.yaml \
-        --function-path 'predicted_function_contours/audio/GMloudness/stimulisig' \
-        --function-name ins_loudness shortterm_loudness \
-        --use-inverse-operator \
-        --morph \
+        --config dataset4.yaml \
+        --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
+        --function-name IL STL \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
