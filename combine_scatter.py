@@ -10,7 +10,7 @@ def asr_models_loop_full():
 
     neuron = 1280
 
-    size = 'large'
+    size = 'large_v2'
     
     lat_sig = np.zeros((1, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
@@ -69,7 +69,7 @@ def asr_models_loop_full():
 
     # import ipdb;ipdb.set_trace()
 
-    scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='bgr', marker='.', s=15)
+    scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15)
     cbar = plt.colorbar(scatter, ax=ax, label='layers')
     # ax.scatter(lat_sig[i, :1, 0], lat_sig[i, :1, 3], marker='o')
     #for j in range(_lats.shape[0]):
