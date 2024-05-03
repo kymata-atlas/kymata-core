@@ -18,6 +18,8 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
+    morph_path_h5  = morph_path.with_suffix(".h5") if morph_path is not None else None
+    morph_path_fif = morph_path.with_suffix(".fif") if morph_path is not None else None
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
         ch_names: list[str] = []
         emeg = np.load(emeg_path_npy)
@@ -25,8 +27,14 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
         evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
-            _logger.info(f"Reading source morph from {morph_path}")
-            morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
+            if morph_path is not None:
+                _logger.info(f"Reading source morph from {morph_path_h5}")
+                try:
+                    morph_map = mne.read_source_morph(morph_path_h5)
+                except FileNotFoundError:
+                    morph_map = mne.read_source_morph(morph_path_fif)
+            else:
+                morph_map = None
             lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
             # Stack into a single matrix, to be split after gridsearch
             emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
@@ -211,14 +219,22 @@ def __mne_apply_morph_data(morph, stc_from):
     return stc_to
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, inverse_operator_dir: Optional[PathType], morph_dir: Optional[PathType] = None, need_names=False, ave_mode=None, inverse_operator_suffix=None, p_tshift=None, snr=4):
+def load_emeg_pack(emeg_filenames,
+                   emeg_dir: PathType,
+                   inverse_operator_dir: Optional[PathType],
+                   morph_dir: Optional[PathType] = None,
+                   need_names=False,
+                   ave_mode=None,
+                   inverse_operator_suffix=None,
+                   p_tshift=None,
+                   snr=4):
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
     ]
     n_reps = len(emeg_paths)
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if morph_dir is not None else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph") if morph_dir is not None else None
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
