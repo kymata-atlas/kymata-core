@@ -307,8 +307,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
     for participant in list_of_participants:
 
-        morphmap_filename = Path(morph_map_dir,
-                                 participant + "_fsaverage_morph.h5")
+        morphmap_filename = Path(morph_map_dir, participant + "_fsaverage_morph.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
