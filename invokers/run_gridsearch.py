@@ -100,7 +100,7 @@ def main():
 
     print(f"Gridsearch in {channel_space} space")
     if args.morph:
-        print(f"Morphing to common space")
+        print("Morphing to common space")
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                                    emeg_dir=emeg_path,
                                                    morph_dir=morph_dir
