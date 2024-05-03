@@ -10,7 +10,7 @@ def asr_models_loop_full():
 
     neuron = 1280
 
-    size = 'large_v2'
+    size = 'large_v3'
     
     lat_sig = np.zeros((1, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 

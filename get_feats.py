@@ -144,6 +144,7 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
 
   end_time = time.time()
   execution_time = end_time - start_time
+  timestamps = np.concatenate(timestamps, axis = 1).reshape(-1)
   print(f"Execution time: {execution_time} seconds")
   # import ipdb;ipdb.set_trace()
 
