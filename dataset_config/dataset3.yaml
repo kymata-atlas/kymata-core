@@ -14,7 +14,7 @@ participants: [
                 "meg15_0056",
                 "meg15_0058",
                 "meg15_0060",
-                "meg15_0065",
+#                "meg15_0065",  # This subject's inverse operators have the wrong subject ID
                 "meg15_0066",
                 "meg15_0070",
                 "meg15_0071",
