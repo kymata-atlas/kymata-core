@@ -94,7 +94,7 @@ def main():
     emeg_path = Path(base_dir, args.emeg_dir)
     morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
-    print("args.use_inverse_operator" + args.use_inverse_operator)
+    print(f"{args.use_inverse_operator=}")
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                                    emeg_dir=emeg_path,
                                                    morph_dir=morph_dir
