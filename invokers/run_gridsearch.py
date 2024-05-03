@@ -52,7 +52,7 @@ def main():
     parser.add_argument('--start-latency', type=float, default=-200, help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
 
-    parser.add_argument('--function-name', type=str, default="IL", help='function name in stimulisig')
+    parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--single-participant-override', type=str, default=None, required=False, help='Supply to run only on one participant')
 
     # Input paths
@@ -110,33 +110,43 @@ def main():
                                                    snr=args.snr,
                                                    )
 
-    func = load_function(Path(base_dir, args.function_path),
-                         func_name=args.function_name,
-                         bruce_neurons=(5, 10))
-    func = func.downsampled(args.downsample_rate)
-
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    es = do_gridsearch(
-        emeg_values=emeg_values,
-        channel_names=ch_names,
-        channel_space=channel_space,
-        function=func,
-        seconds_per_split=args.seconds_per_split,
-        n_derangements=args.n_derangements,
-        n_splits=args.n_splits,
-        n_reps=n_reps,
-        start_latency=args.start_latency,
-        plot_location=args.save_plot_location,
-        emeg_t_start=args.emeg_t_start,
-        audio_shift_correction=audio_shift_correction,
-        overwrite=args.overwrite,
-    )
+    combined_expression_set = None
+
+    for function_name in args.function_name:
+        function_values = load_function(Path(base_dir, args.function_path),
+                                        func_name=function_name,
+                                        bruce_neurons=(5, 10))
+        function_values = function_values.downsampled(args.downsample_rate)
+
+        es = do_gridsearch(
+            emeg_values=emeg_values,
+            channel_names=ch_names,
+            channel_space=channel_space,
+            function=function_values,
+            seconds_per_split=args.seconds_per_split,
+            n_derangements=args.n_derangements,
+            n_splits=args.n_splits,
+            n_reps=n_reps,
+            start_latency=args.start_latency,
+            plot_location=args.save_plot_location,
+            emeg_t_start=args.emeg_t_start,
+            audio_shift_correction=audio_shift_correction,
+            overwrite=args.overwrite,
+        )
+
+        if combined_expression_set is None:
+            combined_expression_set = es
+        else:
+            combined_expression_set += es
+
+    assert combined_expression_set is not None
 
     if args.save_expression_set_location is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
+        save_expression_set(combined_expression_set, to_path_or_file = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg'), overwrite=args.overwrite)
 
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
+    expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, args.function_name + '_gridsearch.png'), overwrite=args.overwrite)
 
     print(f'Time taken for code to run: {time.time() - start:.4f} s')
 
