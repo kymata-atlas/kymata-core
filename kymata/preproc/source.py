@@ -31,7 +31,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
                 _logger.info(f"Reading source morph from {morph_path_h5}")
                 try:
                     morph_map = mne.read_source_morph(morph_path_h5)
-                except (IOError, FileNotFoundError):
+                except FileNotFoundError:
                     morph_map = mne.read_source_morph(morph_path_fif)
             else:
                 morph_map = None
