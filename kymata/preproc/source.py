@@ -211,7 +211,15 @@ def __mne_apply_morph_data(morph, stc_from):
     return stc_to
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, inverse_operator_dir: Optional[PathType], morph_dir: Optional[PathType] = None, need_names=False, ave_mode=None, inverse_operator_suffix=None, p_tshift=None, snr=4):
+def load_emeg_pack(emeg_filenames,
+                   emeg_dir: PathType,
+                   inverse_operator_dir: Optional[PathType],
+                   morph_dir: Optional[PathType] = None,
+                   need_names=False,
+                   ave_mode=None,
+                   inverse_operator_suffix=None,
+                   p_tshift=None,
+                   snr=4):
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames

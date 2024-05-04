@@ -28,7 +28,7 @@ apptainer exec \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --config dataset4.yaml \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --function-name 'IL' \
+        --function-name IL STL \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
