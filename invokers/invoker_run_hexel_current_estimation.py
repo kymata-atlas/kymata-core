@@ -9,7 +9,7 @@ def main(config_filename: str):
 
     data_root_dir = get_root_dir(config)
 
-    # create_current_estimation_prerequisites(data_root_dir, config=config)
+    create_current_estimation_prerequisites(data_root_dir, config=config)
 
     create_forward_model_and_inverse_solution(data_root_dir, config=config)
 
