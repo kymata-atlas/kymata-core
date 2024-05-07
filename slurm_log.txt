@@ -1,14 +1,4 @@
 Loading apptainer version:
 1.0.3
 Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-WhisperModel is using WhisperSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `layer_head_mask` not None. Falling back to the manual attention implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/imaging/woolgar/projects/Tianyi/kymata-toolbox/get_feats.py", line 265, in <module>
-    np.save(f'{directory}{func_name}.npy', timestamps)
-  File "/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/lib/python3.11/site-packages/numpy/lib/npyio.py", line 545, in save
-    arr = np.asanyarray(arr)
-          ^^^^^^^^^^^^^^^^^^
-ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (14, 1) + inhomogeneous part.
-Execution time: 1005.2227461338043 seconds
+Execution time: 368.81891989707947 seconds
