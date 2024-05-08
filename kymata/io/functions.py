@@ -47,21 +47,39 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
 
     elif 'asr_models' in str(function_path_without_suffix):
         if 'whisper_all_no_reshape' in str(function_path_without_suffix):
-            func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
-            func = func_dict[func_name]
+            if 'logmel' in str(function_path_without_suffix):
+                func = np.load(function_path_without_suffix.with_suffix(".npy"))
+            else:
+                func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+                func = func_dict[func_name]
             T_max = 401
             s_num = T_max * 1000
-            if 'conv' in func_name or func.shape[0] != 1:
+            if 'conv' in func_name or func.shape[0] != 1 or 'logmel' in str(function_path_without_suffix):
                 place_holder = np.zeros((func.shape[1], s_num))
             else:
                 place_holder = np.zeros((func.shape[2], s_num))
             for j in range(place_holder.shape[0]):
-                if 'conv' in func_name:
-                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[2]), func[0, j, :])
-                elif func.shape[0] != 1:
-                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
-                else:
-                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
+                if 'decoder' in func_name and 'encoder_attn.k' not in func_name and 'encoder_attn.v' not in func_name:
+                    time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                    time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                    time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                    for i in range(len(time_stamps_samples) - 1):
+                        start_idx = time_stamps_samples[i]
+                        end_idx = time_stamps_samples[i + 1]
+                        if start_idx < s_num:
+                            if 'conv' in func_name:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, j, i])
+                            elif func.shape[0] != 1:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[i, j])
+                            else:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, i, j])
+                else:    
+                    if 'conv' in func_name or 'logmel' in str(function_path_without_suffix):
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[2]), func[0, j, :])
+                    elif func.shape[0] != 1:
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
+                    else:
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
             
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]

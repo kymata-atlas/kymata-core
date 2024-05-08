@@ -108,8 +108,8 @@ def get_features(name):
 
 ########
 
-if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
-# if True:
+# if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
+if True:
 
   processor = WhisperProcessor.from_pretrained("openai/whisper-base.en")
   model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en")
