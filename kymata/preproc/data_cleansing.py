@@ -399,8 +399,9 @@ def estimate_noise_cov(data_root_dir: str,
             cov_data = cov_eeg.data
             cov_data[64:,64:] = cov_meg.data[64:,64:]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
-
+            del cov_data, cov_eeg, cov_meg
             mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-fusion-cov.fif', cov)
+            del cov
 
 
 def create_trialwise_data(dataset_directory_name: str,
