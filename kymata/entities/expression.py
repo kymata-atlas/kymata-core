@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Sequence, Union, get_args, Tuple
+from warnings import warn
 
 from numpy import array, array_equal, ndarray
 from numpy.typing import NDArray
@@ -98,6 +99,7 @@ class ExpressionSet(ABC):
         # We need to eventually get it into `self._data`, which has type dict[str, DataArray]
         # i.e. a dict mapping block names to a DataArray containing data for all functions
         self._data: dict[str, DataArray] = dict()
+        nan_warning_sent = False
         for block_name, data_for_functions in data_blocks.items():
             for function_name, data in zip(functions, data_for_functions):
                 assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
@@ -115,6 +117,16 @@ class ExpressionSet(ABC):
                 dim=DIM_FUNCTION,
                 data_vars="all",  # Required by concat of DataArrays
                 )
+
+            # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
+            # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
+            # warn the user about it.
+            if data_array.isnull().any():
+                data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
+                if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
+                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                    nan_warning_sent = True
+
             assert data_array.dims == self._dims
             assert set(data_array.coords.keys()) == set(self._dims)
             assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
@@ -192,6 +204,8 @@ class ExpressionSet(ABC):
         """
         Return a DataFrame containing:
         for each channel in the block, the best function and latency for that channel, and the associated log p-value
+
+        Note that channels for which the best p-value is 1 will be omitted.
         """
         # Want, for each channel in the block:
         #  - The name, f, of the function which is best at any latency
@@ -225,8 +239,8 @@ class ExpressionSet(ABC):
             DIM_FUNCTION: best_function
         }).data
 
-        # Cut out channels which have a best log p-val of 1
-        idxs = logp_vals < 1
+        # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
+        idxs = logp_vals < 0
 
         return DataFrame.from_dict({
             self._channel_coord_name: self._channels[block_name][idxs],
@@ -237,6 +251,9 @@ class ExpressionSet(ABC):
 
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
+        """
+        Note that channels for which the best p-value is 1 will be omitted.
+        """
         pass
 
 
@@ -357,6 +374,8 @@ class HexelExpressionSet(ExpressionSet):
         """
         Return a pair of DataFrames (left, right), containing:
         for each hexel, the best function and latency for that hexel, and the associated log p-value
+
+        Note that channels for which the best p-value is 1 will be omitted.
         """
         return (
             super()._best_functions_for_block(BLOCK_LEFT),
@@ -455,5 +474,7 @@ class SensorExpressionSet(ExpressionSet):
         """
         Return a DataFrame containing:
         for each sensor, the best function and latency for that sensor, and the associated log p-value
+
+        Note that channels for which the best p-value is 1 will be omitted.
         """
         return super()._best_functions_for_block(BLOCK_SCALP)
