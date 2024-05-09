@@ -124,7 +124,7 @@ class ExpressionSet(ABC):
             if data_array.isnull().any():
                 data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
                 if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
-                    warn(f"Supplied data contained nans. These will be replaced by p = 1 values.")
+                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
                     nan_warning_sent = True
 
             assert data_array.dims == self._dims
