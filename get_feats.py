@@ -141,7 +141,7 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     generated_ids = model.generate(**inputs, language='russian', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    # import ipdb;ipdb.set_trace()
+    import ipdb;ipdb.set_trace()
     timestamps.append(generated_ids['token_timestamps'].numpy()[:, 1:] + i * 30)
     text.append(processor.batch_decode(**generated_ids, skip_special_tokens=False)[0])
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
@@ -259,6 +259,8 @@ if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
 if whisper_outs and save_outs:
 
   # s_num = T_max * 1000
+
+  # import ipdb;ipdb.set_trace()
 
   # Check if the directory exists, if not, create it
   directory = f'{func_dir}/predicted_function_contours/asr_models/'
