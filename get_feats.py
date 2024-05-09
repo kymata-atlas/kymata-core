@@ -34,7 +34,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_tiny_ru'
+func_name = 'whisper_all_no_reshape_base_ru'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -118,8 +118,8 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-base")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -141,14 +141,14 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     generated_ids = model.generate(**inputs, language='russian', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    import ipdb;ipdb.set_trace()
+    # import ipdb;ipdb.set_trace()
     timestamps.append(generated_ids['token_timestamps'].numpy()[:, 1:] + i * 30)
     text.append(processor.batch_decode(**generated_ids, skip_special_tokens=False)[0])
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
 
   end_time = time.time()
   execution_time = end_time - start_time
-  # timestamps = np.concatenate(timestamps, axis = 1).reshape(-1)
+  timestamps = np.concatenate(timestamps, axis = 1).reshape(-1)
   print(f"Execution time: {execution_time} seconds")
   # import ipdb;ipdb.set_trace()
 
@@ -271,11 +271,11 @@ if whisper_outs and save_outs:
   np.savez(f'{directory}{func_name}.npz', **features)
   np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
   plt.plot(timestamps)
-  plt.savefig('kymata-toolbox-data/output/test/time_tiny_ru.png')
+  plt.savefig('kymata-toolbox-data/output/test/time_base_ru.png')
   plt.close()
 
   text = "\n".join(text)
-  with open("kymata-toolbox-data/output/test/transcription_tiny_ru.txt", "w") as file:
+  with open("kymata-toolbox-data/output/test/transcription_base_ru.txt", "w") as file:
     file.write(text)
 
   # np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)

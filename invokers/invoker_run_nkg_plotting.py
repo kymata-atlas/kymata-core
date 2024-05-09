@@ -118,23 +118,29 @@ from kymata.plot.color import gradient_color_dict, constant_color_dict
 #                 color= constant_color_dict(tono_list, color='purple')
 #                 | {'IL': 'red', 'STL': 'pink'})
 
-path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/expression_plot")
+path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/expression_set")
 
 logmel_list = []
+IL_list = []
 
 for i in range(80):
-    logmel = f"IL{i}"
+    logmel = f"logmel_{i}"
     logmel_list.append(logmel)
 
-expression_data = load_expression_set(Path( path_to_nkg_files, "mellog_base.nkg"))
+for i in range(9):
+    IL_value = f"IL_{i+1}"
+    IL_list.append(IL_value)
+
+expression_data = load_expression_set(Path( path_to_nkg_files, "logmel_base.nkg"))
 import ipdb;ipdb.set_trace()
 expression_data += load_expression_set(Path( path_to_nkg_files, "ollie_TVL_master_gridsearch_FULL.nkg"))
 
 expression_plot(expression_data, 
                 ylim=-200, 
                 xlims=(-200, 800), 
-                save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/loudness.png"), 
+                save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/IL_vs_Logmel.png"), 
                 show_legend=True,
                 paired_axes=False,
-                color= constant_color_dict(tono_list, color='purple')
-                | {'IL': 'red', 'STL': 'pink'})
+                color= constant_color_dict(logmel_list, color='green')
+                | {'IL': 'red', 'STL': 'pink'}
+                | constant_color_dict(IL_list, color='purple'))
