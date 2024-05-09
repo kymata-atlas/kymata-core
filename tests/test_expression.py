@@ -215,6 +215,29 @@ def test_hes_rename_functions():
     assert es == target_es
 
 
+def test_hes_rename_functions_just_one():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first_renamed", "second"],
+                                   hexels_lh=range(5),
+                                   hexels_rh=range(5),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(functions={"first": "first_renamed"})
+    assert es == target_es
+
+
 def test_hes_rename_functions_wrong_name():
     data_left = [np.random.randn(5, 10) for _ in range(2)]
     data_right = [np.random.randn(5, 10) for _ in range(2)]
