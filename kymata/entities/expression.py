@@ -240,6 +240,8 @@ class ExpressionSet(ABC):
         Renames the functions within an ExpressionSet.
 
         Supply a dictionary mapping old function names to new function names.
+
+        Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
         """
         for old, new in functions.items():
             if old not in self.functions:
