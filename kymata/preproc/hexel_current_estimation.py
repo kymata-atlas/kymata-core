@@ -162,7 +162,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     list_of_participants = config['list_of_participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     # Compute forward solution
