@@ -61,6 +61,7 @@ def main():
     parser.add_argument('--emeg-t-start',      type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
 
     # Output paths
+    parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir), help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir), help="Save an expression plots, and other plots, in this location")
 
@@ -149,7 +150,9 @@ def main():
 
     assert combined_expression_set is not None
 
-    if len(args.function_name) > 2:
+    if args.saved_name is not None and len(args.saved_name) > 0:
+        combined_names = args.saved_name
+    elif len(args.function_name) > 2:
         combined_names = f"{len(args.function_name)}_functions"
     else:
         combined_names = "_+_".join(args.function_name)
