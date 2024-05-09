@@ -245,7 +245,13 @@ class ExpressionSet(ABC):
             if old not in self.functions:
                 raise KeyError(f"{old} is not a function in this expression set")
         for bn, data in self._data.items():
-            self._data[bn][DIM_FUNCTION] = [functions[old_name] for old_name in self._data[bn][DIM_FUNCTION].values]
+            new_names = []
+            for old_name in self._data[bn][DIM_FUNCTION].values:
+                if old_name in functions:
+                    new_names.append(functions[old_name])
+                else:
+                    new_names.append(old_name)
+            self._data[bn][DIM_FUNCTION] = new_names
 
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
