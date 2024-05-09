@@ -89,13 +89,42 @@ from kymata.plot.color import gradient_color_dict, constant_color_dict
 #                         | constant_color_dict(encoder4_list, color='orange')
 #                         | constant_color_dict(encoder5_list, color='purple'))
 
-path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output")
+# path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output")
 
-tono_list = []
+# tono_list = []
 
-for i in range(9):
-    tono = f"IL{i+1}"
-    tono_list.append(tono)
+# for i in range(9):
+#     tono = f"IL{i+1}"
+#     tono_list.append(tono)
+
+# expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL1_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL2_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL3_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL4_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL5_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL6_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL7_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL8_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "IL9_gridsearch.nkg"))
+# expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
+
+# expression_plot(expression_data, 
+#                 ylim=-200, 
+#                 xlims=(-200, 800), 
+#                 save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/loudness.png"), 
+#                 show_legend=True,
+#                 paired_axes=False,
+#                 color= constant_color_dict(tono_list, color='purple')
+#                 | {'IL': 'red', 'STL': 'pink'})
+
+path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/expression_plot")
+
+logmel_list = []
+
+for i in range(80):
+    logmel = f"IL{i}"
+    logmel_list.append(logmel)
 
 expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
 expression_data += load_expression_set(Path( path_to_nkg_files, "IL1_gridsearch.nkg"))

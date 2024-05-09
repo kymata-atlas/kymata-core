@@ -369,9 +369,11 @@ def estimate_noise_cov(data_root_dir: str,
                 raw_cropped = raw.crop(tmin=0, tmax=800)
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
+            del cleaned_raws, raw, raw_cropped
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
+            del raw_combined
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
-            del cleaned_raws, raw_combined, raw_epoch
+            del raw_epoch
 
             # Now calcualte the covariance for MEG using emptyroom
             emptyroom_fname = data_root_dir + dataset_directory_name + '/raw_emeg/' + p + '/' + p + '_empty_room_raw.fif'
@@ -389,8 +391,9 @@ def estimate_noise_cov(data_root_dir: str,
                         st_duration=10,
                         verbose=True)
 
+            del emptyroom_raw
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
-            del raw, emptyroom_raw, raw_fif_data_sss
+            del raw_fif_data_sss
 
             # Now combine the two covariance matrices
             cov_data = cov_eeg.data
