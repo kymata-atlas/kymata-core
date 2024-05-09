@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 from matplotlib import pyplot, colors
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator
+from matplotlib.patches import Patch
 from pandas import DataFrame
 from seaborn import color_palette
 
@@ -278,12 +279,12 @@ def expression_plot(
         if len(not_shown) > split_legend_at_n_functions:
             legend_n_col = 2
         # Plot dummy legend for other functions which are included in model selection but not plotted
+        dummy_patches = [Patch(color=None, label=label) for label in not_shown]
         leg = bottom_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
                                title="Non-plotted functions",
                                ncol=legend_n_col,
                                bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                               # Hide lines for non-plotted functions
-                               handlelength=0, handletextpad=0)
+                               handles=dummy_patches)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
     top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",

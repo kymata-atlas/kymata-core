@@ -479,4 +479,4 @@ def test_expression_set_plot_with_explicit_colour_for_hidden_function():
                             'd_IL8',
                             'd_IL9',
                         ], start_color="orange", stop_color="yellow"),
-                show_only=['d_IL1'])
+                    show_only=['d_IL1'])
