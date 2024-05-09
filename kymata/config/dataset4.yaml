@@ -36,7 +36,7 @@ supress_excessive_plots_and_prompts: True
 
 # Inverse operator
 eeg: True
-meg: True
+meg: False
 inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
 # Method to estimate noise covariance matrix

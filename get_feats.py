@@ -34,7 +34,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_base_ru'
+func_name = 'whisper_all_no_reshape_tiny_ru'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -118,8 +118,8 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-base")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -271,11 +271,11 @@ if whisper_outs and save_outs:
   np.savez(f'{directory}{func_name}.npz', **features)
   np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
   plt.plot(timestamps)
-  plt.savefig('kymata-toolbox-data/output/test/time_base_ru.png')
+  plt.savefig('kymata-toolbox-data/output/test/time_tiny_ru.png')
   plt.close()
 
   text = "\n".join(text)
-  with open("kymata-toolbox-data/output/test/transcription_base_ru.txt", "w") as file:
+  with open("kymata-toolbox-data/output/test/transcription_tiny_ru.txt", "w") as file:
     file.write(text)
 
   # np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
