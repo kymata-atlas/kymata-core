@@ -249,6 +249,26 @@ class ExpressionSet(ABC):
             "value": logp_vals[idxs],
         })
 
+    def rename(self, functions: dict[str, str]) -> None:
+        """
+        Renames the functions within an ExpressionSet.
+
+        Supply a dictionary mapping old function names to new function names.
+
+        Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
+        """
+        for old, new in functions.items():
+            if old not in self.functions:
+                raise KeyError(f"{old} is not a function in this expression set")
+        for bn, data in self._data.items():
+            new_names = []
+            for old_name in self._data[bn][DIM_FUNCTION].values:
+                if old_name in functions:
+                    new_names.append(functions[old_name])
+                else:
+                    new_names.append(old_name)
+            self._data[bn][DIM_FUNCTION] = new_names
+
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
         """

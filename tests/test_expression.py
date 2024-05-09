@@ -254,3 +254,64 @@ def test_hes_validation_mixmatched_hexels_between_functions():
                            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
                            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
                            )
+
+
+def test_hes_rename_functions():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first_renamed", "second_renamed"],
+                                   hexels_lh=range(5),
+                                   hexels_rh=range(5),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(functions={"first": "first_renamed", "second": "second_renamed"})
+    assert es == target_es
+
+
+def test_hes_rename_functions_just_one():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first_renamed", "second"],
+                                   hexels_lh=range(5),
+                                   hexels_rh=range(5),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(functions={"first": "first_renamed"})
+    assert es == target_es
+
+
+def test_hes_rename_functions_wrong_name():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    with pytest.raises(KeyError):
+        es.rename(functions={"first": "first_renamed", "missing": "second_renamed"})
