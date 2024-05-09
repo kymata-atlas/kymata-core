@@ -126,17 +126,9 @@ for i in range(80):
     logmel = f"IL{i}"
     logmel_list.append(logmel)
 
-expression_data = load_expression_set(Path( path_to_nkg_files, "IL_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL1_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL2_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL3_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL4_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL5_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL6_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL7_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL8_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "IL9_gridsearch.nkg"))
-expression_data += load_expression_set(Path( path_to_nkg_files, "STL_gridsearch.nkg"))
+expression_data = load_expression_set(Path( path_to_nkg_files, "mellog_base.nkg"))
+import ipdb;ipdb.set_trace()
+expression_data += load_expression_set(Path( path_to_nkg_files, "ollie_TVL_master_gridsearch_FULL.nkg"))
 
 expression_plot(expression_data, 
                 ylim=-200, 
