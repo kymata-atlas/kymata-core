@@ -167,30 +167,31 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # Compute forward solution
     for participant in list_of_participants:
-         fwd = mne.make_forward_solution(
-             # Path(Path(path.abspath("")), "data",
-             Path(data_root_dir,
-                  dataset_directory_name,
-                  'raw_emeg', participant, participant +
-                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
-             trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
-             src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
-             bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
-             meg=config['meg'],
-             eeg=config['eeg'],
-             mindist=5.0,
-             n_jobs=None,
-             verbose=True
-         )
-         print(fwd)
-         if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
-         elif config['meg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
-         elif config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
-         else:
-             raise Exception('eeg and meg in the config file cannot be both False')
+         if not path.isfile(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif')):
+            fwd = mne.make_forward_solution(
+                # Path(Path(path.abspath("")), "data",
+                Path(data_root_dir,
+                    dataset_directory_name,
+                    'raw_emeg', participant, participant +
+                    '_run1_raw.fif'), # note this file is only used for the sensor positions.
+                trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
+                src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
+                bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+                meg=config['meg'],
+                eeg=config['eeg'],
+                mindist=5.0,
+                n_jobs=None,
+                verbose=True
+            )
+            print(fwd)
+            if config['meg'] and config['eeg']:
+                mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
+            elif config['meg']:
+                mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
+            elif config['eeg']:
+                mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
+            else:
+                raise Exception('eeg and meg in the config file cannot be both False')
 
     # Compute inverse operator
 
