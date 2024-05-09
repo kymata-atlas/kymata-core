@@ -150,11 +150,11 @@ def main():
     assert combined_expression_set is not None
 
     if args.save_expression_set_location is not None:
-        es_save_path = Path(args.save_expression_set_location, args.function_name + '_gridsearch.nkg')
+        es_save_path = Path(args.save_expression_set_location, "_+_".join(args.function_name) + '_gridsearch.nkg')
         print(f"Saving expression set to {es_save_path!s}")
         save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
-    fig_save_path = Path(args.save_plot_location, args.function_name + '_gridsearch.png')
+    fig_save_path = Path(args.save_plot_location, "_+_".join(args.function_name) + '_gridsearch.png')
     print(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
