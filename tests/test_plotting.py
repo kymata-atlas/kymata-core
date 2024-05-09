@@ -1,10 +1,9 @@
 from pathlib import Path
 
 import pytest
-from numpy import array, array_equal, random
+from numpy import array, array_equal
 
 from kymata.datasets.sample import delete_dataset
-from kymata.entities.expression import HexelExpressionSet
 from kymata.io.nkg import load_expression_set
 from kymata.plot.color import gradient_color_dict
 from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks, _get_xticks, expression_plot
