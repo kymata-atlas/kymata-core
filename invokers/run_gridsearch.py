@@ -150,8 +150,8 @@ def main():
 
     assert combined_expression_set is not None
 
-    if args.saved_name is not None and len(args.saved_name) > 0:
-        combined_names = args.saved_name
+    if args.save_name is not None and len(args.save_name) > 0:
+        combined_names = args.save_name
     elif len(args.function_name) > 2:
         combined_names = f"{len(args.function_name)}_functions"
     else:
