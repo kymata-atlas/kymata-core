@@ -187,9 +187,9 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         if config['meg'] and config['eeg']:
             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
         elif config['meg']:
-            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd, overwrite=True)
         elif config['eeg']:
-            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
+            mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd, overwrite=True)
         else:
             raise Exception('eeg and meg in the config file cannot be both False')
 
@@ -262,7 +262,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
                         participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')), 
-                    inverse_operator)
+                    inverse_operator, overwrite=True)
             else:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
@@ -270,7 +270,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         '4_hexel_current_reconstruction',
                         'inverse-operators',
                         participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')), 
-                    inverse_operator)               
+                    inverse_operator, overwrite=True)               
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
@@ -278,8 +278,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     '4_hexel_current_reconstruction',
                     'inverse-operators',
                     participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')), 
-
-                inverse_operator)
+                inverse_operator, overwrite=True)
 
 
 def create_hexel_morph_maps(data_root_dir, config: dict):
