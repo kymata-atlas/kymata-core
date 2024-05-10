@@ -48,8 +48,8 @@ automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
 
 # Inverse operator
-eeg: False
-meg: True
+eeg: True
+meg: False
 inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
 # Method to estimate noise covariance matrix
