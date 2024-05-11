@@ -19,9 +19,16 @@ participants: [
                 'participant_07',
                 'participant_08',
                 'participant_09',
+                'participant_10',
                 'participant_11',
                 'participant_12',
                 'participant_13',
+                'participant_14',
+                'participant_15',
+                'participant_16',
+                'participant_17',
+                'participant_18',
+                'participant_19'
               ]
 input_streams: [ "auditory" ]        # auditory | visual
 number_of_runs: 4                    # number of runs
