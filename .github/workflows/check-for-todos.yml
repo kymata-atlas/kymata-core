@@ -11,7 +11,7 @@ jobs:
 
     - name: Check for TODO comments
       run: |
-        MATCHES=$(grep -r -n "# TODO" . || true)
+        MATCHES=$(grep -r -n --exclude-dir=.git --exclude-dir=.github "# TODO" . || true)
         if [ ! -z "$MATCHES" ]; then
           echo "Found TODO comments:"
           echo "$MATCHES"
