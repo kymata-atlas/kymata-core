@@ -72,7 +72,7 @@ def main():
     # Config defaults
     participants = dataset_config.get('participants')
     audio_shift_correction = get_config_value_with_fallback(dataset_config, "audio_delivery_shift_correction", fallback=0)
-    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', default='dataset_4-english-narratives'))
+    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
     inverse_operator_dir = dataset_config.get('inverse_operator')
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
