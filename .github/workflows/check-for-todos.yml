@@ -1,0 +1,19 @@
+name: Check TODO comments
+
+on: [push, pull_request]
+
+jobs:
+  check-todo:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Check for TODO comments
+      run: |
+        MATCHES=$(grep -r -n "# TODO" . || true)
+        if [ ! -z "$MATCHES" ]; then
+          echo "Found TODO comments:"
+          echo "$MATCHES"
+          exit 1
+        fi
