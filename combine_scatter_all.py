@@ -6,7 +6,7 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 32
+    layer = 66
 
     neuron = 1280
 
@@ -20,17 +20,31 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+    log_dir_1 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/encoder_all_der_5/'
 
-    for i in range(layer):
+    log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+
+    for i in range(layer-32):
         file_name = f'slurm_log_{i}.txt'
-        with open(log_dir + file_name, 'r') as f:
+        with open(log_dir_1 + file_name, 'r') as f:
             a = f.readlines()
             for ia in range(len(a)):
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
                         lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n]
+                        ia += 1
+                    break
+
+    for i in range(layer-34):
+        file_name = f'slurm_log_{i}.txt'
+        with open(log_dir_2 + file_name, 'r') as f:
+            a = f.readlines()
+            for ia in range(len(a)):
+                if 'model' in a[ia]:
+                    for k in range(neuron):
+                        _a = [j for j in a[ia].split()]
+                        lat_sig[(i+32) % n, (i+32) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+32) // n]
                         ia += 1
                     break
 
@@ -84,7 +98,7 @@ def asr_models_loop_full():
     plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_decoder_{size}_colour_layer.png', dpi=600)
+    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

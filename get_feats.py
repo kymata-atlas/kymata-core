@@ -34,7 +34,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_tiny_ru'
+func_name = 'whisper_all_no_reshape_large_ru'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -92,6 +92,7 @@ func_name = 'whisper_all_no_reshape_tiny_ru'
 features = {}
 timestamps = []
 text = []
+text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
@@ -113,13 +114,13 @@ def get_features(name):
 
 ########
 
-if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz'):
+if whisper_outs:
 # if True:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -140,10 +141,11 @@ if whisper_outs and not os.path.isfile(f'{func_dir}/predicted_function_contours/
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     generated_ids = model.generate(**inputs, language='russian', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # import ipdb;ipdb.set_trace()
     timestamps.append(generated_ids['token_timestamps'].numpy()[:, 1:] + i * 30)
     text.append(processor.batch_decode(**generated_ids, skip_special_tokens=False)[0])
+    for i in range(generated_ids['sequences'].shape[1]):
+      text_with_time.append(f'{processor.batch_decode(generated_ids["sequences"][:,i], skip_special_tokens=False)[0]}: {generated_ids["token_timestamps"][:,i]}')
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
 
   end_time = time.time()
@@ -268,15 +270,21 @@ if whisper_outs and save_outs:
     os.makedirs(directory)
 
   # Now save the data
-  np.savez(f'{directory}{func_name}.npz', **features)
-  np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
-  plt.plot(timestamps)
-  plt.savefig('kymata-toolbox-data/output/test/time_tiny_ru.png')
-  plt.close()
-
-  text = "\n".join(text)
-  with open("kymata-toolbox-data/output/test/transcription_tiny_ru.txt", "w") as file:
-    file.write(text)
+  if not os.path.isfile(f'{directory}{func_name}.npz'):
+    np.savez(f'{directory}{func_name}.npz', **features)
+  if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
+    np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
+    plt.plot(timestamps)
+    plt.savefig('kymata-toolbox-data/output/test/time_large.png')
+    plt.close()
+  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
+    text = "\n".join(text)
+    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
+      file.write(text)
+  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt"):
+    text_with_time = "\n".join(text_with_time)
+    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt", "w") as file:
+      file.write(text_with_time)  
 
   # np.savez(f'{func_dir}/predicted_function_contours/asr_models/whisper_all_no_reshape_large_v2.npz', **features)
 
