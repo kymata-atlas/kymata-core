@@ -275,7 +275,7 @@ if whisper_outs and save_outs:
   if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
     np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
     plt.plot(timestamps)
-    plt.savefig('kymata-toolbox-data/output/test/time_large.png')
+    plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
     plt.close()
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
     text = "\n".join(text)
