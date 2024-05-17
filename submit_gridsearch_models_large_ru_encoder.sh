@@ -2,24 +2,24 @@
 
 ###
 # To run gridsearch on the queue at the CBU, run the following command in command line:
-#   sbatch submit_gridsearch_models_large_ru_decoder.sh
+#   sbatch submit_gridsearch_models_large_ru_encoder.sh
 ###
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_decoder_log/slurm_log_%a.txt
-#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_decoder_log/slurm_log_%a.txt
+#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_encoder_log/slurm_log_%a.txt
+#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_encoder_log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-31
+#SBATCH --array=0-33
 #SBATCH --exclusive
 
 # args=(5)
-layer_num=()
+layer_num=("model.encoder.conv1", "model.encoder.conv2")
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 for ((i=0; i<31; i++)); do
-    layer_num+=("model.decoder.layers.$i.final_layer_norm")
+    layer_num+=("model.encoder.layers.$i.final_layer_norm")
 done
 
 # # Printing layer_num variable to log file
@@ -41,8 +41,8 @@ apptainer exec \
         --n-derangements 5 \
         --asr-option 'all' \
         --num-neurons 1280 \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_decoder/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_decoder/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_encoder/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_encoder/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "
 
 # cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/

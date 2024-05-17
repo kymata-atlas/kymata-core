@@ -75,28 +75,19 @@ def main():
     if not os.path.exists(args.save_expression_set_location):
         os.makedirs(args.save_expression_set_location)
 
-    participants = [
-        'pilot_01',
-        'pilot_02',
-        'participant_01',
-        'participant_01b',
-        'participant_02',
-        'participant_03',
-        'participant_04',
-        'participant_05',
-        'participant_07',
-        'participant_08',
-        'participant_09',
-        'participant_11',
-        'participant_12',
-        'participant_13',
-        'participant_14',
-        'participant_15',
-        'participant_16',
-        'participant_17',
-        'participant_18',
-        'participant_19',
-    ]
+    participants = ["meg15_0045",
+                    "meg15_0055",
+                    "meg15_0056",
+                    "meg15_0058",
+                    "meg15_0060",
+                    "meg15_0066",
+                    "meg15_0070",
+                    "meg15_0071",
+                    "meg15_0072",
+                    "meg15_0079",
+                    "meg15_0081",
+                    "meg15_0082"
+                ]
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.single_participant_override is not None:
