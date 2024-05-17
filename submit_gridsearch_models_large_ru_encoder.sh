@@ -16,7 +16,7 @@
 #SBATCH --exclusive
 
 # args=(5)
-layer_num=("model.encoder.conv1", "model.encoder.conv2")
+layer_num=("model.encoder.conv1" "model.encoder.conv2")
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 for ((i=0; i<31; i++)); do
     layer_num+=("model.encoder.layers.$i.final_layer_norm")

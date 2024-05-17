@@ -75,19 +75,23 @@ def main():
     if not os.path.exists(args.save_expression_set_location):
         os.makedirs(args.save_expression_set_location)
 
-    participants = ["meg15_0045",
-                    "meg15_0055",
-                    "meg15_0056",
-                    "meg15_0058",
-                    "meg15_0060",
-                    "meg15_0066",
-                    "meg15_0070",
-                    "meg15_0071",
-                    "meg15_0072",
-                    "meg15_0079",
-                    "meg15_0081",
-                    "meg15_0082"
-                ]
+    participants = [
+                "meg15_0045",
+                "meg15_0051",  # These two subjects are missing source estimations
+                "meg15_0054",  # These two subjects are missing source estimations
+                "meg15_0055",
+                "meg15_0056",
+                "meg15_0058",
+                "meg15_0060",
+                "meg15_0065",  # This subject's inverse operators have the wrong subject ID
+                "meg15_0066",
+                "meg15_0070",
+                "meg15_0071",
+                "meg15_0072",
+                "meg15_0079",
+                "meg15_0081",
+                "meg15_0082"
+              ]
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']
     if args.single_participant_override is not None:
