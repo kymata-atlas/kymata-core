@@ -34,7 +34,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_large_v3_multi'
+func_name = 'whisper_all_no_reshape_large_v3_ru'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -139,7 +139,7 @@ if whisper_outs:
     inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
     
     # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-    generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+    generated_ids = model.generate(**inputs, language='russian', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
     # import ipdb;ipdb.set_trace()
     timestamps.append(generated_ids['token_timestamps'].numpy()[:, 1:] + i * 30)
