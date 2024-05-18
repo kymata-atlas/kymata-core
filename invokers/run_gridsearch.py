@@ -63,7 +63,7 @@ def main():
                         help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start', type=float, default=-200,
                         help='start of the emeg evoked files relative to the start of the function')
-    parser.add_argument('--audio-shift-correction', type=float, default=0.000_540_4,
+    parser.add_argument('--audio-shift-correction', type=float, default=0,
                         help='audio shift correction, for every second of function, add this number of seconds (to the start of the emeg split) per seconds of emeg seen')
     args = parser.parse_args()
 
