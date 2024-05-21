@@ -62,7 +62,7 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
                 if 'decoder' in func_name and 'encoder_attn.k' not in func_name and 'encoder_attn.v' not in func_name:
                     time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
                     time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
-                    time_stamps_samples = np.append(time_stamps_samples, s_num)
+                    time_stamps_samples = np.append(time_stamps_samples, 402_000)
                     for i in range(len(time_stamps_samples) - 1):
                         start_idx = time_stamps_samples[i]
                         end_idx = time_stamps_samples[i + 1]
