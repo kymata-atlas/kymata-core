@@ -27,7 +27,7 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16
 # processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
 # inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
 
-T_max = 401 #seconds
+T_max = 390 #seconds
 
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
