@@ -90,13 +90,17 @@ def expression_plot(
         save_to: Optional[Path] = None,
         overwrite: bool = True,
         show_legend: bool = True,
-        legend_disp: dict[str, str] = None,
+        legend_display: dict[str, str] | None = None,
 ):
     """
     Generates an expression plot
 
     paired_axes: When True, show the expression plot split left/right.
                  When False, all points shown on the same axis.
+
+    legend_display: Allows multiple functions to be collapsed into the same legend item.
+                    Supply a dictionary which maps true function names to display names.
+                    Functions assigned the same display name will be grouped together.
 
     color: colour name, function_name → colour name, or list of colour names
     xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
@@ -164,6 +168,12 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
+    def _custom_label(function_name):
+        if legend_display is not None:
+            if function_name in legend_display.keys():
+                return legend_display[function_name]
+        return function_name
+
     fig, axes = pyplot.subplots(nrows=2 if paired_axes else 1, ncols=1, figsize=(12, 7))
     if isinstance(axes, pyplot.Axes): 
         axes = (axes, )  # Wrap if necessary
@@ -176,17 +186,10 @@ def expression_plot(
     data_y_min             = np.Inf
     for function in show_only:
 
-        if legend_disp is not None:
-            if function in legend_disp.keys():
-                if legend_disp[function] not in custom_labels:
-                    custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
-                    custom_labels.append(legend_disp[function])
-            else:
-                custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
-                custom_labels.append(function)
-        else:
+        custom_label = _custom_label(function)
+        if custom_label not in custom_labels:
             custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
-            custom_labels.append(function)
+            custom_labels.append(custom_label)
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
@@ -284,21 +287,29 @@ def expression_plot(
                        rotation='vertical')
 
     # Legend for plotted function
-    split_legend_at_n_functions = 15
-    legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
-    if hidden_functions_in_legend and len(not_shown) > 0:
-        if len(not_shown) > split_legend_at_n_functions:
-            legend_n_col = 2
-        # Plot dummy legend for other functions which are included in model selection but not plotted
-        dummy_patches = [Patch(color=None, label=label) for label in not_shown]
-        leg = bottom_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
-                               title="Non-plotted functions",
-                               ncol=legend_n_col,
-                               bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                               handles=dummy_patches)
-        for lh in leg.legend_handles:
-            lh.set_alpha(0)
     if show_legend:
+        split_legend_at_n_functions = 15
+        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
+        if hidden_functions_in_legend and len(not_shown) > 0:
+
+
+            if len(not_shown) > split_legend_at_n_functions:
+                legend_n_col = 2
+            # Plot dummy legend for other functions which are included in model selection but not plotted
+            custom_labels_not_shown = []
+            dummy_patches = []
+            for hidden_function in not_shown:
+                custom_label = _custom_label(hidden_function)
+                if custom_label not in custom_labels_not_shown:
+                    custom_labels_not_shown.append(custom_label)
+                    dummy_patches.append(Patch(color=None, label=custom_label))
+            leg = bottom_ax.legend(labels=custom_labels_not_shown, fontsize="x-small", alignment="left",
+                                   title="Non-plotted functions",
+                                   ncol=legend_n_col,
+                                   bbox_to_anchor=(1.02, -0.02), loc="lower left",
+                                   handles=dummy_patches)
+            for lh in leg.legend_handles:
+                lh.set_alpha(0)
         top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
                     title="Plotted functions",
                     ncol=legend_n_col,
@@ -432,6 +443,9 @@ def plot_top_five_channels_of_gridsearch(
     pyplot.close()
 
 
-def lengend_display_dict(functions: list[str], disp_name) -> dict[str, str]:
-
-    return {function: disp_name for function in functions}
+def lengend_display_dict(functions: list[str], display_name) -> dict[str, str]:
+    """
+    Given a list of function names and a display name, produced a dictionary appropriate for the `legend_display`
+    parameter of `expression_plot()`.
+    """
+    return {function: display_name for function in functions}
