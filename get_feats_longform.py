@@ -27,14 +27,14 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16
 # processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
 # inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
 
-T_max = 390 #seconds
+T_max = 401 #seconds
 
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_base_multi_longform'
+func_name = 'whisper_all_no_reshape_large_multi_longform'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -91,12 +91,11 @@ func_name = 'whisper_all_no_reshape_base_multi_longform'
 # plt.savefig('example_1.png')
 features = {}
 timestamps = []
-text = []
 text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
-    if isinstance(output,torch.Tensor):
+    if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
@@ -119,8 +118,8 @@ if whisper_outs:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-base")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -136,14 +135,20 @@ if whisper_outs:
   # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
   generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
   # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-  import ipdb;ipdb.set_trace()
-  timestamps = generated_ids['token_timestamps'].numpy()
+  
+  for i in range(len(generated_ids['segments'][0])):
+    timestamps += generated_ids['segments'][0][i]['token_timestamps'].tolist()
+  timestamps = np.array(timestamps)
   text = processor.batch_decode(**generated_ids, skip_special_tokens=False)[0]
   # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
+  for i in range(generated_ids['sequences'].shape[1]):
+    text_with_time.append(f'{processor.batch_decode(generated_ids["sequences"][:,i], skip_special_tokens=False)[0]}: {timestamps[i]}')
+
+  import ipdb;ipdb.set_trace()
 
   end_time = time.time()
   execution_time = end_time - start_time
-  timestamps = np.concatenate(timestamps, axis = 1).reshape(-1)
+
   print(f"Execution time: {execution_time} seconds")
   # import ipdb;ipdb.set_trace()
 

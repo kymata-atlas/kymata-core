@@ -87,6 +87,7 @@ def main():
         'participant_07',
         'participant_08',
         'participant_09',
+        'participant_10',   # This participant is not included in some of the results! Added on 23/05/24
         'participant_11',
         'participant_12',
         'participant_13',
