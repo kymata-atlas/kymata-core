@@ -176,10 +176,14 @@ def expression_plot(
     data_y_min             = np.Inf
     for function in show_only:
 
-        if function in legend_disp.keys():
-            if legend_disp[function] not in custom_labels:
+        if legend_disp is not None:
+            if function in legend_disp.keys():
+                if legend_disp[function] not in custom_labels:
+                    custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
+                    custom_labels.append(legend_disp[function])
+            else:
                 custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
-                custom_labels.append(legend_disp[function])
+                custom_labels.append(function)
         else:
             custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
             custom_labels.append(function)
