@@ -10,9 +10,9 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     create the surfaces, the boundary element model solutions, and the source space
     """
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+    interim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
     #mri_structural_type = config['mri_structural_type'] 
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
@@ -34,7 +34,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     src = mne.setup_source_space(
         "fsaverage", spacing="ico5", subjects_dir=mri_structurals_directory, verbose=True
     )
-    mne.write_source_spaces(Path(intrim_preprocessing_directory_name,
+    mne.write_source_spaces(Path(interim_preprocessing_directory_name,
                                      "4_hexel_current_reconstruction",
                                      "src_files",
                                      "fsaverage_ico5-src.fif"), src)
@@ -129,7 +129,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         src = mne.setup_source_space(
             participant, spacing="ico5", add_dist=True, subjects_dir=mri_structurals_directory
         )
-        mne.write_source_spaces(Path(intrim_preprocessing_directory_name,
+        mne.write_source_spaces(Path(interim_preprocessing_directory_name,
                                      "4_hexel_current_reconstruction",
                                      "src_files",
                                      participant + "_ico5-src.fif"), src)
@@ -160,10 +160,27 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
 def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
+
+    interim_preprocessing_directory = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
+
+    hexel_current_reconstruction_dir = Path(interim_preprocessing_directory, "4_hexel_current_reconstruction")
+    hexel_current_reconstruction_dir.mkdir(exist_ok=True)
+
+    coregistration_dir = Path(hexel_current_reconstruction_dir, "coregistration_files")
+    coregistration_dir.mkdir(exist_ok=True)
+
+    src_dir = Path(hexel_current_reconstruction_dir, "src_files")
+    src_dir.mkdir(exist_ok=True)
+
+    forward_sol_dir = Path(hexel_current_reconstruction_dir, "forward_sol_files")
+    forward_sol_dir.mkdir(exist_ok=True)
+
+    inverse_operator_dir = Path(hexel_current_reconstruction_dir, "inverse-operators")
+    inverse_operator_dir.mkdir(exist_ok=True)
 
     # Compute forward solution
     for participant in list_of_participants:
@@ -173,8 +190,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                   dataset_directory_name,
                   'raw_emeg', participant, participant +
                   '_run1_raw.fif'), # note this file is only used for the sensor positions.
-             trans=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","coregistration_files", participant + '-trans.fif'),
-             src=Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","src_files", participant + '_ico5-src.fif'),
+             trans=Path(coregistration_dir, participant + '-trans.fif'),
+             src=Path(src_dir, participant + '_ico5-src.fif'),
              bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
              meg=config['meg'],
              eeg=config['eeg'],
@@ -184,13 +201,13 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
          )
          print(fwd)
          if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd.fif'), fwd, overwrite=True)
+             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd, overwrite=True)
          elif config['meg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-megonly.fif'), fwd)
+             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-megonly.fif'), fwd)
          elif config['eeg']:
-             mne.write_forward_solution(Path(intrim_preprocessing_directory_name, "4_hexel_current_reconstruction","forward_sol_files", participant + '-fwd-eegonly.fif'), fwd)
+             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-eegonly.fif'), fwd)
          else:
-             raise Exception('eeg and meg in the config file cannot be both False')
+             raise Exception('eeg and meg in the dataset_config file cannot be both False')
 
     # Compute inverse operator
 
@@ -199,33 +216,27 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         # Read forward solution
         if config['meg'] and config['eeg']:
             fwd = mne.read_forward_solution(Path(
-                intrim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "forward_sol_files",
+                forward_sol_dir,
                 participant + '-fwd.fif'))
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
-                intrim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "forward_sol_files",
+                forward_sol_dir,
                 participant + '-fwd-megonly.fif'))
         elif config['eeg']:
             fwd = mne.read_forward_solution(Path(
-                intrim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "forward_sol_files",
+                forward_sol_dir,
                 participant + '-fwd-eegonly.fif'))
             
         # Read noise covariance matrix
         if config['duration'] is None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
-                intrim_preprocessing_directory_name,
+                interim_preprocessing_directory,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
                 participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
-            intrim_preprocessing_directory_name,
+            interim_preprocessing_directory,
                 '3_evoked_sensor_data',
                 'covariance_grand_average',
                 participant + "-" + config['cov_method'] + str(config['duration']) + '-cov.fif')))
@@ -233,7 +244,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
             Path(path.abspath("")),
-            intrim_preprocessing_directory_name,
+            interim_preprocessing_directory,
             '2_cleaned',
             participant + '_run1_cleaned_raw.fif.gz'))
 
@@ -248,52 +259,55 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         if config['meg'] and config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
-                    intrim_preprocessing_directory_name,
-                    '4_hexel_current_reconstruction',
-                    'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
+                        inverse_operator_dir,
+                        participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
                 inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] is None:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
-                        intrim_preprocessing_directory_name,
-                        '4_hexel_current_reconstruction',
-                        'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')), 
+                            inverse_operator_dir,
+                            participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')),
                     inverse_operator)
             else:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
-                        intrim_preprocessing_directory_name,
-                        '4_hexel_current_reconstruction',
-                        'inverse-operators',
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')), 
+                            inverse_operator_dir,
+                            participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')),
                     inverse_operator)               
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
-                    intrim_preprocessing_directory_name,
-                    '4_hexel_current_reconstruction',
-                    'inverse-operators',
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')), 
+                        inverse_operator_dir,
+                        participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')),
 
                 inverse_operator)
 
 
 def create_hexel_morph_maps(data_root_dir, config: dict):
 
-    list_of_participants = config['list_of_participants']
+    list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
-    intrim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "intrim_preprocessing_files")
+
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
+
+    interim_preprocessing_directory = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
+
+    hexel_current_reconstruction_dir = Path(interim_preprocessing_directory, "4_hexel_current_reconstruction")
+    hexel_current_reconstruction_dir.mkdir(exist_ok=True)
+
+    src_dir = Path(hexel_current_reconstruction_dir, "src_files")
+    src_dir.mkdir(exist_ok=True)
+
+    forward_sol_dir = Path(hexel_current_reconstruction_dir, "forward_sol_files")
+    forward_sol_dir.mkdir(exist_ok=True)
+
+    morph_map_dir = Path(hexel_current_reconstruction_dir, "morph_maps")
+    morph_map_dir.mkdir(exist_ok=True)
 
     for participant in list_of_participants:
 
-        morphmap_filename = Path(intrim_preprocessing_directory_name,
-                                 "4_hexel_current_reconstruction",
-                                 "morph_maps",
-                                 participant + "_fsaverage_morph.h5")
+        morphmap_filename = Path(morph_map_dir, participant + "_fsaverage_morph.h5")
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
@@ -302,16 +316,12 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
             # inv, incase any vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
             fwd = mne.read_forward_solution(Path(
-                intrim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "forward_sol_files",
+                forward_sol_dir,
                 participant + '-fwd.fif'))
             src_from = fwd['src']
             
             src_to = mne.read_source_spaces(Path(
-                intrim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "src_files",
+                src_dir,
                 'fsaverage_ico5-src.fif'))
 
             morph = mne.compute_source_morph(

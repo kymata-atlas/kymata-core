@@ -13,16 +13,17 @@ from matplotlib import pyplot
 from matplotlib.colors import to_hex, LinearSegmentedColormap
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator
+from matplotlib.patches import Patch
 from mne import SourceEstimate
 from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
-from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
+from kymata.entities.functions import Function
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, eeg_sensors
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
 
 
 transparent = (0, 0, 0, 0)
@@ -163,19 +164,27 @@ class AxisAssignment(NamedTuple):
     axis_channels: list
 
 
-_left_right_sensors: tuple[AxisAssignment, AxisAssignment] = (
+sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(axis_name="left",
                    axis_channels=[
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x <= 0
-                   ] + eeg_sensors()),
+                   ] + [
+                       sensor
+                       for sensor, (x, y) in get_eeg_sensor_xy().items()
+                       if x <= 0
+                   ]),
     AxisAssignment(axis_name="right",
                    axis_channels=[
                        sensor
                        for sensor, (x, y) in get_meg_sensor_xy().items()
                        if x >= 0
-                   ] + eeg_sensors()),
+                   ] + [
+                       sensor
+                       for sensor, (x, y) in get_eeg_sensor_xy().items()
+                       if x >= 0
+                   ]),
 )
 
 
@@ -363,7 +372,7 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            assign_left_right_channels = _left_right_sensors
+            assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels)
             bottom_chans = set(assign_left_right_channels[1].axis_channels)
@@ -482,12 +491,12 @@ def expression_plot(
         if len(not_shown) > split_legend_at_n_functions:
             legend_n_col = 2
         # Plot dummy legend for other functions which are included in model selection but not plotted
+        dummy_patches = [Patch(color=None, label=label) for label in not_shown]
         leg = bottom_ax.legend(labels=not_shown, fontsize="x-small", alignment="left",
                                title="Non-plotted functions",
                                ncol=legend_n_col,
                                bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                               # Hide lines for non-plotted functions
-                               handlelength=0, handletextpad=0)
+                               handles=dummy_patches)
         for lh in leg.legend_handles:
             lh.set_alpha(0)
     top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",

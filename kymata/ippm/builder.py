@@ -123,7 +123,7 @@ class IPPMBuilder(object):
                 # While doing this, if we encounter empty pairings for f or any parent, we skip them.
                 
                 if f in inputs:
-                    # input node default size is 10.
+                    # input node default size is 100.
                     hier.pop(f)
                     graph[f] = Node(100, (0, 1 - n_partitions * part_idx), [])
                 

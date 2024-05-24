@@ -7,6 +7,8 @@ import pandas as pd
 from sklearn.cluster import DBSCAN as DBSCAN_, MeanShift as MeanShift_
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import normalize
+from sklearn.utils._testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 
 #import multiprocessing
 
@@ -33,9 +35,6 @@ class DenoisingStrategy(object):
             Next, we do any optional preprocessing and cluster using self._clusterer. Finally, it locates the minimum 
             (most significant) point for each cluster and saves it. Optionally, the user can choose to constrain the number of spikes to 1.
             Preprocessing includes scaling the data to have unit length or cluster only on latency (Density based clustering).
-            
-            TODO: could we instead average over points in a cluster? Minimum makes most sense because it is the best match and corresponds to an
-                  actual match.
 
             This can be overridden if using a custom clustering strategy but as it is, it works well sklearn clustering techniques. As a result,
             additional algorithms from sklearn can be easily incorporated.
@@ -679,7 +678,8 @@ class GMM(DenoisingStrategy):
         
         if invalid:
             raise ValueError
-        
+
+    @ignore_warnings(category=ConvergenceWarning)
     def cluster(
         self, hexels: Dict[str, IPPMHexel], hemi: str, normalise: bool = False,
         cluster_latency: bool = False, posterior_pooling: bool = False
@@ -708,7 +708,7 @@ class GMM(DenoisingStrategy):
                 
             if len(df) == 1:
                 # no point clustering, just return the single data point.
-                ret = [(df.iloc[0, 'Latency'], df.iloc[0, 'Mag'])]
+                ret = [(df.iloc[0, 0], df.iloc[0, 1])]
                 hexels = super()._update_pairings(hexels, func, ret, hemi)
                 continue
 
