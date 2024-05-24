@@ -8,31 +8,35 @@ from kymata.entities.functions import Function
 from kymata.io.file import PathType
 
 
-def load_function(function_path_without_suffix: PathType, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
+def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
-        print('USING BRUCE MODEL')
         if function_path_without_suffix.with_suffix(".npz").exists():
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
+            func_name += f'_{str(bruce_neurons[0])}-{str(bruce_neurons[1])}'
         else:
             mat = loadmat(function_path_without_suffix.with_suffix('.mat'))['neurogramResults']
-            func = np.array(mat[func_name][0][0])
+            func_mr = np.array(mat['neurogram_mr'][0][0])
+            func_ft = np.array(mat['neurogram_ft'][0][0])
             # func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
-            tt = np.array(mat['t_'+func_name[-2:]][0][0])
-            n_chans = func.shape[0]
-            new_mr_arr = np.zeros((n_chans, 400_000))
-            new_ft_arr = np.zeros((n_chans, 400_000))
-            if func_name == 'neurogram_mr':
-                for i in range(n_chans):
-                    new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt[0], func[i])
-            elif func_name == 'neurogram_ft':
-                func = np.cumsum(func * (tt[0, 1] - tt[0, 0]), axis=-1)
-                for i in range(n_chans):
-                    func_interp = np.interp(np.linspace(0, 400, 400_000 + 1), tt[0], func[i])
-                    new_ft_arr[i] = np.diff(func_interp, axis=-1)
+            tt_mr = np.array(mat['t_mr'][0][0])
+            tt_ft = np.array(mat['t_ft'][0][0])
+            n_chans_mr = func_mr.shape[0]
+            n_chans_ft = func_ft.shape[0]
+            new_mr_arr = np.zeros((n_chans_mr, 400_000))
+            new_ft_arr = np.zeros((n_chans_ft, 400_000))
+            # T_end = tt[0, -1]
+
+            for i in range(n_chans_mr):
+                new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt_mr[0], func_mr[i])
+
+            func_ft = np.cumsum(func_ft * (tt_ft[0, 1] - tt_ft[0, 0]), axis=-1)
+            for i in range(n_chans_ft):
+                func_interp = np.interp(np.linspace(0, 400, 400_000 + 1), tt_ft[0], func_ft[i])
+                new_ft_arr[i] = np.diff(func_interp, axis=-1)
 
             func_dict = {'neurogram_mr': new_mr_arr,
                          'neurogram_ft': new_ft_arr}
@@ -40,6 +44,59 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
 
             func = func_dict[func_name]
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
+
+    elif 'asr_models' in str(function_path_without_suffix):
+        if 'whisper_all_no_reshape' in str(function_path_without_suffix):
+            if 'logmel' in str(function_path_without_suffix):
+                func = np.load(function_path_without_suffix.with_suffix(".npy"))
+            else:
+                func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+                func = func_dict[func_name]
+            T_max = 401
+            s_num = T_max * 1000
+            if 'conv' in func_name or func.shape[0] != 1 or 'logmel' in str(function_path_without_suffix):
+                place_holder = np.zeros((func.shape[1], s_num))
+            else:
+                place_holder = np.zeros((func.shape[2], s_num))
+            for j in range(place_holder.shape[0]):
+                if 'decoder' in func_name and 'encoder_attn.k' not in func_name and 'encoder_attn.v' not in func_name:
+                    time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                    time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                    time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                    for i in range(len(time_stamps_samples) - 1):
+                        start_idx = time_stamps_samples[i]
+                        end_idx = time_stamps_samples[i + 1]
+                        if start_idx < s_num:
+                            if 'conv' in func_name:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, j, i])
+                            elif func.shape[0] != 1:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[i, j])
+                            else:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, i, j])
+                else:    
+                    if 'conv' in func_name or 'logmel' in str(function_path_without_suffix):
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[2]), func[0, j, :])
+                    elif func.shape[0] != 1:
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
+                    else:
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
+            
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
+            else:
+                func = place_holder[nn_neuron, :400_000]
+            func_name += f'_{str(nn_neuron)}'
+
+            # import ipdb;ipdb.set_trace()
+
+        else:
+            func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+            func = func_dict[func_name]
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(func[:, :400_000], axis=0) #func[nn_neuron]
+            else:
+                func = func[nn_neuron, :400_000]
+            func_name += f'_{str(nn_neuron)}'
 
     else:
         if not function_path_without_suffix.with_suffix(".npz").exists():
@@ -55,9 +112,16 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
 
         if func_name in ('STL', 'IL', 'LTL'):
             func = func.T
+        elif func_name in ('d_STL', 'd_IL', 'd_LTL'):
+            func = np.convolve(func_dict[func_name[2:]].T.flatten(), [-1, 1], 'same')
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
+        func_name = f'd{n_derivatives}_' + func_name
+
+    if n_hamming > 1:
+        func = np.convolve(func, np.hamming(n_hamming), 'same')  # hamming conv (effectively gaussian smoothing)
+        func_name = f'ham{n_hamming}_' + func_name
 
     return Function(
         name=func_name,
@@ -75,3 +139,10 @@ def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
         func_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
         func_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
     np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)
+
+def load_function_pre(function_path_without_suffix: path_type, func_name: str):
+    function_path_without_suffix = Path(function_path_without_suffix)
+    func: NDArray
+    func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
+    func = func_dict[func_name]
+    return func

@@ -103,26 +103,26 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #        # andy is using:
         #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
         #
-        #        if mri_structural_type == 'T1':
-        #            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                copy=True,
-        #                overwrite=True,
-        #                show=True,
-        #            )
-        #
-        #            mne.bem.make_scalp_surfaces(
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                no_decimate=True,
-        #                force=True,
-        #                overwrite=True,
-        #            )
-        #
-        #        elif mri_structural_type == 'Flash':
-        #            # mne.bem.make_flash_bem().
-        #            print("Flash not yet implemented.")
+        if mri_structural_type == 'T1':
+            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                copy=True,
+                overwrite=True,
+                show=True,
+            )
+
+            mne.bem.make_scalp_surfaces(
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                no_decimate=True,
+                force=True,
+                overwrite=True,
+            )
+
+        elif mri_structural_type == 'Flash':
+            # mne.bem.make_flash_bem().
+            print("Flash not yet implemented.")
 
         # produce the source space (downsampled version of the cortical surface in Freesurfer), which
         # will be saved in a file ending in *-src.fif
@@ -146,17 +146,17 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     #    mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
 
     ### #Computing the actual BEM solution
-    for participant in list_of_participants:
-        # conductivity = (0.3)  # for single layer
-        conductivity = (0.3, 0.006, 0.3)  # for three layers
-        # Note that only ico=4 is required here: Https://mail.nmr.mgh.harvard.edu/pipermail//mne_analysis/2012-June/001102.html
-        model = mne.make_bem_model(subject=participant, ico=4,
-                                   conductivity=conductivity,
-                                   subjects_dir=mri_structurals_directory)
-        bem_sol = mne.make_bem_solution(model)
-        output_filename = participant + '-5120-5120-5120-bem-sol.fif'
-        mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
-                                        output_filename), bem_sol, overwrite=True)
+    # for participant in list_of_participants:
+    #     # conductivity = (0.3)  # for single layer
+    #     conductivity = (0.3, 0.006, 0.3)  # for three layers
+    #     # Note that only ico=4 is required here: Https://mail.nmr.mgh.harvard.edu/pipermail//mne_analysis/2012-June/001102.html
+    #     model = mne.make_bem_model(subject=participant, ico=4,
+    #                                conductivity=conductivity,
+    #                                subjects_dir=mri_structurals_directory)
+    #     bem_sol = mne.make_bem_solution(model)
+    #     output_filename = participant + '-5120-5120-5120-bem-sol.fif'
+    #     mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
+    #                                     output_filename), bem_sol, overwrite=True)
 
 def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
@@ -307,6 +307,81 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
     for participant in list_of_participants:
 
+        # First compute morph matrices for participant
+        if config['eeg'] == False and config['meg']== True:
+
+            morphmap_filename = Path(intrim_preprocessing_directory_name,
+                            "4_hexel_current_reconstruction",
+                            "morph_maps",
+                            participant + "_fsaverage_morph_megonly.h5")
+                
+            if not path.isfile(morphmap_filename):
+                
+                # read the src space not from the original but from the version in fwd or
+                # inv, incase any vertices have been removed due to proximity to the scalp
+                # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
+                fwd = mne.read_forward_solution(Path(
+                    intrim_preprocessing_directory_name,
+                    "4_hexel_current_reconstruction",
+                    "forward_sol_files",
+                    participant + '-fwd-megonly.fif'))
+                src_from = fwd['src']
+                
+                src_to = mne.read_source_spaces(Path(
+                    intrim_preprocessing_directory_name,
+                    "4_hexel_current_reconstruction",
+                    "src_files",
+                    'fsaverage_ico5-src.fif'))
+
+                morph = mne.compute_source_morph(
+                    src_from,
+                    subject_from=participant,
+                    subject_to="fsaverage",
+                    src_to=src_to,
+                    subjects_dir=mri_structurals_directory,
+                )
+                morph.save(morphmap_filename)
+            else:
+                print("Morph maps already created")
+
+        elif config['eeg'] == True and config['meg']== False:
+        
+            morphmap_filename = Path(intrim_preprocessing_directory_name,
+                            "4_hexel_current_reconstruction",
+                            "morph_maps",
+                            participant + "_fsaverage_morph_eegonly.h5")
+                
+            if not path.isfile(morphmap_filename):
+                
+                # read the src space not from the original but from the version in fwd or
+                # inv, incase any vertices have been removed due to proximity to the scalp
+                # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
+                fwd = mne.read_forward_solution(Path(
+                    intrim_preprocessing_directory_name,
+                    "4_hexel_current_reconstruction",
+                    "forward_sol_files",
+                    participant + '-fwd-eegonly.fif'))
+                src_from = fwd['src']
+                
+                src_to = mne.read_source_spaces(Path(
+                    intrim_preprocessing_directory_name,
+                    "4_hexel_current_reconstruction",
+                    "src_files",
+                    'fsaverage_ico5-src.fif'))
+
+                morph = mne.compute_source_morph(
+                    src_from,
+                    subject_from=participant,
+                    subject_to="fsaverage",
+                    src_to=src_to,
+                    subjects_dir=mri_structurals_directory,
+                )
+                morph.save(morphmap_filename)
+            else:
+                print("Morph maps already created")            
+        
+        else:
+
         morphmap_filename = Path(morph_map_dir, participant + "_fsaverage_morph.h5")
 
         # First compute morph matrices for participant
@@ -324,16 +399,16 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 src_dir,
                 'fsaverage_ico5-src.fif'))
 
-            morph = mne.compute_source_morph(
-                src_from,
-                subject_from=participant,
-                subject_to="fsaverage",
-                src_to=src_to,
-                subjects_dir=mri_structurals_directory,
-            )
-            morph.save(morphmap_filename)
-        else:
-            print("Morph maps already created")
+                morph = mne.compute_source_morph(
+                    src_from,
+                    subject_from=participant,
+                    subject_to="fsaverage",
+                    src_to=src_to,
+                    subjects_dir=mri_structurals_directory,
+                )
+                morph.save(morphmap_filename)
+            else:
+                print("Morph maps already created")
 
 
 def average_participants_hexel_currents(participants, inputstream):
