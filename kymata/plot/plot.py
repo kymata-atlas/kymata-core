@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple, Any
+from typing import Optional, Sequence, NamedTuple, Any, Type
 from warnings import warn
 
 import numpy as np
@@ -62,7 +62,7 @@ class _MosaicSpec:
             figsize=self.fig_size)
 
 
-def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
+def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: Type[ExpressionSet]) -> _MosaicSpec:
     # Set defaults:
     if show_minimap:
         width_ratios = [1, 3]
@@ -85,10 +85,18 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool) -> _MosaicSpec:
 
     if paired_axes:
         if show_minimap:
-            spec = [
-                [_AxName.minimap_top,    _AxName.top],
-                [_AxName.minimap_bottom, _AxName.bottom],
-            ]
+            if expression_set_type == HexelExpressionSet:
+                spec = [
+                    [_AxName.minimap_top,    _AxName.top],
+                    [_AxName.minimap_bottom, _AxName.bottom],
+                ]
+            elif expression_set_type == SensorExpressionSet:
+                spec = [
+                    [_AxName.minimap_main,    _AxName.top],
+                    [_AxName.minimap_main, _AxName.bottom],
+                ]
+            else:
+                raise NotImplementedError()
         else:
             spec = [
                 [_AxName.top],
@@ -190,7 +198,7 @@ sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
 
 
 def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp: float):
-    raise NotImplementedError()
+    raise NotImplementedError("Minimap not yet implemented for sensor data")
 
 
 def _plot_minimap_hexel(expression_set: HexelExpressionSet,
@@ -349,7 +357,7 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
-    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap)
+    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap, expression_set_type=type(expression_set))
 
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
