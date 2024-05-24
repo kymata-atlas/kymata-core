@@ -12,20 +12,19 @@ import numpy as np
 from matplotlib import pyplot
 from matplotlib.colors import to_hex, LinearSegmentedColormap
 from matplotlib.lines import Line2D
-from matplotlib.ticker import FixedLocator
 from matplotlib.patches import Patch
+from matplotlib.ticker import FixedLocator
 from mne import SourceEstimate
-from mne.viz import close_all_3d_figures
 from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, DIM_HEXEL
-from kymata.math.p_values import p_to_logp
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
+    DIM_HEXEL
 from kymata.entities.functions import Function
+from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
-
 
 transparent = (0, 0, 0, 0)
 
@@ -238,7 +237,9 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
         smoothing_steps=2,
         background="white",
         spacing="ico5",
-        brain_kwargs={"offscreen": True},
+        brain_kwargs={
+            "offscreen": True,  # offscreen here appears to not actually do anything in mne
+        },
         time_viewer=False,
         colorbar=False,
         transparent=False,
@@ -248,14 +249,16 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
     )
     # Plot left view
     lh_brain = stc.plot(hemi="lh", **plot_kwargs)
+    lh_brain_fig = pyplot.gcf()
     lh_minimap_axis.imshow(lh_brain.screenshot())
     hide_axes(lh_minimap_axis)
+    pyplot.close(lh_brain_fig)
     # Plot right view
     rh_brain = stc.plot(hemi="rh", **plot_kwargs)
+    rh_brain_fig = pyplot.gcf()
     rh_minimap_axis.imshow(rh_brain.screenshot())
     hide_axes(rh_minimap_axis)
-
-    close_all_3d_figures()
+    pyplot.close(rh_brain_fig)
 
 
 def hide_axes(axes: pyplot.Axes):
@@ -283,7 +286,7 @@ def expression_plot(
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
-):
+) -> pyplot.Figure:
     """
     Generates an expression plot
 
@@ -424,7 +427,7 @@ def expression_plot(
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
 
-    # format shared axis qualities
+    # Format shared axis qualities
     for ax in expression_axes_list:
         xlims = _get_best_xlims(xlims, data_x_min, data_x_max)
         ylim = _get_best_ylim(ylim, data_y_min)
@@ -445,9 +448,7 @@ def expression_plot(
         ax.set_yticklabels(pval_labels)
 
     # Plot minimap
-
     if minimap:
-
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(expression_set, minimap_axis=axes[_AxName.minimap_main],
                                  colors=color, alpha_logp=sidak_corrected_alpha)
@@ -461,7 +462,7 @@ def expression_plot(
         else:
             raise NotImplementedError()
 
-    # format one-off axis qualities
+    # Format one-off axis qualities
     if paired_axes:
         top_ax = axes[_AxName.top]
         bottom_ax = axes[_AxName.bottom]
@@ -525,7 +526,8 @@ def expression_plot(
             raise FileExistsError(save_to)
 
     pyplot.show()
-    pyplot.close()
+
+    return fig
 
 
 def _get_best_xlims(xlims, data_x_min, data_x_max):
