@@ -46,15 +46,12 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
             if function_path_without_suffix.with_suffix(".mat").exists():
                 convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix)
             else:
-                raise FileNotFoundError(function_path_without_suffix.with_suffix(".npz"))
+                raise FileNotFoundError(f"{function_path_without_suffix}: neither .mat nor .npz found.")
 
         assert function_path_without_suffix.with_suffix(".npz").exists()
 
         func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
         func = np.array(func_dict[func_name])
-
-        if func_name in ('STL', 'IL', 'LTL'):
-            func = func.T
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
