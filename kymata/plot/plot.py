@@ -15,6 +15,7 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator
 from matplotlib.patches import Patch
 from mne import SourceEstimate
+from mne.viz import close_all_3d_figures
 from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
@@ -245,6 +246,8 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
     rh_brain = stc.plot(hemi="rh", **plot_kwargs)
     rh_minimap_axis.imshow(rh_brain.screenshot())
     hide_axes(rh_minimap_axis)
+
+    close_all_3d_figures()
 
 
 def hide_axes(axes: pyplot.Axes):
