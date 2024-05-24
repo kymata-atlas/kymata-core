@@ -89,6 +89,7 @@ def expression_plot(
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
+        legend_disp: dict[str, str] = None,
 ):
     """
     Generates an expression plot
@@ -113,7 +114,7 @@ def expression_plot(
     elif isinstance(color, str):
         # Single string specified: use all that colour
         color = {f: color for f in show_only}
-    elif isinstance(color, str):
+    elif isinstance(color, list):
         # List specified, then pair up in order
         assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
@@ -174,8 +175,13 @@ def expression_plot(
     data_y_min             = np.Inf
     for function in show_only:
 
-        custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
-        custom_labels.append(function)
+        if function in legend_disp.keys():
+            if legend_disp[function] not in custom_labels:
+                custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
+                custom_labels.append(legend_disp[function])
+        else:
+            custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
+            custom_labels.append(function)
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
@@ -418,3 +424,8 @@ def plot_top_five_channels_of_gridsearch(
 
     pyplot.clf()
     pyplot.close()
+
+
+def lengend_display_dict(functions: list[str], disp_name) -> dict[str, str]:
+
+    return {function: disp_name for function in functions}
