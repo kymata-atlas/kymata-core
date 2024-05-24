@@ -1,6 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Ignore demos folder when calculating the Github language statistics
+# Ignore demos when calculating the Github language statistics
+*.ipynb linguist-vendored
 demos/** linguist-vendored
 kymata/ippm/hyperparameter_tuning.ipynb -linguist-vendored
