@@ -17,6 +17,7 @@ def main():
                           )
 
     fig.show()
+    fig.savefig("~/Desktop/test.png")
 
 
 if __name__ == '__main__':
