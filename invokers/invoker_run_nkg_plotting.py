@@ -1,8 +1,6 @@
 from pathlib import Path
 from os import path
 
-from matplotlib import pyplot
-
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot
 
