@@ -2,6 +2,6 @@
 * text=auto
 
 # Ignore demos when calculating the Github language statistics
-*.ipynb linguist-vendored
+**/*.ipynb linguist-vendored
 demos/** linguist-vendored
 kymata/ippm/hyperparameter_tuning.ipynb -linguist-vendored
