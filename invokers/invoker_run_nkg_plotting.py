@@ -17,7 +17,7 @@ def main():
                           )
 
     fig.show()
-    fig.savefig("~/Desktop/test.png")
+    fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
 
 
 if __name__ == '__main__':
