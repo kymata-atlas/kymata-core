@@ -6,11 +6,11 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 32
+    layer = 34
 
     neuron = 1280
 
-    thres = 20
+    thres = 15
 
     size = 'large'
 
@@ -20,7 +20,8 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+    # log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_{size}_encoder_log/'
 
     for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
@@ -84,7 +85,7 @@ def asr_models_loop_full():
     plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_decoder_{size}_colour_layer.png', dpi=600)
+    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/ru_whisper_decoder_{size}_colour_layer.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
