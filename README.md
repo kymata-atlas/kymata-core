@@ -1,107 +1,118 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
 
-# The Kymata Toolbox
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/othneildrew/Best-README-Template">
+    <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="300" height="169">
+  </a>
 
-This package forms part of the Kymata Atlas codebase.
-Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
+  <h3 align="center">The Kymata Toolbox</h3>
 
-## Table of contents
+  <p align="center">
+    Core functionality of the Kymata Atlas codebase.
+    <br />
+    <a href="#xxx"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="#About The Project">Overview</a>
+    ·
+    <a href="#Getting Started">Setup</a>
+    ·
+    <a href="#Citing the Toolbox">Citing</a>
+    ·
+    <a href="#Licence">Licence</a>
 
-- [Analysing a dataset](#analysing-a-dataset-with-kymata)
-  1. [Locating your raw EMEG dataset](#1-locate-your-raw-emeg-dataset)
-  2. [Preprocess the data](#2-preprocess-the-data)
-  3. [Gridsearch](#3-run-the-gridsearch)
-  4. [Plotting](#4-plot-the-results)
-  5. [IPPM](#5-visualise-processing-pathways)
-- [Installing](#installing)
+  </p>
+</div>
 
-## Analysing a dataset with Kymata
+## About The Project
 
-### 1. Locate your raw EMEG dataset
+[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-You'll need the following files:
+The Kymata Atlas is xxx for xxx. It is maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
 
-- <participant_name>_run1_raw.fif
-- <participant_name>_recording_config.yaml
+The codebase is xxx for xxx to ensure the transparency of the results in the Kymata Atlas.
 
-### 2. Preprocess the data
+The core pipeline includes:
+* Preprocessing
+* The standard Kymata gridsearch; the creation of `.nkg` files
+* Information Processing Pathway Map generation (offline and )
+* Plotting functionality
 
-The repository holds the Kymata preprocessing code that runs on the MRC-CBU HPC system.
+We will
 
-This code comprises the 'Kymata back-end', including preprocessing steps, gridsearch procedures, expression plotting and IPPM generation.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Run the following invokers from `invokers/` in order:
+<!-- GETTING STARTED -->
+## Getting Started
 
-- `invoker_run_data_cleansing.py`
-  - This does:
-    1. first-pass filtering 
-    2. maxfiltering
-    3. second-pass filtering
-    4. eog removal
-- `invoker_create_trialwise_data.py`
-  - This does:
-    1. Splits the data into trials
-  - **This is all you need for sensor-space gridsearch.**
-- `invoker_run_hexel_current_estimation.py`
-- `invoker_estimate_noise_covariance.py`
-  - This is only necessary if running the gridsearch in source space (hexels).
+This is an example of how you may give instructions on setting up your project locally.
+To get a local copy up and running follow these simple example steps.
 
-### 3. Run the gridsearch
+### Prerequisites
 
-- `run_gridsearch.py`
-  - This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_load.ipynb`).
+This is an example of how to list things you need to use the software and how to install them.
 
-#### Doing this at the CBU
+_Python_ 
 
-An easier way to do this (see [Troubleshooting](docs/troubleshooting_cbu.md)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
-Either run it locally with `./submit_gridsearch.sh`, or run it on the CBU queue with `sbatch submit_gridsearch.sh`.
+  Confirm you have the correct version of Python installed. Type
+   ```sh
+   $ pyenv versions
+   ```
+   This should confirm that python 3.11 or above is installed. If it isn't already there,
+   install it using `pyenv install`. You should be able to confirm
+   you are using the correct version using
+   ```sh
+   $ python -V
+   ```
+_Poetry_ 
 
-### 4. Plot the results
+  XYZ
+  see  [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer) for more details.
 
-- `invoker_run_nkg_plotting.py`
+### Installation
 
-See also `demos/demo_plotting.ipynb`.
+_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
 
-### 5. Visualise processing pathways
+1. clone this repository:
+   ```sh
+   $ git clone https://github.com/your_username_/Project-Name.git
+   ```
+3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
+   type:
+   ```sh
+   $ poetry install
+   ```
+   to load the pakages needed.
 
-See `demos/demo_ippm.ipynb`.
+4. At this point, you should be able to either run the xx from the terminal
+   ```sh
+   $ poetry run __init__.py
+   ```
+   or activate in this environment in an IDE such as PyCharm.
 
-## Installing
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Getting the toolbox
+<!-- USAGE EXAMPLES -->
+## Usage
 
-Clone this repository!
+Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-### Setting up to run with `poetry`
+_For more examples, please refer to the [Documentation](https://example.com)_
 
-First, confirm you have the correct version of Python installed. Navigate to the root directory. Type
-```
-$ pyenv versions
-```
-This should confirm that python 3.11 or above is installed. If it isn't already there,
-install it using `pyenv install`. You should be able to confirm
-you are using the correct version using 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```
-python -V
-```
-To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
-type:
-```
-$ poetry install
-```
-to load the pakages needed.
+## Citing the Toolbox
 
-At this point, you should be able to either run the xx from the terminal
-```
-$ poetry run __init__.py
-```
-or activate in this environment in an IDE such as PyCharm.
+Please use the following xxx in all citations: 
 
-### Run tests
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-To run the tests, run:
-```
-$ poetry run pytest
-```
+<!-- LICENSE -->
+## Licence
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>

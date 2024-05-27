@@ -39,16 +39,6 @@ To run the tests, run:
 $ poetry run pytest
 ```
 
-## Table of contents
-
-- [Analysing a dataset](#analysing-a-dataset-with-kymata)
-  1. [Locating your raw EMEG dataset](#1-locate-your-raw-emeg-dataset)
-  2. [Preprocess the data](#2-preprocess-the-data)
-  3. [Gridsearch](#3-run-the-gridsearch)
-  4. [Plotting](#4-plot-the-results)
-  5. [IPPM](#5-visualise-processing-pathways)
-- [Installing](#installing)
-
 ## Analysing a dataset with Kymata
 
 ### 1. Locate your raw EMEG dataset
