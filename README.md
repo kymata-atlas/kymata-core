@@ -5,7 +5,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="300" height="169">
+    <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
   </a>
 
   <h3 align="center">The Kymata Toolbox</h3>
