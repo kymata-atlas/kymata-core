@@ -29,11 +29,13 @@
 
 ## About The Project
 
-The Kymata Atlas is xxx for xxx, including both standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org).
+The _Kymata Toolbox_ is the core codebase underlying the _Kymata Atlas_, a repository of human Information Processing
+Pathway Maps ['IPPMs'] of the human brain[^1]. The codebase covers is used to generate these maps, including both
+standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org).
 
 The core pipeline includes:
-* Preprocessing
-* Both standard and experimental Kymata gridsearch approaches;
+* Preprocessing of electrophysiological data (MEG, EEG, ECoG)
+* Standard and experimental Kymata gridsearch approaches;
 * Information Processing Pathway Map generation (offline generation, and evaluation)
 * Plotting functionality
 
@@ -45,14 +47,11 @@ issues are xxx, we are unable to prioritise xxx or xxx (please see our code of c
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+This provides an overview of how to set the Kymata Toolbox locally.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-
-_Python_ 
+* **Python**
 
    Confirm you have the correct version of Python installed. Type
    ```sh
@@ -64,10 +63,9 @@ _Python_
    ```sh
    $ python -V
    ```
-_Poetry_ 
+* **Poetry**
 
-  XYZ
-  See  [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer) for more details.
+  This package uses [Poetry](https://python-poetry.org/) to manage packages. See [python-poetry.org](https://python-poetry.org/docs/#installing-with-the-official-installer) for installation instructions.
 
 ### Installation
 
@@ -105,6 +103,8 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 Please use the following xxx in all citations: 
 
+The Kymata Toolbox (xxxx) xxxxx
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- LICENSE -->
@@ -113,3 +113,10 @@ Please use the following xxx in all citations:
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- LICENSE -->
+## References
+
+[^1]: Thwaites et al (2024) _Information Processing Pathway Maps_ XYZ
+[^2]: Thwaites et al (2024) _The Kymata Atlas_ XYZ
