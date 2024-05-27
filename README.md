@@ -39,7 +39,7 @@ The core pipeline includes:
 * Information Processing Pathway Map generation (offline generation, and evaluation)
 * Plotting functionality
 
-The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas. While comments and
+The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas[^2]. While comments and
 issues are xxx, we are unable to prioritise xxx or xxx (please see our code of conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -103,7 +103,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 Please use the following xxx in all citations: 
 
-The Kymata Toolbox (xxxx) xxxxx
+> Thwaites, Wingfield, Parish, Yang, Lakra, Zhang (2024) _The Kymata Toolbox_ XYZ
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
