@@ -4,7 +4,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/othneildrew/Best-README-Template">
+  <a href="https://github.com/kymata-atlas/kymata-toolbox">
     <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
   </a>
 
