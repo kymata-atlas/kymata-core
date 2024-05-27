@@ -30,7 +30,7 @@
 ## About The Project
 
 The _Kymata Toolbox_ is the core codebase underlying the _Kymata Atlas_, a repository of human Information Processing
-Pathway Maps ['IPPMs'] of the human brain[^1]. The codebase covers is used to generate these maps, including both
+Pathway Maps ['IPPMs'] of the human brain.[^1] The codebase covers is used to generate these maps, including both
 standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org).
 
 The core pipeline includes:
@@ -39,7 +39,7 @@ The core pipeline includes:
 * Information Processing Pathway Map generation (offline generation, and evaluation)
 * Plotting functionality
 
-The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas[^2]. While comments and
+The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas.[^2] While comments and
 issues are xxx, we are unable to prioritise xxx or xxx (please see our code of conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
