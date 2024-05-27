@@ -29,18 +29,16 @@
 
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
-The Kymata Atlas is xxx for xxx, including both standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org)).
+The Kymata Atlas is xxx for xxx, including both standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org).
 
 The core pipeline includes:
 * Preprocessing
-* The standard Kymata gridsearch; the creation of `.nkg` files
-* Information Processing Pathway Map generation (offline and )
+* Both standard and experimental Kymata gridsearch approaches;
+* Information Processing Pathway Map generation (offline generation, and evaluation)
 * Plotting functionality
 
-The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas. While we
-are happy for others to xxx, we are unable to prioritise xxx or xxx.
+The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas. While comments and
+issues are xxx, we are unable to prioritise xxx or xxx (please see our code of conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
