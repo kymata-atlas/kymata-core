@@ -11,7 +11,7 @@
   <h3 align="center">The Kymata Toolbox</h3>
 
   <p align="center">
-    Core functionality of the Kymata Atlas codebase.
+    Core functionality for the Kymata Atlas
     <br />
     <a href="#xxx"><strong>Explore the docs »</strong></a>
     <br />
@@ -31,9 +31,7 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-The Kymata Atlas is xxx for xxx. It is maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
-
-The codebase is xxx for xxx to ensure the transparency of the results in the Kymata Atlas.
+The Kymata Atlas is xxx for xxx, including both standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org)).
 
 The core pipeline includes:
 * Preprocessing
@@ -41,7 +39,8 @@ The core pipeline includes:
 * Information Processing Pathway Map generation (offline and )
 * Plotting functionality
 
-We will
+The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas. While we
+are happy for others to xxx, we are unable to prioritise xxx or xxx.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -57,7 +56,7 @@ This is an example of how to list things you need to use the software and how to
 
 _Python_ 
 
-  Confirm you have the correct version of Python installed. Type
+   Confirm you have the correct version of Python installed. Type
    ```sh
    $ pyenv versions
    ```
@@ -70,13 +69,13 @@ _Python_
 _Poetry_ 
 
   XYZ
-  see  [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer) for more details.
+  See  [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer) for more details.
 
 ### Installation
 
 _Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
 
-1. clone this repository:
+1. Clone this repository:
    ```sh
    $ git clone https://github.com/your_username_/Project-Name.git
    ```
@@ -113,6 +112,6 @@ Please use the following xxx in all citations:
 <!-- LICENSE -->
 ## Licence
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
