@@ -154,8 +154,7 @@ def main():
                     start_latency=args.start_latency,
                     plot_location=args.save_plot_location,
                     emeg_t_start=args.emeg_t_start,
-                    emeg_sample_rate=args.emeg_sample_rate,
-                    audio_shift_correction=args.audio_shift_correction,
+                    audio_shift_correction=audio_shift_correction,
                     overwrite=args.overwrite,
                 )
             else:
@@ -171,8 +170,7 @@ def main():
                 start_latency=args.start_latency,
                 plot_location=args.save_plot_location,
                 emeg_t_start=args.emeg_t_start,
-                emeg_sample_rate=args.emeg_sample_rate,
-                audio_shift_correction=args.audio_shift_correction,
+                audio_shift_correction=audio_shift_correction,
                 overwrite=args.overwrite,
                 )
 
