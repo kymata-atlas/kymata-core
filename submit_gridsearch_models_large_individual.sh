@@ -30,9 +30,9 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
+        --config 'dataset4.yaml' \
         --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/whisper_all_no_reshape_large_multi' \
-        --function-name 'model.encoder.layers.10.final_layer_norm' \
+        --function-name model.encoder.layers.10.final_layer_norm \
         --n-derangements 5 \
         --asr-option 'all' \
         --num-neurons 1280 \
@@ -42,4 +42,4 @@ apptainer exec \
   "
 
 # cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/
-# --function-name 'model.decoder.layers.15.final_layer_norm' \
+# --function-name model.decoder.layers.15.final_layer_norm \

@@ -132,7 +132,7 @@ def main():
         for nn_i in range(0, args.num_neurons):
             # func = load_function(Path(args.base_dir, args.function_path),
             func = load_function(args.function_path,
-                                func_name=args.function_name,
+                                func_name=args.function_name[0],
                                 nn_neuron=nn_i,
                                 )
         # func = load_function(args.function_path,
@@ -178,53 +178,59 @@ def main():
                 overwrite=args.overwrite,
                 )
 
+        if args.save_expression_set_location is not None:
+            save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, func.name + '_gridsearch.nkg'), overwrite=args.overwrite)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, func.name + '_gridsearch.png'), overwrite=args.overwrite)
+
     else:
 
-        # func = load_function(Path(args.base_dir, args.function_path),
-        func = load_function(args.function_path,
-                            func_name=args.function_name,
-                            nn_neuron='ave',
-                            )
-        
-        func = func.downsampled(args.downsample_rate)
+        combined_expression_set = None
 
-        channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
+        for function_name in args.function_name:
+            print(f"Running gridsearch on {function_name}")
+            function_values = load_function(Path(base_dir, args.function_path),
+                                            func_name=function_name,
+                                            bruce_neurons=(5, 10))
+            function_values = function_values.downsampled(args.downsample_rate)
 
-        es = do_gridsearch(
-                            emeg_values=emeg_values,
-                            channel_names=ch_names,
-                            channel_space=channel_space,
-                            function=func,
-                            seconds_per_split=args.seconds_per_split,
-                            n_derangements=args.n_derangements,
-                            n_splits=args.n_splits,
-                            n_reps=n_reps,
-                            start_latency=args.start_latency,
-                            plot_location=args.save_plot_location,
-                            emeg_t_start=args.emeg_t_start,
-                            emeg_sample_rate=args.emeg_sample_rate,
-                            audio_shift_correction=args.audio_shift_correction,
-                            overwrite=args.overwrite,
-                        )
+            es = do_gridsearch(
+                emeg_values=emeg_values,
+                channel_names=ch_names,
+                channel_space=channel_space,
+                function=function_values,
+                seconds_per_split=args.seconds_per_split,
+                n_derangements=args.n_derangements,
+                n_splits=args.n_splits,
+                n_reps=n_reps,
+                start_latency=args.start_latency,
+                plot_location=args.save_plot_location,
+                emeg_t_start=args.emeg_t_start,
+                audio_shift_correction=audio_shift_correction,
+                overwrite=args.overwrite,
+            )
 
-        if combined_expression_set is None:
-            combined_expression_set = es
+            if combined_expression_set is None:
+                combined_expression_set = es
+            else:
+                combined_expression_set += es
+
+        assert combined_expression_set is not None
+
+        if args.save_name is not None and len(args.save_name) > 0:
+            combined_names = args.save_name
+        elif len(args.function_name) > 2:
+            combined_names = f"{len(args.function_name)}_functions"
         else:
-            combined_expression_set += es
+            combined_names = "_+_".join(args.function_name)
 
-    assert combined_expression_set is not None
+        if args.save_expression_set_location is not None:
+            es_save_path = Path(args.save_expression_set_location, combined_names + '_gridsearch.nkg')
+            print(f"Saving expression set to {es_save_path!s}")
+            save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
-    if args.save_name is not None and len(args.save_name) > 0:
-        combined_names = args.save_name
-    elif len(args.function_name) > 2:
-        combined_names = f"{len(args.function_name)}_functions"
-    else:
-        combined_names = "_+_".join(args.function_name)
-
-    if args.save_expression_set_location is not None:
-        save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, func.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-
-    expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, func.name + '_gridsearch.png'), overwrite=args.overwrite)
+        fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
+        print(f"Saving expression plot to {fig_save_path!s}")
+        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
     print(f'Time taken for code to run: {time.time() - start:.4f} s')
 
