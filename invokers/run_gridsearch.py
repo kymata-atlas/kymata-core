@@ -141,8 +141,6 @@ def main():
         
             func = func.downsampled(args.downsample_rate)
 
-            channel_space = "source" if args.inverse_operator_dir is not None else "sensor"
-
             if nn_i == 0:
                 es = do_gridsearch(
                     emeg_values=emeg_values,

@@ -51,7 +51,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                 func = np.load(function_path_without_suffix.with_suffix(".npy"))
             else:
                 func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
-                import ipdb;ipdb.set_trace()
                 func = func_dict[func_name]
             T_max = 401
             s_num = T_max * 1000
