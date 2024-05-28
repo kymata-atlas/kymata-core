@@ -8,7 +8,7 @@ from kymata.entities.functions import Function
 from kymata.io.file import PathType
 
 
-def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201) -> Function:
+def load_function(function_path_without_suffix: PathType, func_name: str, n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
@@ -140,7 +140,7 @@ def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
         func_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
     np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)
 
-def load_function_pre(function_path_without_suffix: path_type, func_name: str):
+def load_function_pre(function_path_without_suffix: PathType, func_name: str):
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
