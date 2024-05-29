@@ -13,8 +13,6 @@ def main():
 
     if function_family_type == 'standard':
 
-        import ipdb;ipdb.set_trace()
-
         expression_data  = load_expression_set(Path( path_to_nkg_files, "combined_TVL_gridsearch.nkg"))
 
         fig = expression_plot(expression_data, color = {
