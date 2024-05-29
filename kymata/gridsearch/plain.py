@@ -23,7 +23,7 @@ def do_gridsearch(
         plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
         audio_shift_correction: float = 0.000_540_4,  # seconds/second
-        n_derangements: int = 1,
+        n_derangements: int = 5,
         seconds_per_split: float = 0.5,
         n_splits: int = 800,
         n_reps: int = 1,
