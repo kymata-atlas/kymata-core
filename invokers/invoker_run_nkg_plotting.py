@@ -13,26 +13,11 @@ def main():
 
     if function_family_type == 'standard':
 
-        expression_data  = load_expression_set(Path( path_to_nkg_files, "combined_TVL_gridsearch.nkg"))
+        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual/encoder/expression_set/participant_19/model.encoder.layers.10.final_layer_norm_1279_gridsearch.nkg')
 
-        fig = expression_plot(expression_data, color = {
-                             'IL': '#b11e34',
-                             'IL1': '#a201e9',
-                             'IL2': '#a201e9',
-                             'IL3': '#a201e9',
-                             'IL4': '#a201e9',
-                             'IL5': '#a201e9',
-                             'IL6': '#a201e9',
-                             'IL7': '#a201e9',
-                             'IL8': '#a201e9',
-                             'IL9': '#a201e9',
-                             'STL': '#d388b5'
-                           },
-                        minimap=True,
-                        ylim=-200)
+        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=False, ylim=-250)
 
-        fig.show()
-        fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
+        fig.savefig("expression_plot.png")
 
     elif function_family_type == 'ANN':
 

@@ -3,9 +3,9 @@ from kymata.io.nkg import load_expression_set
 from kymata.entities.expression import SensorExpressionSet
 from tqdm import tqdm
 
-path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual/encoder/expression_set/participant_01/model.encoder.layers.10.final_layer_norm_1279_gridsearch.nkg'
+path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual/encoder/expression_set/participant_05/model.encoder.layers.10.final_layer_norm_1279_gridsearch.nkg'
 expression_data  = load_expression_set(path_to_nkg_files)
-out_file = '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual_log/slurm_log_encoder_2.txt'
+out_file = '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual_log/slurm_log_encoder_7.txt'
 
 with open(out_file, 'w') as file:
     for func in tqdm(expression_data.functions):

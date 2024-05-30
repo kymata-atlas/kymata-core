@@ -310,7 +310,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
         # First compute morph matrices for participant
         if config['eeg'] == False and config['meg']== True:
 
-            morphmap_filename = Path(intrim_preprocessing_directory_name,
+            morphmap_filename = Path(interim_preprocessing_directory,
                             "4_hexel_current_reconstruction",
                             "morph_maps",
                             participant + "_fsaverage_morph_megonly.h5")
@@ -321,14 +321,14 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 # inv, incase any vertices have been removed due to proximity to the scalp
                 # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
                 fwd = mne.read_forward_solution(Path(
-                    intrim_preprocessing_directory_name,
+                    interim_preprocessing_directory,
                     "4_hexel_current_reconstruction",
                     "forward_sol_files",
                     participant + '-fwd-megonly.fif'))
                 src_from = fwd['src']
                 
                 src_to = mne.read_source_spaces(Path(
-                    intrim_preprocessing_directory_name,
+                    interim_preprocessing_directory,
                     "4_hexel_current_reconstruction",
                     "src_files",
                     'fsaverage_ico5-src.fif'))
@@ -346,7 +346,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
         elif config['eeg'] == True and config['meg']== False:
         
-            morphmap_filename = Path(intrim_preprocessing_directory_name,
+            morphmap_filename = Path(interim_preprocessing_directory,
                             "4_hexel_current_reconstruction",
                             "morph_maps",
                             participant + "_fsaverage_morph_eegonly.h5")
@@ -357,14 +357,14 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 # inv, incase any vertices have been removed due to proximity to the scalp
                 # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
                 fwd = mne.read_forward_solution(Path(
-                    intrim_preprocessing_directory_name,
+                    interim_preprocessing_directory,
                     "4_hexel_current_reconstruction",
                     "forward_sol_files",
                     participant + '-fwd-eegonly.fif'))
                 src_from = fwd['src']
                 
                 src_to = mne.read_source_spaces(Path(
-                    intrim_preprocessing_directory_name,
+                    interim_preprocessing_directory,
                     "4_hexel_current_reconstruction",
                     "src_files",
                     'fsaverage_ico5-src.fif'))
@@ -382,22 +382,22 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
         
         else:
 
-        morphmap_filename = Path(morph_map_dir, participant + "_fsaverage_morph.h5")
+            morphmap_filename = Path(morph_map_dir, participant + "_fsaverage_morph.h5")
 
-        # First compute morph matrices for participant
-        if not path.isfile(morphmap_filename):
-            
-            # read the src space not from the original but from the version in fwd or
-            # inv, incase any vertices have been removed due to proximity to the scalp
-            # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
-            fwd = mne.read_forward_solution(Path(
-                forward_sol_dir,
-                participant + '-fwd.fif'))
-            src_from = fwd['src']
-            
-            src_to = mne.read_source_spaces(Path(
-                src_dir,
-                'fsaverage_ico5-src.fif'))
+            # First compute morph matrices for participant
+            if not path.isfile(morphmap_filename):
+                
+                # read the src space not from the original but from the version in fwd or
+                # inv, incase any vertices have been removed due to proximity to the scalp
+                # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
+                fwd = mne.read_forward_solution(Path(
+                    forward_sol_dir,
+                    participant + '-fwd.fif'))
+                src_from = fwd['src']
+                
+                src_to = mne.read_source_spaces(Path(
+                    src_dir,
+                    'fsaverage_ico5-src.fif'))
 
                 morph = mne.compute_source_morph(
                     src_from,
