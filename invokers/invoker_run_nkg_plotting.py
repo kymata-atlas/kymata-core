@@ -2,20 +2,23 @@ from pathlib import Path
 from os import path
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot, lengend_display_dict
-from kymata.plot.color import constant_color_dict
+from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 
 def main():
     function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox", "kymata-toolbox-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
     if function_family_type == 'standard':
 
-        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/individual/encoder/expression_set/participant_19/model.encoder.layers.10.final_layer_norm_1279_gridsearch.nkg')
+        expression_data  = load_expression_set(Path(path_to_nkg_files, '11_functions_gridsearch.nkg'))
 
-        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=False, ylim=-250)
+        fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True, 
+                              color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
+                              | constant_color_dict(['IL'], 'red')
+                              | constant_color_dict(['STL'], 'pink'))
 
         fig.savefig("expression_plot.png")
 
