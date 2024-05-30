@@ -445,7 +445,7 @@ def create_trialwise_data(data_root_dir: PathType,
 
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
 
-    trialwise_sensorspace_dir = Path(data_root_dir, dataset_directory_name, "3_trialwise_sensorspace")
+    trialwise_sensorspace_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_trialwise_sensorspace")
     trialwise_sensorspace_dir.mkdir(exist_ok=True)
 
     evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
