@@ -160,7 +160,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
 
-            saved_cleaned_path = Path(cleaned_dir + participant + "_run" + str(run) + '_cleaned_raw.fif.gz')
+            saved_cleaned_path = Path(cleaned_dir, participant, "_run", str(run), '_cleaned_raw.fif.gz')
             
             if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
 
