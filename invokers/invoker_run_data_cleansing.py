@@ -16,7 +16,7 @@ def main(config_filename: str):
         list_of_participants=config['participants'],
         dataset_directory_name=config['dataset_directory_name'],
         n_runs=config['number_of_runs'],
-        emeg_machine_used_to_record_data=config['EMEG_machine_used_to_record_data'],
+        emeg_machine_used_to_record_data=config['emeg_machine_used_to_record_data'],
         skip_maxfilter_if_previous_runs_exist=config['skip_maxfilter_if_previous_runs_exist'],
         automatic_bad_channel_detection_requested=config['automatic_bad_channel_detection_requested'],
         supress_excessive_plots_and_prompts=config['supress_excessive_plots_and_prompts'],
