@@ -173,7 +173,6 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
 
                 # set filename. (Use .fif.gz extension to use gzip to compress)
                 saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
-                saved_maxfiltered_filename = data_root_dir + dataset_directory_name + '/interim_preprocessing_files/1_maxfiltered/' + participant + "_run" + str(
                     run) + '_raw_sss.fif'
 
                 # Load data
