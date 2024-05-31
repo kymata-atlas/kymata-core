@@ -18,8 +18,9 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
+    ch_names_path = Path(emeg_path.parent, "ch_names.npy")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
-        ch_names: list[str] = []
+        ch_names: list[str] = np.load(ch_names_path)
         emeg = np.load(emeg_path_npy)
     else:
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
@@ -36,12 +37,9 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
 
             else:
                 if invsol_npy_path is not None and Path(invsol_npy_path).exists():
-                    if isfile(emeg_path_npy):
-                        edat = np.load(emeg_path_npy)
-                    else:
-                        evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
-                        edat = evoked[0].data
-                        del evoked
+                    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
+                    edat = evoked[0].data
+                    del evoked
 
                     npy_invsol = np.load(invsol_npy_path)
                     emeg = np.matmul(npy_invsol, edat)
@@ -62,6 +60,8 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
             ch_names = evoked[0].ch_names
             if not isfile(emeg_path_npy):
                 np.save(emeg_path_npy, np.array(emeg, dtype=np.float16))
+            if not isfile(ch_names_path):
+                np.save(ch_names_path, ch_names)
             del evoked
     return emeg, ch_names
 
