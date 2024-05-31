@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
     parser.add_argument('--morph',                   action="store_true", help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.")
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif", help='inverse solution suffix')
+    parser.add_argument('--invop-morph-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv_participant_01_fsaverage_morph.npy", help='inverse solution suffix')
 
     parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
     parser.add_argument('--downsample-rate', type=int,   default=5, help='downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz')
@@ -95,6 +96,7 @@ def main():
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
     morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
+    invsol_npy_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "npy_invsol")
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
@@ -102,6 +104,9 @@ def main():
     print(f"Gridsearch in {channel_space} space")
     if args.morph:
         print("Morphing to common space")
+
+    t0 = time.time()
+
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                                    emeg_dir=emeg_path,
                                                    morph_dir=morph_dir
@@ -112,11 +117,17 @@ def main():
                                                    inverse_operator_dir=inverse_operator_dir
                                                                         if args.use_inverse_operator
                                                                         else None,
-                                                   inverse_operator_suffix= args.inverse_operator_suffix,
+                                                   inverse_operator_suffix=args.inverse_operator_suffix,
                                                    p_tshift=None,
                                                    snr=args.snr,
+                                                   old_morph=False,
+                                                   invsol_npy_dir=invsol_npy_dir,
+                                                   invsol_suffix=args.invop_morph_suffix,
+                                                   ch_names_path="/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/interim_preprocessing_files/4_hexel_current_reconstruction/npy_invsol/ch_names.npy",
                                                    )
 
+    print(f'Time to load emeg: {time.time() - t0:.4f}')
+    import sys; sys.stdout.flush()
 
     combined_expression_set = None
 
@@ -162,7 +173,10 @@ def main():
         print(f"Saving expression set to {es_save_path!s}")
         save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
-    fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
+    if args.single_participant_override is not None:
+        fig_save_path = Path(args.save_plot_location, combined_names + f'_gridsearch_{args.single_participant_override}_new.png')
+    else:
+        fig_save_path = Path(args.save_plot_location, combined_names + f'_gridsearch.png')
     print(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
