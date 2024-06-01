@@ -8,3 +8,23 @@
   --md-accent-fg-color--light: rgb(191, 176, 217);
   --md-accent-fg-color--dark:  rgb(128, 79, 214);
 }
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-width: 0;
+  border-left-width: 4px;
+}
+
+.md-typeset .admonition.notes,
+.md-typeset details {
+  border-color: rgb(227, 157, 95);
+}
+.md-typeset .notes > .admonition-title,
+.md-typeset .notes > summary {
+  background-color: rgb(238, 206, 178);
+  color: white;
+}
+.md-typeset .notes > .admonition-title::before,
+.md-typeset .notes > summary::before {
+  background-color: rgb(227, 157, 95);
+}

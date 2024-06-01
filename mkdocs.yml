@@ -37,13 +37,38 @@ nav:
   - getting-started.md
 - Code Reference:
   - reference.md
-- Sample Notebooks:
-  - reference.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kymata-atlas
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          show_root_full_path: true
+          options:
+            show_source: false
+            docstring_style: google
+            docstring_section_style: list
+            filters: [ "!^_" ]
+            heading_level: 2
+            inherited_members: true
+            merge_init_into_class: true
+            parameter_headings: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_root_full_path: true
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+
 
 markdown_extensions:
   - pymdownx.highlight:

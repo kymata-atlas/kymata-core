@@ -1,25 +1,11 @@
 # Code Reference
 
-The following references the core functionality of the Kymata codebase.
+## kymata
 
-## Commands
+::: kymata.plot.plot
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+::: kymata.gridsearch.plain
 
-## Project layout
+::: kymata.io.nkg
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
-
-
-## example codeblock
-
-``` py
-def example(sasas):
-	xasasda
-```
+::: kymata.io.config

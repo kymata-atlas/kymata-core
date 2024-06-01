@@ -71,6 +71,24 @@ def file_version(from_path_or_file: PathType | FileType) -> version.Version:
 
 
 def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet:
+    """
+    Loads an ExpressionSet from the specified path or file.
+
+    The function determines the type of ExpressionSet (HexelExpressionSet or SensorExpressionSet)
+    based on the data loaded from the provided path or file. It then constructs and returns an
+    instance of the appropriate ExpressionSet subclass.
+
+    Args:
+        from_path_or_file (PathType | FileType): The path or file from which to load the data.
+
+    Returns:
+        ExpressionSet: An instance of either HexelExpressionSet or SensorExpressionSet,
+                           depending on the type identifier in the data.
+
+    Raises:
+        KeyError: If required keys are missing in the data dictionary.
+        ValueError: If the type identifier is not recognized.
+    """
     _v, data_dict = _load_data(from_path_or_file)
 
     type_identifier = data_dict[_Keys.expressionset_type]
@@ -101,11 +119,25 @@ def save_expression_set(expression_set: ExpressionSet,
                         compression=ZIP_LZMA,
                         overwrite: bool = False):
     """
-    Save the ExpressionSet to a specified path or already open file.
+    Save the given ExpressionSet to a specified path or an already open file.
 
-    If an open file is supplied, it should be opened in "wb" mode.
+    This function saves the ExpressionSet data into a compressed file format.
+    If a file path is provided, it creates and writes to the file. If an open file is supplied,
+    it should be opened in "wb" mode. The overwrite flag is ignored if an open file is supplied.
 
-    overwrite flag is ignored if open file is supplied.
+    Args:
+        expression_set (ExpressionSet): The ExpressionSet object to be saved.
+        to_path_or_file (PathType | FileType): The path or open file where the ExpressionSet will be saved.
+        compression: The compression method to use (default is ZIP_LZMA).
+        overwrite (bool): If True, allows overwriting an existing file (default is False).
+
+    Raises:
+        FileExistsError: If the specified path already exists and overwrite is False.
+        TypeError: If the provided path or file type is invalid.
+
+    Notes:
+        - The compression parameter should be compatible with the `ZipFile` class.
+        - The function writes various metadata and data blocks in a structured format within the zip file.
     """
 
     if isinstance(to_path_or_file, str):
