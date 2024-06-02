@@ -20,9 +20,11 @@ w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
 
-data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+# data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
-dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
+# dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
+dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/audio/F00C_dataset3.wav', sr=16_000)
 
 # processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
 # inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
@@ -34,7 +36,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_large_multi_longform'
+func_name = 'ru_whisper_all_no_reshape_large_v2_longform'
 
 # (512, 1284889)    3200 Hz
 # (512, 642444) /2  1600
@@ -118,8 +120,8 @@ if whisper_outs:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -133,7 +135,8 @@ if whisper_outs:
   # inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
   
   # generated_ids = model.generate(**inputs, return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
-  generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+  # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
+  generated_ids = model.generate(**inputs, language='russian', return_token_timestamps=True, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
   # generated_ids = model.generate(**inputs, language='english', return_token_timestamps=False, return_segments=True, return_dict_in_generate=True, num_segment_frames=480_000)
   
   for i in range(len(generated_ids['segments'][0])):
@@ -144,7 +147,17 @@ if whisper_outs:
   for i in range(generated_ids['sequences'].shape[1]):
     text_with_time.append(f'{processor.batch_decode(generated_ids["sequences"][:,i], skip_special_tokens=False)[0]}: {timestamps[i]}')
 
-  import ipdb;ipdb.set_trace()
+  # import ipdb;ipdb.set_trace()
+
+  text_from_proj_out = processor.batch_decode(torch.argmax(features['proj_out'],dim=2)[0,:],skip_special_tokens=False)
+  text_from_id = []
+  for i in range(generated_ids['sequences'].shape[1]):
+    text_from_id.append(processor.batch_decode(generated_ids["sequences"][:,i], skip_special_tokens=False)[0])
+  indices_to_delete = [i for i, ele in enumerate(text_from_proj_out) if ele not in text_from_id]
+  mask = torch.ones(features['proj_out'].size(1), dtype=torch.bool)
+  mask[indices_to_delete] = False
+  for key in features.keys():
+    features[key] = features[key][:, mask, :]
 
   end_time = time.time()
   execution_time = end_time - start_time
@@ -180,7 +193,6 @@ if whisper_outs and save_outs:
     plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
     plt.close()
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
-    text = "\n".join(text)
     with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
       file.write(text)
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt"):
