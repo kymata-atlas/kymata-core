@@ -18,7 +18,8 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
-    ch_names_path = Path(emeg_path.parent, "ch_names.npy")
+    if inverse_operator is None:
+        ch_names_path = Path(emeg_path.parent, "ch_names.npy")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
         ch_names: list[str] = np.load(ch_names_path)
         emeg = np.load(emeg_path_npy)
