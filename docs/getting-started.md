@@ -17,7 +17,7 @@ install it using `pyenv install`. You should be able to confirm
 you are using the correct version using 
 
 ```
-python -V
+$ python -V
 ```
 To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
 type:
@@ -27,7 +27,7 @@ $ poetry install
 to load the pakages needed.
 
 At this point, you should be able to either run the xx from the terminal
-```
+````
 $ poetry run __init__.py
 ```
 or activate in this environment in an IDE such as PyCharm.

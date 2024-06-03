@@ -20,11 +20,19 @@
   border-color: rgb(227, 157, 95);
 }
 .md-typeset .notes > .admonition-title,
-.md-typeset .notes > summary {
+.md-typeset .algorithm > .admonition-title,
+.md-typeset .analysis > .admonition-title,
+.md-typeset .notes > summary,
+.md-typeset .algorithm > summary,
+.md-typeset .analysis > summary{
   background-color: rgb(238, 206, 178);
   color: white;
 }
 .md-typeset .notes > .admonition-title::before,
-.md-typeset .notes > summary::before {
+.md-typeset .algorithm > .admonition-title::before,
+.md-typeset .analysis > .admonition-title::before,
+.md-typeset .notes > summary::before,
+.md-typeset .algorithm > summary::before,
+.md-typeset .analysis > summary::before{
   background-color: rgb(227, 157, 95);
 }

@@ -16,20 +16,16 @@ class IPPMPlotter(object):
              figheight: int=5,
              figwidth: int=10):
         """
-            Generates an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
+        Generates an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
-            Parameters
-            ----------
-                graph dictionary with keys as node names and values as Hexel objects.
-                    contains nodes as keys and magnitude, position, and incoming edges in the Hexel object.
-                colors dictionary with keys as node names and values as colors in hexadecimal.
-                    contains the color for each function. The nodes and edges are colored accordingly.
-                title string
-                    title of the plot
-                figheight int
-                    height
-                figwidth int
-                    width
+        Args:
+            graph (Dict[str, Node]): Dictionary with keys as node names and values as Hexel objects.
+                Contains nodes as keys and magnitude, position, and incoming edges in the Hexel object.
+            colors (Dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
+                Contains the color for each function. The nodes and edges are colored accordingly.
+            title (str): Title of the plot.
+            figheight (int, optional): Height of the plot. Defaults to 5.
+            figwidth (int, optional): Width of the plot. Defaults to 10.
         """
         # first lets aggregate all of the information.
         hexel_x = [_ for _ in range(len(graph.keys()))]                    # x coordinates for nodes e.g., (x, y) = (hexel_x[i], hexel_y[i])
@@ -88,21 +84,18 @@ class IPPMPlotter(object):
 
     def _make_bspline_paths(self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
         """
-            Given a list of hexel positions pairs, return a list of
-            b-splines. First, find the control points, and second
-            create the b-splines from these control points.
+        Given a list of hexel positions pairs, return a list of
+        b-splines. First, find the control points, and second
+        create the b-splines from these control points.
 
-            Parameters
-            ----------
-                hexel_coordinate_pairs a list of a list of np arrays
-                    each list contains the x-axis values and y-axis values for the start and end of a BSPpline.
-                    E.g., [(0, 1), (1, 0)]
-            
-            Returns
-            -------
-                a list of a list of np arrays. Each list contains two np.arrays. The first np.array contains the x-axis points and the second one
-                contains the y-axis points. Together, they define a BSpline. Thus, it is a list of BSplines.
+        Args:
+            hexel_coordinate_pairs (List[List[Tuple[float, float]]]): Each list contains the x-axis values and y-axis values
+                for the start and end of a BSpline, e.g., [(0, 1), (1, 0)].
 
+        Returns:
+            List[List[np.array]]: A list of a list of np arrays. Each list contains two np.arrays. The first np.array contains
+                the x-axis points and the second one contains the y-axis points. Together, they define a BSpline. Thus, it is
+                a list of BSplines.
         """
         bspline_path_array = []
         for pair in hexel_coordinate_pairs:
@@ -124,23 +117,20 @@ class IPPMPlotter(object):
         return bspline_path_array
 
     def _make_bspline_ctr_points(self, start_and_end_node_coordinates: List[Tuple[float, float]]) -> np.array:
-
         """
-            Given the position of a start hexel and an end hexel, create
-            a set of 6 control points needed for a b-spline.
+        Given the position of a start hexel and an end hexel, create
+        a set of 6 control points needed for a b-spline.
 
-            The first one and last one is the position of a start hexel
-            and an end hexel themselves, and the intermediate four are
-            worked out using some simple rules.
+        The first one and last one is the position of a start hexel
+        and an end hexel themselves, and the intermediate four are
+        worked out using some simple rules.
 
-            Parameters
-            ----------
-                start_and_end_coordinates list containing the start and end coordinates for one edge.
-                    first tuple is start, second is end. First element in tuple is x coord, second is y coord.
-            
-            Returns
-            -------
-                np.array that has a list of tuples of coordinates. Each coordinate pair represents a control point.
+        Args:
+            start_and_end_node_coordinates (List[Tuple[float, float]]): List containing the start and end coordinates for one edge.
+                First tuple is start, second is end. First element in tuple is x coord, second is y coord.
+
+        Returns:
+            np.array: A list of tuples of coordinates. Each coordinate pair represents a control point.
         """
 
         start_X = start_and_end_node_coordinates[0][0]
@@ -171,22 +161,17 @@ class IPPMPlotter(object):
         return bspline_ctr_points
 
     def _make_bspline_path(self, ctr_points: np.array) -> List[np.array]:
-
         """
-            With an input of six control points, return an interpolated
-            b-spline path which corresponds to a curved edge from one node to another.
+        With an input of six control points, return an interpolated
+        b-spline path which corresponds to a curved edge from one node to another.
 
-            Parameters
-            ----------
-                ctr_points np.array
-                    2d np.array containing the coordinates of the center points. 
+        Args:
+            ctr_points (np.array): 2d np.array containing the coordinates of the center points.
 
-            Returns
-            -------
-                list of np.arrays that represent one BSpline path. The first list is a list of x-axis coordinates
-                the second is alist of y-axis coordinates.
+        Returns:
+            List[np.array]: A list of np.arrays that represent one BSpline path. The first list is a list of x-axis coordinates
+                the second is a list of y-axis coordinates.
         """
-
         x = ctr_points[:, 0]
         y = ctr_points[:, 1]
 
