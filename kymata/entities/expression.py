@@ -405,9 +405,9 @@ class HexelExpressionSet(ExpressionSet):
 
 class SensorExpressionSet(ExpressionSet):
     """
-    Brain data associated with expression of a single function in sensor space.
-    Includes lh, rh, flipped, non-flipped.
-    Data is log10 p-values
+    Brain data associated with the expression of a single function in sensor space.
+    Includes left hemisphere (lh), right hemisphere (rh), flipped, and non-flipped data.
+    Data is represented as log10 p-values.
     """
 
     def __init__(self,
@@ -419,7 +419,15 @@ class SensorExpressionSet(ExpressionSet):
                  # In general, we will combine flipped and non-flipped versions
                  data: _InputDataArray | Sequence[_InputDataArray],
                  ):
+        """
+        Initialize the SensorExpressionSet with function names, sensor metadata, latency information, and log p-value data.
 
+        Args:
+            functions (str | Sequence[str]): The names of the functions being evaluated.
+            sensors (Sequence[Sensor]): Metadata about the sensors used in the study.
+            latencies (Sequence[Latency]): Latency information corresponding to the data.
+            data (_InputDataArray | Sequence[_InputDataArray]): Log p-values representing the data.
+        """
         super().__init__(
             functions=functions,
             latencies=latencies,
@@ -433,12 +441,19 @@ class SensorExpressionSet(ExpressionSet):
 
     @property
     def sensors(self) -> NDArray[SensorDType]:
-        """Channel names."""
+        """
+        Get the sensor metadata.
+
+        Returns:
+            NDArray[SensorDType]: Array of sensor metadata.
+        """
         return self._channels[BLOCK_SCALP]
 
     @property
     def scalp(self) -> DataArray:
-        """Left-hemisphere data."""
+        """
+        Get the left-hemisphere data.
+        """
         return self._data[BLOCK_SCALP]
 
     def __eq__(self, other: SensorExpressionSet) -> bool:

@@ -13,3 +13,5 @@
 ::: kymata.ippm.plotter
 
 ::: kymata.ippm.builder
+
+::: kymata.entities.expression
