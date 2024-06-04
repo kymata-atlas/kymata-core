@@ -422,7 +422,8 @@ def _apply_inverse(
     )
 
 
-    T1 = time.time(); print(f'make invsol: {T1 - T0}')
+    T1 = time.time()
+    print(f'make invsol: {T1 - T0}')
 
     print(K.shape)
     print(evoked.data[sel].shape)
@@ -435,7 +436,8 @@ def _apply_inverse(
 
     # sol0 = sol
 
-    T0 = time.time(); print(f'app. invsol: {T0 - T1}')
+    T0 = time.time()
+    print(f'app. invsol: {T0 - T1}')
 
     # logger.info("    Computing residual...")
     # x̂(t) = G ĵ(t) = C ** 1/2 U Π w(t)
@@ -608,12 +610,14 @@ def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution
             % (stc.subject, morph.subject_from)
         )
 
-    T1 = time.time(); print(f'make invsol: {T1 - T0}')
+    T1 = time.time()
+    print(f'make invsol: {T1 - T0}')
     sys.stdout.flush()
     
     out = __mne_apply_morph_data(morph, stc)
 
-    T0 = time.time(); print(f'make invsol: {T0 - T1}')
+    T0 = time.time()
+    print(f'make invsol: {T0 - T1}')
     sys.stdout.flush()
 
 
@@ -670,7 +674,7 @@ def __mne_apply_morph_data(morph, stc_from):
     vol_src_offset = 2 if do_surf else 0
     from_surf_stop = sum(len(v) for v in stc_from.vertices[:vol_src_offset])
     to_surf_stop = sum(len(v) for v in morph.vertices_to[:vol_src_offset])
-    from_vol_stop = stc_from.data.shape[0]
+    # from_vol_stop = stc_from.data.shape[0]
     vertices_to = morph.vertices_to
     if morph.kind == "mixed":
         vertices_to = vertices_to[0 if do_surf else 2: None if do_vol else 2]
@@ -774,27 +778,29 @@ if __name__ == '__main__':
 
     t0 = time.time()
     evoked = mne.read_evokeds(emeg_path, verbose=False)[0]
-    t1 = time.time(); print(f'read evoked: {t1 - t0:.3f}s')
+    t1 = time.time()
+    print(f'read evoked: {t1 - t0:.3f}s')
 
     lambda2 = 1.0 / snr ** 2
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator_path, verbose=False)
-    t0 = time.time(); print(f'read invsol: {t0 - t1:.3f}s')
+    t0 = time.time()
+    print(f'read invsol: {t0 - t1:.3f}s')
 
     mne.set_eeg_reference(evoked, projection=True, verbose=False)
-    t1 = time.time(); print(f'set eeg ref: {t1 - t0:.3f}s')
+    t1 = time.time()
+    print(f'set eeg ref: {t1 - t0:.3f}s')
 
     #stc = apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     # t0 = time.time(); print(f'app. invsol: {t0 - t1:.3f}s')
 
     # morph_map = mne.read_source_morph(morph_path)
     get_invsol_npy(morph_path, evoked, inverse_operator_path, lambda2, 'MNE', pick_ori='normal')
-    t0 = time.time(); print(f'app. invsol: {t0 - t1:.3f}s')
+    t0 = time.time()
+    print(f'app. invsol: {t0 - t1:.3f}s')
 
 
 
-    """
-    
-    tc = __morph_apply(morph_map, stc)
+    """tc = __morph_apply(morph_map, stc)
     t1 = time.time(); print(f'app. morph: {t1 - t0:.3f}s')
 
     print(tc.lh_data.shape, tc.rh_data.shape, tc.vertices)
