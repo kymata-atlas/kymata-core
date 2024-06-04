@@ -176,7 +176,7 @@ def main():
     if args.single_participant_override is not None:
         fig_save_path = Path(args.save_plot_location, combined_names + f'_gridsearch_{args.single_participant_override}_new.png')
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names + f'_gridsearch.png')
+        fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
     print(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 

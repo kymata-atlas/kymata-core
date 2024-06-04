@@ -13,72 +13,25 @@ import sys
 import os
 
 from mne._fiff.constants import FIFF
-from mne._fiff.matrix import (
-    _read_named_matrix,
-    _transpose_named_matrix,
-    write_named_matrix,
-)
-from mne._fiff.open import fiff_open
-from mne._fiff.pick import channel_type, pick_channels, pick_info, pick_types
+from mne._fiff.pick import pick_info
 from mne._fiff.proj import (
     _electrode_types,
     _needs_eeg_average_ref_proj,
-    _read_proj,
-    _write_proj,
-    make_projector,
 )
-from mne._fiff.tag import find_tag
-from mne._fiff.tree import dir_tree_find
-from mne._fiff.write import (
-    end_block,
-    start_and_end_file,
-    start_block,
-    write_coord_trans,
-    write_float,
-    write_float_matrix,
-    write_int,
-    write_string,
-)
-from mne.cov import Covariance, _read_cov, _write_cov, compute_whitener, prepare_noise_cov
-from mne.epochs import BaseEpochs, EpochsArray
-from mne.evoked import Evoked, EvokedArray
-from mne.fixes import _safe_svd
-from mne.forward import (
-    _read_forward_meas_info,
-    _select_orient_forward,
-    compute_depth_prior,
-    compute_orient_prior,
-    convert_forward_solution,
-    is_fixed_orient,
-)
-from mne.forward.forward import _triage_loose, write_forward_meas_info
-from mne.html_templates import _get_html_template
-from mne.io import BaseRaw
+from mne.evoked import Evoked
 from mne.source_estimate import _get_src_type, _make_stc
 from mne.source_space._source_space import (
     _get_src_nn,
     _get_vertno,
-    _read_source_spaces_from_tree,
-    _write_source_spaces_to_fid,
-    find_source_space_hemi,
     label_src_vertno_sel,
 )
 from mne.surface import _normal_orth
-from mne.time_frequency.tfr import _check_tfr_complex
-from mne.transforms import _ensure_trans, transform_surface_to
 from mne.utils import (
     _check_compensation_grade,
-    _check_depth,
-    _check_fname,
     _check_option,
     _check_src_normal,
     _validate_type,
-    _verbose_safe_false,
-    check_fname,
     logger,
-    repr_html,
-    verbose,
-    warn,
 )
 
 
@@ -674,8 +627,7 @@ def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution
 
 def __mne_apply_morph_data(morph, stc_from):
     """A copy of mne.morph._apply_morph_data, for optimisation."""
-    from mne.morph import _BaseSurfaceSourceEstimate, _BaseVolSourceEstimate, _check_vertices_match, \
-        _VOL_MAT_CHECK_RATIO
+    from mne.morph import _BaseSurfaceSourceEstimate, _BaseVolSourceEstimate, _check_vertices_match
     if stc_from.subject is not None and stc_from.subject != morph.subject_from:
         raise ValueError(
             "stc.subject (%s) != morph.subject_from (%s)"
