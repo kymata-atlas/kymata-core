@@ -27,16 +27,26 @@ $ poetry install
 to load the pakages needed.
 
 At this point, you should be able to either run the xx from the terminal
-````
+```
 $ poetry run __init__.py
 ```
 or activate in this environment in an IDE such as PyCharm.
 
-### Run tests
+### Running tests, linting, and generating documentation
 
-To run the tests, run:
+This will be done automatically via Github actions.
+
+To run the tests manually, run:
 ```
 $ poetry run pytest
+```
+To run linting manually, run:
+```
+$ poetry run ruff check
+```
+To serve the documentation locally, run:
+```
+$ poetry run mkdocs serve check
 ```
 
 ## Analysing a dataset with Kymata
