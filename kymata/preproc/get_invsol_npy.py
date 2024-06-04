@@ -9,6 +9,7 @@ import mne
 from mne.minimum_norm.inverse import *
 import time
 import sys
+import numpy as np
 
 import os
 
