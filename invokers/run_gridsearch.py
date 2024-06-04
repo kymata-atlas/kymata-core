@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import time
+import sys
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -127,7 +128,7 @@ def main():
                                                    )
 
     print(f'Time to load emeg: {time.time() - t0:.4f}')
-    import sys; sys.stdout.flush()
+    sys.stdout.flush()  # make sure the above print statement shows up as soon as print is called
 
     combined_expression_set = None
 

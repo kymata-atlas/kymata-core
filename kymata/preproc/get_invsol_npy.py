@@ -594,7 +594,7 @@ def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution
     # _check_option("output", output, allowed_kinds, extra)
     stc = copy.deepcopy(stc_from)
 
-    T0 = time.time(); import sys; sys.stdout.flush()
+    T0 = time.time()
 
     mri_space = mri_resolution if mri_space is None else mri_space
     if stc.subject is None:
@@ -608,11 +608,13 @@ def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution
             % (stc.subject, morph.subject_from)
         )
 
-    T1 = time.time(); print(f'make invsol: {T1 - T0}'); sys.stdout.flush()
+    T1 = time.time(); print(f'make invsol: {T1 - T0}')
+    sys.stdout.flush()
     
     out = __mne_apply_morph_data(morph, stc)
 
-    T0 = time.time(); print(f'make invsol: {T0 - T1}'); sys.stdout.flush()
+    T0 = time.time(); print(f'make invsol: {T0 - T1}')
+    sys.stdout.flush()
 
 
     if output != "stc":  # convert to volume
@@ -662,7 +664,8 @@ def __mne_apply_morph_data(morph, stc_from):
     do_vol = not isinstance(stc_from, _BaseSurfaceSourceEstimate)
     do_surf = not isinstance(stc_from, _BaseVolSourceEstimate)
 
-    print(do_vol, do_surf); sys.stdout.flush()  # False, True 
+    print(do_vol, do_surf)
+    sys.stdout.flush()  # False, True 
 
     vol_src_offset = 2 if do_surf else 0
     from_surf_stop = sum(len(v) for v in stc_from.vertices[:vol_src_offset])
