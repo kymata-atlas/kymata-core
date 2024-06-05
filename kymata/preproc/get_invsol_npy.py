@@ -5,8 +5,7 @@ NOTE: MOST OF THIS CODE IS LIFTED FROM THE MNE GITHUB REPOSITORY AT: https://git
 
 
 import mne
-# import mne.minimum_norm.inverse
-from mne.minimum_norm.inverse import *
+from mne.minimum_norm.inverse import INVERSE_METHODS, combine_xyz, prepare_inverse_operator
 import time
 import sys
 import numpy as np
@@ -680,42 +679,12 @@ def __mne_apply_morph_data(morph, stc_from):
         vertices_to = vertices_to[0 if do_surf else 2: None if do_vol else 2]
     to_vol_stop = sum(len(v) for v in vertices_to)
 
-    mesg = "Ori x Time" if stc_from.data.ndim == 3 else "Time"
     data_from = np.reshape(stc_from.data, (stc_from.data.shape[0], -1))
     n_times = data_from.shape[1]  # oris treated as times
     data = np.empty((to_vol_stop, n_times), stc_from.data.dtype)
     to_used = np.zeros(data.shape[0], bool)
     from_used = np.zeros(data_from.shape[0], bool)
-    
-    """if do_vol:
-        stc_from_vertices = stc_from.vertices[vol_src_offset:]
-        vertices_from = morph._vol_vertices_from
-        for ii, (v1, v2) in enumerate(zip(vertices_from, stc_from_vertices)):
-            _check_vertices_match(v1, v2, "volume[%d]" % (ii,))
-        from_sl = slice(from_surf_stop, from_vol_stop)
-        assert not from_used[from_sl].any()
-        from_used[from_sl] = True
-        to_sl = slice(to_surf_stop, to_vol_stop)
-        assert not to_used[to_sl].any()
-        to_used[to_sl] = True
-        # Loop over time points to save memory
-        if morph.vol_morph_mat is None and n_times >= _VOL_MAT_CHECK_RATIO * (
-                to_vol_stop - to_surf_stop
-        ):
-            warn(
-                "Computing a sparse volume morph matrix will save time over "
-                "directly morphing, calling morph.compute_vol_morph_mat(). "
-                "Consider (re-)saving your instance to disk to avoid "
-                "subsequent recomputation."
-            )
-            morph.compute_vol_morph_mat()
-        if morph.vol_morph_mat is None:
-            _logger.debug("Using individual volume morph")
-            data[to_sl, :] = morph._morph_vols(data_from[from_sl], mesg)
-        else:
-            _logger.debug("Using sparse volume morph matrix")
-            data[to_sl, :] = morph.vol_morph_mat @ data_from[from_sl]"""
-    
+
     if do_surf:
         for hemi, v1, v2 in zip(
                 ("left", "right"), morph.src_data["vertices_from"], stc_from.vertices[:2]
