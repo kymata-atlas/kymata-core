@@ -24,9 +24,6 @@ data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 
 dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
 
-# processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
-# inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
-
 T_max = 401 #seconds
 
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
@@ -34,61 +31,8 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_large_v3_multi'
+func_name = 'whisper_all_no_reshape_tiny_test'
 
-# (512, 1284889)    3200 Hz
-# (512, 642444) /2  1600
-# (512, 321221) /2  800
-# (512, 160610) /2  400
-# (512, 80304) /2   200
-# (512, 40152) /2   100 Hz
-# (512, 20076) /2   20 Hz
-
-# d_STL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
-#                       func_name='d_STL',
-#                       bruce_neurons=(5, 10)
-#                       )
-
-# IL = load_function(f'{func_dir}/predicted_function_contours/GMSloudness/stimulisig',
-#                     func_name='IL9',
-#                     bruce_neurons=(5, 10)
-#                     )
-
-# func2 = load_function(f'{func_dir}/predicted_function_contours/asr_models/w2v_convs',
-#                       func_name='conv_layer3',
-#                       n_derivatives=0,
-#                       n_hamming=0,
-#                       nn_neuron=158, # 201, 158
-#                       )
-
-# func3 = load_function(f'{func_dir}/predicted_function_contours/Bruce_model/neurogramResults',
-#                       func_name='neurogram_mr',
-#                       n_derivatives=0,
-#                       n_hamming=0,
-#                       nn_neuron=158,
-#                       bruce_neurons=(5, 10)
-#                       )
-
-# whisper_out = load_function_pre(f'{func_dir}/predicted_function_contours/asr_models/whisper_all',
-#                       func_name='model.decoder.embed_tokens',
-#                       )
-
-# a = 300_000
-# b = a + 1000
-
-# for func in (d_STL, IL, func2, func3):
-#   func.values /= np.max(func.values)
-#   func.values /= np.sqrt(np.sum(func.values ** 2))
-
-
-# func_a = IL
-# func_b = func2 #d_STL + IL
-
-# print(np.sum(func_a.values * func_b.values))
-
-# plt.plot(func_a.values[a:b] / np.max(func_a.values[a:b]))
-# plt.plot(func_b.values[a:b] / np.max(func_b.values[a:b]))
-# plt.savefig('example_1.png')
 features = {}
 timestamps = []
 text = []
@@ -96,7 +40,8 @@ text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
-    if isinstance(output,torch.Tensor):
+    if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
+      import ipdb;ipdb.set_trace()
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
@@ -112,15 +57,13 @@ def get_features(name):
 #       features[name] = output
 #   return hook
 
-########
-
 if whisper_outs:
 # if True:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v3")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v3")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))

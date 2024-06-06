@@ -7,18 +7,18 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/en_asr/log/slurm_log_%a.txt
-#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/en_asr/log/slurm_log_%a.txt
+#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/log/slurm_log_%a.txt
+#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-31
+#SBATCH --array=0-2
 #SBATCH --exclusive
 
 # args=(5)
 layer_num=()
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
-for ((i=0; i<32; i++)); do
+for ((i=0; i<4; i++)); do
     layer_num+=("model.decoder.layers.$i.final_layer_norm")
 done
 
@@ -33,13 +33,13 @@ apptainer exec \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --config dataset4.1.yaml \
-        --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/ru_whisper_all_no_reshape_large_en' \
+        --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/ru_whisper_all_no_reshape_medium_en' \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
         --asr-option 'all' \
         --num-neurons 1280 \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/en_asr/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/en_asr/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "
 
 # cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/

@@ -16,7 +16,7 @@ import librosa
 
 start_time = time.time()
 
-test = False
+test = True
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
@@ -70,6 +70,8 @@ def evaluate_whisper(audio_data, reference_text):
   # Initialize predicted tokens
   predicted_tokens = []
 
+  # import ipdb;ipdb.set_trace()
+
   # Perform teacher forcing by feeding reference tokens to the decoder
   for t in range(target_tokens.size(1)):
 
@@ -99,7 +101,7 @@ def evaluate_whisper(audio_data, reference_text):
 
   # Compute evaluation metrics (e.g., WER, CER, BLEU)
 
-  # import ipdb;ipdb.set_trace()
+  import ipdb;ipdb.set_trace()
 
   # Return evaluation results
   return predicted_text
