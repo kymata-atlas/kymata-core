@@ -160,7 +160,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
 
-            saved_cleaned_path = Path(cleaned_dir + participant + "_run" + str(run) + '_cleaned_raw.fif.gz')
+            saved_cleaned_path = Path(cleaned_dir, participant, "_run", str(run), '_cleaned_raw.fif.gz')
             
             if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
 
@@ -439,7 +439,7 @@ def create_trialwise_data(data_root_dir: PathType,
 
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
 
-    trialwise_sensorspace_dir = Path(data_root_dir, dataset_directory_name, "3_trialwise_sensorspace")
+    trialwise_sensorspace_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_trialwise_sensorspace")
     trialwise_sensorspace_dir.mkdir(exist_ok=True)
 
     evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")

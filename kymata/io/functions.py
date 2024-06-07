@@ -53,9 +53,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
         func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
         func = np.array(func_dict[func_name])
 
-        if func_name in ('STL', 'IL', 'LTL'):
-            func = func.T
-
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
 

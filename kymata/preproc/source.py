@@ -248,7 +248,6 @@ def load_emeg_pack(emeg_filenames,
                    snr=4,
                    old_morph=False,
                    invsol_npy_dir=None,
-                   invsol_suffix=None,
                    ch_names_path="/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/interim_preprocessing_files/4_hexel_current_reconstruction/npy_invsol/ch_names.npy",
                    ):
     emeg_paths = [
@@ -261,7 +260,7 @@ def load_emeg_pack(emeg_filenames,
         for emeg_fn in emeg_filenames
     ]
     invsol_paths = [
-        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{invsol_suffix}")
+        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}_{_strip_ave(emeg_fn)}_fsaverage_morph.npz")
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
