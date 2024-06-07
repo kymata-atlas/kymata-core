@@ -260,7 +260,7 @@ def load_emeg_pack(emeg_filenames,
         for emeg_fn in emeg_filenames
     ]
     invsol_paths = [
-        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}_{_strip_ave(emeg_fn)}_fsaverage_morph.npz")
+        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix[:-4]}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
