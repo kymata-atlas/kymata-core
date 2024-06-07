@@ -260,7 +260,7 @@ def load_emeg_pack(emeg_filenames,
         for emeg_fn in emeg_filenames
     ]
     invsol_paths = [
-        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix[:-4]}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
+        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
@@ -298,3 +298,7 @@ def _strip_ave(name: str) -> str:
     else:
         return name
 
+def _strip_file_ext(name: str) -> str:
+    """Returns a string, minus the final `.` and anything following it."""
+    parts = name.split(".")
+    return ".".join(parts[:-1])
