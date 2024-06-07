@@ -12,14 +12,14 @@
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-2
+#SBATCH --array=0-3
 #SBATCH --exclusive
 
 # args=(5)
 layer_num=()
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 for ((i=0; i<4; i++)); do
-    layer_num+=("model.decoder.layers.$i.final_layer_norm")
+    layer_num+=("model.encoder.layers.$i.final_layer_norm")
 done
 
 module load apptainer
@@ -37,7 +37,7 @@ apptainer exec \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
         --asr-option 'all' \
-        --num-neurons 1280 \
+        --num-neurons 1024 \
         --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "

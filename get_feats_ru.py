@@ -16,7 +16,7 @@ import librosa
 
 start_time = time.time()
 
-decoder_only = True
+decoder_only = False
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True

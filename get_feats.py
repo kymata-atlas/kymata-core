@@ -41,6 +41,7 @@ text_with_time = []
 def get_features(name):
   def hook(model, input, output):
     if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
+    # if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name) or 'proj_out' in name):
       import ipdb;ipdb.set_trace()
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
