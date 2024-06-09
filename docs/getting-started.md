@@ -32,6 +32,8 @@ $ poetry run __init__.py
 ```
 or activate in this environment in an IDE such as PyCharm.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ### Running tests, linting, and generating documentation
 
 This will be done automatically via Github actions.
@@ -48,6 +50,8 @@ To serve the documentation locally, run:
 ```
 $ poetry run mkdocs serve check
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Analysing a dataset with Kymata
 

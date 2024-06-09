@@ -1,50 +1,66 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
 
-<!-- PROJECT LOGO -->
+<style>
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.child {
+    margin: 0 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+</style>
 <br />
-<div align="center">
-  <a href="https://github.com/kymata-atlas/kymata-toolbox">
-    <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
-  </a>
+<div class="container">
+    <div class="child">
+      <a href="https://github.com/kymata-atlas/kymata-core">
+        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
+      </a>
+    </div>
+    <div class="child">
+        <div>
+            <h3 style="margin-top: 0px">Kymata Core</h3>
+            <p>Core codebase for the Kymata Atlas
+            </br>
+            <a href="https://kymata-atlas.github.io/kymata-core"><strong>Explore the docs »</strong></a>
+            </p>
+        </div>
+    </div>
 
-  <h3 align="center">The Kymata Toolbox</h3>
-
-  <p align="center">
-    Core functionality for the Kymata Atlas
-    <br />
-    <a href="#xxx"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="#About The Project">Overview</a>
-    ·
-    <a href="#Getting Started">Setup</a>
-    ·
-    <a href="#Citing the Toolbox">Citing</a>
-    ·
-    <a href="#Licence">Licence</a>
-
-  </p>
 </div>
+
+<p align="center">
+        <a href="#About The Project">Overview</a>
+        ·
+        <a href="#Getting Started">Setup</a>
+        ·
+        <a href="#Citing the Toolbox">Citing</a>
+        ·
+        <a href="#Licence">Licence</a>
+</p>
 
 ## About The Project
 
-The _Kymata Toolbox_ is the core codebase underlying the _Kymata Atlas_, a repository of human Information Processing
-Pathway Maps ['IPPMs'] of the human brain.[^1] The codebase covers is used to generate these maps, including both
-standard and experimental pipelines. It is maintained by the [Kymata Research Group](https://kymata.org).
+_Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kymata.org).[^1] It is maintained by the
+[Kymata Research Group](https://kymata.org).
 
-The core pipeline includes:
-* Preprocessing of electrophysiological data (MEG, EEG, ECoG)
-* Standard and experimental Kymata gridsearch approaches;
-* Information Processing Pathway Map generation (offline generation, and evaluation)
+The central pipeline includes:
+* Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
+* Gridsearch approaches for function mapping;
+* Information Processing Pathway Map1 generation (both offline generation and evaluation);
 * Plotting functionality
 
-The codebase is released under xxx to ensure the transparency of the results in the Kymata Atlas.[^2] While comments and
-issues are xxx, we are unable to prioritise xxx or xxx (please see our code of conduct).
+The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas.[^2] While
+comments and issues are welcomed, we are unable to prioritise local support or bug fixes (please see our code of
+conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- GETTING STARTED -->
 ## Getting Started
 
 This provides an overview of how to set the Kymata Toolbox locally.
@@ -69,8 +85,6 @@ This provides an overview of how to set the Kymata Toolbox locally.
 
 ### Installation
 
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
-
 1. Clone this repository:
    ```sh
    $ git clone https://github.com/your_username_/Project-Name.git
@@ -84,26 +98,44 @@ _Below is an example of how you can instruct your audience on installing and set
 
 4. At this point, you should be able to either run the xx from the terminal
    ```sh
-   $ poetry run __init__.py
+   $ poetry run invokers/run_gridsearch.py
    ```
    or activate in this environment in an IDE such as PyCharm.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Running tests, linting, and generating documentation
+
+This will be done automatically via Github actions.
+
+To run the tests manually, run:
+```
+$ poetry run pytest
+```
+To run linting manually, run:
+```
+$ poetry run ruff check
+```
+To serve the documentation locally, run:
+```
+$ poetry run mkdocs serve check
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
+_Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
+data._
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Citing the Toolbox
 
-Please use the following xxx in all citations: 
+Please use the following reference in all citations: 
 
-> Thwaites, Wingfield, Parish, Yang, Lakra, Zhang (2024) _The Kymata Toolbox_ XYZ
+> TBC
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -118,5 +150,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- LICENSE -->
 ## References
 
-[^1]: Thwaites et al (2024) _Information Processing Pathway Maps_ XYZ
-[^2]: Thwaites et al (2024) _The Kymata Atlas_ XYZ
+[^1]: Thwaites et al (2024) _Information Processing Pathway Maps_ TBC
+[^2]: Thwaites et al (2024) _The Kymata Atlas_ TBC
