@@ -113,9 +113,9 @@ data.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Citing the codebase or the `kymata` package
+## Citing the codebase
 
-Please use the following reference in all citations: 
+Please use the following reference when citing the codebase or the `kymata` package: 
 
 > TBC
 
