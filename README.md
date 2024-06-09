@@ -2,24 +2,22 @@
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
 <br />
 <br />
-<div style="display: flex; justify-content: center; align-items: center;">
-    <div style="margin: 0 10px; display: flex; justify-content: center; align-items: center;">
+<div>
       <a href="https://github.com/kymata-atlas/kymata-core">
-        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
+        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" height="112" align="left">
       </a>
-    </div>
-    <div style="margin: 0 10px; display: flex; justify-content: center; align-items: center;">
+    <div>
         <div>
-            <h3 style="margin-top: 0px">Kymata Core</h3>
+            <h3>Kymata Core</h3>
             <p>Core codebase for the Kymata Atlas
-            </br>
+            <br>
             <a href="https://kymata-atlas.github.io/kymata-core"><strong>Explore the docs »</strong></a>
             </p>
         </div>
     </div>
 
 </div>
-
+<br>
 <p align="center">
         <a href="#About The Project">Overview</a>
         ·
