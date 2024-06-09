@@ -86,8 +86,6 @@ This provides an overview of how to set the Kymata Toolbox locally.
    ```
    or activate in this environment in an IDE such as PyCharm.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ### Running tests, linting, and generating documentation
 
 This will be done automatically via Github actions.
@@ -110,8 +108,8 @@ $ poetry run mkdocs serve check
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-_Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
-data._
+Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
+data.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -134,5 +132,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- LICENSE -->
 ## References
 
-[^1]: Thwaites et al (2024) _Information Processing Pathway Maps_ TBC
-[^2]: Thwaites et al (2024) _The Kymata Atlas_ TBC
+[^1]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
+[^2]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Woolgar, Zhang (2024) _The Kymata Atlas_ (In Prep.)
