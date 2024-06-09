@@ -11,7 +11,7 @@
             <h3>Kymata Core</h3>
             <p>Core codebase for the Kymata Atlas
             <br>
-            <a href="https://kymata-atlas.github.io/kymata-core"><strong>Explore the docs »</strong></a>
+            <a href="https://kymata-atlas.github.io/kymata-toolbox"><strong>Explore the docs »</strong></a>
             </p>
         </div>
     </div>
