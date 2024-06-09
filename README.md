@@ -1,28 +1,14 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
-
-<style>
-.container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.child {
-    margin: 0 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-</style>
 <br />
-<div class="container">
-    <div class="child">
+<br />
+<div style="display: flex; justify-content: center; align-items: center;">
+    <div style="margin: 0 10px; display: flex; justify-content: center; align-items: center;">
       <a href="https://github.com/kymata-atlas/kymata-core">
         <img src="docs/assets/images/toolbox_logo.png" alt="Logo" width="200" height="112">
       </a>
     </div>
-    <div class="child">
+    <div style="margin: 0 10px; display: flex; justify-content: center; align-items: center;">
         <div>
             <h3 style="margin-top: 0px">Kymata Core</h3>
             <p>Core codebase for the Kymata Atlas
