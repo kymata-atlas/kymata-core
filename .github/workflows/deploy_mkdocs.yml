@@ -1,4 +1,4 @@
-name: Update Documentation on Github Pages using mkdocs
+name: Update documentation on Github Pages using mkdocs
 on:
   push:
     branches:
