@@ -30,7 +30,45 @@ def do_gridsearch(
         overwrite: bool = True,
 ) -> ExpressionSet:
     """
-    Do the Kymata gridsearch over all hexels for all latencies.
+    Perform a grid search over all hexels for all latencies using EMEG data and a given function.
+
+    This function processes EMEG data to compute the correlation between sensor or source signals
+    and a specified function across multiple latencies. The results include statistical significance
+    testing and optional plotting.
+
+    Args:
+        emeg_values (NDArray): A 2D array of EMEG values with shape (n_channels, time).
+        function (Function): The function against which the EMEG data will be correlated. It should
+            have a `values` attribute representing the function's values and a `sample_rate`
+            attribute indicating its sample rate.
+        channel_names (list): List of channel names corresponding to the EMEG data. For 'sensor' space,
+            it is a flat list of sensor names. For 'source' space, it is a list containing two lists:
+            left hemisphere and right hemisphere hexel names.
+        channel_space (str): The type of channel space used, either 'sensor' or 'source'.
+        start_latency (float): The starting latency for the grid search in milliseconds.
+        emeg_t_start (float): The starting time of the EMEG data in milliseconds.
+        plot_location (Optional[Path], optional): Path to save the plot of the top five channels of the
+            grid search. If None, plotting is skipped. Default is None.
+        emeg_sample_rate (int, optional): The sample rate of the EMEG data in Hertz. Default is 1000 Hz.
+        audio_shift_correction (float, optional): Correction factor for audio shift in seconds per second.
+            Default is 0.0005375.
+        n_derangements (int, optional): Number of derangements (random permutations) used to create the
+            null distribution. Default is 1.
+        seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
+        n_splits (int, optional): Number of splits used for analysis. Default is 800.
+        n_reps (int, optional): Number of repetitions for each split. Default is 1.
+        overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
+
+    Returns:
+        ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
+        containing the log p-values for each channel/hexel and latency.
+
+    Notes:
+        - The function down-samples the EMEG data to match the function's sample rate.
+        - The EMEG data is reshaped into segments of the specified duration (`seconds_per_split`).
+        - Cross-correlations between the EMEG data and the function are computed using FFT.
+        - Statistical significance is assessed using a vectorized Welch's t-test.
+        - If specified, the results are plotted and saved to the given location.
     """
 
     channel_space = channel_space.lower()
@@ -135,9 +173,41 @@ def do_gridsearch(
 
 
 def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
-
     """
-    Vectorised Welch's t-test.
+    Perform a vectorized Welch's t-test on correlation matrices.
+
+    This function calculates the two-sample Welch's t-test statistics and their corresponding
+    log p-values for given correlation matrices. The test compares true correlation values against
+    null (random) correlation values after applying Fisher's Z-transformation.
+
+    Parameters:
+    -----------
+    corrs : NDArray
+        A 4D array of correlation values with shape (n_channels, n_derangements, n_splits, t_steps).
+        - n_channels: Number of channels.
+        - n_derangements: Number of derangements (random permutations).
+        - n_splits: Number of splits or repetitions.
+        - t_steps: Number of time steps.
+
+    use_all_lats : bool, optional
+        If True, use all latencies for computing the mean and variance of null correlations.
+        If False, compute mean and variance per time step. Default is True.
+
+    Returns:
+    --------
+    ArrayLike
+        A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
+        of the t-tests for each channel and time step.
+
+    Notes:
+    ------
+    - The correlation values are first transformed using Fisher's Z-transformation.
+    - The function computes the mean and variance of the transformed true and null correlations.
+    - Welch's t-test is then performed in a vectorized manner to obtain the t-statistics.
+    - Depending on the degrees of freedom, either the t-distribution or normal distribution is used
+      to compute the log p-values.
+    - The function ensures numerical stability and precision by applying log transformations where necessary.
+
     """
     n_channels, n_derangements, n_splits, t_steps = corrs.shape
 

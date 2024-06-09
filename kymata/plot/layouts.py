@@ -13,6 +13,23 @@ class Point2d(NamedTuple):
 
 
 def get_meg_sensor_xy() -> dict[str, Point2d]:
+    """
+    Retrieve the 2D coordinates of MEG sensors.
+
+    This function reads the sensor locations from a predefined layout file and returns a dictionary mapping
+    sensor names to their corresponding 2D coordinates.
+
+    Returns:
+    --------
+    dict[str, Point2d]
+        A dictionary where keys are sensor names (e.g., 'MEG1234') and values are Point2d objects representing
+        the x and y coordinates of the sensors.
+
+    Notes:
+    ------
+    The function expects the layout file to be located at 'kymata-toolbox-data/sensor_locations/Vectorview-all.lout'.
+    """
+
     d = dict()
     layout_line_re = re.compile(
         r"^\d+\t"
@@ -35,6 +52,23 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
 
 
 def get_eeg_sensor_xy() -> dict[str, Point2d]:
+    """
+    Retrieve the 2D coordinates of EEG sensors.
+
+    This function reads the sensor locations and mappings from predefined layout and mapping files,
+    then returns a dictionary mapping our sensor names to their corresponding 2D coordinates.
+
+    Returns:
+    --------
+    dict[str, Point2d]
+        A dictionary where keys are our sensor names and values are Point2d objects representing
+        the x and y coordinates of the sensors.
+
+    Notes:
+    ------
+    The function expects the layout file to be located at 'kymata-toolbox-data/sensor_locations/EEG1005.lay'
+    and the mapping file to be located at 'kymata-toolbox-data/sensor_locations/EEG-layout-channel-mappings.yaml'.
+    """
     with Path(Path(__file__).parent.parent.parent, "kymata-toolbox-data", "sensor_locations",
               "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
         mapping = yaml.safe_load(eeg_name_mapping_file)
@@ -56,7 +90,21 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
 
 
 def plot_eeg_sensor_positions(raw_fif: Raw):
-    """Plot Sensor positions"""
+    """
+    Plot the positions of EEG sensors in 2D and 3D views.
+
+    This function generates a figure with two subplots: a 2D view and a 3D view of the EEG sensor positions.
+
+    Parameters:
+    -----------
+    raw_fif : Raw
+        The raw FIF file containing EEG data and sensor locations.
+
+    Notes:
+    ------
+    The 3D plot is initialized with an azimuth angle of 70 degrees and an elevation angle of 15 degrees for better visualization.
+    """
+
     fig = plt.figure()
     ax2d = fig.add_subplot(121)
     ax3d = fig.add_subplot(122, projection='3d')

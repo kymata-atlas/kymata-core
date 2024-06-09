@@ -1,107 +1,136 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
+<br />
+<br />
+<div>
+      <a href="https://github.com/kymata-atlas/kymata-core">
+        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" height="112" align="left">
+      </a>
+    <div>
+        <div>
+            <h3>Kymata Core</h3>
+            <p>Core codebase for the Kymata Atlas
+            <br>
+            <a href="https://kymata-atlas.github.io/kymata-core"><strong>Explore the docs »</strong></a>
+            </p>
+        </div>
+    </div>
 
-# The Kymata Toolbox
+</div>
+<br>
+<p align="center">
+        <a href="#About The Project">Overview</a>
+        ·
+        <a href="#Getting Started">Setup</a>
+        ·
+        <a href="#Citing the Toolbox">Citing</a>
+        ·
+        <a href="#Licence">Licence</a>
+</p>
 
-This package forms part of the Kymata Atlas codebase.
-Maintained by the Kymata Research Group ([kymata.org](https://kymata.org); UCL & University of Cambridge).
+## About The Project
 
-## Table of contents
+_Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kymata.org).[^1] It is maintained by the
+[Kymata Research Group](https://kymata.org).
 
-- [Analysing a dataset](#analysing-a-dataset-with-kymata)
-  1. [Locating your raw EMEG dataset](#1-locate-your-raw-emeg-dataset)
-  2. [Preprocess the data](#2-preprocess-the-data)
-  3. [Gridsearch](#3-run-the-gridsearch)
-  4. [Plotting](#4-plot-the-results)
-  5. [IPPM](#5-visualise-processing-pathways)
-- [Installing](#installing)
+The central pipeline includes:
+* Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
+* Gridsearch approaches for function mapping;
+* Information Processing Pathway Map1 generation (both offline generation and evaluation);
+* Plotting functionality
 
-## Analysing a dataset with Kymata
+The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas.[^2] While
+comments and issues are welcomed, we are unable to prioritise installation support (please see our code of
+conduct).
 
-### 1. Locate your raw EMEG dataset
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-You'll need the following files:
+## Getting Started
 
-- <participant_name>_run1_raw.fif
-- <participant_name>_recording_config.yaml
+This provides an overview of how to set the Kymata Toolbox locally.
 
-### 2. Preprocess the data
+### Prerequisites
 
-The repository holds the Kymata preprocessing code that runs on the MRC-CBU HPC system.
+* **Python**
 
-This code comprises the 'Kymata back-end', including preprocessing steps, gridsearch procedures, expression plotting and IPPM generation.
+   Confirm you have the correct version of Python installed. Type
+   ```sh
+   $ pyenv versions
+   ```
+   This should confirm that python 3.11 or above is installed. If it isn't already there,
+   install it using `pyenv install`. You should be able to confirm
+   you are using the correct version using
+   ```sh
+   $ python -V
+   ```
+* **Poetry**
 
-Run the following invokers from `invokers/` in order:
+  This package uses [Poetry](https://python-poetry.org/) to manage packages. See [python-poetry.org](https://python-poetry.org/docs/#installing-with-the-official-installer) for installation instructions.
 
-- `invoker_run_data_cleansing.py`
-  - This does:
-    1. first-pass filtering 
-    2. maxfiltering
-    3. second-pass filtering
-    4. eog removal
-- `invoker_create_trialwise_data.py`
-  - This does:
-    1. Splits the data into trials
-  - **This is all you need for sensor-space gridsearch.**
-- `invoker_run_hexel_current_estimation.py`
-- `invoker_estimate_noise_covariance.py`
-  - This is only necessary if running the gridsearch in source space (hexels).
+### Installation
 
-### 3. Run the gridsearch
+1. Clone this repository:
+   ```sh
+   $ git clone https://github.com/kymata-atlas/kymata-toolbox.git
+   ```
+3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
+   type:
+   ```sh
+   $ poetry install
+   ```
+   to load the pakages needed.
 
-- `run_gridsearch.py`
-  - This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_load.ipynb`).
+4. At this point, you should be able to either run the xx from the terminal
+   ```sh
+   $ poetry run invokers/run_gridsearch.py
+   ```
+   or activate in this environment in an IDE such as PyCharm.
 
-#### Doing this at the CBU
+### Running tests, linting, and generating documentation
 
-An easier way to do this (see [Troubleshooting](docs/troubleshooting_cbu.md)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
-Either run it locally with `./submit_gridsearch.sh`, or run it on the CBU queue with `sbatch submit_gridsearch.sh`.
+This will be done automatically via Github actions.
 
-### 4. Plot the results
-
-- `invoker_run_nkg_plotting.py`
-
-See also `demos/demo_plotting.ipynb`.
-
-### 5. Visualise processing pathways
-
-See `demos/demo_ippm.ipynb`.
-
-## Installing
-
-### Getting the toolbox
-
-Clone this repository!
-
-### Setting up to run with `poetry`
-
-First, confirm you have the correct version of Python installed. Navigate to the root directory. Type
-```
-$ pyenv versions
-```
-This should confirm that python 3.11 or above is installed. If it isn't already there,
-install it using `pyenv install`. You should be able to confirm
-you are using the correct version using 
-
-```
-python -V
-```
-To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
-type:
-```
-$ poetry install
-```
-to load the pakages needed.
-
-At this point, you should be able to either run the xx from the terminal
-```
-$ poetry run __init__.py
-```
-or activate in this environment in an IDE such as PyCharm.
-
-### Run tests
-
-To run the tests, run:
+To run the tests manually, run:
 ```
 $ poetry run pytest
 ```
+To run linting manually, run:
+```
+$ poetry run ruff check
+```
+To serve the documentation locally, run:
+```
+$ poetry run mkdocs serve check
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- USAGE EXAMPLES -->
+## Usage
+
+Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
+data.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Citing the codebase or the `kymata` package
+
+Please use the following reference in all citations: 
+
+> TBC
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- LICENSE -->
+## Licence
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- LICENSE -->
+## References
+
+[^1]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
+[^2]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Woolgar, Zhang (2024) _The Kymata Atlas_ (In Prep.)
