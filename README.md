@@ -108,7 +108,7 @@ $ poetry run mkdocs serve check
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
+Please refer to the [documentation](https://kymata-atlas.github.io/kymata-toolbox), or see the `demos/` folder for example code, including test
 data.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
