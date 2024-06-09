@@ -1,4 +1,4 @@
-site_name: The Kymata Toolbox
+site_name: Kymata Core
 repo_url: https://github.com/kymata-atlas/kymata-toolbox
 repo_name: kymata-atlas/kymata-toolbox
 site_description: Documentation for the core Kymata Atlas codebase.
@@ -84,6 +84,9 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 copyright: |
   &copy; 2024 <a href="https://kymata.org"  target="_blank" rel="noopener">Kymata.org</a>

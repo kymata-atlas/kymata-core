@@ -40,7 +40,7 @@ The central pipeline includes:
 * Plotting functionality
 
 The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas.[^2] While
-comments and issues are welcomed, we are unable to prioritise local support or bug fixes (please see our code of
+comments and issues are welcomed, we are unable to prioritise installation support (please see our code of
 conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -71,7 +71,7 @@ This provides an overview of how to set the Kymata Toolbox locally.
 
 1. Clone this repository:
    ```sh
-   $ git clone https://github.com/your_username_/Project-Name.git
+   $ git clone https://github.com/kymata-atlas/kymata-toolbox.git
    ```
 3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
    type:
@@ -113,7 +113,7 @@ data.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Citing the Toolbox
+## Citing the codebase or the `kymata` package
 
 Please use the following reference in all citations: 
 
