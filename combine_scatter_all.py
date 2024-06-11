@@ -18,8 +18,8 @@ def asr_models_loop_full():
     
     n = 1
     
-    lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
-
+    lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
+    
     log_dir_1 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/encoder_all_der_5/'
 
     log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
@@ -32,7 +32,7 @@ def asr_models_loop_full():
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n]
+                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -44,7 +44,7 @@ def asr_models_loop_full():
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[(i+32) % n, (i+32) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+32) // n]
+                        lat_sig[(i+34) % n, (i+34) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+34) // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -61,9 +61,21 @@ def asr_models_loop_full():
     # import ipdb;ipdb.set_trace()
 
     # Neuron selection
+    # if neuron_selection:
+    #     col_2 = lat_sig[:, :, 2]
+    #     col_3 = lat_sig[:, :, 3]
+    #     unique_values = np.unique(col_2)
+    #     max_indices = []
+    #     for val in unique_values:
+    #         indices = np.where(col_2 == val)
+    #         col_3_subset = col_3[indices]
+    #         max_index = indices[1][np.argmax(col_3_subset)]
+    #         max_indices.append(max_index)
+    #     lat_sig = lat_sig[:, max_indices, :]
+        # Neuron selection
     if neuron_selection:
-        col_2 = lat_sig[:, :, 2]
-        col_3 = lat_sig[:, :, 3]
+        col_2 = lat_sig[:, (lat_sig[0, :, 4]<34), 2]
+        col_3 = lat_sig[:, (lat_sig[0, :, 4]<34), 3]
         unique_values = np.unique(col_2)
         max_indices = []
         for val in unique_values:
@@ -71,7 +83,9 @@ def asr_models_loop_full():
             col_3_subset = col_3[indices]
             max_index = indices[1][np.argmax(col_3_subset)]
             max_indices.append(max_index)
-        lat_sig = lat_sig[:, max_indices, :]
+        lat_sig_max = lat_sig[:, max_indices, :]
+    lat_sig_dec = lat_sig[:, (lat_sig[0, :, 4]>33), :]
+    lat_sig = np.concatenate((lat_sig_max, lat_sig_dec), axis = 1)
 
     # import ipdb;ipdb.set_trace()
 
