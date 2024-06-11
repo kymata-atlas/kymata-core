@@ -16,7 +16,7 @@ import librosa
 
 start_time = time.time()
 
-test = True
+test = False
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
@@ -30,11 +30,9 @@ T_max = 401 #seconds
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
-func_name = 'whisper_all_no_reshape_large_v2_teacher'
+func_name = 'whisper_all_no_reshape_large_v3_teacher'
 
 features = {}
-timestamps = []
-text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
@@ -70,10 +68,14 @@ def evaluate_whisper(audio_data, reference_text):
   # Initialize predicted tokens
   predicted_tokens = []
 
+  past_key_values= None
+
   # import ipdb;ipdb.set_trace()
 
   # Perform teacher forcing by feeding reference tokens to the decoder
-  for t in range(target_tokens.size(1)):
+  for t in range(target_tokens.size(1) + 1):
+
+    # print(t)
 
     if t == 0:
 
@@ -81,18 +83,22 @@ def evaluate_whisper(audio_data, reference_text):
 
     else:
       
-      decoder_input_ids = target_tokens[:, :t]
+      # decoder_input_ids = target_tokens[:, :t]
+      decoder_input_ids = target_tokens[:, t - 1]
       
-      # Get the logits from the forward method
       outputs = model(
           input_features=input_features,
           decoder_input_ids=decoder_input_ids,
           # decoder_input_ids=torch.Tensor(predicted_tokens).int(),
           encoder_outputs=encoder_outputs,
           return_dict=True,
+          past_key_values=past_key_values,
       )
+
+      # import ipdb;ipdb.set_trace()
       
       logits = outputs.logits
+      past_key_values = outputs.past_key_values
       predicted_token = torch.argmax(logits[:, -1, :], dim=-1).item()
       predicted_tokens.append(predicted_token)
 
@@ -101,7 +107,7 @@ def evaluate_whisper(audio_data, reference_text):
 
   # Compute evaluation metrics (e.g., WER, CER, BLEU)
 
-  import ipdb;ipdb.set_trace()
+  # import ipdb;ipdb.set_trace()
 
   # Return evaluation results
   return predicted_text
@@ -114,9 +120,9 @@ if whisper_outs:
     model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
     tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-tiny")
   else:
-    processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
-    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large-v2")
+    processor = WhisperProcessor.from_pretrained("openai/whisper-large-v3")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v3")
+    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large-v3")
 
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()
@@ -135,14 +141,12 @@ if whisper_outs:
         reference_text = file.read()
 
     # reference_text = '<|startoftranscript|><|en|><|transcribe|><|notimestamps|> ' + reference_text + '<|endoftext|>'
-    reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text + '<|endoftext|>'
+    reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text
 
     # Evaluate
     predicted_transcription = evaluate_whisper(audio_data, reference_text)
 
     # import ipdb;ipdb.set_trace()
-
-    print(f"Segment {i} - Predicted: {predicted_transcription}")
   
   # for i in range(len(generated_ids['segments'][0])):
   #   timestamps += generated_ids['segments'][0][i]['token_timestamps'].tolist()
@@ -192,15 +196,3 @@ if whisper_outs and save_outs:
   # Now save the data
   if not os.path.isfile(f'{directory}{func_name}.npz'):
     np.savez(f'{directory}{func_name}.npz', **features)
-  if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
-    np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
-    plt.plot(timestamps)
-    plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
-    plt.close()
-  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
-    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
-      file.write(text)
-  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt"):
-    text_with_time = "\n".join(text_with_time)
-    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt", "w") as file:
-      file.write(text_with_time)  

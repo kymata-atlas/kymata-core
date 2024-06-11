@@ -89,31 +89,35 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                             start_idx = mfa_time_samples[i]
                             end_idx = mfa_time_samples[i + 1]
                             if start_idx < s_num:
-                                if whisper_text[k] in special_tokens:
+                                while whisper_text[k] in special_tokens:
                                     k += 1
-                                else:
-                                    if mfa_text[i] != whisper_text[k]:
-                                        if mfa_text[i] == '<sp>':
-                                            # if whisper_text[k] == '.' or whisper_text[k] == ',':
-                                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
-                                        else:
-                                            search_txt = whisper_text[k]
-                                            id_tracker = [k]
-                                            weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
-                                            # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
-                                            while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
-                                                k += 1
+                                if mfa_text[i] != whisper_text[k]:
+                                    if mfa_text[i] == '<sp>':
+                                        # if whisper_text[k] == '.' or whisper_text[k] == ',':
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                        # print('<sp> in mfa encountered')
+                                    else:
+                                        search_txt = whisper_text[k]
+                                        id_tracker = [k]
+                                        weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                        # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
+                                        while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
+                                            k += 1
+                                            if whisper_text[k] not in special_tokens:
                                                 search_txt += whisper_text[k]
                                                 id_tracker.append(k)
                                                 weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
-                                            if sum(weight_tracker) == 0:
-                                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
-                                            else:
-                                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
-                                            k += 1
-                                    else:
-                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                        if sum(weight_tracker) == 0:
+                                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                        else:
+                                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
                                         k += 1
+                                        # print(f'mapping is from the mfa token {[mfa_text[i]]} to the whisper token {[whisper_text[k] for k in id_tracker]}')
+                                else:
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                    k += 1
+                                    # print('match')
+                        # import ipdb;ipdb.set_trace()
                         assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
 
                 else:    
