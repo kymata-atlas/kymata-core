@@ -20,7 +20,7 @@ test = False
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
-save_outs = False
+save_outs = True
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 # data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
