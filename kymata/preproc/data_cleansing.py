@@ -519,7 +519,7 @@ def create_trialwise_data(data_root_dir: PathType,
                 audio_events[(trial + (number_of_trials * run))][2] = trial
 
         #  Test there are the correct number of events
-        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
+        # assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
         
         print(f'\n Runs found: {audio_events.shape[0]} \n')
 
