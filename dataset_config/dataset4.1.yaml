@@ -8,7 +8,7 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 participants: [
-                'pilot_04',
+                'pilot_02',
               ]
 input_streams: [ "auditory" ]        # auditory | visual
 number_of_runs: 4                    # number of runs
