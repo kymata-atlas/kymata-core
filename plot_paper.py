@@ -6,11 +6,15 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
+    reindex = False
+
+    language = 'en'
+
     layer = 66
 
     neuron = 1280
 
-    thres = 20
+    thres = 15
 
     size = 'large'
 
@@ -18,11 +22,14 @@ def asr_models_loop_full():
     
     n = 1
     
-    lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
+    lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir_1 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/encoder_all_der_5/'
-
-    log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+    if language == 'en':
+        log_dir_1 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/encoder_all_der_5/'
+        log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
+    else:
+        log_dir_1 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_encoder_log/'
+        log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/russian/whisper_large_decoder_log/'
 
     for i in range(layer-32):
         file_name = f'slurm_log_{i}.txt'
@@ -32,7 +39,7 @@ def asr_models_loop_full():
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n]
+                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -44,7 +51,7 @@ def asr_models_loop_full():
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[(i+34) % n, (i+34) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+34) // n]
+                        lat_sig[(i+34) % n, (i+34) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+34) // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -85,6 +92,8 @@ def asr_models_loop_full():
     _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
     stds.append(np.std(_lats[:, 0]))
 
+    # import ipdb;ipdb.set_trace()
+
     # Extract the unique group values from _lats[:, 4]
     unique_groups = np.unique(_lats[:, 4])
 
@@ -108,7 +117,10 @@ def asr_models_loop_full():
         # Iterate over the indices and assign y values based on the index within the group
         for idx, original_idx in enumerate(group_indices):
             x_values.append(_lats[original_idx, 0])  # Assuming you want to plot _lats[:, 0] on the x-axis
-            y_values.append(idx)  # The y value is the index within the group
+            if reindex:
+                y_values.append(idx)  # The y value is the index within the group
+            else:
+                y_values.append(_lats[original_idx, -1])
             # import ipdb;ipdb.set_trace()
             colors.append(color_map.get(int(group), 'grey'))
 
@@ -129,7 +141,10 @@ def asr_models_loop_full():
     plt.xlim(-200, 800)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
+    if language == 'en':
+        plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
+    else:
+        plt.savefig(f'kymata-toolbox-data/output/scatter_plot/ru_whisper_all_{size}_colour_layer.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

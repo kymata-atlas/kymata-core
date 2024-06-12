@@ -58,7 +58,79 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                 place_holder = np.zeros((func.shape[1], s_num))
             else:
                 place_holder = np.zeros((func.shape[2], s_num))
-            for j in range(place_holder.shape[0]):
+            # Below is a temporary fix to make the code run faster. Clean-up is definitely needed later on
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                for j in range(place_holder.shape[0]):
+                    if 'decoder' in func_name and 'encoder_attn.k' not in func_name and 'encoder_attn.v' not in func_name:
+                        if not mfa:
+                            time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                            time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                            time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                            for i in range(len(time_stamps_samples) - 1):
+                                start_idx = time_stamps_samples[i]
+                                end_idx = time_stamps_samples[i + 1]
+                                if start_idx < s_num:
+                                    if 'conv' in func_name:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, j, i])
+                                    elif func.shape[0] != 1:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[i, j])
+                                    else:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, i, j])
+                        else:
+                            time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                            time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                            time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                            whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
+                            mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
+                            mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
+                            mfa_time_samples = (mfa_time * 1000).astype(int)
+                            mfa_time_samples = np.append(mfa_time_samples, 402_000)
+                            special_tokens = ['<|en|>', '<|transcribe|>', '<|notimestamps|>', '<|endoftext|>']
+                            k = 0       # k is the index for whisper space, and i is the index for mfa space
+                            for i in range(len(mfa_time_samples) - 1):
+                                start_idx = mfa_time_samples[i]
+                                end_idx = mfa_time_samples[i + 1]
+                                if start_idx < s_num:
+                                    while whisper_text[k] in special_tokens:
+                                        k += 1
+                                    if mfa_text[i] != whisper_text[k]:
+                                        if mfa_text[i] == '<sp>':
+                                            # if whisper_text[k] == '.' or whisper_text[k] == ',':
+                                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                            # print('<sp> in mfa encountered')
+                                        else:
+                                            search_txt = whisper_text[k]
+                                            id_tracker = [k]
+                                            weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                            # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
+                                            while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
+                                                k += 1
+                                                if whisper_text[k] not in special_tokens:
+                                                    search_txt += whisper_text[k]
+                                                    id_tracker.append(k)
+                                                    weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
+                                            if sum(weight_tracker) == 0:
+                                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                            else:
+                                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
+                                            k += 1
+                                            # print(f'mapping is from the mfa token {[mfa_text[i]]} to the whisper token {[whisper_text[k] for k in id_tracker]}')
+                                    else:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                        k += 1
+                                        # print('match')
+                            # import ipdb;ipdb.set_trace()
+                            assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
+
+                    else:    
+                        if 'conv' in func_name or 'logmel' in str(function_path_without_suffix):
+                            place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[2]), func[0, j, :])
+                        elif func.shape[0] != 1:
+                            place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
+                        else:
+                            place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
+            else:
+                j = nn_neuron
                 if 'decoder' in func_name and 'encoder_attn.k' not in func_name and 'encoder_attn.v' not in func_name:
                     if not mfa:
                         time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
@@ -127,7 +199,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[0]), func[:, j])
                     else:
                         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 420, func.shape[1]), func[0, :, j])
-
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
             else:
