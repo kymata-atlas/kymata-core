@@ -94,7 +94,7 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
     if args.single_participant_override is not None:
-        emeg_filenames = [args.single_participant_override + f"-ave"]
+        emeg_filenames = [ f"{args.single_participant_override}-ave" ]
     else:
         emeg_filenames = [
             p + r
