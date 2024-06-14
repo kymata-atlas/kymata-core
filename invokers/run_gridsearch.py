@@ -160,22 +160,23 @@ def main():
 
     assert combined_expression_set is not None
 
+    combined_names: str
     if args.save_name is not None and len(args.save_name) > 0:
         combined_names = args.save_name
     elif len(args.function_name) > 2:
-        combined_names = f"{len(args.function_name)}_functions"
+        combined_names = f"{len(args.function_name)}_functions_gridsearch"
     else:
-        combined_names = "_+_".join(args.function_name)
+        combined_names = "_+_".join(args.function_name) + "_gridsearch"
 
     if args.save_expression_set_location is not None:
-        es_save_path = Path(args.save_expression_set_location, combined_names + '_gridsearch.nkg')
+        es_save_path = Path(args.save_expression_set_location, combined_names).with_suffix(".nkg")
         print(f"Saving expression set to {es_save_path!s}")
         save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
     if args.single_participant_override is not None:
-        fig_save_path = Path(args.save_plot_location, combined_names + f'_gridsearch_{args.single_participant_override}_new.png')
+        fig_save_path = Path(args.save_plot_location, combined_names + f'_{args.single_participant_override}').with_suffix(".png")
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
     print(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
