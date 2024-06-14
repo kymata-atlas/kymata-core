@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,8 @@ from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.p_values import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
+
+_logger = getLogger(__name__)
 
 
 def do_gridsearch(
@@ -83,7 +86,7 @@ def do_gridsearch(
     func_length = n_splits * n_samples_per_split // 2
     if func_length < function.values.shape[0]:
         func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
-        print(f'WARNING: not using full 400s of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
+        _logger.warning(f'WARNING: not using full 400s of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
     else:
         func = function.values.reshape(n_splits, n_samples_per_split // 2)
     n_channels = emeg_values.shape[0]

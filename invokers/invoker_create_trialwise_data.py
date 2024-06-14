@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
+from logging import basicConfig, INFO
 from pathlib import Path
 
 from kymata.io.config import load_config, get_root_dir
+from kymata.io.logging import log_message, date_format
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
@@ -28,6 +30,7 @@ def main(config_filename: str):
 
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     parser = ArgumentParser(description='Create Trialwise Data')
     parser.add_argument('--config', type=str, default="dataset4.yaml")
     args = parser.parse_args()

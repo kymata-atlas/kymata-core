@@ -1,5 +1,8 @@
+from logging import basicConfig, INFO
 from pathlib import Path
 from os import path
+
+from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict
@@ -112,4 +115,5 @@ def main():
                                        | legend_display_dict(encoder5_list, 'Encoder layer 6'))
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()
