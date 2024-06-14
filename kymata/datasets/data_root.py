@@ -2,7 +2,7 @@ from os import getcwd, getenv
 from pathlib import Path
 from typing import Optional
 
-from kymata.io.file import path_type
+from kymata.io.file import PathType
 
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
@@ -17,13 +17,13 @@ _preferred_default_data_locations = [
 ]
 
 
-def data_root_path(data_root: Optional[path_type] = None) -> Path:
+def data_root_path(data_root: Optional[PathType] = None) -> Path:
 
     # Check if the data root has been specified
 
     # Might be in an environmental variable
     if data_root is None:
-        data_root: path_type | None = getenv(_DATA_PATH_ENVIRONMENT_VAR_NAME, default=None)
+        data_root: PathType | None = getenv(_DATA_PATH_ENVIRONMENT_VAR_NAME, default=None)
 
     # Might have been supplied as an argument
     if data_root is not None:

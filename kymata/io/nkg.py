@@ -16,7 +16,7 @@ from kymata.entities.expression import ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT, B
     SensorExpressionSet
 from kymata.math.p_values import p_to_logp
 from kymata.entities.sparse_data import expand_dims
-from kymata.io.file import path_type, file_type, open_or_use
+from kymata.io.file import PathType, FileType, open_or_use
 
 
 class _Keys(StrEnum):
@@ -64,13 +64,31 @@ class _ExpressionSetTypeIdentifier(StrEnum):
 CURRENT_VERSION = "0.4"
 
 
-def file_version(from_path_or_file: path_type | file_type) -> version.Version:
+def file_version(from_path_or_file: PathType | FileType) -> version.Version:
     with open_or_use(from_path_or_file, mode="rb") as archive, ZipFile(archive, "r") as zf:
         with TextIOWrapper(zf.open("_metadata/format-version.txt"), encoding="utf-8") as f:
             return version.parse(str(f.read()).strip())
 
 
-def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionSet:
+def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet:
+    """
+    Loads an ExpressionSet from the specified path or file.
+
+    The function determines the type of ExpressionSet (HexelExpressionSet or SensorExpressionSet)
+    based on the data loaded from the provided path or file. It then constructs and returns an
+    instance of the appropriate ExpressionSet subclass.
+
+    Args:
+        from_path_or_file (PathType | FileType): The path or file from which to load the data.
+
+    Returns:
+        ExpressionSet: An instance of either HexelExpressionSet or SensorExpressionSet,
+                           depending on the type identifier in the data.
+
+    Raises:
+        KeyError: If required keys are missing in the data dictionary.
+        ValueError: If the type identifier is not recognized.
+    """
     _v, data_dict = _load_data(from_path_or_file)
 
     type_identifier = data_dict[_Keys.expressionset_type]
@@ -97,15 +115,29 @@ def load_expression_set(from_path_or_file: path_type | file_type) -> ExpressionS
 
 
 def save_expression_set(expression_set: ExpressionSet,
-                        to_path_or_file: path_type | file_type,
+                        to_path_or_file: PathType | FileType,
                         compression=ZIP_LZMA,
                         overwrite: bool = False):
     """
-    Save the ExpressionSet to a specified path or already open file.
+    Save the given ExpressionSet to a specified path or an already open file.
 
-    If an open file is supplied, it should be opened in "wb" mode.
+    This function saves the ExpressionSet data into a compressed file format.
+    If a file path is provided, it creates and writes to the file. If an open file is supplied,
+    it should be opened in "wb" mode. The overwrite flag is ignored if an open file is supplied.
 
-    overwrite flag is ignored if open file is supplied.
+    Args:
+        expression_set (ExpressionSet): The ExpressionSet object to be saved.
+        to_path_or_file (PathType | FileType): The path or open file where the ExpressionSet will be saved.
+        compression: The compression method to use (default is ZIP_LZMA).
+        overwrite (bool): If True, allows overwriting an existing file (default is False).
+
+    Raises:
+        FileExistsError: If the specified path already exists and overwrite is False.
+        TypeError: If the provided path or file type is invalid.
+
+    Notes:
+        - The compression parameter should be compatible with the `ZipFile` class.
+        - The function writes various metadata and data blocks in a structured format within the zip file.
     """
 
     if isinstance(to_path_or_file, str):
@@ -128,7 +160,7 @@ def save_expression_set(expression_set: ExpressionSet,
             zf.writestr(f"/{block_name}/coo-shape.txt", "\n".join(str(x) for x in expression_set._data[block_name].data.shape))
 
 
-def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Version, dict[str, Any]]:
+def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version, dict[str, Any]]:
     """
     Load an ExpressionSet from an open file, or the file at the specified path.
 
@@ -252,7 +284,7 @@ def _load_data(from_path_or_file: path_type | file_type) -> tuple[version.Versio
 
 
 # noinspection DuplicatedCode
-def _load_data_current(from_path_or_file: path_type | file_type) -> dict[str, Any]:
+def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]:
     """
     Load data from current version
     """

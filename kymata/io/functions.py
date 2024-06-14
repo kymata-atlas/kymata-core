@@ -5,10 +5,10 @@ from numpy.typing import NDArray
 from scipy.io import loadmat
 
 from kymata.entities.functions import Function
-from kymata.io.file import path_type
+from kymata.io.file import PathType
 
 
-def load_function(function_path_without_suffix: path_type, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
+def load_function(function_path_without_suffix: PathType, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
@@ -42,21 +42,16 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
 
     else:
-        if function_path_without_suffix.with_suffix(".npz").exists():
-            func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
-            func = np.array(func_dict[func_name])
-        else:
-            mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
-            func_dict = {}
-            for key in mat.dtype.names:
-                if key == 'name':
-                    continue
-                func_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
-            np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)
-            func = np.array(mat[func_name][0][0])
+        if not function_path_without_suffix.with_suffix(".npz").exists():
+            if function_path_without_suffix.with_suffix(".mat").exists():
+                convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix)
+            else:
+                raise FileNotFoundError(f"{function_path_without_suffix}: neither .mat nor .npz found.")
 
-        if func_name in ('STL', 'IL', 'LTL'):
-            func = func.T
+        assert function_path_without_suffix.with_suffix(".npz").exists()
+
+        func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
+        func = np.array(func_dict[func_name])
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
@@ -66,3 +61,15 @@ def load_function(function_path_without_suffix: path_type, func_name: str, n_der
         values=func.flatten().squeeze(),
         sample_rate=1000,
     )
+
+
+def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
+    mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
+    print('Saving .mat as .npz ...')
+    func_dict = {}
+    for key in mat.dtype.names:
+        if key == 'name':
+            continue
+        func_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
+        func_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
+    np.savez(str(function_path_without_suffix.with_suffix(".npz")), **func_dict)

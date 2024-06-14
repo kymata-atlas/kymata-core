@@ -4,12 +4,12 @@ from kymata.io.config import load_config, get_root_dir
 from kymata.preproc.data_cleansing import estimate_noise_cov
 
 
-def main():
-    config = load_config(str(Path(Path(__file__).parent.parent, "kymata", "config", "dataset4.yaml")))
+def main(config_filename: str):
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     estimate_noise_cov(data_root_dir = get_root_dir(config),
                        emeg_machine_used_to_record_data = config['emeg_machine_used_to_record_data'],
-                       list_of_participants = config['list_of_participants'],
+                       list_of_participants = config['participants'],
                        dataset_directory_name  = config['dataset_directory_name'],
                        n_runs = config['number_of_runs'],
                        cov_method = config['cov_method'],
@@ -18,4 +18,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description='Create Trialwise Data')
+    parser.add_argument('--config', type=str, default="dataset4.yaml")
+    args = parser.parse_args()
+    main(config_filename=args.config)

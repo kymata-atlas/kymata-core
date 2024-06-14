@@ -1,0 +1,7 @@
+# Kymata gridsearch logs
+*.err
+*.out
+*.log
+*.err.txt
+*.out.txt
+*.log.txt

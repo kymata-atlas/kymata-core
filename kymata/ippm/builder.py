@@ -12,8 +12,8 @@ Node = namedtuple('Node', 'magnitude position in_edges')
 
 class IPPMBuilder(object):
     """
-        A graphing class used to construct a dictionary that contains the nodes and all relevant
-        information to construct a dict containing node names as keys and Node objects (see namedtuple) as values.
+    A graphing class used to construct a dictionary that contains the nodes and all relevant
+    information to construct a dict containing node names as keys and Node objects (see namedtuple) as values.
     """
 
     def build_graph(self,
@@ -22,82 +22,44 @@ class IPPMBuilder(object):
                     inputs : List[str],
                     hemi : str) -> Dict[str, Node]:
         """
-            Builds a dictionary of nodes and information about the node. The information
-            is built out of namedtuple class Node, which contains magnitude, position, color, and
-            the incoming edges
+        Builds a dictionary of nodes and information about the node. The information
+        is built out of namedtuple class Node, which contains magnitude, position, color, and
+        the incoming edges.
 
-            Analysis
-            --------
-            
-                sorting takes nlogn where n = # of hexels = 10000. assumption: quicksort == sort
-                we do it for every f, so f * nlogn
-                next we loop through every f and touch every pairing and parent. In the worst case,
-                the number of pairings == # of hexels, and # of parent == # of fs - 1. Hence, this
-                part has O(f * (n + f-1)) = O(f * n + f^2).
+        Args:
+            hexels (Dict[str, IPPMHexel]): Dictionary containing function names and Hexel objects with data in it.
+            function_hier (Dict[str, List[str]]): Dictionary of the format {function_name: [parent_functions]}.
+            inputs (List[str]): List of input functions. function_hier contains the input functions, so we need this
+                                to distinguish between inputs and functions.
+            hemi (str): 'leftHemisphere' or 'rightHemisphere'.
 
-                Total complexity: O(f * nlogn + f * n + f^2) 
-                What dominates: f * nlogn ~ f * n. if logn > 1, then f * nlogn > f * n.
-                                We have n = 10,000. So logn > 1, hence f * nlogn > f * n.
-                                As long as n >= 10, logn >= 1. Since this is big-O, we take worst
-                                case but in reality, the # of pairings is typically from 0-10.
-                                So, f * n >= f * nlogn but big-O is worst-case, so we stick with nlogn.
+        Returns:
+            Dict[str, Node]: A dictionary of nodes with unique names where the keys are node objects with all
+                             relevant information for plotting a graph.
 
-                                f * nlogn ~ f^2. if nlogn > f, f * nlogn > f^2.
-                                assuming n = 10,000, nlogn = 40000 > f = 12.
-                                         f = 12
-                                Hence, f * nlogn is actually the dominant term.
-                                Can we reduce it? It would involve updating the algorithm to avoid
-                                sorting prior to building the graph. The primary we reason to sort
-                                is so that we can exploit the naming of functions being ordered and
-                                immediately add an edge from the last pairing of a parent to the first
-                                pairing of a child. Without it being sorted, we would have to loop 
-                                through the parent pairings to locate the last node. Hence, 
-                                the complexity becomes: O(f * (n - (f - 1) * n)) = O(f * n - f^2 * n).
-                                Now f^2 * n > nlogn, so it would actually make the algorithm slower.
-                                Moreover, we took an unrealistic worst case assumption of n = 10,000.
-                                In reality, it would be between 0-10, so nlogn would be approximately less
-                                than or equal to f. So, in practice, it would not dominate. Especially 
-                                as the dataset quality improves, the number of spikes would go down and
-                                the number of functions would increase.
+        Analysis:
+            The overall complexity of the algorithm is O(f * nlogn) where:
 
-                                Therefore, we cannot reduce the complexity further. 
-                                Final complexity: O(f * nlogn).
+             - f is the number of functions.
+             - n is the number of hexels.
 
+            The sorting step takes O(f * nlogn).
 
-                Space Complexity: Let n be the maximum pairs of spikes out of all functions. 
-                    We copy hexels, so O(n * f)
-                    We copy func hier, so O(f * (f-1)) = O(f^2)
-                    Our dict will contain a key for every pairing. Hence, it will be of size O(f * n).
-                    Total space: O(n * f + f^2 + f * n) = O(f * n).
+            Looping through functions and parents contributes O(f * n + f^2).
 
-                We could feasibly trade-off time for space complexity but I think it is good as it is.
+            Space Complexity:
 
-            Algorithm
-            ---------
+             - Total space complexity is O(f * n), which includes copies of hexels and function hierarchy.
 
-            It iteratively selects the top-level function, which is defined as a function that does not
-            have any children, i.e., it does not have any arrows going out of it. Hence, it starts with the final function and proceeds
-            in a top-down fashion towards the input node. Upon selecting a top-level function, it creates a spike for every pairing in
-            the best_pairings. Since the spikes are already ordered, we get a nice labelling where func_name-0 corresponds to the earliest
-            spike and func_name-{len(pairings)}-1 is the final spike. Next, we go through the parents (incoming edges) and add an edge
-            from the final function (i.e., inc_edge_func_name-{len(pairings)}-1) to the first current function (func_name-0). We repeat this
-            for all functions. Last thing to note is that the input node has to be defined because it is treated differently to the rest. The
-            input function has only 1 spike and a default size of 10 at latency == 0.
+            The analysis section provides detailed reasoning for the complexities.
 
-            We do it top-down to make the ordering of nodes clean. Otherwise, we can get a messy jumble of nodes with the input in the middle and 
-            the final output randomly assigned. 
-
-            Params
-            ------
-            - hexels : dictionary containing function names and Hexel objects with data in it.
-            - function_hier : dictionary of the format (function_name : [parent_functions])
-            - inputs : list of input functions. function_hier contains the input functions, so we need this to distinguish between inputs and functions.
-            - hemi : leftHemisphere or rightHemisphere
-
-            Returns
-            -------
-            A dictionary of nodes with unique names where the keys are node objects with all
-            relevant information for plotting a graph.
+        Algorithm:
+            The algorithm iteratively selects the top-level function, defined as a function that does not
+            have any children (no outgoing arrows). It starts with the final function and proceeds
+            in a top-down fashion towards the input node. Each selected top-level function creates a spike for every
+            pairing in the best_pairings. Edges are added from the final function of each parent to the first current
+            function, repeating for all functions. The input node is treated differently with a default size of 10 at
+            latency 0.
         """
 
         hexels = deepcopy(hexels) # do it in-place to avoid modifying hexels.

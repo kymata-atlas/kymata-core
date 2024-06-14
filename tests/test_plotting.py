@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import pytest
 from numpy import array, array_equal
 
 from kymata.datasets.sample import delete_dataset
+from kymata.io.nkg import load_expression_set
+from kymata.plot.color import gradient_color_dict
 from kymata.plot.plot import _get_best_ylim, _MAJOR_TICK_SIZE, _get_yticks, _get_xticks, expression_plot
 
 
@@ -458,3 +462,20 @@ def test_eeg_left_right_medial_count(eeg_sensors):
     assert len(both_eeg) == 10
     assert len(top_eeg) == 27
     assert len(bottom_eeg) == 27
+
+
+def test_expression_set_plot_with_explicit_colour_for_hidden_function():
+    es = load_expression_set(Path(Path(__file__).parent, "test-data", "many_functions.nkg"))
+    expression_plot(es,
+                    color=gradient_color_dict([
+                            'd_IL1',
+                            'd_IL2',
+                            'd_IL3',
+                            'd_IL4',
+                            'd_IL5',
+                            'd_IL6',
+                            'd_IL7',
+                            'd_IL8',
+                            'd_IL9',
+                        ], start_color="orange", stop_color="yellow"),
+                    show_only=['d_IL1'])

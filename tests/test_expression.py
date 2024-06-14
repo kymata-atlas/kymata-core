@@ -70,6 +70,70 @@ def test_ses_best_function():
     assert DataFrame(best_function_df == correct).values.all()
 
 
+def test_ses_best_function_with_one_channel_all_1s():
+    from numpy import array
+    from numpy.typing import NDArray
+    from pandas import DataFrame
+    sensors = [str(i) for i in range(4)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        #  0    1    2  latencies
+        [  1,   1,   1],  # 0  <-- set sensor 0 to 1 for some reason
+        [  1,   1,  .2],  # 1
+        [ .1,   1,   1],  # 2
+        [ .2,   1,   1],  # 3 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [ 1,    1,   1],
+        [ 1,   .1,   1],
+        [ 1,   .2,   1],
+        [ 1,    1,  .1],
+    ])))
+    es = SensorExpressionSet(functions=["a", "b"],
+                             sensors=sensors,  # 4
+                             latencies=range(3),
+                             data=[function_a_data, function_b_data])
+    best_function_df: DataFrame = es.best_functions()
+    correct: DataFrame = DataFrame.from_dict({
+        "sensor":               ["1", "2", "3"],
+        DIM_FUNCTION:           ["b", "a", "b"],
+        DIM_LATENCY:            [  1,   0,   2 ],
+        "value":      p_to_logp([ .1,  .1,  .1 ]),
+    })
+    assert DataFrame(best_function_df == correct).values.all()
+
+
+def test_ses_best_function_with_one_channel_all_nans():
+    from numpy import array, nan
+    from numpy.typing import NDArray
+    from pandas import DataFrame
+    sensors = [str(i) for i in range(4)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        #  0    1    2  latencies
+        [nan, nan, nan],  # 0  <-- set sensor 0 to nans for some reason
+        [  1,   1,  .2],  # 1
+        [ .1,   1,   1],  # 2
+        [ .2,   1,   1],  # 3 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [nan, nan, nan],
+        [ 1,   .1,   1],
+        [ 1,   .2,   1],
+        [ 1,    1,  .1],
+    ])))
+    es = SensorExpressionSet(functions=["a", "b"],
+                             sensors=sensors,  # 4
+                             latencies=range(3),
+                             data=[function_a_data, function_b_data])
+    best_function_df: DataFrame = es.best_functions()
+    correct: DataFrame = DataFrame.from_dict({
+        "sensor":               ["1", "2", "3"],
+        DIM_FUNCTION:           ["b", "a", "b"],
+        DIM_LATENCY:            [  1,   0,   2 ],
+        "value":      p_to_logp([ .1,  .1,  .1 ]),
+    })
+    assert DataFrame(best_function_df == correct).values.all()
+
+
 # Test ExpressionSet arg validations
 
 def test_ses_validation_input_lengths_two_functions_one_dataset():
@@ -190,3 +254,64 @@ def test_hes_validation_mixmatched_hexels_between_functions():
                            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
                            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
                            )
+
+
+def test_hes_rename_functions():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first_renamed", "second_renamed"],
+                                   hexels_lh=range(5),
+                                   hexels_rh=range(5),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(functions={"first": "first_renamed", "second": "second_renamed"})
+    assert es == target_es
+
+
+def test_hes_rename_functions_just_one():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first_renamed", "second"],
+                                   hexels_lh=range(5),
+                                   hexels_rh=range(5),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(functions={"first": "first_renamed"})
+    assert es == target_es
+
+
+def test_hes_rename_functions_wrong_name():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    with pytest.raises(KeyError):
+        es.rename(functions={"first": "first_renamed", "missing": "second_renamed"})

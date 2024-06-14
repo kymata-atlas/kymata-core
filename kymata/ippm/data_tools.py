@@ -18,6 +18,7 @@ from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LAT
 
 Node = namedtuple('Node', 'magnitude position in_edges')
 
+
 class IPPMHexel(object):
     """
         Container to hold data about a hexel spike.
@@ -215,6 +216,7 @@ def stem_plot(
 
     plt.show()
 
+
 def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: Dict[str, List[str]], hemi: str, inputs: List[str]) -> Tuple[float, int, int]:
     """
         Assumption: hexels are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy hexels.
@@ -373,6 +375,7 @@ def remove_excess_funcs(to_retain: List[str], hexels: Dict[str, IPPMHexel]) -> D
             hexels.pop(func)
     return hexels
 
+
 def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: bool=False):
     """
         This could be optimised further but since we aren't using it, we can leave it as it is.
@@ -411,6 +414,7 @@ def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: boo
     sorted_k_dists = sorted(k_dists, reverse=True)
     plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
     plt.show()
+
 
 def copy_hemisphere(
     hexels_to: Dict[str, IPPMHexel], 
@@ -455,6 +459,7 @@ def copy_hemisphere(
             hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
         else:
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
+
 
 def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer, title: str):
     """

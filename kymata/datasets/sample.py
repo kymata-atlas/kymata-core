@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from os import remove, rmdir
 from pathlib import Path
 from typing import Optional
 from urllib import request
 
 from kymata.datasets.data_root import data_root_path
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
-from kymata.io.file import path_type
+from kymata.io.file import PathType
 from kymata.io.nkg import load_expression_set
 
 _SAMPLE_DATA_DIR_NAME = "tutorial_nkg_data"
@@ -19,13 +18,13 @@ class SampleDataset(ABC):
     Names in `.filenames` refer to local files, which (if `remote_root` is specified) are paired with identically
     named remote files.
     """
-
     def __init__(self,
                  name: str,
                  filenames: list[str],
-                 data_root: Optional[path_type],
+                 data_root: Optional[PathType],
                  remote_root: Optional[str],
                  download: bool):
+
         self.name: str = name
         self.filenames: list[str] = filenames
         self.data_root: Path = Path(data_root_path(data_root), _SAMPLE_DATA_DIR_NAME)
@@ -56,13 +55,15 @@ class SampleDataset(ABC):
                 print(f"Downloading {remote} to {local}")
                 request.urlretrieve(remote, local)
 
+
+class SampleExpressionDataset(SampleDataset, ABC):
     @abstractmethod
     def to_expressionset(self) -> HexelExpressionSet:
         raise NotImplementedError()
 
 
-class KymataMirror2023Q3Dataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+class KymataMirror2023Q3Dataset(SampleExpressionDataset):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "kymata_mirror_Q3_2023"
         super().__init__(
             name=name,
@@ -80,8 +81,8 @@ class KymataMirror2023Q3Dataset(SampleDataset):
         return es
 
 
-class TVLInsLoudnessOnlyDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+class TVLInsLoudnessOnlyDataset(SampleExpressionDataset):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_ins_loudness_only"
         super().__init__(
             name=name,
@@ -99,8 +100,8 @@ class TVLInsLoudnessOnlyDataset(SampleDataset):
         return es
 
 
-class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+class TVLDeltaInsTC1LoudnessOnlyDataset(SampleExpressionDataset):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only"
         super().__init__(
             name=name,
@@ -118,8 +119,8 @@ class TVLDeltaInsTC1LoudnessOnlyDataset(SampleDataset):
         return es
 
 
-class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
-    def __init__(self, data_root: Optional[path_type] = None, download: bool = True):
+class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleExpressionDataset):
+    def __init__(self, data_root: Optional[PathType] = None, download: bool = True):
         name = "TVL_2020_delta_ins_tontop_chan1_loudness_only_sensors"
         super().__init__(
             name=name,
@@ -138,6 +139,7 @@ class TVLDeltaInsTC1LoudnessOnlySensorsDataset(SampleDataset):
 
 
 def delete_dataset(local_dataset: SampleDataset):
+    from shutil import rmtree
     # Make sure it's not silent
     print(f"Deleting dataset {local_dataset.name}")
     # Only allow deletion if the specified url is within the data dir
@@ -147,9 +149,5 @@ def delete_dataset(local_dataset: SampleDataset):
         print(f"{str(local_dataset.path)} doesn't exist")
         return
 
-    for file in local_dataset.filenames:
-        to_delete = Path(local_dataset.path, file)
-        print(f"Deleting file {str(to_delete)}")
-        remove(to_delete)
-    print(f"Deleting directory {str(local_dataset.path)}")
-    rmdir(local_dataset.path)
+    # We passed the checks, do the delete
+    rmtree(local_dataset.path)

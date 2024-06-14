@@ -7,35 +7,65 @@ from warnings import warn
 import numpy as np
 import mne
 
+from kymata.io.file import PathType
+
 _logger = getLogger(__name__)
 
 
-def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None):
+def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None, old_morph=False, invsol_npy_path=None, ch_names_path: Path = None):
     """
-    When using the inverse operator, returns left and right hemispheres concatenated
+    When using the inverse operator, returns left and right hemispheres concatenated.
+
+    old_morph: forces loading of mne morph map
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
+    if inverse_operator is None:
+        ch_names_path = Path(emeg_path.parent, "ch_names.npy")
     if isfile(emeg_path_npy) and (not need_names) and (inverse_operator is None) and (morph_path is None):
-        ch_names: list[str] = []
+        ch_names: list[str] = np.load(ch_names_path)
         emeg = np.load(emeg_path_npy)
     else:
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
-        evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
         if inverse_operator is not None:
             _logger.info(f"Reading source morph from {morph_path}")
-            morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
-            lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
-            # Stack into a single matrix, to be split after gridsearch
-            emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
-            del lh_emeg, rh_emeg
+
+            if old_morph:
+                evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
+                morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
+                lh_emeg, rh_emeg, ch_names = inverse_operate(evoked[0], inverse_operator, snr, morph_map=morph_map)
+                # Stack into a single matrix, to be split after gridsearch
+                emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
+                del evoked
+
+            else:
+                if invsol_npy_path is not None and Path(invsol_npy_path).exists():
+                    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
+                    edat = evoked[0].data
+                    del evoked
+
+                    npy_invsol = np.load(invsol_npy_path)
+                    emeg = np.matmul(npy_invsol, edat)
+                
+                else:
+                    from kymata.preproc.get_invsol_npy import get_invsol_npy
+
+                    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
+                    mne.set_eeg_reference(evoked[0], projection=True, verbose=False)
+                    emeg, ch_names = get_invsol_npy(morph_path, evoked[0], inverse_operator, snr**-2, 'MNE', pick_ori='normal')
+                    del evoked
+
+                ch_names = np.load(ch_names_path, allow_pickle=True)
+
         else:
+            evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
             emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
             ch_names = evoked[0].ch_names
-            emeg /= np.max(emeg, axis=1, keepdims=True)
             if not isfile(emeg_path_npy):
                 np.save(emeg_path_npy, np.array(emeg, dtype=np.float16))
-        del evoked
+            if not isfile(ch_names_path):
+                np.save(ch_names_path, ch_names)
+            del evoked
     return emeg, ch_names
 
 
@@ -209,16 +239,30 @@ def __mne_apply_morph_data(morph, stc_from):
     return stc_to
 
 
-def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mode=None, inverse_operator_dir=None, inverse_operator_suffix=None, p_tshift=None, snr=4,
-                   use_morph: bool = False):
-
+def load_emeg_pack(emeg_filenames,
+                   emeg_dir: PathType,
+                   inverse_operator_dir: Optional[PathType],
+                   ch_names_path: Path,
+                   morph_dir: Optional[PathType] = None,
+                   need_names=False,
+                   ave_mode=None,
+                   inverse_operator_suffix=None,
+                   p_tshift=None,
+                   snr=4,
+                   old_morph=False,
+                   invsol_npy_dir=None,
+                   ):
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
     ]
     n_reps = len(emeg_paths)
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if use_morph else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if morph_dir is not None else None
+        for emeg_fn in emeg_filenames
+    ]
+    invsol_paths = [
+        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
@@ -230,20 +274,20 @@ def load_emeg_pack(emeg_filenames, emeg_dir, morph_dir, need_names=False, ave_mo
         inverse_operator_paths = [None] * len(emeg_filenames)
     if p_tshift is None:
         p_tshift = [0]*len(emeg_paths)
-    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0])
+    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0], old_morph=old_morph, invsol_npy_path=invsol_paths[0], ch_names_path=ch_names_path)
     emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
     if ave_mode == 'concatenate':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
             new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                        morph_paths[i])[0][:, t_shift:402001 + t_shift]
+                                        morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i], ch_names_path=ch_names_path)[0][:, t_shift:402001 + t_shift]
             emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
     elif ave_mode == 'ave':
         for i in range(1, len(emeg_paths)):
             t_shift = p_tshift[i]
             emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                                    morph_paths[i])[0][:, t_shift:402001 + t_shift], 1)
+                                                    morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i], ch_names_path=ch_names_path)[0][:, t_shift:402001 + t_shift], 1)
         n_reps = 1 # n_reps is now 1 as all averaged
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
@@ -256,3 +300,7 @@ def _strip_ave(name: str) -> str:
     else:
         return name
 
+def _strip_file_ext(name: str) -> str:
+    """Returns a string, minus the final `.` and anything following it."""
+    parts = name.split(".")
+    return ".".join(parts[:-1])

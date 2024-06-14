@@ -1,0 +1,92 @@
+site_name: Kymata Core
+repo_url: https://github.com/kymata-atlas/kymata-toolbox
+repo_name: kymata-atlas/kymata-toolbox
+site_description: Documentation for the core Kymata Atlas codebase.
+theme:
+  custom_dir: docs/overrides
+  name: material
+  icon:
+    repo: fontawesome/brands/git-alt
+  logo: assets/images/logo.png
+  favicon: assets/images/favicon.png
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  language: en
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+
+extra_css:
+  - stylesheets/kymata-documentation.css
+
+nav:
+- Home:
+  - index.md
+- Overview:
+  - overview.md
+- Getting Started:
+  - getting-started.md
+- Code Reference:
+  - reference.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kymata-atlas
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          show_root_full_path: true
+          options:
+            show_source: false
+            docstring_style: google
+            docstring_section_style: list
+            filters: [ "!^_" ]
+            heading_level: 2
+            inherited_members: true
+            merge_init_into_class: true
+            parameter_headings: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_root_full_path: true
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.mark
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+copyright: |
+  &copy; 2024 <a href="https://kymata.org"  target="_blank" rel="noopener">Kymata.org</a>

@@ -10,7 +10,28 @@ from numpy.typing import NDArray
 
 
 def all_equal(sequence: Sequence) -> bool:
-    """All entries in Iterable are the same."""
+    """
+    Check if all elements in the sequence are the same.
+
+    This function tests whether all elements in the provided sequence are equal. It handles special cases for
+    sequences of length 0 or 1, and includes specific handling for numpy arrays due to their unique behavior
+    with equality checks.
+
+    Args:
+        sequence (Sequence): A sequence of elements to be checked for equality. This can be any iterable
+                             including lists, tuples, or numpy arrays.
+
+    Returns:
+        bool: True if all elements in the sequence are equal, False otherwise.
+
+    Notes:
+        - An empty sequence returns True as there are no elements to compare (universal quantification over
+          an empty set is true).
+        - A sequence with one element returns True as the single element is trivially equal to itself.
+        - For numpy arrays, the function ensures element-wise comparison using the `.all()` method to handle
+          array equality correctly.
+    """
+
     if len(sequence) == 0:
         # universal quantification over empty set is always true
         return True
