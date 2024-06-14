@@ -12,9 +12,11 @@ from kymata.io.file import PathType
 _logger = getLogger(__name__)
 
 
-def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None, old_morph=False, invsol_npy_path=None, ch_names_path=None):
+def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None, old_morph=False, invsol_npy_path=None, ch_names_path: Path = None):
     """
-    When using the inverse operator, returns left and right hemispheres concatenated
+    When using the inverse operator, returns left and right hemispheres concatenated.
+
+    old_morph: forces loading of mne morph map
     """
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
@@ -240,6 +242,7 @@ def __mne_apply_morph_data(morph, stc_from):
 def load_emeg_pack(emeg_filenames,
                    emeg_dir: PathType,
                    inverse_operator_dir: Optional[PathType],
+                   ch_names_path: Path,
                    morph_dir: Optional[PathType] = None,
                    need_names=False,
                    ave_mode=None,
@@ -248,7 +251,6 @@ def load_emeg_pack(emeg_filenames,
                    snr=4,
                    old_morph=False,
                    invsol_npy_dir=None,
-                   ch_names_path="/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/interim_preprocessing_files/4_hexel_current_reconstruction/npy_invsol/ch_names.npy",
                    ):
     emeg_paths = [
         Path(emeg_dir, emeg_fn)

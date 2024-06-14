@@ -1,7 +1,7 @@
 from pathlib import Path
 import argparse
 import time
-import sys
+from sys import stdout
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -122,11 +122,11 @@ def main():
                                                    snr=args.snr,
                                                    old_morph=False,
                                                    invsol_npy_dir=invsol_npy_dir,
-                                                   ch_names_path="/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/interim_preprocessing_files/4_hexel_current_reconstruction/npy_invsol/ch_names.npy",
+                                                   ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
                                                    )
 
     print(f'Time to load emeg: {time.time() - t0:.4f}')
-    sys.stdout.flush()  # make sure the above print statement shows up as soon as print is called
+    stdout.flush()  # make sure the above print statement shows up as soon as print is called
 
     combined_expression_set = None
 

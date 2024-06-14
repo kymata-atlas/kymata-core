@@ -1,10 +1,9 @@
-# Config file for Kymata Dataset 4.00
+# Config file for Kymata Dataset 4.10
 
 # General
 data_location: "cbu-local"                # local | cbu | cbu-local
 dataset_directory_name: "dataset_4.1-ru_narr_en_native"
 mri_structurals_directory: "raw_mri_structurals"
-
 
 # General information related to the dataset
 participants: [
@@ -43,6 +42,6 @@ tactile_delivery_latency: 0.00      # in seconds
 audio_delivery_shift_correction: 0.0005410   # in seconds per second
 latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
 
-eeg_thresh: 1 #200e-6
+eeg_thresh:  1 #200e-6
 grad_thresh: 1 #4000e-13
-mag_thresh: 1 #4000e-15
+mag_thresh:  1 #4000e-15
