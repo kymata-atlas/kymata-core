@@ -1,4 +1,5 @@
 import os.path
+from logging import getLogger
 from typing import Optional
 
 from colorama import Fore, Style
@@ -12,6 +13,8 @@ import seaborn as sns
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
 from kymata.io.file import PathType
+
+_logger = getLogger(__name__)
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],

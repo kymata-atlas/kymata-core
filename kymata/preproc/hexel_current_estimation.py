@@ -1,7 +1,10 @@
+from logging import getLogger
 from os import path
 from pathlib import Path
 
 import mne
+
+_logger = getLogger(__file__)
 
 
 def create_current_estimation_prerequisites(data_root_dir, config: dict):
@@ -333,7 +336,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
             )
             morph.save(morphmap_filename)
         else:
-            print("Morph maps already created")
+            _logger.info("Morph maps already created")
 
 
 def average_participants_hexel_currents(participants, inputstream):

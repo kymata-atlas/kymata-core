@@ -1,3 +1,4 @@
+from logging import getLogger, basicConfig, INFO
 from pathlib import Path
 import argparse
 import time
@@ -7,11 +8,13 @@ from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.config import load_config
+from kymata.io.logging import log_message, date_format
 from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot
 
 _default_output_dir = Path(data_root_path(), "output")
+_logger = getLogger(__file__)
 
 
 def get_config_value_with_fallback(config: dict, config_key: str, fallback):
@@ -21,7 +24,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     try:
         return config[config_key]
     except KeyError:
-        print(f"Config did not contain any value for \"{config_key}\", falling back to default value {fallback}")
+        _logger.error(f"Config did not contain any value for \"{config_key}\", falling back to default value {fallback}")
         return fallback
 
 
@@ -101,9 +104,9 @@ def main():
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    print(f"Gridsearch in {channel_space} space")
+    _logger.info(f"Gridsearch in {channel_space} space")
     if args.morph:
-        print("Morphing to common space")
+        _logger.info("Morphing to common space")
 
     t0 = time.time()
 
@@ -125,13 +128,15 @@ def main():
                                                    ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
                                                    )
 
-    print(f'Time to load emeg: {time.time() - t0:.4f}')
+    time_to_load = time.time() - t0
+    print(f'Time to load emeg: {time_to_load:.4f}')
     stdout.flush()  # make sure the above print statement shows up as soon as print is called
+    _logger.info(f'Time to load emeg: {time_to_load:.4f}')
 
     combined_expression_set = None
 
     for function_name in args.function_name:
-        print(f"Running gridsearch on {function_name}")
+        _logger.info(f"Running gridsearch on {function_name}")
         function_values = load_function(Path(base_dir, args.function_path),
                                         func_name=function_name,
                                         bruce_neurons=(5, 10))
@@ -170,18 +175,19 @@ def main():
 
     if args.save_expression_set_location is not None:
         es_save_path = Path(args.save_expression_set_location, combined_names).with_suffix(".nkg")
-        print(f"Saving expression set to {es_save_path!s}")
+        _logger.info(f"Saving expression set to {es_save_path!s}")
         save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
     if args.single_participant_override is not None:
         fig_save_path = Path(args.save_plot_location, combined_names + f'_{args.single_participant_override}').with_suffix(".png")
     else:
         fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
-    print(f"Saving expression plot to {fig_save_path!s}")
+    _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
-    print(f'Time taken for code to run: {time.time() - start:.4f} s')
+    _logger.info(f'Time taken for code to run: {time.time() - start:.4f} s')
 
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()
