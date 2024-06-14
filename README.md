@@ -129,7 +129,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- LICENSE -->
+<!-- REFERENCES -->
 ## References
 
 [^1]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
