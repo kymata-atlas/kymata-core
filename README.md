@@ -11,7 +11,7 @@
             <h3>Kymata Core</h3>
             <p>Core codebase for the Kymata Atlas
             <br>
-            <a href="https://kymata-atlas.github.io/kymata-toolbox"><strong>Explore the docs »</strong></a>
+            <a href="https://kymata-atlas.github.io/kymata-core"><strong>Explore the docs »</strong></a>
             </p>
         </div>
     </div>
@@ -36,10 +36,10 @@ _Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kyma
 The central pipeline includes:
 * Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
 * Gridsearch approaches for function mapping;
-* Information Processing Pathway Map1 generation (both offline generation and evaluation);
+* Information Processing Pathway Map[^2] generation (both offline generation and evaluation);
 * Plotting functionality
 
-The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas.[^2] While
+The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas. While
 comments and issues are welcomed, we are unable to prioritise installation support (please see our code of
 conduct).
 
@@ -108,7 +108,7 @@ $ poetry run mkdocs serve check
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Please refer to the [documentation](https://kymata-atlas.github.io/kymata-toolbox), or see the `demos/` folder for example code, including test
+Please refer to the [documentation](https://kymata-atlas.github.io/kymata-core), or see the `demos/` folder for example code, including test
 data.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -132,5 +132,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- REFERENCES -->
 ## References
 
-[^1]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
-[^2]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Lakra, Woolgar, Zhang (2024) _The Kymata Atlas_ (In Prep.)
+[^1]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Lakra, Woolgar, Zhang (2024) _The Kymata Atlas_ (In Prep.)
+[^2]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
+
