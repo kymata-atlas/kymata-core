@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import time
+from sys import stdout
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -95,6 +96,7 @@ def main():
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
     morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
+    invsol_npy_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "npy_invsol")
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
@@ -102,6 +104,9 @@ def main():
     print(f"Gridsearch in {channel_space} space")
     if args.morph:
         print("Morphing to common space")
+
+    t0 = time.time()
+
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
                                                    emeg_dir=emeg_path,
                                                    morph_dir=morph_dir
@@ -112,11 +117,16 @@ def main():
                                                    inverse_operator_dir=inverse_operator_dir
                                                                         if args.use_inverse_operator
                                                                         else None,
-                                                   inverse_operator_suffix= args.inverse_operator_suffix,
+                                                   inverse_operator_suffix=args.inverse_operator_suffix,
                                                    p_tshift=None,
                                                    snr=args.snr,
+                                                   old_morph=False,
+                                                   invsol_npy_dir=invsol_npy_dir,
+                                                   ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
                                                    )
 
+    print(f'Time to load emeg: {time.time() - t0:.4f}')
+    stdout.flush()  # make sure the above print statement shows up as soon as print is called
 
     combined_expression_set = None
 
@@ -150,19 +160,23 @@ def main():
 
     assert combined_expression_set is not None
 
+    combined_names: str
     if args.save_name is not None and len(args.save_name) > 0:
         combined_names = args.save_name
     elif len(args.function_name) > 2:
-        combined_names = f"{len(args.function_name)}_functions"
+        combined_names = f"{len(args.function_name)}_functions_gridsearch"
     else:
-        combined_names = "_+_".join(args.function_name)
+        combined_names = "_+_".join(args.function_name) + "_gridsearch"
 
     if args.save_expression_set_location is not None:
-        es_save_path = Path(args.save_expression_set_location, combined_names + '_gridsearch.nkg')
+        es_save_path = Path(args.save_expression_set_location, combined_names).with_suffix(".nkg")
         print(f"Saving expression set to {es_save_path!s}")
         save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
-    fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
+    if args.single_participant_override is not None:
+        fig_save_path = Path(args.save_plot_location, combined_names + f'_{args.single_participant_override}').with_suffix(".png")
+    else:
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
     print(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
