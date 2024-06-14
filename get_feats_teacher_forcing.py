@@ -40,11 +40,11 @@ def get_features(name):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
-          features[name] = torch.cat((features[name], output), -1)
+          features[name] = torch.cat((features[name], output.detach()), -1)
         else:
-          features[name] = torch.cat((features[name], output), -2)
+          features[name] = torch.cat((features[name], output.detach()), -2)
       else:
-        features[name] = output
+        features[name] = output.detach()
   return hook
 
 def evaluate_whisper(audio_data, reference_text):
@@ -63,7 +63,11 @@ def evaluate_whisper(audio_data, reference_text):
   # Tokenize reference text
   target_tokens = tokenizer(reference_text, return_tensors="pt").input_ids
 
+  target_tokens_force = target_tokens[:, 3:]
+
   target_tokens = target_tokens[:, 2:-1]
+
+  # import ipdb;ipdb.set_trace()
 
   # Initialize predicted tokens
   predicted_tokens = []
@@ -102,15 +106,15 @@ def evaluate_whisper(audio_data, reference_text):
       predicted_token = torch.argmax(logits[:, -1, :], dim=-1).item()
       predicted_tokens.append(predicted_token)
 
-  # Convert predicted tokens to text
-  predicted_text = tokenizer.decode(predicted_tokens, skip_special_tokens=False)
+  # # Convert predicted tokens to text
+  # predicted_text = tokenizer.decode(predicted_tokens, skip_special_tokens=False)
 
   # Compute evaluation metrics (e.g., WER, CER, BLEU)
 
   # import ipdb;ipdb.set_trace()
 
   # Return evaluation results
-  return predicted_text
+  return [tokenizer.decode(i, skip_special_tokens=False) for i in target_tokens_force[0]]
 
 if whisper_outs:
 # if True:
@@ -129,6 +133,8 @@ if whisper_outs:
     if isinstance(layer, torch.nn.Module):
         layer.register_forward_hook(get_features(name))
 
+  reference_word_piece = []
+
   for i in range(14):
     audio_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.wav')
     transcription_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.txt')
@@ -144,7 +150,7 @@ if whisper_outs:
     reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text
 
     # Evaluate
-    predicted_transcription = evaluate_whisper(audio_data, reference_text)
+    reference_word_piece += evaluate_whisper(audio_data, reference_text)
 
     # import ipdb;ipdb.set_trace()
   
@@ -196,3 +202,8 @@ if whisper_outs and save_outs:
   # Now save the data
   if not os.path.isfile(f'{directory}{func_name}.npz'):
     np.savez(f'{directory}{func_name}.npz', **features)
+
+  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
+    text = "\n".join(reference_word_piece)
+    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
+      file.write(text)

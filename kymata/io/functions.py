@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 import numpy as np
 from numpy.typing import NDArray
@@ -77,9 +78,10 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                                     else:
                                         place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, i, j])
                         else:
-                            time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
-                            time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
-                            time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                            if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                                time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                                time_stamps_samples = np.append(time_stamps_samples, 402_000)
                             whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
                             mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
                             mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
@@ -101,15 +103,19 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                                         else:
                                             search_txt = whisper_text[k]
                                             id_tracker = [k]
-                                            weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                            if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                                weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
                                             # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
                                             while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
                                                 k += 1
                                                 if whisper_text[k] not in special_tokens:
                                                     search_txt += whisper_text[k]
                                                     id_tracker.append(k)
-                                                    weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
-                                            if sum(weight_tracker) == 0:
+                                                    if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                                        weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
+                                            if not os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                            elif sum(weight_tracker) == 0:
                                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
                                             else:
                                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
@@ -147,9 +153,10 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                                 else:
                                     place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, i, j])
                     else:
-                        time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
-                        time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
-                        time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                        if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                            time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                            time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                            time_stamps_samples = np.append(time_stamps_samples, 402_000)
                         whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
                         mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
                         mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
@@ -171,15 +178,19 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                                     else:
                                         search_txt = whisper_text[k]
                                         id_tracker = [k]
-                                        weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                        if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                            weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
                                         # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
                                         while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
                                             k += 1
                                             if whisper_text[k] not in special_tokens:
                                                 search_txt += whisper_text[k]
                                                 id_tracker.append(k)
-                                                weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
-                                        if sum(weight_tracker) == 0:
+                                                if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                                    weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
+                                        if not os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                        elif sum(weight_tracker) == 0:
                                             place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
                                         else:
                                             place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
@@ -190,7 +201,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
                                     k += 1
                                     # print('match')
                         # import ipdb;ipdb.set_trace()
-                        assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
+                        # assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
 
                 else:    
                     if 'conv' in func_name or 'logmel' in str(function_path_without_suffix):

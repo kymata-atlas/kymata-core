@@ -17,7 +17,7 @@ start_time = time.time()
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
-test = False
+test = True
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 
@@ -30,10 +30,12 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-ablation_param = ['decoder', '15', 1211]
-func_name = f'whisper_large_ablation_{ablation_param[0]}_{ablation_param[1]}_{str(ablation_param[2])}'
+ablation_param = ['decoder', '2', 'test_1']
+func_name = f'whisper_tiny_ablation_{ablation_param[0]}_{ablation_param[1]}_{str(ablation_param[2])}'
 
-neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': [int(ablation_param[2])]}
+# neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': [int(ablation_param[2])]}
+# neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': {range(5,1000)}}
+neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': {range(0,300)}}
 timestamps = []
 text = []
 text_with_time = []
@@ -100,14 +102,6 @@ if whisper_outs and save_outs:
   # import ipdb;ipdb.set_trace()
 
   # Check if the directory exists, if not, create it
-  directory = f'{func_dir}/predicted_function_contours/asr_models/'
-  if not os.path.exists(directory):
-    os.makedirs(directory)
-  # Now save the data
-  if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
-    plt.plot(timestamps)
-    plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
-    plt.close()
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
     text = "\n".join(text)
     with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
