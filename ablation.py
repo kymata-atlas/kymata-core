@@ -101,7 +101,11 @@ if whisper_outs and save_outs:
 
   # import ipdb;ipdb.set_trace()
 
-  # Check if the directory exists, if not, create it
+  directory = f'{func_dir}/predicted_function_contours/asr_models/'
+  if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
+    plt.plot(timestamps)
+    plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
+    plt.close()
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
     text = "\n".join(text)
     with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
