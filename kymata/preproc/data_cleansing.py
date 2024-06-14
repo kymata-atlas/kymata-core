@@ -4,7 +4,7 @@ from typing import Optional
 
 from colorama import Fore, Style
 import mne
-from numpy import zeros, nanmin
+from numpy import nanmin
 from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
