@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--ave-mode',                    type=str, default="ave", choices=["ave", "concatenate"], help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
 
     # Functions
+    parser.add_argument('--input-stream', type=str, required=True, choices=["auditory", "visual", "tactile"], help="The input stream for the functions being tested.")
     parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
 
@@ -75,18 +76,30 @@ def main():
 
     # Config defaults
     participants = dataset_config.get('participants')
-    audio_shift_correction = get_config_value_with_fallback(dataset_config, "audio_delivery_shift_correction", fallback=0)
     base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
     inverse_operator_dir = dataset_config.get('inverse_operator')
 
-    reps = [f'_rep{i}' for i in range(8)] + ['-ave']
+    input_stream = args.input_stream
+    if input_stream == "auditory":
+        stimulus_shift_correction = dataset_config["audio_shift_correction"]
+        stimulus_delivery_latency = dataset_config["audio_delivery_latency"]
+    elif input_stream == "visual":
+        stimulus_shift_correction = dataset_config["visual_shift_correction"]
+        stimulus_delivery_latency = dataset_config["visual_delivery_latency"]
+    elif input_stream == "tactile":
+        stimulus_shift_correction = dataset_config["tactile_shift_correction"]
+        stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
+    else:
+        raise NotImplementedError()
+
+    reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
     if args.single_participant_override is not None:
-        emeg_filenames = [args.single_participant_override + "-ave"]
+        emeg_filenames = [args.single_participant_override + f"-ave"]
     else:
         emeg_filenames = [
             p + r
             for p in participants
-            for r in reps[-1:]
+            for r in reps[-1:]  # [-1:] means just use the -ave
         ]
 
     start = time.time()
@@ -121,7 +134,6 @@ def main():
                                                                         if args.use_inverse_operator
                                                                         else None,
                                                    inverse_operator_suffix=args.inverse_operator_suffix,
-                                                   p_tshift=None,
                                                    snr=args.snr,
                                                    old_morph=False,
                                                    invsol_npy_dir=invsol_npy_dir,
@@ -154,7 +166,8 @@ def main():
             start_latency=args.start_latency,
             plot_location=args.save_plot_location,
             emeg_t_start=args.emeg_t_start,
-            audio_shift_correction=audio_shift_correction,
+            stimulus_shift_correction=stimulus_shift_correction,
+            stimulus_delivery_latency=stimulus_delivery_latency,
             overwrite=args.overwrite,
         )
 

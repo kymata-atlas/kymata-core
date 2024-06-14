@@ -5,6 +5,7 @@ from logging import getLogger
 from warnings import warn
 
 import numpy as np
+from numpy.typing import NDArray
 import mne
 
 from kymata.io.file import PathType
@@ -12,7 +13,8 @@ from kymata.io.file import PathType
 _logger = getLogger(__name__)
 
 
-def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None, old_morph=False, invsol_npy_path=None, ch_names_path: Path = None):
+def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, snr=4, morph_path: Optional[Path] = None,
+                     old_morph=False, invsol_npy_path=None, ch_names_path: Path = None) -> tuple[NDArray, list[str]]:
     """
     When using the inverse operator, returns left and right hemispheres concatenated.
 
@@ -66,6 +68,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
             if not isfile(ch_names_path):
                 np.save(ch_names_path, ch_names)
             del evoked
+
     return emeg, ch_names
 
 
@@ -247,11 +250,36 @@ def load_emeg_pack(emeg_filenames,
                    need_names=False,
                    ave_mode=None,
                    inverse_operator_suffix=None,
-                   p_tshift=None,
                    snr=4,
                    old_morph=False,
                    invsol_npy_dir=None,
                    ):
+    """
+
+    Args:
+        emeg_filenames:
+            Either: a list of reps for a single participant,
+            Or: a list of the rep-average (-ave) for all participants
+        emeg_dir:
+        inverse_operator_dir:
+        ch_names_path:
+        morph_dir:
+        need_names:
+        ave_mode: "ave" or "concatenate"
+            "ave" = average over all repetitions
+            "concatenate" = treat all repetitions as if it's a single continuous stimulus
+        inverse_operator_suffix:
+        snr:
+        old_morph:
+        invsol_npy_dir:
+
+    Returns:
+        emeg: NDArray
+        emeg_names: list[str]
+        n_reps: int
+            The number of repetitions present in the emeg array
+    """
+
     emeg_paths = [
         Path(emeg_dir, emeg_fn)
         for emeg_fn in emeg_filenames
@@ -272,25 +300,35 @@ def load_emeg_pack(emeg_filenames,
         ]
     else:
         inverse_operator_paths = [None] * len(emeg_filenames)
-    if p_tshift is None:
-        p_tshift = [0]*len(emeg_paths)
+
+    # Load first one
     emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0], old_morph=old_morph, invsol_npy_path=invsol_paths[0], ch_names_path=ch_names_path)
-    emeg=emeg[:, p_tshift[0]:402001 + p_tshift[0]]
     emeg = np.expand_dims(emeg, 1)
+
+    # Load remaining ones in using the appropriate ave_mode
     if ave_mode == 'concatenate':
+        # Concatenating all reps into a single long stimulus, in single-participant-override mode
+
         for i in range(1, len(emeg_paths)):
-            t_shift = p_tshift[i]
-            new_emeg = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                        morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i], ch_names_path=ch_names_path)[0][:, t_shift:402001 + t_shift]
+            new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
+                                        morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i],
+                                        ch_names_path=ch_names_path)
             emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
+
     elif ave_mode == 'ave':
+        # Averaging together all participants
+
         for i in range(1, len(emeg_paths)):
-            t_shift = p_tshift[i]
-            emeg += np.expand_dims(load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                                    morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i], ch_names_path=ch_names_path)[0][:, t_shift:402001 + t_shift], 1)
+            new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
+                                                    morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i],
+                                                    ch_names_path=ch_names_path)
+            emeg += np.expand_dims(new_emeg, 1)
+
         n_reps = 1 # n_reps is now 1 as all averaged
+
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
+
     return emeg, emeg_names, n_reps
 
 

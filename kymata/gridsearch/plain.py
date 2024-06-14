@@ -23,12 +23,13 @@ def do_gridsearch(
         channel_space: str,
         start_latency: float,   # ms
         emeg_t_start: float,    # ms
+        stimulus_shift_correction: float,  # seconds/second
+        stimulus_delivery_latency: float,  # seconds
         plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
-        audio_shift_correction: float = 0.000_537_5,  # seconds/second
         n_derangements: int = 1,
-        seconds_per_split: float = 0.5,
-        n_splits: int = 800,
+        seconds_per_split: float = 1,
+        n_splits: int = 400,
         n_reps: int = 1,
         overwrite: bool = True,
 ) -> ExpressionSet:
@@ -50,11 +51,11 @@ def do_gridsearch(
         channel_space (str): The type of channel space used, either 'sensor' or 'source'.
         start_latency (float): The starting latency for the grid search in milliseconds.
         emeg_t_start (float): The starting time of the EMEG data in milliseconds.
+        stimulus_shift_correction (float): Correction factor for stimulus shift in seconds per second.
+        stimulus_delivery_latency (float): Correction offset for stimulus delivery in seconds.
         plot_location (Optional[Path], optional): Path to save the plot of the top five channels of the
             grid search. If None, plotting is skipped. Default is None.
         emeg_sample_rate (int, optional): The sample rate of the EMEG data in Hertz. Default is 1000 Hz.
-        audio_shift_correction (float, optional): Correction factor for audio shift in seconds per second.
-            Default is 0.0005375.
         n_derangements (int, optional): Number of derangements (random permutations) used to create the
             null distribution. Default is 1.
         seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
@@ -85,15 +86,18 @@ def do_gridsearch(
 
     func_length = n_splits * n_samples_per_split // 2
     if func_length < function.values.shape[0]:
+        _logger.warning(f'WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
         func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
-        _logger.warning(f'WARNING: not using full 400s of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
     else:
         func = function.values.reshape(n_splits, n_samples_per_split // 2)
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
     split_initial_timesteps = [
-        int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
+        int(start_latency - emeg_t_start
+            + round(i * emeg_sample_rate * seconds_per_split * (1 + stimulus_shift_correction))  # splits, stretched by the shift correction
+            + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+            )
         for i in range(n_splits)
     ]
 

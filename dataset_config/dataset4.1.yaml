@@ -9,11 +9,9 @@ mri_structurals_directory: "raw_mri_structurals"
 participants: [
                 'pilot_01',
               ]
-input_streams: [ "auditory" ]        # auditory | visual
 number_of_runs: 4                    # number of runs
 repetitions_per_runs: 2              # number of repetitions per run
-number_of_trials: 400                # number of trials
-trial_length: 1                      # seconds
+stimulus_length: 400  # seconds
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline
@@ -39,9 +37,7 @@ reg_method: 'empirical'            # None | 'auto'
 audio_delivery_latency:   0.026     # in seconds
 visual_delivery_latency:  0.017     # in seconds
 tactile_delivery_latency: 0.00      # in seconds
-audio_delivery_shift_correction: 0.0005410   # in seconds per second
+audio_delivery_shift_correction:   0.0005404  # in seconds per second
+visual_delivery_shift_correction:  0          # in seconds per second
+tactile_delivery_shift_correction: 0          # in seconds per second
 latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
-
-eeg_thresh:  1 #200e-6
-grad_thresh: 1 #4000e-13
-mag_thresh:  1 #4000e-15
