@@ -81,13 +81,13 @@ def main():
 
     input_stream = args.input_stream
     if input_stream == "auditory":
-        stimulus_shift_correction = dataset_config["audio_shift_correction"]
+        stimulus_shift_correction = dataset_config["audio_delivery_drift_correction"]
         stimulus_delivery_latency = dataset_config["audio_delivery_latency"]
     elif input_stream == "visual":
-        stimulus_shift_correction = dataset_config["visual_shift_correction"]
+        stimulus_shift_correction = dataset_config["visual_delivery_drift_correction"]
         stimulus_delivery_latency = dataset_config["visual_delivery_latency"]
     elif input_stream == "tactile":
-        stimulus_shift_correction = dataset_config["tactile_shift_correction"]
+        stimulus_shift_correction = dataset_config["tactile_delivery_drift_correction"]
         stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
     else:
         raise NotImplementedError()
