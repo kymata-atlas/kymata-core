@@ -1,5 +1,5 @@
-[![Unit Tests Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/perform-unit-tests.yml)
-[![Linting Checks Passed](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-toolbox/actions/workflows/lint-and-check-formatting.yml)
+[![Unit Tests Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml)
+[![Linting Checks Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml)
 <br />
 <br />
 <div>
@@ -23,7 +23,7 @@
         ·
         <a href="#Getting Started">Setup</a>
         ·
-        <a href="#Citing the Toolbox">Citing</a>
+        <a href="#Citing the Codebase">Citing</a>
         ·
         <a href="#Licence">Licence</a>
 </p>
@@ -47,7 +47,7 @@ conduct).
 
 ## Getting Started
 
-This provides an overview of how to set the Kymata Toolbox locally.
+This provides an overview of how to set Kymata Core locally.
 
 ### Prerequisites
 
@@ -71,7 +71,7 @@ This provides an overview of how to set the Kymata Toolbox locally.
 
 1. Clone this repository:
    ```sh
-   $ git clone https://github.com/kymata-atlas/kymata-toolbox.git
+   $ git clone https://github.com/kymata-atlas/kymata-core.git
    ```
 3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
    type:
