@@ -58,7 +58,7 @@ reg_method: 'empirical'            # None | 'auto'
 audio_delivery_latency:   0.026     # the audio stimulus is delayed by this amount in seconds
 visual_delivery_latency:  0.017     # the visual stimulus is delayed by this amount in seconds
 tactile_delivery_latency: null      # the tactile stimulus is delayed by this amount in seconds
-audio_delivery_shift_correction:   0.0005404  # in seconds per second
-visual_delivery_shift_correction:  0          # in seconds per second
-tactile_delivery_shift_correction: null       # in seconds per second
+audio_delivery_shift_correction:   0.0005404  # drift - in seconds per second
+visual_delivery_shift_correction:  0          # drift - in seconds per second
+tactile_delivery_shift_correction: null       # drift - in seconds per second
 latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
