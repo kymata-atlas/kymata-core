@@ -25,7 +25,7 @@ participants: [
               ]
 number_of_runs: 2                    # number of runs  <- 15-minute recording block from scanner
 repetitions_per_runs: 2              # number of repetitions per run  <- repeated stimulus presentations per run
-stimulus_length: 400  # seconds
+stimulus_length: 400                  # seconds
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline

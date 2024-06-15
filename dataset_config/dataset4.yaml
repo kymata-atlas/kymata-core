@@ -32,7 +32,7 @@ participants: [
               ]
 number_of_runs: 4                    # number of runs
 repetitions_per_runs: 2              # number of repetitions per run
-stimulus_length: 400  # seconds
+stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 
 # Preprocessing pipeline

@@ -465,6 +465,9 @@ def create_trialwise_data(data_root_dir: PathType,
 
         raw_events = mne.find_events(raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1)
         repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
+        # name repetitions
+        for i in range(len(repetition_events)):
+            repetition_events[i][2] = str(i)
 
         # Validate repetition events
         assert len(repetition_events) == number_of_runs * repetitions_per_runs

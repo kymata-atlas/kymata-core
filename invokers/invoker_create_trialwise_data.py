@@ -15,7 +15,7 @@ def main(config_filename: str):
         dataset_directory_name=config['dataset_directory_name'],
         list_of_participants=config['participants'],
         repetitions_per_runs=config['repetitions_per_runs'],
-        stimulus_length=config['stimulus_lengths'],
+        stimulus_length=config['stimulus_length'],
         number_of_runs=config['number_of_runs'],
         latency_range=config["latency_range"],
     )
