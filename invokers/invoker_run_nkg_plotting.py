@@ -9,7 +9,7 @@ from kymata.plot.color import constant_color_dict
 
 def main():
     function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
@@ -94,7 +94,7 @@ def main():
         expression_plot(expression_data,
                         ylim=-400,
                         xlims=(-200, 800),
-                        save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/encoder_all.jpg"),
+                        save_to=Path(Path(path.abspath("")).parent, "kymata-core/kymata-core-data", "output/encoder_all.jpg"),
                         show_legend=True,
                         color= constant_color_dict(conv1_list, color='red')
                                 | constant_color_dict(conv2_list, color='green')
