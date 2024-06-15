@@ -31,7 +31,7 @@ we welcome users using this codebase, we are unable to prioritise installation s
 
 1. Clone this repository:
    ```sh
-   $ git clone https://github.com/kymata-atlas/kymata-toolbox.git
+   $ git clone https://github.com/kymata-atlas/kymata-core.git
    ```
 3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
    type:
@@ -133,12 +133,12 @@ You see `/lib64/libm.so.6: version 'GLIBC_2.29' not found` when running gridsear
 
 You see `ModuleNotFoundError: No module named 'numpy'`
 
-- You are probably running `submit_gridsearch.sh`, and it currently has Andy's toolbox location hard-coded.
+- You are probably running `submit_gridsearch.sh`, and it currently has Andy's `kymata-core` location hard-coded.
 Update to point it at your copy.
 
 You see `ModuleNotFoundError: No module named 'kymata'`
 
-- You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure the toolbox is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
+- You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure `kymata-core` is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
 
   ```shell
   apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
