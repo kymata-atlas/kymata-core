@@ -40,7 +40,7 @@ The central pipeline includes:
 * Plotting functionality
 
 The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas. While
-comments and issues are welcomed, we are unable to prioritise installation support (please see our code of
+comments and issues are welcomed, we are unable to prioritise installation or usage support (please see our code of
 conduct).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
