@@ -84,12 +84,15 @@ def do_gridsearch(
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
-    func_length = n_splits * n_samples_per_split // 2
+    # the number of samples in the function 'trial' which is half that needed for the EMEG
+    n_func_samples_per_split = n_samples_per_split // 2
+
+    func_length = n_splits * n_func_samples_per_split
     if func_length < function.values.shape[0]:
         _logger.warning(f'WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
-        func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
+        func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
-        func = function.values.reshape(n_splits, n_samples_per_split // 2)
+        func = function.values.reshape(n_splits, n_func_samples_per_split)
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
@@ -118,21 +121,20 @@ def do_gridsearch(
 
     # Fast cross-correlation using FFT
     emeg_reshaped = normalize(emeg_reshaped)
-    emeg_stds = get_stds(emeg_reshaped, n_samples_per_split // 2)
+    emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
-    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_samples_per_split // 2))
+    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2] / emeg_stds[:, derangement]
+        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
 
     # work out autocorrelation for channel-by-channel plots
     noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
     noisy_func = normalize(np.copy(func)) + noise
-    nn = n_samples_per_split // 2
 
-    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
+    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
+    F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
 
     auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 
@@ -141,7 +143,7 @@ def do_gridsearch(
     # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
+    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
 
     plot_top_five_channels_of_gridsearch(
         corrs=corrs,
