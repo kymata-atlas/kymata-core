@@ -94,12 +94,18 @@ def main():
 
     reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
     if args.single_participant_override is not None:
-        emeg_filenames = [ f"{args.single_participant_override}-ave" ]
+        if args.ave_mode == 'ave':
+            emeg_filenames = [args.single_participant_override + "-ave"]
+        elif args.ave_mode == 'concatenate':
+            print('Concatenating repetitions together')
+            emeg_filenames = [
+                args.single_participant_override + r
+                for r in reps[:-1]
+            ]
     else:
         emeg_filenames = [
-            p + r
+            p + '-ave'
             for p in participants
-            for r in reps[-1:]  # [-1:] means just use the -ave
         ]
 
     start = time.time()

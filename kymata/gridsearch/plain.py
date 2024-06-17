@@ -124,6 +124,8 @@ def do_gridsearch(
     emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
+    if n_reps > 1:
+        F_func = np.tile(F_func, (n_reps, 1))
     corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]

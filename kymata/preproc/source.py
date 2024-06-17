@@ -63,10 +63,6 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
             evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
             emeg = evoked[0].get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
             ch_names = evoked[0].ch_names
-            if not isfile(emeg_path_npy):
-                np.save(emeg_path_npy, np.array(emeg, dtype=np.float16))
-            if not isfile(ch_names_path):
-                np.save(ch_names_path, ch_names)
             del evoked
 
     return emeg, ch_names
@@ -308,7 +304,6 @@ def load_emeg_pack(emeg_filenames,
     # Load remaining ones in using the appropriate ave_mode
     if ave_mode == 'concatenate':
         # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
-
         for i in range(1, len(emeg_paths)):
             new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
                                         morph_paths[i], old_morph=old_morph, invsol_npy_path=invsol_paths[i],
