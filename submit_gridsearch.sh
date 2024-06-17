@@ -23,12 +23,13 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-toolbox/ ; \
+    " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-core/ ; \
       export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --config dataset4.yaml \
+        --input-stream auditory \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --function-name IL STL \
+        --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
