@@ -307,7 +307,7 @@ def load_emeg_pack(emeg_filenames,
 
     # Load remaining ones in using the appropriate ave_mode
     if ave_mode == 'concatenate':
-        # Concatenating all reps into a single long stimulus, in single-participant-override mode
+        # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
 
         for i in range(1, len(emeg_paths)):
             new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
