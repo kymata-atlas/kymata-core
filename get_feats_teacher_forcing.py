@@ -30,7 +30,7 @@ T_max = 401 #seconds
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
-func_name = 'whisper_all_no_reshape_large_v3_teacher'
+func_name = 'whisper_all_no_reshape_large_teacher'
 
 features = {}
 
@@ -124,9 +124,9 @@ if whisper_outs:
     model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
     tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-tiny")
   else:
-    processor = WhisperProcessor.from_pretrained("openai/whisper-large-v3")
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v3")
-    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large-v3")
+    processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
+    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large")
 
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()

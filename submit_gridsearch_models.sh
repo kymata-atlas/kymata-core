@@ -7,8 +7,8 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-toolbox-data/output/ru_narr_en_native/language_pilot_01/log/slurm_log_%a.txt
-#SBATCH --error=kymata-toolbox-data/output/ru_narr_en_native/language_pilot_01/log/slurm_log_%a.txt
+#SBATCH --output=kymata-toolbox-data/output/ru_narr_en_native/language_pilots_all/log/slurm_log_%a.txt
+#SBATCH --error=kymata-toolbox-data/output/ru_narr_en_native/language_pilots_all/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=240G
@@ -35,6 +35,6 @@ apptainer exec \
         --n-derangements 5 \
         --asr-option 'all' \
         --num-neurons 1280 \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/language_pilot_01/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/language_pilot_01/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/language_pilots_all/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/language_pilots_all/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "

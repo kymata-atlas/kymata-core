@@ -4,4 +4,4 @@ Loading apptainer version:
   warnings.warn(
 Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
 Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-Execution time: 664.3959226608276 seconds
+Execution time: 851.0982184410095 seconds
