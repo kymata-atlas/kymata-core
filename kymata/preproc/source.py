@@ -63,7 +63,7 @@ def load_single_emeg(emeg_path: Path,
         return emeg, morph_hexel_names
 
     if premorphed_inverse_operator_path is not None:
-        good_channels_path = Path(premorphed_inverse_operator_path.parent, premorphed_inverse_operator_path.name + "good_channels")
+        common_channels_path = Path(premorphed_inverse_operator_path.parent, Path(premorphed_inverse_operator_path.name).stem + "_list_of_common_channels")
         if not Path(premorphed_inverse_operator_path).exists():
             # Compute premorphed operator path
             inverse_operator, premorphed_inverse_operator, morph_hexel_names = premorph_inverse_operator(
@@ -74,13 +74,13 @@ def load_single_emeg(emeg_path: Path,
 
             np.save(premorphed_inverse_operator_path, premorphed_inverse_operator)
             np.save(ch_names_path, morph_hexel_names)
-            np.save(good_channels_path, common_channels)
+            np.save(common_channels_path, common_channels)
 
         else:
             # Load precomputed
             premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
             morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
-            common_channels = np.load(good_channels_path)
+            common_channels = np.load(Path(common_channels_path, ".npy"))
 
         emeg = np.matmul(premorphed_inverse_operator,
                          # Restrict to common channels
