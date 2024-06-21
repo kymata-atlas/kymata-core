@@ -41,21 +41,22 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
                 del evoked
 
             else:
+                evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
+                assert len(evoked) == 1
+                evoked = evoked[0]
                 if invsol_npy_path is not None and Path(invsol_npy_path).exists():
-                    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
-                    edat = evoked[0].data
-                    del evoked
-
+                    from kymata.preproc.get_invsol_npy import _pick_channels_inverse_operator
                     npy_invsol = np.load(invsol_npy_path)
-                    emeg = np.matmul(npy_invsol, edat)
+                    sel = _pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
+                    eee = evoked.data[sel]
+                    emeg = np.matmul(npy_invsol, eee)
                 
                 else:
                     from kymata.preproc.get_invsol_npy import get_invsol_npy
 
-                    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)  # should be len 1 list
-                    mne.set_eeg_reference(evoked[0], projection=True, verbose=False)
-                    emeg, ch_names = get_invsol_npy(morph_path, evoked[0], inverse_operator, snr**-2, 'MNE', pick_ori='normal')
-                    del evoked
+                    mne.set_eeg_reference(evoked, projection=True, verbose=False)
+                    emeg, ch_names = get_invsol_npy(morph_path, evoked, inverse_operator, snr**-2, 'MNE', pick_ori='normal')
+                del evoked
 
                 ch_names = np.load(ch_names_path, allow_pickle=True)
 
