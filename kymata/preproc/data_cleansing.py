@@ -5,6 +5,7 @@ from typing import Optional
 from colorama import Fore, Style
 import mne
 from numpy import nanmin
+from numpy.typing import NDArray
 from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
@@ -461,7 +462,7 @@ def create_trialwise_data(data_root_dir: PathType,
                 raw = mne.io.Raw(raw_path, preload=True)
                 cleaned_raws.append(raw)
 
-        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+        raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
         raw_events = mne.find_events(raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1)
         repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
@@ -470,11 +471,13 @@ def create_trialwise_data(data_root_dir: PathType,
             repetition_events[i][2] = str(i)
 
         # Validate repetition events
-        assert len(repetition_events) == number_of_runs * repetitions_per_runs
+        assert len(repetition_events) == number_of_runs * repetitions_per_runs, \
+            f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+        picks: NDArray = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+        _logger.info(f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}")
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
@@ -487,14 +490,22 @@ def create_trialwise_data(data_root_dir: PathType,
                  + 2)
 
         epochs = mne.Epochs(raw, repetition_events, None, _tmin, _tmax, picks=picks, baseline=(None, None), preload=True)
+        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+        # Log which channels are worst
+        dropfig = epochs.plot_drop_log(subject=p)
+        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
 
         # Save individual repetitions
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
+            _logger.info(f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
             evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
         # Average over repetitions
         evoked = epochs.average()
+        _logger.info(f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
+
         evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
 
