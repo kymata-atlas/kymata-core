@@ -129,8 +129,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 # Apply SSS and movement compensation
                 print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-                crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+                fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+                crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
                 
                 if not supress_excessive_plots_and_prompts:
                     mne.viz.plot_head_positions(
@@ -355,8 +355,8 @@ def estimate_noise_cov(data_root_dir: str,
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
-            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
             raw_fif_data_sss = mne.preprocessing.maxwell_filter(
                         emptyroom_raw,
@@ -403,8 +403,8 @@ def estimate_noise_cov(data_root_dir: str,
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
-            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
             raw_fif_data_sss = mne.preprocessing.maxwell_filter(
                         emptyroom_raw,
@@ -503,10 +503,10 @@ def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, machine_used
     raw_check = raw_fif_data.copy()
 
     fine_cal_file = Path(Path(__file__).parent.parent,
-                         'kymata-toolbox-data', 'cbu_specific_files',
+                         'kymata-core-data', 'cbu_specific_files',
                          'sss_cal' + machine_used + '.dat')
     crosstalk_file = Path(Path(__file__).parent.parent,
-                          'kymata-toolbox-data', 'cbu_specific_files',
+                          'kymata-core-data', 'cbu_specific_files',
                           'ct_sparse' + machine_used + '.fif')
 
     auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(

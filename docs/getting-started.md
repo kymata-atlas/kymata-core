@@ -143,7 +143,7 @@ You see `ModuleNotFoundError: No module named 'kymata'`
   ```shell
   apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
   export VENV_PATH=~/poetry/
-  cd /path/to/kymata-toolbox
+  cd /path/to/kymata-core
   $VENV_PATH/bin/poetry install
   ```
 
