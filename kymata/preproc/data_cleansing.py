@@ -490,7 +490,7 @@ def create_trialwise_data(data_root_dir: PathType,
                  + 2)
 
         epochs = mne.Epochs(raw, repetition_events, None, _tmin, _tmax, picks=picks, baseline=(None, None), preload=True)
-        _logger.info(f"Created epochs with {epochs.ch_names} channels")
+        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
         # Log which channels are worst
         dropfig = epochs.plot_drop_log(subject=p)
@@ -499,6 +499,7 @@ def create_trialwise_data(data_root_dir: PathType,
         # Save individual repetitions
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
+            _logger.info(f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
             evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
         # Average over repetitions
