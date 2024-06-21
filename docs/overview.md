@@ -14,8 +14,8 @@ It is comprised of both a python package, `kymata`, and a number of invokers tha
 The codebase is released publicly to ensure the transparency of the results in the Atlas. While comments and issues are
 welcomed, we are unable to prioritise installation support.
 
-[ :simple-git: Go to the Github repository](https://github.com/kymata-atlas/kymata-toolbox){ .md-button .md-button--primary }
-[Go to code documentation](https://github.com/kymata-atlas/kymata-toolbox){ .md-button }
+[ :simple-git: Go to the Github repository](https://github.com/kymata-atlas/kymata-core){ .md-button .md-button--primary }
+[Go to code documentation](https://github.com/kymata-atlas/kymata-core){ .md-button }
 
 ## Citing the codebase or the `kymata` package
 
