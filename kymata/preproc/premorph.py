@@ -30,6 +30,7 @@ def premorph_inverse_operator(
     return_residual=False,
     use_cps=True,
 ):
+    mne.set_eeg_reference(evoked, projection=True, verbose=False)
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator_path, verbose=False)
     _validate_type(evoked, Evoked, "evoked")
     _check_reference(evoked, inverse_operator["info"]["ch_names"])
@@ -40,21 +41,12 @@ def premorph_inverse_operator(
     #
     nave = evoked.nave
 
-
     _check_ch_names(inverse_operator, evoked.info)
 
     inv = _check_or_prepare(
         inverse_operator, nave, lambda2, method, method_params, prepared, copy="non-src"
     )
-    del inverse_operator
 
-    #
-    #   Pick the correct channels from the data
-    #
-    sel = pick_channels_inverse_operator(evoked.ch_names, inv)
-    logger.info(f'Applying inverse operator to "{evoked.comment}"...')
-    logger.info("    Picked %d channels from the data" % len(sel))
-    logger.info("    Computing inverse...")
     K, noise_norm, vertno, source_nn = _assemble_kernel(
         inv, label, method, pick_ori, use_cps=use_cps
     )
@@ -64,4 +56,4 @@ def premorph_inverse_operator(
 
     premorphed_inverse_operator = morph_csr.dot(K)
 
-    return morph.vertices_to, premorphed_inverse_operator
+    return inv, premorphed_inverse_operator, morph.vertices_to
