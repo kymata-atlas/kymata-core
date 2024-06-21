@@ -471,7 +471,8 @@ def create_trialwise_data(data_root_dir: PathType,
             repetition_events[i][2] = str(i)
 
         # Validate repetition events
-        assert len(repetition_events) == number_of_runs * repetitions_per_runs
+        assert len(repetition_events) == number_of_runs * repetitions_per_runs, \
+            f"{len(repetition_events)=} but {number_of_runs * repetition_events=}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
