@@ -61,7 +61,7 @@ def load_single_emeg(emeg_path: Path, need_names=False, inverse_operator=None, s
                         morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
 
                     # Restrict to common channels
-                    sel = pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
+                    sel = pick_channels_inverse_operator(evoked.ch_names, premorphed_inverse_operator)
                     emeg = np.matmul(premorphed_inverse_operator, evoked.data[sel])
 
                     del evoked
