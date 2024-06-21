@@ -7,7 +7,6 @@ from mne.minimum_norm.inverse import (
 from mne.utils import (
     _check_option,
     _validate_type,
-    logger,
 )
 
 
