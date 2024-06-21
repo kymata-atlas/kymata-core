@@ -298,7 +298,15 @@ def load_emeg_pack(emeg_filenames,
         inverse_operator_paths = [None] * len(emeg_filenames)
 
     # Load first one
-    emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0], old_morph=old_morph, invsol_npy_path=invsol_paths[0], ch_names_path=ch_names_path)
+    try:
+        emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0],
+                                            old_morph=old_morph, invsol_npy_path=invsol_paths[0],
+                                            ch_names_path=ch_names_path)
+    except Exception as ex:
+        _logger.error(f"Error loading EMEG data from {str(emeg_paths[0])}")
+        _logger.error(f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}")
+        _logger.error(f"\tmorph {str(morph_paths[0])}")
+        raise ex
     emeg = np.expand_dims(emeg, 1)
 
     # Load remaining ones in using the appropriate ave_mode
