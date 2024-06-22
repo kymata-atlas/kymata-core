@@ -80,7 +80,7 @@ def load_single_emeg(emeg_path: Path,
             # Load precomputed
             premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
             morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
-            common_channels = np.load(Path(common_channels_path, ".npy"))
+            common_channels = np.load(common_channels_path.with_suffix('.npy'))
 
         emeg = np.matmul(premorphed_inverse_operator,
                          # Restrict to common channels
