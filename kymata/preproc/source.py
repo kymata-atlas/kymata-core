@@ -86,7 +86,7 @@ def load_single_emeg(emeg_path: Path,
                          # Restrict to common channels
                          evoked.data[common_channels])
 
-        del evoked, inverse_operator
+        del evoked, premorphed_inverse_operator
 
     else:
         raise ValueError("Please supply premorphed_inverse_operator_path or old_morph.")
