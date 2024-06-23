@@ -144,6 +144,10 @@ You see `ModuleNotFoundError: No module named 'kymata'`
   apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
   export VENV_PATH=~/poetry/
   cd /path/to/kymata-core
+  
+  # Allow the CBU poetry to communicate with pip
+  export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
+  
   $VENV_PATH/bin/poetry install
   ```
 
