@@ -137,11 +137,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
                                      "src_files",
                                      participant + "_ico5-src.fif"), src)
 
-    #        mne.viz.plot_bem(subject=participant,
+    #    fig = mne.viz.plot_bem(subject=participant,
     #                         subjects_dir=mri_structurals_directory,
     #                         brain_surfaces="white",
     #                         orientation="coronal",
     #                         slices=[50, 100, 150, 200])
+    #    fig.savefig(Path(mri_structurals_directory, participant, "bem", "bem_sliced.png"))
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
