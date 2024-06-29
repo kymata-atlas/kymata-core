@@ -123,7 +123,9 @@ def main():
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    _logger.info(f"Starting Kymata Gridsearch:  {dataset_config.get('dataset_directory_name')} | {args.function_name}")
+    _logger.info("Starting Kymata Gridsearch")
+    _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
+    _logger.info(f"Functions to be tested: {args.function_name}")
     _logger.info(f"Gridsearch will be applied in {channel_space} space")
     if args.morph:
         _logger.info("Morphing to common space")
@@ -206,7 +208,7 @@ def main():
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
     total_time_in_seconds = time.time() - start
-    _logger.info(f'Time taken for code to run: {total_time_in_seconds:.4f}s ({str(total_time_in_seconds)} hours)')
+    _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s))')
 
 
 if __name__ == '__main__':
