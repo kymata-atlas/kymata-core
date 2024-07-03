@@ -127,6 +127,8 @@ def main():
     _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
     _logger.info(f"Functions to be tested: {args.function_name}")
     _logger.info(f"Gridsearch will be applied in {channel_space} space")
+    if args.use_inverse_operator:
+        _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
     if args.morph:
         _logger.info("Morphing to common space")
 
