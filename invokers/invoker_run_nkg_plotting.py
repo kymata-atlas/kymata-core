@@ -1,13 +1,15 @@
+from logging import basicConfig, INFO
 from pathlib import Path
 from os import path
-from kymata.io.nkg import load_expression_set
-from kymata.plot.plot import expression_plot, lengend_display_dict
-from kymata.plot.color import constant_color_dict, gradient_color_dict
 
+from kymata.io.logging import log_message, date_format
+from kymata.io.nkg import load_expression_set
+from kymata.plot.plot import expression_plot, legend_display_dict
+from kymata.plot.color import constant_color_dict
 
 def main():
     function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox", "kymata-toolbox-data", "output")
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
@@ -80,7 +82,7 @@ def main():
         expression_plot(expression_data,
                         ylim=-400,
                         xlims=(-200, 800),
-                        save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/encoder_all.jpg"),
+                        save_to=Path(Path(path.abspath("")).parent, "kymata-core/kymata-core-data", "output/encoder_all.jpg"),
                         show_legend=True,
                         color= constant_color_dict(conv1_list, color='red')
                                 | constant_color_dict(conv2_list, color='green')
@@ -90,15 +92,16 @@ def main():
                                 | constant_color_dict(encoder3_list, color='yellow')
                                 | constant_color_dict(encoder4_list, color='orange')
                                 | constant_color_dict(encoder5_list, color='purple'),
-                        legend_display=lengend_display_dict(conv1_list, 'Conv layer 1')
-                                       | lengend_display_dict(conv1_list, 'Conv layer 1')
-                                       | lengend_display_dict(conv2_list, 'Conv layer 2')
-                                       | lengend_display_dict(encoder0_list, 'Encoder layer 1')
-                                       | lengend_display_dict(encoder1_list, 'Encoder layer 2')
-                                       | lengend_display_dict(encoder2_list, 'Encoder layer 3')
-                                       | lengend_display_dict(encoder3_list, 'Encoder layer 4')
-                                       | lengend_display_dict(encoder4_list, 'Encoder layer 5')
-                                       | lengend_display_dict(encoder5_list, 'Encoder layer 6'))
+                        legend_display=legend_display_dict(conv1_list, 'Conv layer 1')
+                                       | legend_display_dict(conv1_list, 'Conv layer 1')
+                                       | legend_display_dict(conv2_list, 'Conv layer 2')
+                                       | legend_display_dict(encoder0_list, 'Encoder layer 1')
+                                       | legend_display_dict(encoder1_list, 'Encoder layer 2')
+                                       | legend_display_dict(encoder2_list, 'Encoder layer 3')
+                                       | legend_display_dict(encoder3_list, 'Encoder layer 4')
+                                       | legend_display_dict(encoder4_list, 'Encoder layer 5')
+                                       | legend_display_dict(encoder5_list, 'Encoder layer 6'))
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

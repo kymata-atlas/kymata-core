@@ -118,9 +118,28 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float, show_functions: list[str]) -> tuple[NDArray, NDArray]:
     """
-    Returns a (left/right pair of) arrays, of length equal to the number of hexels, where each entry is either:
-     - 0, if no function is ever significant for this hexel
-     - i + 1, where i is index of the function which is significant for this hexel
+    Generates data arrays for a minimap visualization of significant hexels in a HexelExpressionSet.
+
+    Args:
+        expression_set (HexelExpressionSet): The set of hexel expressions to analyze.
+        alpha_logp (float): The logarithm of the p-value threshold for significance. Hexels with values
+            below this threshold are considered significant.
+        show_functions (list[str]): A list of function names to consider for significance. Only these
+            functions will be checked for significant hexels.
+
+    Returns:
+        tuple[NDArray, NDArray]: A tuple containing two arrays (one for the left hemisphere and one for
+        the right hemisphere). Each array has a length equal to the number of hexels in the respective
+        hemisphere, with entries:
+            - 0, if no function is ever significant for this hexel.
+            - i + 1, where i is the index of the function (from show_functions) that is significant
+              for this hexel.
+
+    Notes:
+        This function identifies which hexels are significant for the given functions based on a provided
+        significance threshold. It returns arrays for both the left and right hemispheres, where each entry
+        indicates whether the hexel is significant for any function and, if so, which function it is
+        significant for.
     """
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
@@ -290,18 +309,40 @@ def expression_plot(
         legend_display: dict[str, str] | None = None,
 ) -> pyplot.Figure:
     """
-    Generates an expression plot
+    Generates a plot of function expressions over time with optional display customizations.
 
-    paired_axes: When True, show the expression plot split left/right.
-                 When False, all points shown on the same axis.
+    Args:
+        expression_set (ExpressionSet): The set of expressions to plot, containing functions and associated data.
+        show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which functions to plot.
+            If None, all functions in the expression_set will be plotted. Default is None.
+        paired_axes (bool, optional): When True, shows the expression plot split into left and right axes.
+            When False, all points are shown on the same axis. Default is True.
+        alpha (float, optional): Significance level for statistical tests, defaulting to a 5-sigma threshold.
+        color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single color,
+            a dictionary mapping function names to colors, or a list of colors. Default is None.
+        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is None.
+        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default values,
+            or set either entry to None to use the default for that value. Default is (-100, 800).
+        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is True.
+        minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
+        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views. Default is "lateral".
+        minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
+        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
+        overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
+        show_legend (bool, optional): If True, displays the legend. Default is True.
+        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend item.
+            Provide a dictionary mapping true function names to display names. Default is None.
 
-    legend_display: Allows multiple functions to be collapsed into the same legend item.
-                    Supply a dictionary which maps true function names to display names.
-                    Functions assigned the same display name will be grouped together.
+    Returns:
+        pyplot.Figure: The matplotlib figure object containing the generated plot.
 
-    color: colour name, function_name → colour name, or list of colour names
-    xlims: None or tuple. None to use default values, or either entry of the tuple as None to use default for that value.
-    minimap (bool): Display a minimap
+    Raises:
+        FileExistsError: If the file already exists at save_to and overwrite is set to False.
+
+    Notes:
+        The function plots the expression data with options to customize the appearance and statistical
+        significance thresholds. It supports different data types (e.g., HexelExpressionSet, SensorExpressionSet)
+        and can handle paired axes for left/right hemisphere data.
     """
 
     # Default arg values
@@ -604,11 +645,28 @@ def plot_top_five_channels_of_gridsearch(
         overwrite: bool = True,
 ):
     """
-    Generates correlation and pvalue plots showing the top five channels of the gridsearch
+    Generates correlation and p-value plots showing the top five channels of the gridsearch.
 
-    latencies: ...
-    function: ...
-    etc..
+    Args:
+        latencies (NDArray[any]): Array of latency values (e.g., time points in milliseconds) for the x-axis of the plots.
+        corrs (NDArray[any]): Correlation coefficients array with shape (n_channels, n_conditions, n_splits, n_time_steps).
+        function (Function): The function object whose name attribute will be used in the plot title.
+        n_samples_per_split (int): Number of samples per split used in the grid search.
+        n_reps (int): Number of repetitions in the grid search.
+        n_splits (int): Number of splits in the grid search.
+        auto_corrs (NDArray[any]): Auto-correlation values array used for plotting the function auto-correlation.
+        log_pvalues (any): Array of log-transformed p-values for each channel and time point.
+        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
+        overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
+
+    Raises:
+        FileExistsError: If the file already exists at save_to and overwrite is set to False.
+
+    Notes:
+        The function generates two subplots:
+
+        - The first subplot shows the correlation coefficients over latencies for the top five channels.
+        - The second subplot shows the corresponding p-values for these channels.
     """
 
     figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
@@ -666,9 +724,18 @@ def plot_top_five_channels_of_gridsearch(
     pyplot.close()
 
 
-def lengend_display_dict(functions: list[str], display_name) -> dict[str, str]:
+def legend_display_dict(functions: list[str], display_name) -> dict[str, str]:
     """
-    Given a list of function names and a display name, produced a dictionary appropriate for the `legend_display`
-    parameter of `expression_plot()`.
+    Creates a dictionary for the `legend_display` parameter of `expression_plot()`.
+
+    This function maps each function name in the provided list to a single display name,
+    which can be used to group multiple functions under one legend item in the plot.
+
+    Args:
+        functions (list[str]): A list of function names to be grouped under the same display name.
+        display_name (str): The display name to be used for all functions in the list.
+
+    Returns:
+        dict[str, str]: A dictionary mapping each function name to the provided display name.
     """
     return {function: display_name for function in functions}

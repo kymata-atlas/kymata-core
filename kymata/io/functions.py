@@ -261,6 +261,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
 
 def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
     mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
+    print('Saving .mat as .npz ...')
     func_dict = {}
     for key in mat.dtype.names:
         if key == 'name':

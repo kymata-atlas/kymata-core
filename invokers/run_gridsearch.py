@@ -1,17 +1,21 @@
+from logging import getLogger, basicConfig, INFO
 from pathlib import Path
 import argparse
 import time
+from sys import stdout
 import os
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.config import load_config
+from kymata.io.logging import log_message, date_format
 from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
 from kymata.plot.plot import expression_plot
 
 _default_output_dir = Path(data_root_path(), "output")
+_logger = getLogger(__file__)
 
 
 def get_config_value_with_fallback(config: dict, config_key: str, fallback):
@@ -21,7 +25,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     try:
         return config[config_key]
     except KeyError:
-        print(f"Config did not contain any value for \"{config_key}\", falling back to default value {fallback}")
+        _logger.error(f"Config did not contain any value for \"{config_key}\", falling back to default value {fallback}")
         return fallback
 
 
@@ -44,6 +48,7 @@ def main():
     parser.add_argument('--ave-mode',                    type=str, default="ave", choices=["ave", "concatenate"], help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
 
     # Functions
+    parser.add_argument('--input-stream', type=str, required=True, choices=["auditory", "visual", "tactile"], help="The input stream for the functions being tested.")
     parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
     parser.add_argument('--asr-option', type=str, default="ave",
@@ -77,21 +82,42 @@ def main():
 
     # Config defaults
     participants = dataset_config.get('participants')
-    audio_shift_correction = get_config_value_with_fallback(dataset_config, "audio_delivery_shift_correction", fallback=0)
     base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
     inverse_operator_dir = dataset_config.get('inverse_operator')
 
     os.makedirs(args.save_plot_location, exist_ok=True)
     os.makedirs(args.save_expression_set_location, exist_ok=True)
 
-    reps = [f'_rep{i}' for i in range(8)] + ['-ave']
+    os.makedirs(args.save_plot_location, exist_ok=True)
+    os.makedirs(args.save_expression_set_location, exist_ok=True)
+
+    input_stream = args.input_stream
+    if input_stream == "auditory":
+        stimulus_shift_correction = dataset_config["audio_delivery_drift_correction"]
+        stimulus_delivery_latency = dataset_config["audio_delivery_latency"]
+    elif input_stream == "visual":
+        stimulus_shift_correction = dataset_config["visual_delivery_drift_correction"]
+        stimulus_delivery_latency = dataset_config["visual_delivery_latency"]
+    elif input_stream == "tactile":
+        stimulus_shift_correction = dataset_config["tactile_delivery_drift_correction"]
+        stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
+    else:
+        raise NotImplementedError()
+
+    reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
     if args.single_participant_override is not None:
-        emeg_filenames = [args.single_participant_override + "-ave"]
+        if args.ave_mode == 'ave':
+            emeg_filenames = [args.single_participant_override + "-ave"]
+        elif args.ave_mode == 'concatenate':
+            print('Concatenating repetitions together')
+            emeg_filenames = [
+                args.single_participant_override + r
+                for r in reps[:-1]
+            ]
     else:
         emeg_filenames = [
-            p + r
+            p + '-ave'
             for p in participants
-            for r in reps[-1:]
         ]
 
     start = time.time()
@@ -104,30 +130,43 @@ def main():
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
     morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
+    invsol_npy_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "npy_invsol")
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    print(f"Gridsearch in {channel_space} space")
+    _logger.info("Starting Kymata Gridsearch")
+    _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
+    _logger.info(f"Functions to be tested: {args.function_name}")
+    _logger.info(f"Gridsearch will be applied in {channel_space} space")
+    if args.use_inverse_operator:
+        _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
     if args.morph:
-        print("Morphing to common space")
+        _logger.info("Morphing to common space")
+
+    t0 = time.time()
+
     emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
-                                           emeg_dir=emeg_path,
-                                           morph_dir=morph_dir
-                                                    if args.morph
-                                                    else None,
-                                           need_names=True,
-                                           ave_mode=args.ave_mode,
-                                           inverse_operator_dir=inverse_operator_dir
-                                                                if args.use_inverse_operator
-                                                                else None,
-                                           inverse_operator_suffix= args.inverse_operator_suffix,
-                                           p_tshift=None,
-                                           snr=args.snr,
-                                           )
-    
-    # emeg_values = emeg_values[:64, :, :]
-    # ch_names = ch_names[:64]
+                                                   emeg_dir=emeg_path,
+                                                   morph_dir=morph_dir
+                                                             if args.morph
+                                                             else None,
+                                                   need_names=True,
+                                                   ave_mode=args.ave_mode,
+                                                   inverse_operator_dir=inverse_operator_dir
+                                                                        if args.use_inverse_operator
+                                                                        else None,
+                                                   inverse_operator_suffix=args.inverse_operator_suffix,
+                                                   snr=args.snr,
+                                                   old_morph=False,
+                                                   invsol_npy_dir=invsol_npy_dir,
+                                                   ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+                                                   )
+
+    time_to_load = time.time() - t0
+    print(f'Time to load emeg: {time_to_load:.4f}')
+    stdout.flush()  # make sure the above print statement shows up as soon as print is called
+    _logger.info(f'Time to load emeg: {time_to_load:.4f}')
 
     if args.asr_option == 'all' and 'asr' in args.function_path:
 
@@ -149,7 +188,7 @@ def main():
                     emeg_values=emeg_values,
                     channel_names=ch_names,
                     channel_space=channel_space,
-                    function=func,
+                    function=function_values,
                     seconds_per_split=args.seconds_per_split,
                     n_derangements=args.n_derangements,
                     n_splits=args.n_splits,
@@ -157,24 +196,26 @@ def main():
                     start_latency=args.start_latency,
                     plot_location=args.save_plot_location,
                     emeg_t_start=args.emeg_t_start,
-                    audio_shift_correction=audio_shift_correction,
+                    stimulus_shift_correction=stimulus_shift_correction,
+                    stimulus_delivery_latency=stimulus_delivery_latency,
                     overwrite=args.overwrite,
                 )
             else:
                 es += do_gridsearch(
-                emeg_values=emeg_values,
-                channel_names=ch_names,
-                channel_space=channel_space,
-                function=func,
-                seconds_per_split=args.seconds_per_split,
-                n_derangements=args.n_derangements,
-                n_splits=args.n_splits,
-                n_reps=n_reps,
-                start_latency=args.start_latency,
-                plot_location=args.save_plot_location,
-                emeg_t_start=args.emeg_t_start,
-                audio_shift_correction=audio_shift_correction,
-                overwrite=args.overwrite,
+                    emeg_values=emeg_values,
+                    channel_names=ch_names,
+                    channel_space=channel_space,
+                    function=function_values,
+                    seconds_per_split=args.seconds_per_split,
+                    n_derangements=args.n_derangements,
+                    n_splits=args.n_splits,
+                    n_reps=n_reps,
+                    start_latency=args.start_latency,
+                    plot_location=args.save_plot_location,
+                    emeg_t_start=args.emeg_t_start,
+                    stimulus_shift_correction=stimulus_shift_correction,
+                    stimulus_delivery_latency=stimulus_delivery_latency,
+                    overwrite=args.overwrite,
                 )
 
         if args.save_expression_set_location is not None:
@@ -182,15 +223,14 @@ def main():
         expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, func.name + '_gridsearch.png'), overwrite=args.overwrite)
 
     else:
-
         combined_expression_set = None
 
         for function_name in args.function_name:
-            print(f"Running gridsearch on {function_name}")
+            _logger.info(f"Running gridsearch on {function_name}")
             function_values = load_function(Path(base_dir, args.function_path),
                                             func_name=function_name,
-                                            bruce_neurons=(5, 10),
-                                            mfa=args.mfa,)
+                                                bruce_neurons=(5, 10),
+                                                mfa=args.mfa,)
             function_values = function_values.downsampled(args.downsample_rate)
 
             es = do_gridsearch(
@@ -205,7 +245,8 @@ def main():
                 start_latency=args.start_latency,
                 plot_location=args.save_plot_location,
                 emeg_t_start=args.emeg_t_start,
-                audio_shift_correction=audio_shift_correction,
+                stimulus_shift_correction=stimulus_shift_correction,
+                stimulus_delivery_latency=stimulus_delivery_latency,
                 overwrite=args.overwrite,
             )
 
@@ -216,24 +257,30 @@ def main():
 
         assert combined_expression_set is not None
 
+        combined_names: str
         if args.save_name is not None and len(args.save_name) > 0:
             combined_names = args.save_name
         elif len(args.function_name) > 2:
-            combined_names = f"{len(args.function_name)}_functions"
+            combined_names = f"{len(args.function_name)}_functions_gridsearch"
         else:
-            combined_names = "_+_".join(args.function_name)
+            combined_names = "_+_".join(args.function_name) + "_gridsearch"
 
         if args.save_expression_set_location is not None:
             es_save_path = Path(args.save_expression_set_location, combined_names + '_gridsearch.nkg')
-            print(f"Saving expression set to {es_save_path!s}")
+            _logger.info(f"Saving expression set to {es_save_path!s}")
             save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
 
-        fig_save_path = Path(args.save_plot_location, combined_names + '_gridsearch.png')
-        print(f"Saving expression plot to {fig_save_path!s}")
+        if args.single_participant_override is not None:
+            fig_save_path = Path(args.save_plot_location, combined_names + f'_{args.single_participant_override}').with_suffix(".png")
+        else:
+            fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
+        _logger.info(f"Saving expression plot to {fig_save_path!s}")
         expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
-    print(f'Time taken for code to run: {time.time() - start:.4f} s')
+    total_time_in_seconds = time.time() - start
+    _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s))')
 
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

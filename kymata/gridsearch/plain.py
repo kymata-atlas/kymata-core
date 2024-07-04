@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +13,8 @@ from kymata.entities.expression import ExpressionSet, SensorExpressionSet, Hexel
 from kymata.math.p_values import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
+_logger = getLogger(__name__)
+
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
@@ -20,17 +23,56 @@ def do_gridsearch(
         channel_space: str,
         start_latency: float,   # ms
         emeg_t_start: float,    # ms
+        stimulus_shift_correction: float,  # seconds/second
+        stimulus_delivery_latency: float,  # seconds
         plot_location: Optional[Path] = None,
         emeg_sample_rate: int = 1000,  # Hertz
-        audio_shift_correction: float = 0.000_540_4,  # seconds/second
-        n_derangements: int = 5,
-        seconds_per_split: float = 0.5,
-        n_splits: int = 800,
+        n_derangements: int = 1,
+        seconds_per_split: float = 1,
+        n_splits: int = 400,
         n_reps: int = 1,
         overwrite: bool = True,
 ) -> ExpressionSet:
     """
-    Do the Kymata gridsearch over all hexels for all latencies.
+    Perform a grid search over all hexels for all latencies using EMEG data and a given function.
+
+    This function processes EMEG data to compute the correlation between sensor or source signals
+    and a specified function across multiple latencies. The results include statistical significance
+    testing and optional plotting.
+
+    Args:
+        emeg_values (NDArray): A 2D array of EMEG values with shape (n_channels, time).
+        function (Function): The function against which the EMEG data will be correlated. It should
+            have a `values` attribute representing the function's values and a `sample_rate`
+            attribute indicating its sample rate.
+        channel_names (list): List of channel names corresponding to the EMEG data. For 'sensor' space,
+            it is a flat list of sensor names. For 'source' space, it is a list containing two lists:
+            left hemisphere and right hemisphere hexel names.
+        channel_space (str): The type of channel space used, either 'sensor' or 'source'.
+        start_latency (float): The starting latency for the grid search in milliseconds.
+        emeg_t_start (float): The starting time of the EMEG data in milliseconds.
+        stimulus_shift_correction (float): Correction factor for stimulus shift in seconds per second.
+        stimulus_delivery_latency (float): Correction offset for stimulus delivery in seconds.
+        plot_location (Optional[Path], optional): Path to save the plot of the top five channels of the
+            grid search. If None, plotting is skipped. Default is None.
+        emeg_sample_rate (int, optional): The sample rate of the EMEG data in Hertz. Default is 1000 Hz.
+        n_derangements (int, optional): Number of derangements (random permutations) used to create the
+            null distribution. Default is 1.
+        seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
+        n_splits (int, optional): Number of splits used for analysis. Default is 800.
+        n_reps (int, optional): Number of repetitions for each split. Default is 1.
+        overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
+
+    Returns:
+        ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
+        containing the log p-values for each channel/hexel and latency.
+
+    Notes:
+        - The function down-samples the EMEG data to match the function's sample rate.
+        - The EMEG data is reshaped into segments of the specified duration (`seconds_per_split`).
+        - Cross-correlations between the EMEG data and the function are computed using FFT.
+        - Statistical significance is assessed using a vectorized Welch's t-test.
+        - If specified, the results are plotted and saved to the given location.
     """
 
     channel_space = channel_space.lower()
@@ -42,19 +84,25 @@ def do_gridsearch(
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
-    func_length = n_splits * n_samples_per_split // 2
+    # the number of samples in the function 'trial' which is half that needed for the EMEG
+    n_func_samples_per_split = n_samples_per_split // 2
+
+    func_length = n_splits * n_func_samples_per_split
     if func_length < function.values.shape[0]:
-        func = function.values[:func_length].reshape(n_splits, n_samples_per_split // 2)
-        print(f'WARNING: not using full 400s of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
+        _logger.warning(f'WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
+        func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
-        func = function.values.reshape(n_splits, n_samples_per_split // 2)
+        func = function.values.reshape(n_splits, n_func_samples_per_split)
     n_channels = emeg_values.shape[0]
 
     # import ipdb;ipdb.set_trace()
 
     # Reshape EMEG into splits of `seconds_per_split` s
     split_initial_timesteps = [
-        int(start_latency + round(i * 1000 * seconds_per_split * (1 + audio_shift_correction)) - emeg_t_start)
+        int(start_latency - emeg_t_start
+            + round(i * emeg_sample_rate * seconds_per_split * (1 + stimulus_shift_correction))  # splits, stretched by the shift correction
+            + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+            )
         for i in range(n_splits)
     ]
 
@@ -75,21 +123,22 @@ def do_gridsearch(
 
     # Fast cross-correlation using FFT
     emeg_reshaped = normalize(emeg_reshaped)
-    emeg_stds = get_stds(emeg_reshaped, n_samples_per_split // 2)
+    emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
-    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_samples_per_split // 2))
+    if n_reps > 1:
+        F_func = np.tile(F_func, (n_reps, 1))
+    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_samples_per_split//2] / emeg_stds[:, derangement]
+        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
 
     # work out autocorrelation for channel-by-channel plots
     noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
     noisy_func = normalize(np.copy(func)) + noise
-    nn = n_samples_per_split // 2
 
-    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=nn, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=nn, axis=-1))
+    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
+    F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
 
     auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 
@@ -98,7 +147,7 @@ def do_gridsearch(
     # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_samples_per_split // 2 + 1)[:-1]
+    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
 
     plot_top_five_channels_of_gridsearch(
         corrs=corrs,
@@ -137,9 +186,41 @@ def do_gridsearch(
 
 
 def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
-
     """
-    Vectorised Welch's t-test.
+    Perform a vectorized Welch's t-test on correlation matrices.
+
+    This function calculates the two-sample Welch's t-test statistics and their corresponding
+    log p-values for given correlation matrices. The test compares true correlation values against
+    null (random) correlation values after applying Fisher's Z-transformation.
+
+    Parameters:
+    -----------
+    corrs : NDArray
+        A 4D array of correlation values with shape (n_channels, n_derangements, n_splits, t_steps).
+        - n_channels: Number of channels.
+        - n_derangements: Number of derangements (random permutations).
+        - n_splits: Number of splits or repetitions.
+        - t_steps: Number of time steps.
+
+    use_all_lats : bool, optional
+        If True, use all latencies for computing the mean and variance of null correlations.
+        If False, compute mean and variance per time step. Default is True.
+
+    Returns:
+    --------
+    ArrayLike
+        A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
+        of the t-tests for each channel and time step.
+
+    Notes:
+    ------
+    - The correlation values are first transformed using Fisher's Z-transformation.
+    - The function computes the mean and variance of the transformed true and null correlations.
+    - Welch's t-test is then performed in a vectorized manner to obtain the t-statistics.
+    - Depending on the degrees of freedom, either the t-distribution or normal distribution is used
+      to compute the log p-values.
+    - The function ensures numerical stability and precision by applying log transformations where necessary.
+
     """
     n_channels, n_derangements, n_splits, t_steps = corrs.shape
 

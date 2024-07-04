@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "kymata-toolbox"
+name = "kymata-core"
 version = "0.1.0"
 description = ""
 authors = [
@@ -28,6 +28,8 @@ sparse = "^0.14.0"
 xarray = "^2023.9.0"
 pyqt6 = "^6.6.1"
 h5io = "^0.1.9"
+mkdocs-material = "^9.5.24"
+mkdocstrings = {extras = ["python"], version = "^0.25.1"}
 torch = "^2.2.1"
 transformers = "^4.39.1"
 openai-whisper = "^20231117"

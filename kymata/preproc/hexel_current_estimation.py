@@ -1,7 +1,10 @@
+from logging import getLogger
 from os import path
 from pathlib import Path
 
 import mne
+
+_logger = getLogger(__file__)
 
 
 def create_current_estimation_prerequisites(data_root_dir, config: dict):
@@ -134,11 +137,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
                                      "src_files",
                                      participant + "_ico5-src.fif"), src)
 
-    #        mne.viz.plot_bem(subject=participant,
+    #    fig = mne.viz.plot_bem(subject=participant,
     #                         subjects_dir=mri_structurals_directory,
     #                         brain_surfaces="white",
     #                         orientation="coronal",
     #                         slices=[50, 100, 150, 200])
+    #    fig.savefig(Path(mri_structurals_directory, participant, "bem", "bem_sliced.png"))
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
@@ -399,16 +403,16 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                     src_dir,
                     'fsaverage_ico5-src.fif'))
 
-                morph = mne.compute_source_morph(
-                    src_from,
-                    subject_from=participant,
-                    subject_to="fsaverage",
-                    src_to=src_to,
-                    subjects_dir=mri_structurals_directory,
-                )
-                morph.save(morphmap_filename)
-            else:
-                print("Morph maps already created")
+            morph = mne.compute_source_morph(
+                src_from,
+                subject_from=participant,
+                subject_to="fsaverage",
+                src_to=src_to,
+                subjects_dir=mri_structurals_directory,
+            )
+            morph.save(morphmap_filename)
+        else:
+            _logger.info("Morph maps already created")
 
 
 def average_participants_hexel_currents(participants, inputstream):
