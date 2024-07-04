@@ -42,6 +42,12 @@ eeg: False
 meg: False
 inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
 
+# Method to estimate noise covariance matrix
+cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
+duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
+reg_method: 'empirical'            # None | 'auto'
+diagonal_only: True                # whether to use only diagonal to represent the noise covariance matrix
+
 # Creation of evoked trial pipeline
 audio_delivery_latency:   0.016       # the audio stimulus is delayed by this amount in seconds
 visual_delivery_latency:  0.034       # the visual stimulus is delayed by this amount in seconds

@@ -16,7 +16,8 @@ def main(config_filename: str):
                        n_runs = config['number_of_runs'],
                        cov_method = config['cov_method'],
                        duration_emp = config['duration'],
-                       reg_method = config['reg_method'])
+                       reg_method = config['reg_method'],
+                       diag = config['diagonal_only'],)
 
 
 if __name__ == '__main__':

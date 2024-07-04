@@ -323,6 +323,7 @@ def estimate_noise_cov(data_root_dir: str,
                        cov_method: str,
                        duration_emp,
                        reg_method,
+                       diag,
                        ):
 
     emeg_dir = Path(data_root_dir, dataset_directory_name, "raw_emeg")
@@ -347,8 +348,11 @@ def estimate_noise_cov(data_root_dir: str,
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
             cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-cov.fif', cov)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-cov.fif', cov)
+            if diag:
+                cov.as_diag()
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-diag-cov.fif', cov)
+            else:    
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-grandave-cov.fif', cov)
             
         elif cov_method == 'emptyroom':
             raw_fname = Path(cleaned_dir, p + '_run1' + '_cleaned_raw.fif.gz')
@@ -384,7 +388,11 @@ def estimate_noise_cov(data_root_dir: str,
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=20, preload=True, reject_by_annotation=False)
             cov = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
-            mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-runstart-cov.fif', cov)
+            if diag:
+                cov.as_diag()
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-runstart-diag-cov.fif', cov)
+            else:
+                mne.write_cov(data_root_dir + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/' + p + '-runstart-cov.fif', cov)
 
         elif cov_method == 'fusion':
 
@@ -428,8 +436,11 @@ def estimate_noise_cov(data_root_dir: str,
             import ipdb;ipdb.set_trace()
             cov_data[64:,64:] = cov_meg.data[64:,64:]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
-
-            mne.write_cov(Path(cov_dir, p + '-fusion-cov.fif'), cov)
+            if diag:
+                cov.as_diag()
+                mne.write_cov(Path(cov_dir, p + '-fusion-diag-cov.fif'), cov)
+            else:
+                mne.write_cov(Path(cov_dir, p + '-fusion-cov.fif'), cov)
 
 
 def create_trialwise_data(data_root_dir: PathType,
