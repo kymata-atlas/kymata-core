@@ -2,13 +2,13 @@
 
 ###
 # To run get_feats on the queue at the CBU, run the following command in command line:
-#   sbatch submit_get_feats.sh
+#   sbatch submit_ablation.sh
 ###
 
 
-#SBATCH --job-name=get_feats
-#SBATCH --output=slurm_log.txt
-#SBATCH --error=slurm_log.txt
+#SBATCH --job-name=ablation
+#SBATCH --output=slurm_log_ablation.txt
+#SBATCH --error=slurm_log_ablation.txt
 #SBATCH --ntasks=1
 #SBATCH --time=05:00:00
 #SBATCH --mem=240G
@@ -28,7 +28,7 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       export HF_HOME=/imaging/woolgar/projects/Tianyi/models ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
-      \$VENV_PATH/bin/poetry run python -m get_feats_ru \
+      \$VENV_PATH/bin/poetry run python -m ablation \
   "
 
 # -B /imaging/projects/cbu/kymata/ \

@@ -16,7 +16,7 @@ import librosa
 
 start_time = time.time()
 
-test = True
+test = False
 
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
@@ -25,22 +25,14 @@ save_outs = True
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 # data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
-dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
-# dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/audio/F00C_dataset3.wav', sr=16_000)
-
-# processor = AutoProcessor.from_pretrained("facebook/wav2vec2-base-960h")
-# inputs = processor(dataset, sampling_rate=sampling_rate, return_tensors="pt")
-
 T_max = 401 #seconds
 
 # func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
-func_name = 'whisper_all_no_reshape_large_v2_longform_teacher'
+func_name = 'whisper_all_no_reshape_large_teacher'
 
 features = {}
-timestamps = []
-text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
@@ -48,45 +40,119 @@ def get_features(name):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
-          features[name] = torch.cat((features[name], output), -1)
+          features[name] = torch.cat((features[name], output.detach()), -1)
         else:
-          features[name] = torch.cat((features[name], output), -2)
+          features[name] = torch.cat((features[name], output.detach()), -2)
       else:
-        features[name] = output
+        features[name] = output.detach()
   return hook
 
+def evaluate_whisper(audio_data, reference_text):
+  inputs = processor(audio_data, sampling_rate=sr, return_tensors="pt", return_attention_mask=True)
+  input_features = inputs['input_features']
+
+  # Ensure inputs are padded to the model's expected input length (3000 frames)
+  if input_features.size(-1) < 3000:
+    input_features = torch.nn.functional.pad(input_features, (0, 3000 - input_features.size(-1)), mode='constant')
+  elif input_features.size(-1) > 3000:
+    input_features = input_features[:, :, :3000]
+
+  # Encode audio features
+  encoder_outputs = model.get_encoder()(input_features)
+
+  # Tokenize reference text
+  target_tokens = tokenizer(reference_text, return_tensors="pt").input_ids
+
+  target_tokens_force = target_tokens[:, 3:]
+
+  target_tokens = target_tokens[:, 2:-1]
+
+  # import ipdb;ipdb.set_trace()
+
+  # Initialize predicted tokens
+  predicted_tokens = []
+
+  past_key_values= None
+
+  # import ipdb;ipdb.set_trace()
+
+  # Perform teacher forcing by feeding reference tokens to the decoder
+  for t in range(target_tokens.size(1) + 1):
+
+    # print(t)
+
+    if t == 0:
+
+      predicted_tokens.append(target_tokens[0][0].item())
+
+    else:
+      
+      # decoder_input_ids = target_tokens[:, :t]
+      decoder_input_ids = target_tokens[:, t - 1]
+      
+      outputs = model(
+          input_features=input_features,
+          decoder_input_ids=decoder_input_ids,
+          # decoder_input_ids=torch.Tensor(predicted_tokens).int(),
+          encoder_outputs=encoder_outputs,
+          return_dict=True,
+          past_key_values=past_key_values,
+      )
+
+      # import ipdb;ipdb.set_trace()
+      
+      logits = outputs.logits
+      past_key_values = outputs.past_key_values
+      predicted_token = torch.argmax(logits[:, -1, :], dim=-1).item()
+      predicted_tokens.append(predicted_token)
+
+  # # Convert predicted tokens to text
+  # predicted_text = tokenizer.decode(predicted_tokens, skip_special_tokens=False)
+
+  # Compute evaluation metrics (e.g., WER, CER, BLEU)
+
+  # import ipdb;ipdb.set_trace()
+
+  # Return evaluation results
+  return [tokenizer.decode(i, skip_special_tokens=False) for i in target_tokens_force[0]]
 
 if whisper_outs:
 # if True:
-
-  dataset = dataset[:T_max*16_000]
 
   if test:
     processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
     model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
     tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-tiny")
   else:
-    processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
-    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large-v2")
-  # import ipdb;ipdb.set_trace()
-  # for layer in model.children():
-  #   layer.register_forward_hook(get_features("feats"))
+    processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
+    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large")
 
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()
     if isinstance(layer, torch.nn.Module):
         layer.register_forward_hook(get_features(name))
 
-  inputs = processor(dataset, return_tensors="pt", truncation=False, padding="longest", return_attention_mask=True, sampling_rate=sampling_rate)
-  # inputs = processor(segment, sampling_rate=sampling_rate, return_tensors="pt")
-  with open('/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/test/transcription_en.txt', 'r') as file:
-    file_content = file.read()
-  labels = tokenizer(file_content, return_tensors="pt")
+  reference_word_piece = []
 
-  import ipdb;ipdb.set_trace()
+  for i in range(14):
+    audio_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.wav')
+    transcription_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.txt')
 
-  model(input_features=inputs['input_features'], labels=labels['input_ids'])
+    # Load audio segment
+    audio_data, sr = librosa.load(audio_path, sr=16_000)
+
+    # Read corresponding transcription
+    with open(transcription_path, 'r') as file:
+        reference_text = file.read()
+
+    # reference_text = '<|startoftranscript|><|en|><|transcribe|><|notimestamps|> ' + reference_text + '<|endoftext|>'
+    reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text
+
+    # Evaluate
+    reference_word_piece += evaluate_whisper(audio_data, reference_text)
+
+    # import ipdb;ipdb.set_trace()
   
   # for i in range(len(generated_ids['segments'][0])):
   #   timestamps += generated_ids['segments'][0][i]['token_timestamps'].tolist()
@@ -136,15 +202,8 @@ if whisper_outs and save_outs:
   # Now save the data
   if not os.path.isfile(f'{directory}{func_name}.npz'):
     np.savez(f'{directory}{func_name}.npz', **features)
-  if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
-    np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
-    plt.plot(timestamps)
-    plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
-    plt.close()
+
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
+    text = "\n".join(reference_word_piece)
     with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
       file.write(text)
-  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt"):
-    text_with_time = "\n".join(text_with_time)
-    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt", "w") as file:
-      file.write(text_with_time)  

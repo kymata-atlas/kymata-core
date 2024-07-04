@@ -9,8 +9,6 @@ import os
 
 # import ipdb;ipdb.set_trace()
 
-from kymata.io.functions import load_function, load_function_pre
-
 import librosa
 # dataset, sampling_rate = librosa.load('/content/drive/MyDrive/Colab Notebooks/kymata/stimulus.wav', sr=16_000)
 
@@ -19,6 +17,7 @@ start_time = time.time()
 w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
+test = True
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 
@@ -31,48 +30,44 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_tiny_test'
+ablation_param = ['decoder', '2', 'test_1']
+func_name = f'whisper_tiny_ablation_{ablation_param[0]}_{ablation_param[1]}_{str(ablation_param[2])}'
 
-features = {}
+# neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': [int(ablation_param[2])]}
+# neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': {range(5,1000)}}
+neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.final_layer_norm': {range(0,300)}}
 timestamps = []
 text = []
 text_with_time = []
 
-def get_features(name):
+def ablation(name, neuron):
   def hook(model, input, output):
-    if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
-    # if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name) or 'proj_out' in name):
-      import ipdb;ipdb.set_trace()
-      if name in features.keys():
-        if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
-          # import ipdb;ipdb.set_trace()
-          features[name] = torch.cat((features[name], output), -1)
-        else:
-          features[name] = torch.cat((features[name], output), -2)
-      else:
-        features[name] = output
+    if isinstance(output,torch.Tensor):
+      # import ipdb;ipdb.set_trace()
+      for i in neuron[name]:
+        output[:, :, i] = 0
+    return output
   return hook
-
-# def get_features(name):
-#   def hook(model, input, output):
-#       features[name] = output
-#   return hook
 
 if whisper_outs:
 # if True:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  if test:
+    processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  else:
+    processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
 
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()
-    if isinstance(layer, torch.nn.Module):
-        layer.register_forward_hook(get_features(name))
+    if isinstance(layer, torch.nn.Module) and name in neurons_to_ablate.keys():
+        layer.register_forward_hook(ablation(name, neurons_to_ablate))
 
   for i in range(14):
     if i == 13:
@@ -91,6 +86,7 @@ if whisper_outs:
     for i in range(generated_ids['sequences'].shape[1]):
       text_with_time.append(f'{processor.batch_decode(generated_ids["sequences"][:,i], skip_special_tokens=False)[0]}: {generated_ids["token_timestamps"][:,i]}')
     # transcription = processor.batch_decode(**generated_ids, skip_special_tokens=True)
+    # import ipdb;ipdb.set_trace()
 
   end_time = time.time()
   execution_time = end_time - start_time
@@ -98,109 +94,6 @@ if whisper_outs:
   print(f"Execution time: {execution_time} seconds")
   # import ipdb;ipdb.set_trace()
 
-else:
-
-  features = np.load(f'{func_dir}/predicted_function_contours/asr_models/{func_name}.npz')
-  # features = np.load(f'{func_dir}/predicted_function_contours/asr_models/whisper_decoder.npz')
-
-  # import ipdb;ipdb.set_trace()
-  
-########
-
-if w2v_outs:
-  model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base-960h")
-  #model.eval()
-  # model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-large-960h-lv60-self")
-
-  def model_convs(inputs):
-    model_conv_outs = []
-    with torch.no_grad():
-      convs = model.feature_extractor.conv_layers
-      inputs = inputs[:, None]
-      for i, conv in enumerate(convs):
-        inputs = conv(inputs)
-        model_conv_outs.append(np.array(inputs[0]))
-      return model_conv_outs
-
-  conv_outs = model_convs(inputs['input_values'][:, :16_000 * T_max])
-
-########
-
-if wavlm_outs:
-  from transformers import Wav2Vec2FeatureExtractor, WavLMForXVector
-
-  wavlm_model = WavLMForXVector.from_pretrained('microsoft/wavlm-base-plus')
-
-  def wavlm_convs(inputs):
-    model_conv_outs = []
-    with torch.no_grad():
-      convs = wavlm_model.wavlm.feature_extractor.conv_layers
-      inputs = inputs[:, None]
-      for i, conv in enumerate(convs):
-        inputs = conv(inputs)
-        model_conv_outs.append(np.array(inputs[0]))
-      return model_conv_outs
-
-  conv_outs = wavlm_convs(inputs['input_values'][:, :16_000 * T_max])
-
-
-########
-
-if d2v_outs:
-  from transformers import Data2VecAudioForCTC
-
-  d2v_model = Data2VecAudioForCTC.from_pretrained("facebook/data2vec-audio-base")
-
-  def d2v_convs(inputs):
-    model_conv_outs = []
-    with torch.no_grad():
-      convs = d2v_model.data2vec_audio.feature_extractor.conv_layers
-      inputs = inputs[:, None]
-      for i, conv in enumerate(convs):
-        inputs = conv(inputs)
-        model_conv_outs.append(np.array(inputs[0]))
-      return model_conv_outs
-
-  conv_outs = d2v_convs(inputs['input_values'][:, :16_000 * T_max])
-
-
-########
-
-if hubert_outs:
-  from transformers import HubertForCTC
-
-  hubert_model = HubertForCTC.from_pretrained("facebook/hubert-base-ls960")
-
-  def hubert_convs(inputs):
-    model_conv_outs = []
-    with torch.no_grad():
-      convs = hubert_model.hubert.feature_extractor.conv_layers
-      inputs = inputs[:, None]
-      for i, conv in enumerate(convs):
-        inputs = conv(inputs)
-        model_conv_outs.append(np.array(inputs[0]))
-      return model_conv_outs
-
-  conv_outs = hubert_convs(inputs['input_values'][:, :16_000 * T_max])
-
-########
-
-
-if sum((w2v_outs, wavlm_outs, d2v_outs, hubert_outs)) and save_outs:
-  [print(i.shape) for i in conv_outs]
-
-  func_dict = {}
-
-  s_num = T_max * 1000
-
-  # TODO look at latency definitions and egdes
-  for i in range(len(conv_outs)):
-      place_holder = np.zeros((conv_outs[i].shape[0], s_num))
-      for j in range(conv_outs[i].shape[0]):
-          place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, T_max, conv_outs[i].shape[-1]), conv_outs[i][j])
-      func_dict[f'conv_layer{i}'] = place_holder
-
-# import ipdb;ipdb.set_trace()
 
 if whisper_outs and save_outs:
 
@@ -208,16 +101,8 @@ if whisper_outs and save_outs:
 
   # import ipdb;ipdb.set_trace()
 
-  # Check if the directory exists, if not, create it
   directory = f'{func_dir}/predicted_function_contours/asr_models/'
-  if not os.path.exists(directory):
-    os.makedirs(directory)
-
-  # Now save the data
-  if not os.path.isfile(f'{directory}{func_name}.npz'):
-    np.savez(f'{directory}{func_name}.npz', **features)
   if not os.path.isfile(f'{directory}{func_name}_timestamp.npy'):
-    np.save(f'{directory}{func_name}_timestamp.npy', timestamps)
     plt.plot(timestamps)
     plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
     plt.close()

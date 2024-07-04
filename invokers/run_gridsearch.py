@@ -50,6 +50,8 @@ def main():
                         help='Whether to get the output from all neurons (all) or do the average (ave)')
     parser.add_argument('--num-neurons', type=int, default=512,
                         help='Number of neurons in each layer')
+    parser.add_argument('--mfa', type=bool, default=False,
+                        help='Whether to use timestamps from mfa')
     # For source space
     parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
     parser.add_argument('--morph',                   action="store_true", help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.")
@@ -134,6 +136,7 @@ def main():
             func = load_function(args.function_path,
                                 func_name=args.function_name[0],
                                 nn_neuron=nn_i,
+                                mfa=args.mfa,
                                 )
         # func = load_function(args.function_path,
         #                      func_name=args.function_name,
@@ -186,7 +189,8 @@ def main():
             print(f"Running gridsearch on {function_name}")
             function_values = load_function(Path(base_dir, args.function_path),
                                             func_name=function_name,
-                                            bruce_neurons=(5, 10))
+                                            bruce_neurons=(5, 10),
+                                            mfa=args.mfa,)
             function_values = function_values.downsampled(args.downsample_rate)
 
             es = do_gridsearch(

@@ -7,19 +7,19 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_multi_log/decoder_all_der_5/slurm_log_%a.txt
-#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_multi_log/decoder_all_der_5/slurm_log_%a.txt
+#SBATCH --output=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/log/slurm_log_%a.txt
+#SBATCH --error=/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-31
+#SBATCH --array=0-3
 #SBATCH --exclusive
 
 # args=(5)
 layer_num=()
 # ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
-for ((i=0; i<32; i++)); do
-    layer_num+=("model.decoder.layers.$i.final_layer_norm")
+for ((i=0; i<4; i++)); do
+    layer_num+=("model.encoder.layers.$i.final_layer_norm")
 done
 
 module load apptainer
@@ -32,14 +32,14 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --base-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/' \
-        --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/whisper_all_no_reshape_large_multi' \
+        --config dataset4.1.yaml \
+        --function-path '/imaging/woolgar/projects/Tianyi/data/predicted_function_contours/asr_models/ru_whisper_all_no_reshape_medium_en' \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
         --asr-option 'all' \
-        --num-neurons 1280 \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_multi/decoder_all_der_5/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_large_multi/decoder_all_der_5/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --num-neurons 1024 \
+        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/ru_narr_en_native/medium_en/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "
 
 # cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-toolbox/
