@@ -20,6 +20,8 @@ w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
 
+test = False
+
 # data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
@@ -120,8 +122,12 @@ if whisper_outs:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
+  if test:
+    processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  else:
+    processor = WhisperProcessor.from_pretrained("openai/whisper-large-v2")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large-v2")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
