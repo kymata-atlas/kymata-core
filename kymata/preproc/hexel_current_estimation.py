@@ -403,16 +403,17 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                     src_dir,
                     'fsaverage_ico5-src.fif'))
 
-            morph = mne.compute_source_morph(
-                src_from,
-                subject_from=participant,
-                subject_to="fsaverage",
-                src_to=src_to,
-                subjects_dir=mri_structurals_directory,
-            )
-            morph.save(morphmap_filename)
-        else:
-            _logger.info("Morph maps already created")
+                morph = mne.compute_source_morph(
+                    src_from,
+                    subject_from=participant,
+                    subject_to="fsaverage",
+                    src_to=src_to,
+                    subjects_dir=mri_structurals_directory,
+                )
+                morph.save(morphmap_filename)
+
+            else:
+                _logger.info("Morph maps already created")
 
 
 def average_participants_hexel_currents(participants, inputstream):
