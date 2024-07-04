@@ -425,6 +425,7 @@ def estimate_noise_cov(data_root_dir: str,
 
             # Now combine the two covariance matrices
             cov_data = cov_eeg.data
+            import ipdb;ipdb.set_trace()
             cov_data[64:,64:] = cov_meg.data[64:,64:]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
 
