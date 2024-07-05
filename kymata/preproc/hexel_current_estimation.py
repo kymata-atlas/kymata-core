@@ -186,32 +186,32 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     inverse_operator_dir = Path(hexel_current_reconstruction_dir, "inverse-operators")
     inverse_operator_dir.mkdir(exist_ok=True)
 
-    # Compute forward solution
-    for participant in list_of_participants:
-         fwd = mne.make_forward_solution(
-             # Path(Path(path.abspath("")), "data",
-             Path(data_root_dir,
-                  dataset_directory_name,
-                  'raw_emeg', participant, participant +
-                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
-             trans=Path(coregistration_dir, participant + '-trans.fif'),
-             src=Path(src_dir, participant + '_ico5-src.fif'),
-             bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
-             meg=config['meg'],
-             eeg=config['eeg'],
-             mindist=5.0,
-             n_jobs=None,
-             verbose=True
-         )
-         print(fwd)
-         if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd, overwrite=True)
-         elif config['meg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-megonly.fif'), fwd)
-         elif config['eeg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-eegonly.fif'), fwd)
-         else:
-             raise Exception('eeg and meg in the dataset_config file cannot be both False')
+    # # Compute forward solution
+    # for participant in list_of_participants:
+    #      fwd = mne.make_forward_solution(
+    #          # Path(Path(path.abspath("")), "data",
+    #          Path(data_root_dir,
+    #               dataset_directory_name,
+    #               'raw_emeg', participant, participant +
+    #               '_run1_raw.fif'), # note this file is only used for the sensor positions.
+    #          trans=Path(coregistration_dir, participant + '-trans.fif'),
+    #          src=Path(src_dir, participant + '_ico5-src.fif'),
+    #          bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+    #          meg=config['meg'],
+    #          eeg=config['eeg'],
+    #          mindist=5.0,
+    #          n_jobs=None,
+    #          verbose=True
+    #      )
+    #      print(fwd)
+    #      if config['meg'] and config['eeg']:
+    #          mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd, overwrite=True)
+    #      elif config['meg']:
+    #          mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-megonly.fif'), fwd)
+    #      elif config['eeg']:
+    #          mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-eegonly.fif'), fwd)
+    #      else:
+    #          raise Exception('eeg and meg in the dataset_config file cannot be both False')
 
     # Compute inverse operator
 
@@ -233,11 +233,18 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             
         # Read noise covariance matrix
         if config['duration'] is None or config['cov_method'] != 'emptyroom':
-            noise_cov = mne.read_cov(str(Path(
-                interim_preprocessing_directory,
-                '3_evoked_sensor_data',
-                'covariance_grand_average',
-                participant + "-" + config['cov_method'] + '-cov.fif')))
+            if config['diagonal_only']:
+                noise_cov = mne.read_cov(str(Path(
+                    interim_preprocessing_directory,
+                    '3_evoked_sensor_data',
+                    'covariance_grand_average',
+                    participant + "-" + config['cov_method'] + '-diag' + '-cov.fif')))
+            else:                    
+                noise_cov = mne.read_cov(str(Path(
+                    interim_preprocessing_directory,
+                    '3_evoked_sensor_data',
+                    'covariance_grand_average',
+                    participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
             interim_preprocessing_directory,
@@ -261,11 +268,18 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             use_cps=True
         )
         if config['meg'] and config['eeg']:
-            mne.minimum_norm.write_inverse_operator(
-                str(Path(
-                        inverse_operator_dir,
-                        participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
-                inverse_operator, overwrite=True)
+            if config['diagonal_only']:
+                mne.minimum_norm.write_inverse_operator(
+                    str(Path(
+                            inverse_operator_dir,
+                            participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-diag' + '-inv.fif')),
+                    inverse_operator, overwrite=True)
+            else:    
+                mne.minimum_norm.write_inverse_operator(
+                    str(Path(
+                            inverse_operator_dir,
+                            participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
+                    inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] is None:
                 mne.minimum_norm.write_inverse_operator(
