@@ -12,6 +12,8 @@ def asr_models_loop_full():
 
     thres = 20
 
+    x_upper = 700
+
     size = 'large'
 
     neuron_selection = True
@@ -20,7 +22,7 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_mfa_teacher/log/'
+    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_mfa_teacher/log/'
 
     for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
@@ -59,7 +61,7 @@ def asr_models_loop_full():
             max_indices.append(max_index)
         lat_sig = lat_sig[:, max_indices, :]
 
-    import ipdb;ipdb.set_trace()
+    # import ipdb;ipdb.set_trace()
 
     #lat_i = np.argmax(lat_sig[i, :, :, 3], axis=1)
     #print(lat_i)
@@ -81,10 +83,10 @@ def asr_models_loop_full():
     plt.ylabel('Layer number')
     plt.xlabel('Latencies (ms)')
     plt.title(f'Threshold -log(p-value): {thres}')
-    plt.xlim(-200, 800)
+    plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'kymata-toolbox-data/output/scatter_plot/no_select/whisper_decoder_mfa_teacher_{thres}.png', dpi=600)
+    plt.savefig(f'kymata-core-data/output/scatter_plot/no_select/whisper_decoder_mfa_teacher_{thres}_{x_upper}.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
