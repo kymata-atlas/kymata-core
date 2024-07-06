@@ -54,11 +54,11 @@ class DenoisingStrategy(object):
         :returns: a float indicating that threshold for significance.
         """
 
-        def calculate_bonferroni_corrected_alpha(one_minus_probability):
+        def __calculate_bonferroni_corrected_alpha(one_minus_probability):
             return 1 - pow((1 - one_minus_probability), (1 / (2 * TIMEPOINTS * NUMBER_OF_HEXELS)))
 
         probability_X_gt_x = 1 - NormalDist(mu=0, sigma=1).cdf(x)
-        threshold_for_significance = calculate_bonferroni_corrected_alpha(probability_X_gt_x)
+        threshold_for_significance = __calculate_bonferroni_corrected_alpha(probability_X_gt_x)
         return threshold_for_significance
 
     def denoise(self, hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
@@ -157,12 +157,12 @@ class DenoisingStrategy(object):
         :return: if we cluster_only_latency, we return a numpy array. Else, dataframe.
         """
 
-        def extract_and_wrap_latency_dim(df_with_latency_col):
+        def __extract_and_wrap_latency_dim(df_with_latency_col):
             return np.reshape(df_with_latency_col['Latency'], (-1, 1))
 
         mags = list(df["Mag"])
         if self._should_cluster_only_latency:
-            df = extract_and_wrap_latency_dim(df)
+            df = __extract_and_wrap_latency_dim(df)
         if self._should_normalise:
             # Assumption: we only have latency, mag columns.
             """
@@ -184,20 +184,20 @@ class DenoisingStrategy(object):
         :returns: Each tuple contains ("Latency", "Mag") of the most significant points (excl. anomalies).
         """
 
-        def keep_most_significant_per_label(labelled_df):
+        def __keep_most_significant_per_label(labelled_df):
             return labelled_df.loc[labelled_df.groupby('Label')['Mag'].idxmin()]
 
-        def filter_out_anomalies(labelled_df):
+        def __filter_out_anomalies(labelled_df):
             return labelled_df[labelled_df['Label'] != -1]
 
-        def convert_df_to_list(most_significant_points_df):
+        def __convert_df_to_list(most_significant_points_df):
             return list(zip(most_significant_points_df['Latency'], most_significant_points_df['Mag']))
 
         df = deepcopy(df)
         df["Label"] = self._clusterer.labels_
-        most_significant_points = keep_most_significant_per_label(df)
-        most_significant_points = filter_out_anomalies(most_significant_points)
-        return convert_df_to_list(most_significant_points)
+        most_significant_points = __keep_most_significant_per_label(df)
+        most_significant_points = __filter_out_anomalies(most_significant_points)
+        return __convert_df_to_list(most_significant_points)
 
     def _postprocess(self, hexel: IPPMHexel, denoised_time_series: List[Tuple[float, float]]) -> IPPMHexel:
         """

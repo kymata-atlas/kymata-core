@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 
 import pandas as pd
 
-from kymata.ippm.custom_clusterers import MaxPooler, AdaptiveMaxPooler, CustomGMM, LabelInfo
+from kymata.ippm.custom_clusterers import MaxPooler, AdaptiveMaxPooler, CustomGMM
 
 test_data = [
     [-100, 1e-50],

@@ -1,5 +1,4 @@
 from copy import deepcopy
-from functools import reduce
 from math import isclose
 from unittest.mock import patch, MagicMock
 

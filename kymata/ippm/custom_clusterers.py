@@ -1,7 +1,7 @@
 from collections import Counter, namedtuple
 from copy import deepcopy
 from math import floor
-from typing import List, Dict, Self, Tuple, Optional
+from typing import List, Dict, Self, Optional
 
 from sklearn.mixture import GaussianMixture
 
@@ -38,10 +38,10 @@ class MaxPooler(CustomClusterer):
         return self
 
     def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
-        def get_bin_index(latency: float) -> int:
+        def __get_bin_index(latency: float) -> int:
             return floor((latency + LATENCY_OFFSET) / self._bin_size)  # floor because end is exclusive
 
-        return list(map(get_bin_index, df_with_latency.iloc[:, latency_col_index]))
+        return list(map(__get_bin_index, df_with_latency.iloc[:, latency_col_index]))
 
     def _tag_labels_below_label_significance_threshold_as_anomalies(
             self, count_of_data_per_bin: Dict[int, int]
@@ -174,7 +174,7 @@ class CustomGMM(CustomClusterer):
         :param df:
         :return:
         """
-        def evaluate_fit(data: pd.DataFrame, fitted_model: GaussianMixture) -> float:
+        def __evaluate_fit(data: pd.DataFrame, fitted_model: GaussianMixture) -> float:
             return fitted_model.aic(data) if self._should_evaluate_using_AIC else fitted_model.bic(data)
 
         optimal_penalised_loglikelihood = np.inf
@@ -196,7 +196,7 @@ class CustomGMM(CustomClusterer):
 
             model.fit(copy_of_df)
 
-            penalised_loglikelihood = evaluate_fit(copy_of_df, model)
+            penalised_loglikelihood = __evaluate_fit(copy_of_df, model)
             if penalised_loglikelihood < optimal_penalised_loglikelihood:
                 optimal_penalised_loglikelihood = penalised_loglikelihood
                 optimal_model = model
@@ -209,7 +209,7 @@ class CustomGMM(CustomClusterer):
             optimal_model: GaussianMixture,
             anomaly_percentile_threshold: int = 5
     ) -> List[int]:
-        def update_labels_to_anomalous_label(log_likelihoods, anomaly_threshold):
+        def __update_labels_to_anomalous_label(log_likelihoods, anomaly_threshold):
             # we do > cus more negative loglikelihood, the higher the likelihood.
             return list(map(
                 lambda x: ANOMALOUS_TAG if x[0] < anomaly_threshold else x[1],
@@ -218,6 +218,6 @@ class CustomGMM(CustomClusterer):
 
         log_likelihood = optimal_model.score_samples(df)
         threshold = np.percentile(log_likelihood, anomaly_percentile_threshold)
-        self.labels_ = update_labels_to_anomalous_label(log_likelihood, threshold)
+        self.labels_ = __update_labels_to_anomalous_label(log_likelihood, threshold)
         return self.labels_
 
