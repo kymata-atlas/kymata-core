@@ -1,4 +1,4 @@
-from collections import Counter, namedtuple
+from collections import Counter
 from copy import deepcopy
 from math import floor
 from typing import List, Dict, Self, Optional
