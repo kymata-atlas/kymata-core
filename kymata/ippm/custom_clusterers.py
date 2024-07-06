@@ -10,8 +10,6 @@ import numpy as np
 
 from kymata.ippm.constants import LATENCY_OFFSET, ANOMALOUS_TAG
 
-LabelInfo = namedtuple("LabelInfo", "Count final_latency")
-
 class CustomClusterer:
     """
         You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
@@ -26,20 +24,20 @@ class CustomClusterer:
 
 
 class MaxPooler(CustomClusterer):
-    def __init__(self, label_significance_threshold: int = 15, bin_size: int = 25):
+    def __init__(self, label_significance_threshold: int = 15, label_size: int = 25):
         super().__init__()
         self._label_significance_threshold = label_significance_threshold
-        self._bin_size = bin_size
+        self._label_size = label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
         self.labels_ = self._assign_points_to_labels(df)
-        count_of_data_per_bin = dict(Counter(self.labels_))
-        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_bin)
+        count_of_data_per_label = dict(Counter(self.labels_))
+        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         return self
 
     def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
         def __get_bin_index(latency: float) -> int:
-            return floor((latency + LATENCY_OFFSET) / self._bin_size)  # floor because end is exclusive
+            return floor((latency + LATENCY_OFFSET) / self._label_size)  # floor because end is exclusive
 
         return list(map(__get_bin_index, df_with_latency.iloc[:, latency_col_index]))
 
@@ -66,8 +64,8 @@ class AdaptiveMaxPooler(MaxPooler):
 
     def fit(self, df: pd.DataFrame) -> Self:
         self.labels_ = super()._assign_points_to_labels(df)
-        count_of_data_per_bin = dict(Counter(self.labels_))
-        self.labels_ = super()._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_bin)
+        count_of_data_per_label = dict(Counter(self.labels_))
+        self.labels_ = super()._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         self.labels_ = self._merge_significant_labels(df)
         return self
 
@@ -158,6 +156,7 @@ class CustomGMM(CustomClusterer):
     def fit(self, df: pd.DataFrame) -> Self:
         optimal_model = self._grid_search_for_optimal_number_of_clusters(df)
         if optimal_model is not None:
+            # None if no data.
             self.labels_ = optimal_model.predict(df)
             self.labels_ = self._tag_low_loglikelihood_points_as_anomalous(df, optimal_model)
         return self
