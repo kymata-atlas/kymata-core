@@ -1,6 +1,6 @@
 import unittest.mock
 
-from kymata.ippm import denoiser
+from kymata.ippm import denoising_strategies
 
 
 class TestDenoisingStrategies(unittest.TestCase):
