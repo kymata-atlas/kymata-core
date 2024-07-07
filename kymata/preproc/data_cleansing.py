@@ -396,6 +396,7 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
+            raw_epoch.set_eeg_reference(ref_channels='average', projection=True, verbose=False)
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 

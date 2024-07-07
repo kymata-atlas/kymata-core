@@ -308,11 +308,11 @@ def load_emeg_pack(emeg_filenames,
     ]
     n_reps = len(emeg_paths)
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if morph_dir is not None else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_exclude_medial_wall_morph.h5") if morph_dir is not None else None
         for emeg_fn in emeg_filenames
     ]
     invsol_paths = [
-        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
+        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_exclude_medial_wall_morph.npy")
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:

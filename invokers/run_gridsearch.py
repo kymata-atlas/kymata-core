@@ -54,7 +54,7 @@ def main():
     # For source space
     parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
     parser.add_argument('--morph',                   action="store_true", help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.")
-    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif", help='inverse solution suffix')
+    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-exclude_medial_wall-inv.fif", help='inverse solution suffix')
 
     parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
     parser.add_argument('--downsample-rate', type=int,   default=5, help='downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz')
