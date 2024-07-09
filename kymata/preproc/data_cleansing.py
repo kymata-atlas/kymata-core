@@ -330,10 +330,10 @@ def estimate_noise_cov(data_root_dir: str,
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
     cleaned_dir.mkdir(exist_ok=True)
 
-    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_evoked_sensor_data")
+    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "4_hexel_current_reconstruction")
     sensor_data_dir.mkdir(exist_ok=True)
 
-    cov_dir = Path(sensor_data_dir, "covariance_grand_average")
+    cov_dir = Path(sensor_data_dir, "noise_covariance_files")
     cov_dir.mkdir(exist_ok=True)
 
     for p in list_of_participants:

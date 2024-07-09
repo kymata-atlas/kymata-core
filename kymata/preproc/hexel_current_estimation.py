@@ -243,15 +243,13 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         # Read noise covariance matrix
         if config['duration'] is None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
-                interim_preprocessing_directory,
-                '3_evoked_sensor_data',
-                'covariance_grand_average',
+                hexel_current_reconstruction_dir,
+                'noise_covariance_files',
                 participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
-                interim_preprocessing_directory,
-                '3_evoked_sensor_data',
-                'covariance_grand_average',
+                hexel_current_reconstruction_dir,
+                'noise_covariance_files',
                 participant + "-" + config['cov_method'] + str(config['duration']) + '-cov.fif')))
 
         # note this file is only used for the sensor positions.
