@@ -211,7 +211,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                                             subjects_dir=mri_structurals_directory,
                                             parc='aparc',
                                             hemi='both')
-        fwd = mne.forward.restrict_forward_to_label(fwd, labels)
+        fwd = mne.forward.restrict_forward_to_label(fwd, labels) 
 
         if config['meg'] and config['eeg']:
             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd=fwd, overwrite=True)
