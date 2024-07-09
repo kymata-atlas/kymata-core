@@ -205,7 +205,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         )
         print(fwd)
 
-        # restrict forward vertices to those that make up cortex (i.e. all vertices, minus the medial wall)
+        # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
+        # which does not include those in the medial wall)
         labels = mne.read_labels_from_annot(subject=participant,
                                             subjects_dir=mri_structurals_directory,
                                             parc='aparc',
@@ -213,11 +214,11 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         fwd = mne.forward.restrict_forward_to_label(fwd, labels)
 
         if config['meg'] and config['eeg']:
-            mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd, overwrite=True)
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd=fwd, overwrite=True)
         elif config['meg']:
-            mne.write_forward_solution(Path(forward_sol_dir, participant + '-megonly-exclude_medial_wall-fwd.fif'), fwd)
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-megonly-fwd.fif'), fwd=fwd)
         elif config['eeg']:
-            mne.write_forward_solution(Path(forward_sol_dir, participant + '-eegonly-exclude_medial_wall-fwd.fif'), fwd)
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-eegonly-fwd.fif'), fwd=fwd)
         else:
             raise Exception('eeg and meg in the dataset_config file cannot be both False')
 
@@ -229,15 +230,15 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         if config['meg'] and config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-exclude_medial_wall-fwd.fif'))
+                participant + '-fwd.fif'))
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-megonly-exclude_medial_wall-fwd.fif'))
+                participant + '-megonly-fwd.fif'))
         elif config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-eegonly-exclude_medial_wall-fwd.fif'))
+                participant + '-eegonly-fwd.fif'))
 
         # Read noise covariance matrix
         if config['duration'] is None or config['cov_method'] != 'emptyroom':
@@ -272,27 +273,27 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
                     inverse_operator_dir,
-                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
                 inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] is None:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
                         inverse_operator_dir,
-                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')),
                     inverse_operator)
             else:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
                         inverse_operator_dir,
                         participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(
-                            config['duration']) + '-exclude_medial_wall-inv.fif')),
+                            config['duration']) + '-inv.fif')),
                     inverse_operator)
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
                     inverse_operator_dir,
-                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-exclude_medial_wall-inv.fif')),
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')),
 
                 inverse_operator)
 
@@ -329,7 +330,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-exclude_medial_wall-fwd.fif'))
+                participant + '-fwd.fif'))
             src_from = fwd['src']
 
             src_to = mne.read_source_spaces(Path(
