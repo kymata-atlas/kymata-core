@@ -199,6 +199,7 @@ def main():
                     stimulus_shift_correction=stimulus_shift_correction,
                     stimulus_delivery_latency=stimulus_delivery_latency,
                     overwrite=args.overwrite,
+                    seed=dataset_config['random_seed'],
                 )
             else:
                 es += do_gridsearch(
@@ -216,6 +217,7 @@ def main():
                     stimulus_shift_correction=stimulus_shift_correction,
                     stimulus_delivery_latency=stimulus_delivery_latency,
                     overwrite=args.overwrite,
+                    seed=dataset_config['random_seed'],
                 )
 
         if args.save_expression_set_location is not None:
@@ -248,6 +250,7 @@ def main():
                 stimulus_shift_correction=stimulus_shift_correction,
                 stimulus_delivery_latency=stimulus_delivery_latency,
                 overwrite=args.overwrite,
+                seed=dataset_config['random_seed'],
             )
 
             if combined_expression_set is None:
