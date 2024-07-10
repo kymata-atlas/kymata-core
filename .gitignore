@@ -2,6 +2,7 @@
 kymata-core-data/tutorial_nkg_data/
 kymata-core-data/emeg_study_data/
 kymata-core-data/output/
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
