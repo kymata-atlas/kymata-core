@@ -331,10 +331,10 @@ def estimate_noise_cov(data_root_dir: str,
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
     cleaned_dir.mkdir(exist_ok=True)
 
-    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_evoked_sensor_data")
+    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "4_hexel_current_reconstruction")
     sensor_data_dir.mkdir(exist_ok=True)
 
-    cov_dir = Path(sensor_data_dir, "covariance_grand_average")
+    cov_dir = Path(sensor_data_dir, "noise_covariance_files")
     cov_dir.mkdir(exist_ok=True)
 
     for p in list_of_participants:
@@ -407,6 +407,7 @@ def estimate_noise_cov(data_root_dir: str,
             del cleaned_raws, raw_cropped
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
             del raw_combined
+            raw_epoch.set_eeg_reference(ref_channels='average', projection=True, verbose=False)
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del raw_epoch
 
