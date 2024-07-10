@@ -180,6 +180,7 @@ def main():
             stimulus_shift_correction=stimulus_shift_correction,
             stimulus_delivery_latency=stimulus_delivery_latency,
             overwrite=args.overwrite,
+            seed=dataset_config['random_seed'],
         )
 
         if combined_expression_set is None:
