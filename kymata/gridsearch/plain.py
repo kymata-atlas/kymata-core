@@ -75,7 +75,7 @@ def do_gridsearch(
         - If specified, the results are plotted and saved to the given location.
     """
 
-    # Set random seed to keep derrangement orderings
+    # Set random seed to keep derangement orderings
     # deterministic between runs
     np.random.seed(100)
 
