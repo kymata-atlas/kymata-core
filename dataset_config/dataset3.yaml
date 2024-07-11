@@ -4,7 +4,6 @@
 data_location: "cbu"  # local | cbu | cbu-local
 dataset_directory_name: "dataset_3-russian_narratives"
 mri_structurals_directory: "raw_mri_structurals"
-random_seed: 17
 
 # General information related to the dataset
 participants: [

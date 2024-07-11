@@ -32,7 +32,6 @@ def do_gridsearch(
         n_splits: int = 400,
         n_reps: int = 1,
         overwrite: bool = True,
-        seed: int = 17,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given function.
@@ -76,7 +75,9 @@ def do_gridsearch(
         - If specified, the results are plotted and saved to the given location.
     """
 
-    np.random.seed(seed)
+    # Set random seed to keep derrangement orderings
+    # deterministic between runs
+    np.random.seed(100)
 
     channel_space = channel_space.lower()
     if channel_space not in {"sensor", "source"}:
