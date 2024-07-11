@@ -10,6 +10,7 @@ from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
@@ -421,7 +422,9 @@ def estimate_noise_cov(data_root_dir: str,
 
             # Now combine the two covariance matrices
             cov_data = cov_eeg.data
-            cov_data[64:,64:] = cov_meg.data[64:,64:]
+            meg_indices_ave = [index for index, channel in enumerate(cov_eeg.ch_names) if 'EEG' not in channel]
+            meg_indices_emp = [index for index, channel in enumerate(cov_meg.ch_names) if 'EEG' not in channel]
+            cov_data[np.ix_(meg_indices_ave, meg_indices_ave)] = cov_meg.data[np.ix_(meg_indices_emp, meg_indices_emp)]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
 
             mne.write_cov(Path(cov_dir, p + '-fusion-cov.fif'), cov)
