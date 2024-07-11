@@ -9,13 +9,15 @@ from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 def main():
     function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core-data", "output")
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
     if function_family_type == 'standard':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, '11_functions_gridsearch.nkg'))
+        expression_data  = load_expression_set(Path(path_to_nkg_files, 'diag_only/11_functions_gridsearch.nkg'))
+
+        # import ipdb;ipdb.set_trace()
 
         fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True, 
                               color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")

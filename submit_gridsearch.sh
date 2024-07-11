@@ -10,7 +10,7 @@
 #SBATCH --output=logs/slurm_log-%x.%j.out.txt
 #SBATCH --error=logs/slurm_log-%x.%j.trace.txt
 #SBATCH --ntasks=1
-#SBATCH --time=05:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mem=240G
 #SBATCH --array=1-1
 #SBATCH --exclusive
