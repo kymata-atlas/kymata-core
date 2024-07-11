@@ -2,7 +2,7 @@
 
 ###
 # To run gridsearch on the queue at the CBU, run the following command in command line:
-#   sbatch submit_gridsearch.sh
+#   sbatch submit_gridsearch_rus.sh
 ###
 
 
@@ -12,11 +12,11 @@
 #SBATCH --ntasks=1
 #SBATCH --time=12:00:00
 #SBATCH --mem=240G
-#SBATCH --array=0-20
+#SBATCH --array=0-13
 #SBATCH --exclusive
 
 part_num=()
-for ((i=1; i<22; i++)); do
+for ((i=1; i<15; i++)); do
     part_num+=("$i")
 done
 
@@ -30,14 +30,14 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
-        --config dataset4.yaml \
+        --config dataset3.yaml \
         --input-stream auditory \
-        --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
+        --function-path 'predicted_function_contours/audio/GMloudness_TVL_and_hilbert/stimulisig' \
         --use-inverse-operator \
-        --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-diag-inv.fif' \
+        --inverse-operator-suffix '_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif' \
         --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_incremental' \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_incremental' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental' \
         --overwrite \
         --number-of-participant '${part_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --morph \

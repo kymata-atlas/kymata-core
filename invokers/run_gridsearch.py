@@ -45,6 +45,7 @@ def main():
 
     # Participants
     parser.add_argument('--single-participant-override', type=str, default=None, required=False, help='Supply to run only on one participant')
+    parser.add_argument('--number-of-participant', type=int, default=None, required=False, help='Supply to run only the first specified number of participants')
     parser.add_argument('--ave-mode',                    type=str, default="ave", choices=["ave", "concatenate"], help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
 
     # Functions
@@ -114,6 +115,11 @@ def main():
                 args.single_participant_override + r
                 for r in reps[:-1]
             ]
+    elif args.number_of_participant is not None:
+        emeg_filenames = [
+            p + '-ave'
+            for p in participants[:args.number_of_participant]
+        ]
     else:
         emeg_filenames = [
             p + '-ave'
