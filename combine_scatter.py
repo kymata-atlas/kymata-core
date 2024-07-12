@@ -16,13 +16,13 @@ def asr_models_loop_full():
 
     size = 'large'
 
-    neuron_selection = True
+    neuron_selection = False
     
     n = 1
     
     lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_mfa_teacher/log/'
+    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_large_multi_log/decoder_all_der_5/'
 
     for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
@@ -86,7 +86,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'kymata-core-data/output/scatter_plot/no_select/whisper_decoder_mfa_teacher_{thres}_{x_upper}.png', dpi=600)
+    plt.savefig(f'kymata-core-data/output/scatter_plot/no_select/whisper_decoder_{thres}_{x_upper}.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
