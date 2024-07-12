@@ -604,7 +604,7 @@ def expression_plot(
     return fig
 
 
-def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], dim_channel: str, show_only_sensors: str | None):
+def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], show_only_sensors: str | None):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
@@ -622,14 +622,14 @@ def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[Data
             chosen_channels = {
                 sensor
                 for best_funs_each_ax in best_functions
-                for sensor in best_funs_each_ax[dim_channel]
+                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
             }
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
             chosen_channels = {
                 sensor
                 for best_funs_each_ax in best_functions
-                for sensor in best_funs_each_ax[dim_channel]
+                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
             }
         else:
             raise NotImplementedError()
