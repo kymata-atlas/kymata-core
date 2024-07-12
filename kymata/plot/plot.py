@@ -463,9 +463,11 @@ def expression_plot(
                 raise NotImplementedError()
         else:
             # All sensors
-            chosen_sensors = set()
-            for b in best_functions:
-                chosen_sensors.update(set(b[DIM_SENSOR]))
+            chosen_sensors = {
+                sensor
+                for best_funs_each_ax in best_functions
+                for sensor in best_funs_each_ax[DIM_SENSOR]
+            }
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
