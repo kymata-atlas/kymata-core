@@ -30,6 +30,7 @@ apptainer exec \
         --input-stream auditory \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
         --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
+        --plot-top-channels \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
