@@ -38,6 +38,7 @@ apptainer exec \
         --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
         --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_incremental' \
         --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_incremental' \
+        --save-name 'first_${part_num[$(($SLURM_ARRAY_TASK_ID))]}_eng' \
         --overwrite \
         --number-of-participant '${part_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --morph \

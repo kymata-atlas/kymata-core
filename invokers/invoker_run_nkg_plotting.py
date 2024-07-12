@@ -15,7 +15,7 @@ def main():
 
     if function_family_type == 'standard':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, 'diag_only/11_functions_gridsearch.nkg'))
+        expression_data  = load_expression_set(Path(path_to_nkg_files, 'participant_1/11_functions_gridsearch.nkg'))
 
         # import ipdb;ipdb.set_trace()
 
