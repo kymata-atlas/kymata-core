@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple, Any, Type
+from typing import Optional, Sequence, NamedTuple, Any, Type, Literal
 from warnings import warn
 
 import numpy as np
@@ -24,7 +24,7 @@ from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, 
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
 
 transparent = (0, 0, 0, 0)
 
@@ -302,6 +302,7 @@ def expression_plot(
         minimap: bool = False,
         minimap_view: str = "lateral",
         minimap_surface: str = "inflated",
+        show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -313,24 +314,35 @@ def expression_plot(
 
     Args:
         expression_set (ExpressionSet): The set of expressions to plot, containing functions and associated data.
-        show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which functions to plot.
+        show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which
+            functions to plot.
             If None, all functions in the expression_set will be plotted. Default is None.
         paired_axes (bool, optional): When True, shows the expression plot split into left and right axes.
             When False, all points are shown on the same axis. Default is True.
         alpha (float, optional): Significance level for statistical tests, defaulting to a 5-sigma threshold.
-        color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single color,
+        color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single
+            color,
             a dictionary mapping function names to colors, or a list of colors. Default is None.
-        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is None.
-        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default values,
+        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is
+            None.
+        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default
+            values,
             or set either entry to None to use the default for that value. Default is (-100, 800).
-        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is True.
+        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
+            True.
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
-        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views. Default is "lateral".
+        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
+            Default is "lateral".
         minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
-        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
+        show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
+            None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
+            throw an exception. Default is None.
+        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
+            Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
         show_legend (bool, optional): If True, displays the legend. Default is True.
-        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend item.
+        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend
+            item.
             Provide a dictionary mapping true function names to display names. Default is None.
 
     Returns:
@@ -398,6 +410,9 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
+    if not isinstance(expression_set, SensorExpressionSet) and show_only_sensors is not None:
+        raise ValueError("`show_only_sensors` only valid with sensor data.")
+
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
@@ -438,19 +453,32 @@ def expression_plot(
             custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
             custom_labels.append(custom_label)
 
+        # Restrict to specific sensor type if requested
+        if show_only_sensors is not None:
+            if show_only_sensors == "meg":
+                chosen_sensors = get_meg_sensors()
+            elif show_only_sensors == "eeg":
+                chosen_sensors = get_eeg_sensors()
+            else:
+                raise NotImplementedError()
+        else:
+            # All sensors
+            chosen_sensors = set()
+            for b in best_functions:
+                chosen_sensors.update(set(b[DIM_SENSOR]))
+
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
             assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = set(assign_left_right_channels[0].axis_channels)
-            bottom_chans = set(assign_left_right_channels[1].axis_channels)
+            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_sensors
+            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_sensors
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
             bottom_chans -= both_chans
-            chans = (top_chans, bottom_chans)
-            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, chans):
+            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, (top_chans, bottom_chans)):
                 # Plot filled
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
@@ -475,7 +503,8 @@ def expression_plot(
             # As normal, plot appropriate filled points in each axis
             for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[best_funs_this_ax[DIM_FUNCTION] == function],
+                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
+                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chosen_sensors))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
