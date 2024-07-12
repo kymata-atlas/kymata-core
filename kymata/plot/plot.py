@@ -410,7 +410,7 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_channels(best_functions, expression_set, show_only_sensors)
+    chosen_channels = _restrict_channels(expression_set, show_only_sensors)
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
@@ -607,7 +607,7 @@ def expression_plot(
     return fig
 
 
-def _restrict_channels(best_functions, expression_set, show_only_sensors):
+def _restrict_channels(expression_set, show_only_sensors):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
@@ -622,10 +622,10 @@ def _restrict_channels(best_functions, expression_set, show_only_sensors):
     else:
         if isinstance(expression_set, SensorExpressionSet):
             # All sensors
-            chosen_channels = set(best_functions[DIM_SENSOR])
+            chosen_channels = set(expression_set.best_functions()[DIM_SENSOR])
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
-            chosen_channels = set(best_functions[DIM_HEXEL])
+            chosen_channels = set(expression_set.best_functions()[DIM_HEXEL])
         else:
             raise NotImplementedError()
     return chosen_channels
