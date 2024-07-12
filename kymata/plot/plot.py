@@ -410,7 +410,7 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_channels(expression_set, show_only_sensors)
+    chosen_channels = _restrict_channels(expression_set, best_functions, show_only_sensors)
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
@@ -451,7 +451,6 @@ def expression_plot(
         if custom_label not in custom_labels:
             custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
             custom_labels.append(custom_label)
-
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
@@ -572,7 +571,6 @@ def expression_plot(
         legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
         if hidden_functions_in_legend and len(not_shown) > 0:
 
-
             if len(not_shown) > split_legend_at_n_functions:
                 legend_n_col = 2
             # Plot dummy legend for other functions which are included in model selection but not plotted
@@ -591,9 +589,9 @@ def expression_plot(
             for lh in leg.legend_handles:
                 lh.set_alpha(0)
         top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                    title="Plotted functions",
-                    ncol=legend_n_col,
-                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
+                      title="Plotted functions",
+                      ncol=legend_n_col,
+                      loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
@@ -607,7 +605,7 @@ def expression_plot(
     return fig
 
 
-def _restrict_channels(expression_set, show_only_sensors):
+def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], show_only_sensors: str | None):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
@@ -622,10 +620,18 @@ def _restrict_channels(expression_set, show_only_sensors):
     else:
         if isinstance(expression_set, SensorExpressionSet):
             # All sensors
-            chosen_channels = set(expression_set.best_functions()[DIM_SENSOR])
+            chosen_channels = {
+                sensor
+                for best_funs_each_ax in best_functions
+                for sensor in best_funs_each_ax[DIM_SENSOR]
+            }
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
-            chosen_channels = set(expression_set.best_functions()[DIM_HEXEL])
+            chosen_channels = {
+                sensor
+                for best_funs_each_ax in best_functions
+                for sensor in best_funs_each_ax[DIM_HEXEL]
+            }
         else:
             raise NotImplementedError()
     return chosen_channels
@@ -671,13 +677,13 @@ def _get_yticks(ylim):
 
 
 def plot_top_five_channels_of_gridsearch(
-        latencies: NDArray[any],
-        corrs:NDArray[any],
-        function:Function,
-        n_samples_per_split:int,
+        latencies: NDArray,
+        corrs: NDArray,
+        function: Function,
+        n_samples_per_split: int,
         n_reps: int,
         n_splits: int,
-        auto_corrs:NDArray[any],
+        auto_corrs: NDArray,
         log_pvalues: any,
         # I/O args
         save_to: Optional[Path] = None,
