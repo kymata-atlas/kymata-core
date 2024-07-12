@@ -410,8 +410,7 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    if not isinstance(expression_set, SensorExpressionSet) and show_only_sensors is not None:
-        raise ValueError("`show_only_sensors` only valid with sensor data.")
+    chosen_channels = _restrict_channels(best_functions, expression_set, show_only_sensors)
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
@@ -453,29 +452,14 @@ def expression_plot(
             custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
             custom_labels.append(custom_label)
 
-        # Restrict to specific sensor type if requested
-        if show_only_sensors is not None:
-            if show_only_sensors == "meg":
-                chosen_sensors = get_meg_sensors()
-            elif show_only_sensors == "eeg":
-                chosen_sensors = get_eeg_sensors()
-            else:
-                raise NotImplementedError()
-        else:
-            # All sensors
-            chosen_sensors = {
-                sensor
-                for best_funs_each_ax in best_functions
-                for sensor in best_funs_each_ax[DIM_SENSOR]
-            }
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
             assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_sensors
-            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_sensors
+            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
+            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_channels
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
@@ -506,7 +490,7 @@ def expression_plot(
             for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chosen_sensors))],
+                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chosen_channels))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -621,6 +605,30 @@ def expression_plot(
             raise FileExistsError(save_to)
 
     return fig
+
+
+def _restrict_channels(best_functions, expression_set, show_only_sensors):
+    """Restrict to specific sensor type if requested."""
+    if show_only_sensors is not None:
+        if isinstance(expression_set, SensorExpressionSet):
+            if show_only_sensors == "meg":
+                chosen_channels = get_meg_sensors()
+            elif show_only_sensors == "eeg":
+                chosen_channels = get_eeg_sensors()
+            else:
+                raise NotImplementedError()
+        else:
+            raise ValueError("`show_only_sensors` only valid with sensor data.")
+    else:
+        if isinstance(expression_set, SensorExpressionSet):
+            # All sensors
+            chosen_channels = set(best_functions[DIM_SENSOR])
+        elif isinstance(expression_set, HexelExpressionSet):
+            # All hexels
+            chosen_channels = set(best_functions[DIM_HEXEL])
+        else:
+            raise NotImplementedError()
+    return chosen_channels
 
 
 def _get_best_xlims(xlims, data_x_min, data_x_max):
