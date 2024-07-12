@@ -64,6 +64,10 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
 
 
 def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
+    """
+    Converts a (legacy) <stimulisig>.mat file to a (current) Numpy <stimulisig>.npz file on disk. Supply a path without
+    a suffix, and the file will be created in the same place with the same name but with a different suffix.
+    """
     mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
     print('Saving .mat as .npz ...')
     func_dict = {}
