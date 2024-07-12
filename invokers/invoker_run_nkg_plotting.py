@@ -8,12 +8,20 @@ from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 def main():
-    function_family_type = 'standard' # 'standard' or 'ANN'
+    function_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
-    if function_family_type == 'standard':
+    if function_family_type == 'simple':
+
+        expression_data  = load_expression_set(Path(path_to_nkg_files, 'whisper_large_multi/encoder_all_der_5/expression_set/model.encoder.layers.0.final_layer_norm/model.encoder.layers.0.final_layer_norm_1279_gridsearch.nkg'))
+
+        fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=False)
+
+        fig.savefig("expression_plot.png")
+
+    elif function_family_type == 'standard':
 
         expression_data  = load_expression_set(Path(path_to_nkg_files, 'participant_1/11_functions_gridsearch.nkg'))
 
