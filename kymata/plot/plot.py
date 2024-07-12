@@ -19,8 +19,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
-    DIM_HEXEL
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_FUNCTION
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
@@ -151,11 +150,11 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float, s
                                           start=1):
         if function not in show_functions:
             continue
-        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][DIM_HEXEL]
+        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][expression_set.channel_coord_name]
         hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
         data_left[hexel_idxs_left] = function_i
 
-        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][DIM_HEXEL]
+        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][expression_set.channel_coord_name]
         hexel_idxs_right = np.searchsorted(expression_set.hexels_right, significant_hexel_names_right.to_numpy())
         data_right[hexel_idxs_right] = function_i
 
@@ -467,7 +466,7 @@ def expression_plot(
                 # Plot filled
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chans_this_ax))],
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chans_this_ax))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -476,7 +475,7 @@ def expression_plot(
                 # Plot empty
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(both_chans))],
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(both_chans))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=False)
                 data_x_min = min(data_x_min, x_min)
@@ -489,7 +488,7 @@ def expression_plot(
             for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chosen_channels))],
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chosen_channels))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -605,7 +604,7 @@ def expression_plot(
     return fig
 
 
-def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], show_only_sensors: str | None):
+def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], dim_channel: str, show_only_sensors: str | None):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
@@ -623,14 +622,14 @@ def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[Data
             chosen_channels = {
                 sensor
                 for best_funs_each_ax in best_functions
-                for sensor in best_funs_each_ax[DIM_SENSOR]
+                for sensor in best_funs_each_ax[dim_channel]
             }
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
             chosen_channels = {
                 sensor
                 for best_funs_each_ax in best_functions
-                for sensor in best_funs_each_ax[DIM_HEXEL]
+                for sensor in best_funs_each_ax[dim_channel]
             }
         else:
             raise NotImplementedError()
