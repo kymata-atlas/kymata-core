@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple, Any, Type
+from typing import Optional, Sequence, NamedTuple, Any, Type, Literal
 from warnings import warn
 
 import numpy as np
@@ -19,12 +19,11 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_SENSOR, DIM_FUNCTION, \
-    DIM_HEXEL
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_FUNCTION
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
 
 transparent = (0, 0, 0, 0)
 
@@ -151,11 +150,11 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet, alpha_logp: float, s
                                           start=1):
         if function not in show_functions:
             continue
-        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][DIM_HEXEL]
+        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][expression_set.channel_coord_name]
         hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
         data_left[hexel_idxs_left] = function_i
 
-        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][DIM_HEXEL]
+        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][expression_set.channel_coord_name]
         hexel_idxs_right = np.searchsorted(expression_set.hexels_right, significant_hexel_names_right.to_numpy())
         data_right[hexel_idxs_right] = function_i
 
@@ -302,6 +301,7 @@ def expression_plot(
         minimap: bool = False,
         minimap_view: str = "lateral",
         minimap_surface: str = "inflated",
+        show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
         # I/O args
         save_to: Optional[Path] = None,
         overwrite: bool = True,
@@ -313,24 +313,35 @@ def expression_plot(
 
     Args:
         expression_set (ExpressionSet): The set of expressions to plot, containing functions and associated data.
-        show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which functions to plot.
+        show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which
+            functions to plot.
             If None, all functions in the expression_set will be plotted. Default is None.
         paired_axes (bool, optional): When True, shows the expression plot split into left and right axes.
             When False, all points are shown on the same axis. Default is True.
         alpha (float, optional): Significance level for statistical tests, defaulting to a 5-sigma threshold.
-        color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single color,
+        color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single
+            color,
             a dictionary mapping function names to colors, or a list of colors. Default is None.
-        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is None.
-        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default values,
+        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is
+            None.
+        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default
+            values,
             or set either entry to None to use the default for that value. Default is (-100, 800).
-        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is True.
+        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
+            True.
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
-        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views. Default is "lateral".
+        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
+            Default is "lateral".
         minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
-        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
+        show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
+            None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
+            throw an exception. Default is None.
+        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
+            Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
         show_legend (bool, optional): If True, displays the legend. Default is True.
-        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend item.
+        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend
+            item.
             Provide a dictionary mapping true function names to display names. Default is None.
 
     Returns:
@@ -398,6 +409,8 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
+    chosen_channels = _restrict_channels(expression_set, best_functions, show_only_sensors)
+
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
         ** (1 / (2
@@ -443,18 +456,17 @@ def expression_plot(
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
             assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = set(assign_left_right_channels[0].axis_channels)
-            bottom_chans = set(assign_left_right_channels[1].axis_channels)
+            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
+            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_channels
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
             bottom_chans -= both_chans
-            chans = (top_chans, bottom_chans)
-            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, chans):
+            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, (top_chans, bottom_chans)):
                 # Plot filled
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(chans_this_ax))],
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chans_this_ax))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -463,7 +475,7 @@ def expression_plot(
                 # Plot empty
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
                     function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[DIM_SENSOR].isin(both_chans))],
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(both_chans))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=False)
                 data_x_min = min(data_x_min, x_min)
@@ -475,7 +487,8 @@ def expression_plot(
             # As normal, plot appropriate filled points in each axis
             for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
                 x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[best_funs_this_ax[DIM_FUNCTION] == function],
+                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
+                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chosen_channels))],
                     color=color[function],
                     ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
                 data_x_min = min(data_x_min, x_min)
@@ -557,7 +570,6 @@ def expression_plot(
         legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
         if hidden_functions_in_legend and len(not_shown) > 0:
 
-
             if len(not_shown) > split_legend_at_n_functions:
                 legend_n_col = 2
             # Plot dummy legend for other functions which are included in model selection but not plotted
@@ -576,9 +588,9 @@ def expression_plot(
             for lh in leg.legend_handles:
                 lh.set_alpha(0)
         top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                    title="Plotted functions",
-                    ncol=legend_n_col,
-                    loc="upper left", bbox_to_anchor=(1.02, 1.02))
+                      title="Plotted functions",
+                      ncol=legend_n_col,
+                      loc="upper left", bbox_to_anchor=(1.02, 1.02))
 
     if save_to is not None:
         pyplot.rcParams['savefig.dpi'] = 300
@@ -590,6 +602,38 @@ def expression_plot(
             raise FileExistsError(save_to)
 
     return fig
+
+
+def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], show_only_sensors: str | None):
+    """Restrict to specific sensor type if requested."""
+    if show_only_sensors is not None:
+        if isinstance(expression_set, SensorExpressionSet):
+            if show_only_sensors == "meg":
+                chosen_channels = get_meg_sensors()
+            elif show_only_sensors == "eeg":
+                chosen_channels = get_eeg_sensors()
+            else:
+                raise NotImplementedError()
+        else:
+            raise ValueError("`show_only_sensors` only valid with sensor data.")
+    else:
+        if isinstance(expression_set, SensorExpressionSet):
+            # All sensors
+            chosen_channels = {
+                sensor
+                for best_funs_each_ax in best_functions
+                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
+            }
+        elif isinstance(expression_set, HexelExpressionSet):
+            # All hexels
+            chosen_channels = {
+                sensor
+                for best_funs_each_ax in best_functions
+                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
+            }
+        else:
+            raise NotImplementedError()
+    return chosen_channels
 
 
 def _get_best_xlims(xlims, data_x_min, data_x_max):
@@ -632,13 +676,13 @@ def _get_yticks(ylim):
 
 
 def plot_top_five_channels_of_gridsearch(
-        latencies: NDArray[any],
-        corrs:NDArray[any],
-        function:Function,
-        n_samples_per_split:int,
+        latencies: NDArray,
+        corrs: NDArray,
+        function: Function,
+        n_samples_per_split: int,
         n_reps: int,
         n_splits: int,
-        auto_corrs:NDArray[any],
+        auto_corrs: NDArray,
         log_pvalues: any,
         # I/O args
         save_to: Optional[Path] = None,

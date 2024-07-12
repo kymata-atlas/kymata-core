@@ -89,6 +89,16 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
     return our_sensor_d
 
 
+def get_meg_sensors() -> set[str]:
+    """Set of MEG sensor names."""
+    return set(get_meg_sensor_xy().keys())
+
+
+def get_eeg_sensors() -> set[str]:
+    """Set of EEG sensor names."""
+    return set(get_eeg_sensor_xy().keys())
+
+
 def plot_eeg_sensor_positions(raw_fif: Raw):
     """
     Plot the positions of EEG sensors in 2D and 3D views.
