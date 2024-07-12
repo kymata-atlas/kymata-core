@@ -1,4 +1,6 @@
+from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,11 +10,15 @@ from kymata.entities.functions import Function
 from kymata.io.file import PathType
 
 
-def load_function(function_path_without_suffix: PathType, func_name: str, n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
+_logger = getLogger(__file__)
+
+
+def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[bool] = None,
+                  n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
-        print('USING BRUCE MODEL')
+        _logger.info('USING BRUCE MODEL')
         if function_path_without_suffix.with_suffix(".npz").exists():
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
@@ -53,6 +59,24 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
         func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
         func = np.array(func_dict[func_name])
 
+    n_nan = np.count_nonzero(np.isnan(func))
+    if n_nan > 0:
+        nan_message = f"Function contained {n_nan:,} NaNs, ({100*n_nan/np.prod(func.shape):.2f}%)"
+        if replace_nans is None:
+            raise ValueError(f"{nan_message}. "
+                             "Consider replacing small numbers of unavoidable NaNs with zeros or the function mean "
+                             "value.")
+        elif replace_nans == "zero":
+            _logger.warning(f"{nan_message}. Replacing with zeros.")
+            func[np.isnan(func)] = 0
+        elif replace_nans == "mean":
+            _logger.warning(f"{nan_message}. Replacing with the function mean.")
+            func[np.isnan(func)] = np.nanmean(func)
+        else:
+            raise NotImplementedError()
+
+    assert not np.isnan(func).any()
+
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
 
@@ -69,7 +93,7 @@ def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
     a suffix, and the file will be created in the same place with the same name but with a different suffix.
     """
     mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
-    print('Saving .mat as .npz ...')
+    _logger.info('Saving .mat as .npz ...')
     func_dict = {}
     for key in mat.dtype.names:
         if key == 'name':
