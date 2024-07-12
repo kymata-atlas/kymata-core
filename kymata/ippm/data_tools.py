@@ -307,7 +307,7 @@ def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_d
         -------
         A ratio indicating how many channels were incorporated into the IPPM out of all relevant channels.
     """
-    assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
+    assert(hemi == 'rightHemisphere' or hemi == 'leftHemisphere')
 
     # Step 1: Calculate significance level
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      
