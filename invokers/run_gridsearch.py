@@ -70,7 +70,7 @@ def main():
     parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir), help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir), help="Save an expression plots, and other plots, in this location")
-    parser.add_argument('--plot-top-channels', type=bool, action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
+    parser.add_argument('--plot-top-channels', action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
