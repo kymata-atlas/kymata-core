@@ -309,7 +309,18 @@ def confirm_digitisation_locations(data_root_dir, config):
     src_dir = Path(hexel_current_reconstruction_dir, "src_files")
     fwd_dir = Path(hexel_current_reconstruction_dir, "forward_sol_files")
     coregistration_checks_dir = Path(coregistration_dir, "confirmation_of_digitisation_locations")
+    helmet_intersection_check_dir = Path(coregistration_checks_dir, 'helmet-intersection-check')
+    sensor_location_check_dir = Path(coregistration_checks_dir, 'sensor-location-check')
+    src_check_dir = Path(coregistration_checks_dir, 'src-check')
+    fwd_check_dir = Path(coregistration_checks_dir, 'fwd-check')
+    medial_wall_omitted_check_dir = Path(coregistration_checks_dir, 'medial-wall-omitted-check')
+
     coregistration_checks_dir.mkdir(exist_ok=True)
+    helmet_intersection_check_dir.mkdir(exist_ok=True)
+    sensor_location_check_dir.mkdir(exist_ok=True)
+    src_check_dir.mkdir(exist_ok=True)
+    fwd_check_dir.mkdir(exist_ok=True)
+    medial_wall_omitted_check_dir.mkdir(exist_ok=True)
 
     for participant in list_of_participants:
 
@@ -346,7 +357,7 @@ def confirm_digitisation_locations(data_root_dir, config):
             mri_fiducials="estimated",
         )
         mne.viz.set_3d_view(fig, 0, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
-        fig.plotter.screenshot(Path(coregistration_checks_dir, participant+'-helmet-intersection-check.png'))
+        fig.plotter.screenshot(Path(helmet_intersection_check_dir, participant+'-helmet-intersection-check.png'))
 
         fig = mne.viz.plot_alignment(
             raw.info,
@@ -362,7 +373,7 @@ def confirm_digitisation_locations(data_root_dir, config):
             mri_fiducials="estimated",
         )
         mne.viz.set_3d_view(fig, 45, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
-        fig.plotter.screenshot(Path(coregistration_checks_dir, participant + '-sensor-location-check.png'))
+        fig.plotter.screenshot(Path(sensor_location_check_dir, participant + '-sensor-location-check.png'))
 
         fig = mne.viz.plot_alignment(
             raw.info,
@@ -371,19 +382,21 @@ def confirm_digitisation_locations(data_root_dir, config):
             src=src,
             subjects_dir=mri_structurals_directory,
             surfaces=["white"],
+            eeg=False,
             dig='fiducials',
             show_axes=True,
             meg={"sensors": 0.0},
             coord_frame="meg",
         )
         mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
-        fig.plotter.screenshot(Path(coregistration_checks_dir, participant + '-src-check.png'))
+        fig.plotter.screenshot(Path(src_check_dir, participant + '-src-check.png'))
 
         fig = mne.viz.plot_alignment(
             raw.info,
             trans=trans,
             subject=participant,
             dig=False,
+            eeg=False,
             fwd=fwd_fixed,
             subjects_dir=mri_structurals_directory,
             surfaces=["white"],
@@ -392,13 +405,14 @@ def confirm_digitisation_locations(data_root_dir, config):
             coord_frame="meg",
         )
         mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
-        fig.plotter.screenshot(Path(coregistration_checks_dir, participant + '-fwd-check.png'))
+        fig.plotter.screenshot(Path(fwd_check_dir, participant + '-fwd-check.png'))
 
         fig = mne.viz.plot_alignment(
             raw.info,
             trans=trans,
             subject=participant,
             dig=False,
+            eeg=False,
             fwd=fwd_fixed,
             subjects_dir=mri_structurals_directory,
             surfaces=["white"],
@@ -407,7 +421,7 @@ def confirm_digitisation_locations(data_root_dir, config):
             coord_frame="meg",
         )
         mne.viz.set_3d_view(fig, 0, 180, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
-        fig.plotter.screenshot(Path(coregistration_checks_dir, participant + '-medial-wall-omitted-check.png'))
+        fig.plotter.screenshot(Path(medial_wall_omitted_check_dir, participant + '-medial-wall-omitted-check.png'))
 
 
 
