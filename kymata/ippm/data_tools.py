@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 import math
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
-Node = namedtuple('Node', 'magnitude position in_edges')
+Node = namedtuple('Node', 'magnitude position inc_edges')
 
 
 class IPPMHexel(object):
