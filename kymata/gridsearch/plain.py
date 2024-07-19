@@ -138,16 +138,8 @@ def do_gridsearch(
         deranged_emeg = emeg_reshaped[:, derangement, :]
         corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
 
-    # work out autocorrelation for channel-by-channel plots
-    noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
-    noisy_func = normalize(np.copy(func)) + noise
-
-    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
-
-    auto_corrs = np.fft.irfft(F_noisy_func * F_func)
-
-    del F_func, deranged_emeg, emeg_reshaped
+    # In case there was a large part of the function which was constant, the corr will be undefined (nan).
+    # We want p-vals here to be 1.
 
     # derive pvalues
     log_pvalues = _ttest(corrs)
@@ -155,6 +147,17 @@ def do_gridsearch(
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
 
     if plot_top_five_channels:
+        # work out autocorrelation for channel-by-channel plots
+        noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
+        noisy_func = normalize(np.copy(func)) + noise
+
+        F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
+        F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
+
+        auto_corrs = np.fft.irfft(F_noisy_func * F_func)
+
+        del F_func, deranged_emeg, emeg_reshaped
+
         plot_top_five_channels_of_gridsearch(
             corrs=corrs,
             auto_corrs=auto_corrs,
