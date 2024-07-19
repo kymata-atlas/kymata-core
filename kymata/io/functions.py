@@ -79,8 +79,8 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
 
     if add_noise:
         # Add 0.1% noise
-        range = func[func != 0].max() - func[func != 0].min()
-        func += np.random.normal(size=func.shape, scale=range / 1000)
+        range_ = func[func != 0].max() - func[func != 0].min()
+        func += np.random.normal(size=func.shape, scale=range_ / 1000)
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
