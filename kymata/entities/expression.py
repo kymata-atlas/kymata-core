@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple
+from typing import Sequence, Union, get_args, Tuple, Collection, Self, TypeVar
 from warnings import warn
 
 from numpy import array, array_equal, ndarray
@@ -192,6 +192,10 @@ class ExpressionSet(ABC):
     def __copy__(self) -> ExpressionSet:
         pass
 
+    def _add_compatible(self, other):
+        if type(self) is not type(other):
+            raise ValueError("Can only add ExpressionSets of the same type")
+
     @abstractmethod
     def __add__(self, other) -> ExpressionSet:
         pass
@@ -372,6 +376,7 @@ class HexelExpressionSet(ExpressionSet):
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
+        self._add_compatible(other)
         assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
         assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
@@ -482,6 +487,7 @@ class SensorExpressionSet(ExpressionSet):
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
+        self._add_compatible(other)
         assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
@@ -523,3 +529,18 @@ class SensorExpressionSet(ExpressionSet):
         Note that channels for which the best p-value is 1 will be omitted.
         """
         return super()._best_functions_for_block(BLOCK_SCALP)
+
+
+T_ExpressionSetSubclass = TypeVar('T_ExpressionSetSubclass', bound=ExpressionSet)
+
+
+def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionSetSubclass:
+    """
+    Combines a sequence of `ExpressionSet`s into a single `ExpressionSet`.
+    All must be suitable for combination, e.g. same type, same channels, etc.
+    """
+    if len(expression_sets) == 0:
+        raise ValueError("Cannot combine empty collection of ExpressionSets")
+    if len(expression_sets) == 1:
+        return expression_sets[0]
+    return expression_sets[0] + combine(expression_sets[1:])
