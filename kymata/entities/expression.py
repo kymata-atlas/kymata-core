@@ -189,7 +189,7 @@ class ExpressionSet(ABC):
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
         # Override this method and provide additional checks after calling super().__eq__(other)
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
         if not self.functions == other.functions:
             return False
