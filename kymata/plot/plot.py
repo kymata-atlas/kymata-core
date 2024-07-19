@@ -60,11 +60,10 @@ class _MosaicSpec:
             figsize=self.fig_size)
 
 
-def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: Type[ExpressionSet]) -> _MosaicSpec:
+def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: Type[ExpressionSet], fig_size: tuple[float, float]) -> _MosaicSpec:
     # Set defaults:
     if show_minimap:
         width_ratios = [1, 3]
-        fig_size = (12, 7)
         subplots_adjust = {
             "hspace": 0, "wspace": 0.25,
             "left": 0.02, "right": 0.8,
@@ -73,13 +72,11 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: 
         yaxis_label_xpos = width_ratios[0]/(width_ratios[1]+width_ratios[0]) - 0.04
     else:
         width_ratios = None
-        fig_size = (12, 7)
         subplots_adjust = {
             "hspace": 0,
             "left": 0.08, "right": 0.84,
         }
         yaxis_label_xpos = 0.04
-
 
     if paired_axes:
         if show_minimap:
@@ -298,6 +295,7 @@ def expression_plot(
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
         title: str = "Function expression",
+        fig_size: tuple[float, float] = (12, 7),
         # Display options
         minimap: bool = False,
         minimap_view: str = "lateral",
@@ -331,6 +329,7 @@ def expression_plot(
         hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
             True.
         title (str, optional): Title over the top axis in the figure. Default is "Function expression".
+        fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
@@ -440,7 +439,8 @@ def expression_plot(
                 return legend_display[function_name]
         return function_name
 
-    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap, expression_set_type=type(expression_set))
+    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap, expression_set_type=type(expression_set),
+                             fig_size=fig_size)
 
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
