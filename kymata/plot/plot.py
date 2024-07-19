@@ -331,7 +331,19 @@ def expression_plot(
             True.
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
-            Default is "lateral".
+            Valid options are:
+            `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is visible.
+            `"medial"`: From the left or right side such that the medial (inside) surface of the given hemisphere is visible (at least when in split or single-hemi mode).
+            `"rostral"`: From the front.
+            `"caudal"`: From the rear.
+            `"dorsal"`: From above, with the front of the brain pointing up.
+            `"ventral"`: From below, with the front of the brain pointing up.
+            `"frontal"`: From the front and slightly lateral, with the brain slightly tilted forward (yielding a view from slightly above).
+            `"parietal"`: From the rear and slightly lateral, with the brain slightly tilted backward (yielding a view from slightly above).
+            `"axial"`: From above with the brain pointing up (same as 'dorsal').
+            `"sagittal"`: From the right side.
+            `"coronal"`: From the rear.
+            Default is `lateral`.
         minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
