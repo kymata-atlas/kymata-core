@@ -80,7 +80,8 @@ class ExpressionSet(ABC):
             for bn in self._block_names:
                 data_blocks[bn] = [data_blocks[bn]]
 
-        assert len(functions) == len(set(functions)), "Duplicated functions in input"
+        self._validate_functions_no_duplicates(functions)
+
         for data in data_blocks.values():
             assert len(functions) == len(data), _length_mismatch_message
         assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
@@ -132,6 +133,15 @@ class ExpressionSet(ABC):
             assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
 
             self._data[block_name] = data_array
+
+    def _validate_functions_no_duplicates(self, functions):
+        if not len(functions) == len(set(functions)):
+            checked = []
+            for f in functions:
+                if f in checked:
+                    break
+                checked.append(f)
+            raise ValueError(f"Duplicated functions in input, e.g. {f}")
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
