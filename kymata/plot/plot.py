@@ -252,7 +252,7 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
         surface=surface,
         views=view,
         colormap=colormap,
-        smoothing_steps=2,
+        smoothing_steps=1,
         background="white",
         spacing="ico5",
         brain_kwargs={
