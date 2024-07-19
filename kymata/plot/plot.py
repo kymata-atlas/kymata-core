@@ -297,6 +297,7 @@ def expression_plot(
         ylim: Optional[float] = None,
         xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
         hidden_functions_in_legend: bool = True,
+        title: str = "Function expression",
         # Display options
         minimap: bool = False,
         minimap_view: str = "lateral",
@@ -329,6 +330,7 @@ def expression_plot(
             or set either entry to None to use the default for that value. Default is (-100, 800).
         hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
             True.
+        title (str, optional): Title over the top axis in the figure. Default is "Function expression".
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
             Default is "lateral".
@@ -538,7 +540,7 @@ def expression_plot(
         bottom_ax.invert_yaxis()
     else:
         top_ax = bottom_ax = axes[_AxName.main]
-    top_ax.set_title('Function Expression')
+    top_ax.set_title(title)
     bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     bottom_ax.xaxis.set_major_locator(FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax))))
