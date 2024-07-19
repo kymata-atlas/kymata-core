@@ -74,11 +74,10 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
             func[np.isnan(func)] = np.nanmean(func)
         else:
             raise NotImplementedError()
-
     assert not np.isnan(func).any()
 
     if add_noise:
-        # Add 0.1% noise
+        # Add 0.1% gaussian noise
         range_ = func[func != 0].max() - func[func != 0].min()
         func += np.random.normal(size=func.shape, scale=range_ / 1000)
 
