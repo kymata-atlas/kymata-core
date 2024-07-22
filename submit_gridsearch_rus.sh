@@ -12,13 +12,13 @@
 #SBATCH --ntasks=1
 #SBATCH --time=12:00:00
 #SBATCH --mem=240G
-#SBATCH --array=0-13
+#SBATCH --array=0-0
 #SBATCH --exclusive
 
-part_num=()
-for ((i=1; i<15; i++)); do
-    part_num+=("$i")
-done
+# part_num=()
+# for ((i=1; i<15; i++)); do
+#     part_num+=("$i")
+# done
 
 module load apptainer
 apptainer exec \
@@ -36,11 +36,11 @@ apptainer exec \
         --use-inverse-operator \
         --inverse-operator-suffix '_ico-5-3L-loose02-diagnoise-nodepth-reg-inv-csd.fif' \
         --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental' \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental' \
-        --save-name 'first_${part_num[$(($SLURM_ARRAY_TASK_ID))]}_rus' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental/new' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/russian_incremental/new' \
+        --save-name 'first_14_rus' \
         --overwrite \
-        --number-of-participant '${part_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --number-of-participant 14 \
         --morph \
   "
   #  --snr $ARG # >> result3.txt
@@ -52,3 +52,6 @@ apptainer exec \
 
       # export HF_HOME=/imaging/woolgar/projects/Tianyi/models ; \
       # export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
+
+  #  --save-name 'first_${part_num[$(($SLURM_ARRAY_TASK_ID))]}_rus' \
+  #  --number-of-participant '${part_num[$(($SLURM_ARRAY_TASK_ID))]}' \
