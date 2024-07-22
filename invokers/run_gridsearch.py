@@ -178,7 +178,7 @@ def main():
 
         for nn_i in range(0, args.num_neurons):
             # func = load_function(Path(args.base_dir, args.function_path),
-            func = load_function(args.function_path,
+            function_values = load_function(args.function_path,
                                 func_name=args.function_name[0],
                                 nn_neuron=nn_i,
                                 mfa=args.mfa,
@@ -187,7 +187,7 @@ def main():
         #                      func_name=args.function_name,
         #                      bruce_neurons=(5, 10))
         
-            func = func.downsampled(args.downsample_rate)
+            function_values = function_values.downsampled(args.downsample_rate)
 
             if nn_i == 0:
                 es = do_gridsearch(
