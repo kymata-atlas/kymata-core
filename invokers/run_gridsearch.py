@@ -227,8 +227,8 @@ def main():
                 )
 
         if args.save_expression_set_location is not None:
-            save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, func.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, func.name + '_gridsearch.png'), overwrite=args.overwrite)
+            save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite)
 
     else:
         combined_expression_set = None
