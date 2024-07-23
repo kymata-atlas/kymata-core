@@ -1,5 +1,7 @@
+from logging import getLogger
 from pathlib import Path
 import os
+from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -9,35 +11,35 @@ from kymata.entities.functions import Function
 from kymata.io.file import PathType
 
 
-def load_function(function_path_without_suffix: PathType, func_name: str, n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201, mfa: bool = False) -> Function:
+_logger = getLogger(__file__)
+
+
+def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[bool] = None,
+                  n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201, mfa: bool = False) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
+        _logger.info('USING BRUCE MODEL')
         if function_path_without_suffix.with_suffix(".npz").exists():
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
-            func_name += f'_{str(bruce_neurons[0])}-{str(bruce_neurons[1])}'
         else:
             mat = loadmat(function_path_without_suffix.with_suffix('.mat'))['neurogramResults']
-            func_mr = np.array(mat['neurogram_mr'][0][0])
-            func_ft = np.array(mat['neurogram_ft'][0][0])
+            func = np.array(mat[func_name][0][0])
             # func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
-            tt_mr = np.array(mat['t_mr'][0][0])
-            tt_ft = np.array(mat['t_ft'][0][0])
-            n_chans_mr = func_mr.shape[0]
-            n_chans_ft = func_ft.shape[0]
-            new_mr_arr = np.zeros((n_chans_mr, 400_000))
-            new_ft_arr = np.zeros((n_chans_ft, 400_000))
-            # T_end = tt[0, -1]
-
-            for i in range(n_chans_mr):
-                new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt_mr[0], func_mr[i])
-
-            func_ft = np.cumsum(func_ft * (tt_ft[0, 1] - tt_ft[0, 0]), axis=-1)
-            for i in range(n_chans_ft):
-                func_interp = np.interp(np.linspace(0, 400, 400_000 + 1), tt_ft[0], func_ft[i])
-                new_ft_arr[i] = np.diff(func_interp, axis=-1)
+            tt = np.array(mat['t_'+func_name[-2:]][0][0])
+            n_chans = func.shape[0]
+            new_mr_arr = np.zeros((n_chans, 400_000))
+            new_ft_arr = np.zeros((n_chans, 400_000))
+            if func_name == 'neurogram_mr':
+                for i in range(n_chans):
+                    new_mr_arr[i] = np.interp(np.linspace(0, 400, 400_000 + 1)[:-1], tt[0], func[i])
+            elif func_name == 'neurogram_ft':
+                func = np.cumsum(func * (tt[0, 1] - tt[0, 0]), axis=-1)
+                for i in range(n_chans):
+                    func_interp = np.interp(np.linspace(0, 400, 400_000 + 1), tt[0], func[i])
+                    new_ft_arr[i] = np.diff(func_interp, axis=-1)
 
             func_dict = {'neurogram_mr': new_mr_arr,
                          'neurogram_ft': new_ft_arr}
@@ -239,18 +241,26 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
         func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
         func = np.array(func_dict[func_name])
 
-        if func_name in ('STL', 'IL', 'LTL'):
-            func = func.T
-        elif func_name in ('d_STL', 'd_IL', 'd_LTL'):
-            func = np.convolve(func_dict[func_name[2:]].T.flatten(), [-1, 1], 'same')
+    n_nan = np.count_nonzero(np.isnan(func))
+    if n_nan > 0:
+        nan_message = f"Function contained {n_nan:,} NaNs, ({100*n_nan/np.prod(func.shape):.2f}%)"
+        if replace_nans is None:
+            raise ValueError(f"{nan_message}. "
+                             "Consider replacing small numbers of unavoidable NaNs with zeros or the function mean "
+                             "value.")
+        elif replace_nans == "zero":
+            _logger.warning(f"{nan_message}. Replacing with zeros.")
+            func[np.isnan(func)] = 0
+        elif replace_nans == "mean":
+            _logger.warning(f"{nan_message}. Replacing with the function mean.")
+            func[np.isnan(func)] = np.nanmean(func)
+        else:
+            raise NotImplementedError()
+
+    assert not np.isnan(func).any()
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
-        func_name = f'd{n_derivatives}_' + func_name
-
-    if n_hamming > 1:
-        func = np.convolve(func, np.hamming(n_hamming), 'same')  # hamming conv (effectively gaussian smoothing)
-        func_name = f'ham{n_hamming}_' + func_name
 
     return Function(
         name=func_name,
@@ -260,8 +270,12 @@ def load_function(function_path_without_suffix: PathType, func_name: str, n_deri
 
 
 def convert_stimulisig_on_disk_mat_to_npz(function_path_without_suffix):
+    """
+    Converts a (legacy) <stimulisig>.mat file to a (current) Numpy <stimulisig>.npz file on disk. Supply a path without
+    a suffix, and the file will be created in the same place with the same name but with a different suffix.
+    """
     mat = loadmat(str(function_path_without_suffix.with_suffix(".mat")))['stimulisig']
-    print('Saving .mat as .npz ...')
+    _logger.info('Saving .mat as .npz ...')
     func_dict = {}
     for key in mat.dtype.names:
         if key == 'name':

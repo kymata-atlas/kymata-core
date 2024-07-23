@@ -1,57 +1,112 @@
-from kymata.ippm.builder import IPPMBuilder
+from copy import deepcopy
+
+import numpy as np
+
+from kymata.ippm.ippm_builder import IPPMBuilder
 from kymata.ippm.data_tools import IPPMHexel
 
-
-def test_get_top_level_functions():
-    # Graph goes: f4 -> f3 -> f2/f1. I.e., f3 goes into f2 and f1.
-    # top level functions should be f2 and f1.
-    test_edges = {'f1': ['f3'],
-                  'f2': ['f3'],
-                  'f3': ['f4'],
-                  'f4': []}
-
-    builder = IPPMBuilder()
-    top_level_fs = list(builder._get_top_level_functions(test_edges))
-    assert set(['f1', 'f2']) == set(top_level_fs)
-
-
-def test_sort_by_latency():
-    test_hexels = {'f1': IPPMHexel('f1')}
-    test_hexels['f1'].left_best_pairings = [(-12, 43), (143, 2), (46, 23), (21, 21)]
-    test_hexels['f1'].right_best_pairings = [(100, 42), (20, 41), (50, 33)]
-
-    builder = IPPMBuilder()
-    sorted = builder._sort_by_latency(test_hexels, 'leftHemisphere', ['f1'])
-    sorted = builder._sort_by_latency(sorted, 'rightHemisphere', ['f1'])
-
-    assert [(-12, 43), (21, 21), (46, 23), (143, 2)] == sorted['f1'].left_best_pairings
-    assert [(20, 41), (50, 33), (100, 42)] == sorted['f1'].right_best_pairings
+test_hexels = {
+    "func1": IPPMHexel("func1"),
+    "func2": IPPMHexel("func2"),
+    "func3": IPPMHexel("func3"),
+    "func4": IPPMHexel("func4")
+}
+test_hexels["func1"].right_best_pairings = [(10, 1e-28), (25, 1e-79)]
+test_hexels["func2"].right_best_pairings = [(50, 1e-61)]
+test_hexels["func3"].right_best_pairings = [(60, 1e-92), (65, 1e-12)]
+test_hexels["func4"].right_best_pairings = [(70, 1e-42)]
+test_hierarchy = {
+    "input": [],
+    "func1": ["input"],
+    "func2": ["input", "func1"],
+    "func3": ["func2"],
+    "func4": ["func3"]
+}
+test_inputs = ["input"]
+test_hemi = "rightHemisphere"
+def map_mag_to_size(x):
+    return -10 * np.log10(x)
 
 
-def test_build_graph():
-    test_hexels = {
-        'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2'), 'f3': IPPMHexel('f3')
+def test_IPPMBuilder_BuildGraph_Successfully():
+
+    builder = IPPMBuilder(test_hexels, test_inputs, test_hierarchy, test_hemi)
+    expected_graph = {
+        "input": (100, "abc", (0, 0.2), []),
+        "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), ["input"]),
+        "func1-1": (map_mag_to_size(1e-79), "#023eff", (25, 0.4), ["func1-0"]),
+        "func2-0": (map_mag_to_size(1e-61), "#0ff7c00", (50, 0.6), ["input", "func1-1"]),
+        "func3-0": (map_mag_to_size(1e-92), "#1ac938", (60, 0.8), ["func2-0"]),
+        "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
+        "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
     }
-    test_hexels['f1'].right_best_pairings = [(100, 1e-10)]
-    test_hexels['f2'].right_best_pairings = [(90, 1e-15)]
-    test_hexels['f3'].right_best_pairings = [(50, 1e-9), (80, 1e-20)]
-    test_edges = {'f1': ['f2'],
-                  'f2': ['f3'],
-                  'f3': ['input'],
-                  'input': []}
+    actual_graph = builder.build_graph_dict()
 
-    builder = IPPMBuilder()
-    actual_graph = {
-        'f1-0': (100, '#023eff', (100, 1), ['f2-0']),
-        'f2-0': (150, '#ff7c00', (90, 0.75), ['f3-1']),
-        'f3-0': (90, '#1ac938', (50, 0.5), ['input']),
-        'f3-1': (200, '#1ac938', (80, 0.5), ['f3-0']),
-        'input': (100, '#e8000b', (0, 0.25), [])
+    assert set(actual_graph.keys()) == set(expected_graph.keys())
+    for node, val in actual_graph.items():
+        assert val.magnitude == expected_graph[node][0]
+        assert (val.position[0], round(val.position[1], 1)) == expected_graph[node][2]
+        assert val.inc_edges == expected_graph[node][3]
+
+
+def test_IPPMBuilder_BuildGraph_EmptyHexels_Successfully():
+    empty_hexels = {}
+    builder = IPPMBuilder(empty_hexels, test_inputs, test_hierarchy, test_hemi)
+    expected_graph = {"input": (100, "abc", (0, 0.2), [])}
+    actual_graph = builder.build_graph_dict()
+
+    assert set(actual_graph.keys()) == set(expected_graph.keys())
+    for node, val in actual_graph.items():
+        assert val.magnitude == expected_graph[node][0]
+        assert (val.position[0], round(val.position[1], 1)) == expected_graph[node][2]
+        assert val.inc_edges == expected_graph[node][3]
+
+
+def test_IPPMBuilder_BuildGraph_EmptyHierarchy_Successfully():
+    empty_hierarchy = {}
+    builder = IPPMBuilder(test_hexels, test_inputs, empty_hierarchy, test_hemi)
+    expected_graph = {}
+    actual_graph = builder.build_graph_dict()
+
+    assert actual_graph == expected_graph
+
+
+def test_IPPMBuilder_BuildGraph_EmptyInputs_Successfully():
+    empty_inputs = []
+    builder = IPPMBuilder(test_hexels, empty_inputs, test_hierarchy, test_hemi)
+    expected_graph = {
+        "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), []),
+        "func1-1": (map_mag_to_size(1e-79), "#023eff", (25, 0.4), ["func1-0"]),
+        "func2-0": (map_mag_to_size(1e-61), "#0ff7c00", (50, 0.6), ["func1-1"]),
+        "func3-0": (map_mag_to_size(1e-92), "#1ac938", (60, 0.8), ["func2-0"]),
+        "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
+        "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
     }
-    graph = builder.build_graph(test_hexels, test_edges, ['input'], 'rightHemisphere')
-    assert set(actual_graph.keys()) == set(graph.keys())
+    actual_graph = builder.build_graph_dict()
 
-    for node, val in graph.items():
-        assert val.magnitude == actual_graph[node][0]
-        assert val.position == actual_graph[node][2]
-        assert val.in_edges == actual_graph[node][3]
+    assert set(actual_graph.keys()) == set(expected_graph.keys())
+    for node, val in actual_graph.items():
+        assert val.magnitude == expected_graph[node][0]
+        assert (val.position[0], round(val.position[1], 1)) == expected_graph[node][2]
+        assert val.inc_edges == expected_graph[node][3]
+
+
+def test_IPPMBuilder_BuildGraph_MissingFunctionsInHexels_Successfully():
+    mismatched_hexels = deepcopy(test_hexels)
+    mismatched_hexels.pop("func2")
+    builder = IPPMBuilder(mismatched_hexels, test_inputs, test_hierarchy, test_hemi)
+    expected_graph = {
+        "input": (100, "abc", (0, 0.2), []),
+        "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), ["input"]),
+        "func1-1": (map_mag_to_size(1e-79), "#023eff", (25, 0.4), ["func1-0"]),
+        "func3-0": (map_mag_to_size(1e-92), "#1ac938", (60, 0.8), []),
+        "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
+        "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
+    }
+    actual_graph = builder.build_graph_dict()
+
+    assert set(actual_graph.keys()) == set(expected_graph.keys())
+    for node, val in actual_graph.items():
+        assert val.magnitude == expected_graph[node][0]
+        assert (val.position[0], round(val.position[1], 1)) == expected_graph[node][2]
+        assert val.inc_edges == expected_graph[node][3]

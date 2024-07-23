@@ -52,6 +52,7 @@ def main():
     parser.add_argument('--input-stream', type=str, required=True, choices=["auditory", "visual", "tactile"], help="The input stream for the functions being tested.")
     parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
+    parser.add_argument('--replace-nans', type=str, required=False, choices=["zero", "mean"], default=None, help="If the function contour contains NaN values, this will replace them with the specified values.")
     parser.add_argument('--asr-option', type=str, default="ave",
                         help='Whether to get the output from all neurons (all) or do the average (ave)')
     parser.add_argument('--num-neurons', type=int, default=512,
@@ -76,6 +77,7 @@ def main():
     parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir), help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir), help="Save an expression plots, and other plots, in this location")
+    parser.add_argument('--plot-top-channels', action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
@@ -237,8 +239,9 @@ def main():
             _logger.info(f"Running gridsearch on {function_name}")
             function_values = load_function(Path(base_dir, args.function_path),
                                             func_name=function_name,
-                                                bruce_neurons=(5, 10),
-                                                mfa=args.mfa,)
+                                            replace_nans=args.replace_nans,
+                                            bruce_neurons=(5, 10),
+                                            mfa=args.mfa,)
             function_values = function_values.downsampled(args.downsample_rate)
 
             es = do_gridsearch(
@@ -255,6 +258,7 @@ def main():
                 emeg_t_start=args.emeg_t_start,
                 stimulus_shift_correction=stimulus_shift_correction,
                 stimulus_delivery_latency=stimulus_delivery_latency,
+                plot_top_five_channels=args.plot_top_channels,
                 overwrite=args.overwrite,
                 seed=dataset_config['random_seed'],
             )

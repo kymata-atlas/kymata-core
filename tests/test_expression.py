@@ -195,7 +195,7 @@ def test_hes_validation_input_lengths_two_functions_three_datasets():
 
 
 def test_ses_validation_duplicated_functions():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         SensorExpressionSet(functions=["dupe", "dupe"],
                             sensors=list("abcde"),
                             latencies=range(10),

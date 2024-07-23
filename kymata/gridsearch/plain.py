@@ -31,6 +31,7 @@ def do_gridsearch(
         seconds_per_split: float = 1,
         n_splits: int = 400,
         n_reps: int = 1,
+        plot_top_five_channels: bool = False,
         overwrite: bool = True,
         seed: int = 17,
 ) -> ExpressionSet:
@@ -62,6 +63,8 @@ def do_gridsearch(
         seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
         n_splits (int, optional): Number of splits used for analysis. Default is 800.
         n_reps (int, optional): Number of repetitions for each split. Default is 1.
+        plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
+            five channels in the gridsearch. Default is False.
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
 
     Returns:
@@ -75,7 +78,8 @@ def do_gridsearch(
         - Statistical significance is assessed using a vectorized Welch's t-test.
         - If specified, the results are plotted and saved to the given location.
     """
-
+    # Set random seed to keep derangement orderings
+    # deterministic between runs
     np.random.seed(seed)
 
     channel_space = channel_space.lower()
@@ -152,17 +156,18 @@ def do_gridsearch(
 
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
 
-    plot_top_five_channels_of_gridsearch(
-        corrs=corrs,
-        auto_corrs=auto_corrs,
-        function=function,
-        n_reps=n_reps,
-        n_splits=n_splits,
-        n_samples_per_split=n_samples_per_split,
-        latencies=latencies_ms,
-        save_to=plot_location,
-        log_pvalues=log_pvalues,
-        overwrite=overwrite,
+    if plot_top_five_channels:
+        plot_top_five_channels_of_gridsearch(
+            corrs=corrs,
+            auto_corrs=auto_corrs,
+            function=function,
+            n_reps=n_reps,
+            n_splits=n_splits,
+            n_samples_per_split=n_samples_per_split,
+            latencies=latencies_ms,
+            save_to=plot_location,
+            log_pvalues=log_pvalues,
+            overwrite=overwrite,
         )
 
     if channel_space == "sensor":

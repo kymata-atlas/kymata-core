@@ -1,6 +1,8 @@
 from logging import getLogger
 from os import path
 from pathlib import Path
+import numpy as np
+import nibabel as nib
 
 import mne
 
@@ -308,6 +310,133 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                     participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')),
 
                 inverse_operator)
+
+def confirm_digitisation_locations(data_root_dir, config):
+
+    list_of_participants = config['participants']
+
+    dataset_directory_name = config['dataset_directory_name']
+    interim_preprocessing_directory = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
+    hexel_current_reconstruction_dir = Path(interim_preprocessing_directory, "4_hexel_current_reconstruction")
+    mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
+    coregistration_dir = Path(hexel_current_reconstruction_dir, "coregistration_files")
+    src_dir = Path(hexel_current_reconstruction_dir, "src_files")
+    fwd_dir = Path(hexel_current_reconstruction_dir, "forward_sol_files")
+    coregistration_checks_dir = Path(coregistration_dir, "confirmation_of_digitisation_locations")
+    helmet_intersection_check_dir = Path(coregistration_checks_dir, 'helmet-intersection-check')
+    sensor_location_check_dir = Path(coregistration_checks_dir, 'sensor-location-check')
+    src_check_dir = Path(coregistration_checks_dir, 'src-check')
+    fwd_check_dir = Path(coregistration_checks_dir, 'fwd-check')
+    medial_wall_omitted_check_dir = Path(coregistration_checks_dir, 'medial-wall-omitted-check')
+
+    coregistration_checks_dir.mkdir(exist_ok=True)
+    helmet_intersection_check_dir.mkdir(exist_ok=True)
+    sensor_location_check_dir.mkdir(exist_ok=True)
+    src_check_dir.mkdir(exist_ok=True)
+    fwd_check_dir.mkdir(exist_ok=True)
+    medial_wall_omitted_check_dir.mkdir(exist_ok=True)
+
+    for participant in list_of_participants:
+
+        raw_fname = Path(interim_preprocessing_directory, '2_cleaned', participant + '_run1_cleaned_raw.fif.gz')
+        trans_fname = Path(coregistration_dir, participant + '-trans.fif')
+        src_name = Path(src_dir, participant + '_ico5-src.fif')
+        fwd_name = Path(fwd_dir, participant + '-fwd.fif')
+
+        raw = mne.io.read_raw_fif(raw_fname)
+        trans = mne.read_trans(trans_fname)
+        src = mne.read_source_spaces(src_name)
+        fwd = mne.read_forward_solution(fwd_name)
+
+        fwd_fixed = mne.convert_forward_solution(
+            fwd, surf_ori=True, force_fixed=True, use_cps=True
+        )
+
+        # Load the T1 file and change the header information to the correct units
+        t1w = nib.load(Path(mri_structurals_directory, participant, "mri", "T1.mgz"))
+        t1w = nib.Nifti1Image(t1w.dataobj, t1w.affine)
+        t1w.header["xyzt_units"] = np.array(10, dtype="uint8")
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["head-dense", "white"],
+            show_axes=True,
+            dig=True,
+            meg={"helmet": 0.1,
+                 "sensors": 0.1},
+            coord_frame="meg",
+            mri_fiducials="estimated",
+        )
+        mne.viz.set_3d_view(fig, 0, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(helmet_intersection_check_dir, participant+'-helmet-intersection-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["head-dense", "white"],
+            show_axes=True,
+            dig=True,
+            eeg=dict(original=0, projected=1),
+            meg={"sensors": 0.1},
+            coord_frame="meg",
+            mri_fiducials="estimated",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(sensor_location_check_dir, participant + '-sensor-location-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            src=src,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            eeg=False,
+            dig='fiducials',
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(src_check_dir, participant + '-src-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(fwd_check_dir, participant + '-fwd-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 0, 180, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(medial_wall_omitted_check_dir, participant + '-medial-wall-omitted-check.png'))
+
 
 
 def create_hexel_morph_maps(data_root_dir, config: dict):
