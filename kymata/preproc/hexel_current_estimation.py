@@ -412,7 +412,7 @@ def confirm_digitisation_locations(data_root_dir, config):
         fig = mne.viz.plot_alignment(
             raw.info,
             trans=trans,
-            subject=participant,
+            subject=participant, 
             dig=False,
             eeg=False,
             fwd=fwd_fixed,
