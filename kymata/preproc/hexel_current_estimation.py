@@ -232,8 +232,8 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         if config['meg'] and config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                # participant + '-fwd.fif'))
-                participant + '-2015orig-fwd.fif'))
+                participant + '-fwd.fif'))
+                # participant + '-2015orig-fwd.fif'))
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
