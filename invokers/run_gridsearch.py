@@ -258,7 +258,8 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
+                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
 
     else:
         combined_expression_set = None
@@ -316,7 +317,8 @@ def main():
         else:
             fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
         _logger.info(f"Saving expression plot to {fig_save_path!s}")
-        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
+        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite,
+                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split])
 
     total_time_in_seconds = time.time() - start
     _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)')
