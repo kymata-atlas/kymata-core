@@ -113,6 +113,11 @@ def do_gridsearch(
         for i in range(n_splits)
     ]
 
+    if start_latency - emeg_t_start < 0:
+        n_splits -= 1
+        split_initial_timesteps = split_initial_timesteps[1:]
+        func = func[1:, :]
+
     emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
     for j in range(n_reps):
         for split_i in range(n_splits):
