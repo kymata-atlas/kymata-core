@@ -8,7 +8,7 @@ from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 def main():
-    function_family_type = 'standard' # 'standard' or 'ANN' or 'simple'
+    function_family_type = 'ANN' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
@@ -39,6 +39,7 @@ def main():
         path_to_nkg_files = Path(path_to_nkg_files, 'whisper/encoder_all_der_5')
 
         expression_data = load_expression_set(Path( path_to_nkg_files, "model.encoder.conv1_511_gridsearch.nkg"))
+        import ipdb;ipdb.set_trace()
         expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.conv2_511_gridsearch.nkg"))
         expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.0.final_layer_norm_511_gridsearch.nkg"))
         expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.1.final_layer_norm_511_gridsearch.nkg"))
