@@ -138,6 +138,8 @@ def do_gridsearch(
         deranged_emeg = emeg_reshaped[:, derangement, :]
         corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
 
+    del deranged_emeg, emeg_reshaped
+
     # In case there was a large part of the function which was constant, the corr will be undefined (nan).
     # We want p-vals here to be 1.
 
@@ -156,7 +158,7 @@ def do_gridsearch(
 
         auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 
-        del F_func, deranged_emeg, emeg_reshaped
+        del F_func
 
         plot_top_five_channels_of_gridsearch(
             corrs=corrs,
