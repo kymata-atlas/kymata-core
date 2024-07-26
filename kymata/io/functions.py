@@ -14,7 +14,7 @@ _logger = getLogger(__file__)
 
 
 def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[bool] = None,
-                  n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
+                  n_derivatives: int = 0, bruce_neurons: tuple = (0, 10), add_noise: bool = False) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
@@ -74,8 +74,12 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
             func[np.isnan(func)] = np.nanmean(func)
         else:
             raise NotImplementedError()
-
     assert not np.isnan(func).any()
+
+    if add_noise:
+        # Add 0.1% gaussian noise
+        range_ = func[func != 0].max() - func[func != 0].min()
+        func += np.random.normal(size=func.shape, scale=range_ / 1000)
 
     for _ in range(n_derivatives):
         func = np.convolve(func, [-1, 1], 'same')  # derivative
