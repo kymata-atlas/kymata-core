@@ -234,6 +234,7 @@ def main():
                     emeg_t_start=args.emeg_t_start,
                     stimulus_shift_correction=stimulus_shift_correction,
                     stimulus_delivery_latency=stimulus_delivery_latency,
+                    plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     seed=dataset_config['random_seed'],
                 )
@@ -252,6 +253,7 @@ def main():
                     emeg_t_start=args.emeg_t_start,
                     stimulus_shift_correction=stimulus_shift_correction,
                     stimulus_delivery_latency=stimulus_delivery_latency,
+                    plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     seed=dataset_config['random_seed'],
                 )
