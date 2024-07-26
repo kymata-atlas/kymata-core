@@ -735,7 +735,7 @@ def plot_top_five_channels_of_gridsearch(
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
     amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
-    amaxs = [i for i in amaxs if i != amax]   + [30]
+    amaxs = [i for i in amaxs if i != amax]
 
     axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
     axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)

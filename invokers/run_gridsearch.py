@@ -96,21 +96,22 @@ def main():
     os.makedirs(args.save_expression_set_location, exist_ok=True)
 
     input_stream = args.input_stream
-    if input_stream == "auditory":
-        stimulus_shift_correction = 0
-        stimulus_delivery_latency = 0
-    elif input_stream == "visual":
-        stimulus_shift_correction = 0
-        stimulus_delivery_latency = 0
-    elif input_stream == "tactile":
-        stimulus_shift_correction = 0
-        stimulus_delivery_latency = 0
-    else:
-        raise NotImplementedError()
     
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
     if not args.low_level_function:
+
+        if input_stream == "auditory":
+            stimulus_shift_correction = dataset_config["audio_delivery_drift_correction"]
+            stimulus_delivery_latency = dataset_config["audio_delivery_latency"]
+        elif input_stream == "visual":
+            stimulus_shift_correction = dataset_config["visual_delivery_drift_correction"]
+            stimulus_delivery_latency = dataset_config["visual_delivery_latency"]
+        elif input_stream == "tactile":
+            stimulus_shift_correction = dataset_config["tactile_delivery_drift_correction"]
+            stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
+        else:
+            raise NotImplementedError()
 
         reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
         if args.single_participant_override is not None:
@@ -191,14 +192,17 @@ def main():
         emeg_values = np.zeros((len(ch_names), 1, 403001))
         _logger.info(f"Loading TVL functions to replace the EMEG data")
         for i, function_name in enumerate(ch_names):
-            func = load_function(Path(base_dir, args.function_path),
+            func = load_function(Path(base_dir, 'predicted_function_contours/GMSloudness/stimulisig'),
                                             func_name=function_name,
                                             replace_nans=args.replace_nans,
                                             bruce_neurons=(5, 10),
                                             mfa=args.mfa,)
             emeg_values[i, 0, :400000] = func.values  # (400000,)
 
-        n_reps = 1        
+        n_reps = 1
+        args.emeg_t_start = 0
+        stimulus_shift_correction = 0
+        stimulus_delivery_latency = 0        
 
     if args.asr_option == 'all' and 'asr' in args.function_path:
 
