@@ -12,6 +12,9 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
 
     x -= np.mean(x, axis=-1, keepdims=True)
 
+    # In case the values of x are very small, sometimes _magnitude can return 0, which would cause a divide by zero
+    # error. Having already centred x, we can upscale it before downscaling it to avoid this issue. In case the
+    # _magnitude should actually be 0, this won't make a difference to that.
     if _magnitude(x) == 0:
         x *= 1000
     x /= _magnitude(x)
