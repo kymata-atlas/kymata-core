@@ -23,7 +23,7 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
 
 
 def _magnitude(x: NDArray) -> float:
-    return np.sqrt(np.sum(x**2, axis=-1, keepdims=True)).item()
+    return np.sqrt(np.sum(x**2, axis=-1, keepdims=True))
 
 
 def get_stds(x: NDArray, n: int):
