@@ -9,7 +9,7 @@ mri_structurals_directory: "raw_mri_structurals"
 participants: [
                 "meg15_0045",
                 "meg15_0051",
-#                "meg15_0054",  # This subject is missing source estimations
+                "meg15_0054",
                 "meg15_0055",
                 "meg15_0056",
                 "meg15_0058",
