@@ -2,7 +2,7 @@
 
 # General
 data_location: "cbu"                # local | cbu | cbu-local
-dataset_directory_name: "dataset_4-english-narratives"
+dataset_directory_name: "dataset_4-english_narratives"
 mri_structurals_directory: "raw_mri_structurals"
 
 
