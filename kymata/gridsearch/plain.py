@@ -101,14 +101,16 @@ def do_gridsearch(
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
 
+    # In case func contains a fully constant split, normalize will involve a divide by zero error, resulting in a nan
+    # which will infect everything downstream. Rather than try and catch and fix that, we instead kick it back to the
+    # invoker to say, just ensure that this can't happen.
     try:
         func = normalize(func)
     except ZeroDivisionError as ex:
-        _logger.error(f"Could not normalize function")
-        _logger.error(f"Function shape: {func.shape}")
-        _logger.error("Function values:")
-        for i in range(func.shape[0]):
-            _logger.error(f"{i}: {func[i, :]}")
+        _logger.error(f"Could not normalize function.")
+        _logger.error(f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
+                      "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
+                      f"{seconds_per_split} seconds, and adjust `n_splits` accordingly")
         raise ex
 
     n_channels = emeg_values.shape[0]
