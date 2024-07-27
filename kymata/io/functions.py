@@ -57,7 +57,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
         assert function_path_without_suffix.with_suffix(".npz").exists()
 
         func_dict = np.load(str(function_path_without_suffix.with_suffix(".npz")))
-        func = np.array(func_dict[func_name])
+        func = np.array(func_dict[func_name], dtype=float)
 
     n_nan = np.count_nonzero(np.isnan(func))
     if n_nan > 0:

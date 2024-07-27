@@ -100,7 +100,19 @@ def do_gridsearch(
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
-    normalize(func, inplace=True)
+
+    # In case func contains a fully constant split, normalize will involve a divide by zero error, resulting in a nan
+    # which will infect everything downstream. Rather than try and catch and fix that, we instead kick it back to the
+    # invoker to say, just ensure that this can't happen.
+    try:
+        func = normalize(func)
+    except (ZeroDivisionError, FloatingPointError) as ex:
+        _logger.error("Could not normalize function.")
+        _logger.error(f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
+                      "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
+                      f"{seconds_per_split} seconds, and adjust `n_splits` accordingly")
+        raise ex
+
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
