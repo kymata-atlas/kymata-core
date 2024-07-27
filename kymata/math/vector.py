@@ -6,6 +6,7 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
     """
     Remove the mean and divide by the Euclidean magnitude.
     If inplace is True, the array will be modified in place. If false, a normalized copy will be returned.
+    raises: ZeroDivisionError
     """
     if not inplace:
         x = np.copy(x)
@@ -15,14 +16,17 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
     # In case the values of x are very small, sometimes _magnitude can return 0, which would cause a divide by zero
     # error. Having already centred x, we can upscale it before downscaling it to avoid this issue. In case the
     # _magnitude should actually be 0, this won't make a difference to that.
-    if (_magnitude(x) == 0).all():
+    if (_normalize_magnitude(x) == 0).all():
         x *= 1_000_000
-    x /= _magnitude(x)
+    # If we STILL have a magnitude-0 vector, we will have a problem
+    with np.errstate(divide="raise"):
+        x /= _normalize_magnitude(x)
 
     return x
 
 
-def _magnitude(x: NDArray) -> NDArray:
+def _normalize_magnitude(x: NDArray) -> NDArray:
+    """Reusable magnitude function for use in `normalize`."""
     return np.sqrt(np.sum(x**2, axis=-1, keepdims=True))
 
 

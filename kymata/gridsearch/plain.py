@@ -100,7 +100,17 @@ def do_gridsearch(
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
-    normalize(func, inplace=True)
+
+    try:
+        func = normalize(func)
+    except ZeroDivisionError as ex:
+        _logger.error(f"Could not normalize function")
+        _logger.error(f"Function shape: {func.shape}")
+        _logger.error("Function values:")
+        for i in range(func.shape[0]):
+            _logger.error(f"{i}: {func[i, :]}")
+        raise ex
+
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
