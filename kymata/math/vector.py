@@ -16,7 +16,7 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
     # error. Having already centred x, we can upscale it before downscaling it to avoid this issue. In case the
     # _magnitude should actually be 0, this won't make a difference to that.
     if _magnitude(x) == 0:
-        x *= 1000
+        x *= 1_000_000
     x /= _magnitude(x)
 
     return x
