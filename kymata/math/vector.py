@@ -2,10 +2,14 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def normalize(x: NDArray) -> NDArray:
+def normalize(x: NDArray, inplace: bool = False) -> NDArray:
     """
     Remove the mean and divide by the Euclidean magnitude.
+    If inplace is True, the array will be modified in place. If false, a normalized copy will be returned.
     """
+    if not inplace:
+        x = np.copy(x)
+
     x -= np.mean(x, axis=-1, keepdims=True)
     x /= np.sqrt(np.sum(x**2, axis=-1, keepdims=True))
     return x
