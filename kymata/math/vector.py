@@ -11,11 +11,19 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
         x = np.copy(x)
 
     x -= np.mean(x, axis=-1, keepdims=True)
-    x /= np.sqrt(np.sum(x**2, axis=-1, keepdims=True))
+
+    if _magnitude(x) == 0:
+        x *= 1000
+    x /= _magnitude(x)
+
     return x
 
 
-def get_stds(x, n):
+def _magnitude(x: NDArray) -> float:
+    return np.sqrt(np.sum(x**2, axis=-1, keepdims=True)).item()
+
+
+def get_stds(x: NDArray, n: int):
     """
     Get the stds (times sqrt(n)) to correct for normalisation difference between each set of n_samples
     """
