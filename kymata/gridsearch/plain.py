@@ -107,7 +107,7 @@ def do_gridsearch(
     try:
         func = normalize(func)
     except ZeroDivisionError as ex:
-        _logger.error(f"Could not normalize function.")
+        _logger.error("Could not normalize function.")
         _logger.error(f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
                       "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
                       f"{seconds_per_split} seconds, and adjust `n_splits` accordingly")
