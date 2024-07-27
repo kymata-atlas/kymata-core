@@ -16,7 +16,7 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
     # In case the values of x are very small, sometimes _magnitude can return 0, which would cause a divide by zero
     # error. Having already centred x, we can upscale it before downscaling it to avoid this issue. In case the
     # _magnitude should actually be 0, this won't make a difference to that.
-    if (_normalize_magnitude(x) == 0).all():
+    if (_normalize_magnitude(x) == 0).any():
         x *= 1_000_000
     # If we STILL have a magnitude-0 vector, we will have a problem
     with np.errstate(divide="raise"):
