@@ -100,6 +100,7 @@ def do_gridsearch(
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
+    normalize(func, inplace=True)
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
@@ -127,10 +128,10 @@ def do_gridsearch(
     derangements = np.vstack((np.arange(n_splits * n_reps), derangements))  # Include the identity on top
 
     # Fast cross-correlation using FFT
-    emeg_reshaped = normalize(emeg_reshaped)
+    normalize(emeg_reshaped, inplace=True)
     emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
+    F_func = np.conj(np.fft.rfft(func, n=n_samples_per_split, axis=-1))
     if n_reps > 1:
         F_func = np.tile(F_func, (n_reps, 1))
     corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
@@ -151,10 +152,11 @@ def do_gridsearch(
     if plot_top_five_channels:
         # work out autocorrelation for channel-by-channel plots
         noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
-        noisy_func = normalize(np.copy(func)) + noise
+        noisy_func = func + noise
+        normalize(noisy_func, inplace=True)
 
-        F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
-        F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
+        F_noisy_func = np.fft.rfft(noisy_func, n=n_func_samples_per_split, axis=-1)
+        F_func = np.conj(np.fft.rfft(func, n=n_func_samples_per_split, axis=-1))
 
         auto_corrs = np.fft.irfft(F_noisy_func * F_func)
 

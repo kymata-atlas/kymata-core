@@ -51,7 +51,6 @@ def main():
     parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
     parser.add_argument('--replace-nans', type=str, required=False, choices=["zero", "mean"], default=None, help="If the function contour contains NaN values, this will replace them with the specified values.")
-    parser.add_argument('--add-noise', action="store_true", help="Add a small amount of noise to avoid issues arising from constant functions.")
 
     # For source space
     parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
@@ -166,7 +165,7 @@ def main():
         function_values = load_function(Path(base_dir, args.function_path),
                                         func_name=function_name,
                                         replace_nans=args.replace_nans,
-                                        bruce_neurons=(5, 10), add_noise=args.add_noise)
+                                        bruce_neurons=(5, 10))
         function_values = function_values.downsampled(args.downsample_rate)
 
         es = do_gridsearch(
