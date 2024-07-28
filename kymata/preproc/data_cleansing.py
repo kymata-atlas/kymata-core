@@ -138,6 +138,12 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     mne.viz.plot_head_positions(
                         head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
+                # Calculate 2 empty room MEG projectors - wee will add these into maxfilter
+                # to remove these from the signal as well
+                emptyroom_raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_emptyroom_raw.fif"),
+                                          preload=True)
+                emptyroom_proj = mne.compute_proj_raw(raw=emptyroom_raw_fif_data, n_grad=2, n_mag=2)
+
                 raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
                     raw_fif_data,
                     cross_talk=crosstalk_file,
@@ -147,6 +153,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
+                    extended_proj = emptyroom_proj,
                     verbose=True)
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
@@ -403,7 +410,10 @@ def estimate_noise_cov(data_root_dir: str,
             # Now calcualte the covariance for MEG using emptyroom
             emptyroom_fname = Path(emeg_dir, p, p + '_empty_room_raw.fif')
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
+
+            # Calculate 2 SSP projectors for use in maxwell_filter's extended_proj argument
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
+            emptyroom_raw_proj = mne.compute_proj_raw(raw=emptyroom_raw, n_grad=2, n_mag=2)
 
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
@@ -414,6 +424,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        extended_proj = emptyroom_raw_proj,
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
