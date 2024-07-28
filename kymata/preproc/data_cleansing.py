@@ -212,7 +212,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -397,7 +397,6 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
-            raw_epoch.set_eeg_reference(ref_channels='average', projection=True, verbose=False)
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 

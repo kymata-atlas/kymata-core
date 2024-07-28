@@ -98,7 +98,6 @@ def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.Sou
     lambda2 = 1.0 / snr ** 2
     _logger.info(f"Reading inverse operator from {inverse_operator}")
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
-    mne.set_eeg_reference(evoked, projection=True, verbose=False)
     _logger.info("Applying inverse operator")
     stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
     _logger.info("Inverse operator applied")
