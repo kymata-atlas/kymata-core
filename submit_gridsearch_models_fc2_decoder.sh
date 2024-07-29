@@ -12,7 +12,7 @@
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-31
+#SBATCH --array=4-31
 #SBATCH --exclusive
 
 # args=(5)
