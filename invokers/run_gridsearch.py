@@ -86,7 +86,7 @@ def main():
 
     # Config defaults
     participants = dataset_config.get('participants')
-    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
+    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english_narratives'))
     inverse_operator_dir = dataset_config.get('inverse_operator')
 
     os.makedirs(args.save_plot_location, exist_ok=True)
