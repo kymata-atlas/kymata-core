@@ -215,8 +215,6 @@ def do_gridsearch(
         )
     else:
         raise NotImplementedError(channel_space)
-    
-    del corrs, auto_corrs, function, latencies_ms, log_pvalues
 
     return es
 
