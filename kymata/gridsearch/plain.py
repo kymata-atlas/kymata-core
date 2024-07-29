@@ -100,6 +100,19 @@ def do_gridsearch(
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
+
+    # In case func contains a fully constant split, normalize will involve a divide by zero error, resulting in a nan
+    # which will infect everything downstream. Rather than try and catch and fix that, we instead kick it back to the
+    # invoker to say, just ensure that this can't happen.
+    try:
+        func = normalize(func)
+    except (ZeroDivisionError, FloatingPointError) as ex:
+        _logger.error("Could not normalize function.")
+        _logger.error(f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
+                      "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
+                      f"{seconds_per_split} seconds, and adjust `n_splits` accordingly")
+        raise ex
+
     n_channels = emeg_values.shape[0]
 
     # import ipdb;ipdb.set_trace()
@@ -134,10 +147,10 @@ def do_gridsearch(
     derangements = np.vstack((np.arange(n_splits * n_reps), derangements))  # Include the identity on top
 
     # Fast cross-correlation using FFT
-    emeg_reshaped = normalize(emeg_reshaped)
+    normalize(emeg_reshaped, inplace=True)
     emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=n_samples_per_split, axis=-1))
+    F_func = np.conj(np.fft.rfft(func, n=n_samples_per_split, axis=-1))
     if n_reps > 1:
         F_func = np.tile(F_func, (n_reps, 1))
     corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
@@ -145,16 +158,10 @@ def do_gridsearch(
         deranged_emeg = emeg_reshaped[:, derangement, :]
         corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
 
-    # work out autocorrelation for channel-by-channel plots
-    noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
-    noisy_func = normalize(np.copy(func)) + noise
+    del deranged_emeg, emeg_reshaped
 
-    F_noisy_func = np.fft.rfft(normalize(noisy_func), n=n_func_samples_per_split, axis=-1)
-    F_func = np.conj(np.fft.rfft(normalize(func), n=n_func_samples_per_split, axis=-1))
-
-    auto_corrs = np.fft.irfft(F_noisy_func * F_func)
-
-    del F_func, deranged_emeg, emeg_reshaped
+    # In case there was a large part of the function which was constant, the corr will be undefined (nan).
+    # We want p-vals here to be 1.
 
     # derive pvalues
     log_pvalues = _ttest(corrs)
@@ -162,6 +169,18 @@ def do_gridsearch(
     latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
 
     if plot_top_five_channels:
+        # work out autocorrelation for channel-by-channel plots
+        noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
+        noisy_func = func + noise
+        normalize(noisy_func, inplace=True)
+
+        F_noisy_func = np.fft.rfft(noisy_func, n=n_func_samples_per_split, axis=-1)
+        F_func = np.conj(np.fft.rfft(func, n=n_func_samples_per_split, axis=-1))
+
+        auto_corrs = np.fft.irfft(F_noisy_func * F_func)
+
+        del F_func
+
         plot_top_five_channels_of_gridsearch(
             corrs=corrs,
             auto_corrs=auto_corrs,

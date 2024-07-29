@@ -139,12 +139,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
                                      "src_files",
                                      participant + "_ico5-src.fif"), src)
 
-    #    fig = mne.viz.plot_bem(subject=participant,
-    #                         subjects_dir=mri_structurals_directory,
-    #                         brain_surfaces="white",
-    #                         orientation="coronal",
-    #                         slices=[50, 100, 150, 200])
-    #    fig.savefig(Path(mri_structurals_directory, participant, "bem", "bem_sliced.png"))
+        fig = mne.viz.plot_bem(subject=participant,
+                             subjects_dir=mri_structurals_directory,
+                             brain_surfaces=["white"],
+                             orientation="coronal",
+                             slices=[50, 100, 150, 200])
+        fig.savefig(Path(interim_preprocessing_directory_name, "4_hexel_current_reconstruction", "bem_checks", participant + "_bem_sliced.png"))
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
@@ -188,32 +188,32 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     inverse_operator_dir = Path(hexel_current_reconstruction_dir, "inverse-operators")
     inverse_operator_dir.mkdir(exist_ok=True)
 
-    # # Compute forward solution
-    # for participant in list_of_participants:
-    #     fwd = mne.make_forward_solution(
-    #         # Path(Path(path.abspath("")), "data",
-    #         Path(data_root_dir,
-    #              dataset_directory_name,
-    #              'raw_emeg', participant, participant +
-    #              '_run1_raw.fif'),  # note this file is only used for the sensor positions.
-    #         trans=Path(coregistration_dir, participant + '-trans.fif'),
-    #         src=Path(src_dir, participant + '_ico5-src.fif'),
-    #         bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
-    #         meg=config['meg'],
-    #         eeg=config['eeg'],
-    #         mindist=5.0,
-    #         n_jobs=None,
-    #         verbose=True
-    #     )
-    #     print(fwd)
+    # Compute forward solution
+    for participant in list_of_participants:
 
-    #     # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
-    #     # which does not include those in the medial wall)
-    #     labels = mne.read_labels_from_annot(subject=participant,
-    #                                         subjects_dir=mri_structurals_directory,
-    #                                         parc='aparc',
-    #                                         hemi='both')
-    #     fwd = mne.forward.restrict_forward_to_label(fwd, labels) 
+        fwd = mne.make_forward_solution(
+            Path(data_root_dir,
+                 dataset_directory_name,
+                 'raw_emeg', participant, participant +
+                 '_run1_raw.fif'),  # note this file is only used for the sensor positions.
+            trans=Path(coregistration_dir, participant + '-trans.fif'),
+            src=Path(src_dir, participant + '_ico5-src.fif'),
+            bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+            meg=config['meg'],
+            eeg=config['eeg'],
+            mindist=5.0,
+            n_jobs=None,
+            verbose=True
+        )
+        print(fwd)
+
+        # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
+        # which does not include those in the medial wall)
+        labels = mne.read_labels_from_annot(subject=participant,
+                                            subjects_dir=mri_structurals_directory,
+                                            parc='aparc.a2009s',
+                                            hemi='both')
+        fwd = mne.forward.restrict_forward_to_label(fwd, labels)
 
     #     if config['meg'] and config['eeg']:
     #         mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd=fwd, overwrite=True)
@@ -328,6 +328,7 @@ def confirm_digitisation_locations(data_root_dir, config):
     src_check_dir = Path(coregistration_checks_dir, 'src-check')
     fwd_check_dir = Path(coregistration_checks_dir, 'fwd-check')
     medial_wall_omitted_check_dir = Path(coregistration_checks_dir, 'medial-wall-omitted-check')
+    side_check_dir = Path(coregistration_checks_dir, 'side-check')
 
     coregistration_checks_dir.mkdir(exist_ok=True)
     helmet_intersection_check_dir.mkdir(exist_ok=True)
@@ -335,6 +336,7 @@ def confirm_digitisation_locations(data_root_dir, config):
     src_check_dir.mkdir(exist_ok=True)
     fwd_check_dir.mkdir(exist_ok=True)
     medial_wall_omitted_check_dir.mkdir(exist_ok=True)
+    side_check_dir.mkdir(exist_ok=True)
 
     for participant in list_of_participants:
 
@@ -424,7 +426,7 @@ def confirm_digitisation_locations(data_root_dir, config):
         fig = mne.viz.plot_alignment(
             raw.info,
             trans=trans,
-            subject=participant,
+            subject=participant, 
             dig=False,
             eeg=False,
             fwd=fwd_fixed,
@@ -436,6 +438,22 @@ def confirm_digitisation_locations(data_root_dir, config):
         )
         mne.viz.set_3d_view(fig, 0, 180, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
         fig.plotter.screenshot(Path(medial_wall_omitted_check_dir, participant + '-medial-wall-omitted-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 0, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(side_check_dir, participant + '-side-check.png'))
 
 
 

@@ -10,7 +10,7 @@ random_seed: 17
 participants: [
                 "meg15_0045",
                 "meg15_0051",
-#                "meg15_0054",  # This subject is missing source estimations
+                "meg15_0054",
                 "meg15_0055",
                 "meg15_0056",
                 "meg15_0058",
@@ -49,6 +49,11 @@ cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
 duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
 reg_method: 'empirical'            # None | 'auto'
 diagonal_only: False                # whether to use only diagonal to represent the noise covariance matrix
+
+# Method to estimate noise covariance matrix
+cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
+duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
+reg_method: 'empirical'            # None | 'auto'
 
 # Creation of evoked trial pipeline
 audio_delivery_latency:   0.016       # the audio stimulus is delayed by this amount in seconds
