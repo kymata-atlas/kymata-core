@@ -1,6 +1,7 @@
 import os
 import json
 from kymata.io.bids import convert_meg_to_bids, participant_mapping
+from tqdm import tqdm
 
 # Input and output paths
 input_base_path = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/raw_emeg'  # Update to your base directory containing the participants
@@ -25,7 +26,7 @@ with open(readme_path, 'w') as f:
     f.write(readme_content)
 
 # Process each participant
-for participant in os.listdir(input_base_path):
+for participant in tqdm(os.listdir(input_base_path)):
     if participant in participant_mapping:
         new_id = participant_mapping[participant]
         convert_meg_to_bids(participant, new_id, task, input_base_path, output_base_path)

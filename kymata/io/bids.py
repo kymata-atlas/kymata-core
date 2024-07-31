@@ -57,31 +57,34 @@ def convert_meg_to_bids(participant, new_id, task, input_base_path, output_base_
             shutil.copy(src, dest)
 
             # Create corresponding metadata files
-            create_metadata_files(participant_id, task_name, meg_dir)
+            create_metadata_files(participant_id, task_name, src, meg_dir)
 
-def create_metadata_files(participant_id, task_name, meg_dir):
+def create_metadata_files(participant_id, task_name, src, meg_dir):
 
-    raw = mne.io.read_raw_fif(meg_dir, preload=False)
+    raw = mne.io.read_raw_fif(src, preload=False)
 
-    meg_json = get_meg_info(raw)
+    meg_json = get_meg_info(raw, task_name)
 
     channels_tsv = get_channel_info(raw)
 
-    coordsystem_json = get_coordinate_info(raw)
+    if task_name != 'emptyroom':
+        coordsystem_json = get_coordinate_info(raw)
     
     events_tsv = get_event_info(raw)
 
     # Write metadata files
     meg_json_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_meg.json')
     channels_tsv_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_channels.tsv')
-    coordsystem_json_path = os.path.join(meg_dir, f'{participant_id}_coordsystem.json')
+    if task_name != 'emptyroom':
+        coordsystem_json_path = os.path.join(meg_dir, f'{participant_id}_coordsystem.json')
     events_tsv_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_events.tsv')
 
     with open(meg_json_path, 'w') as f:
         json.dump(meg_json, f, indent=4)
     channels_tsv.to_csv(channels_tsv_path, sep='\t', index=False)
-    with open(coordsystem_json_path, 'w') as f:
-        json.dump(coordsystem_json, f, indent=4)
+    if task_name != 'emptyroom':
+        with open(coordsystem_json_path, 'w') as f:
+            json.dump(coordsystem_json, f, indent=4)
     events_tsv.to_csv(events_tsv_path, sep='\t', index=False)
 
 def get_coordinate_info(raw):
@@ -141,7 +144,7 @@ def get_coordinate_info(raw):
 
     return coordinate_info
 
-def get_meg_info(raw):
+def get_meg_info(raw, task_name):
 
     meg_json = {
         "TaskName": "0",  # Task information may need to be specified manually
@@ -160,8 +163,8 @@ def get_meg_info(raw):
         "DigitizedHeadPoints": any(p['kind'] == 2 for p in raw.info['dig']) if raw.info.get('dig') else False,
         "MEGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_MEG_CH),
         "MEGREFChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_REF_MEG_CH),
-        "ContinuousHeadLocalization": raw.info.get('chs', [{}])[0].get('coil_type') in [mne.io.constants.FIFF.FIFFV_COIL_HPI, mne.io.constants.FIFF.FIFFV_COIL_HPI_QUAT],
-        "HeadCoilFrequency": raw.info.get('hpi_meas', [{}])[0].get('hpi_coils', {}).get('event_freq', []),
+        "ContinuousHeadLocalization": True,
+        "HeadCoilFrequency": [raw.info.get('hpi_meas', [{}])[0].get('hpi_coils', {})[i].get('coil_freq', []) for i in range(5)] if task_name != 'emptyroom' else [],
         "EEGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_EEG_CH),
         "EOGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_EOG_CH),
         "ECGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_ECG_CH),
@@ -178,9 +181,9 @@ def get_channel_info(raw):
     channels_info = []
 
     # Iterate through the channels in the FIF file
-    for ch in raw.info['chs']:
+    for idx, ch in enumerate(raw.info['chs']):
         ch_name = ch['ch_name']
-        ch_type = mne.io.pick.channel_type(raw.info, ch['ch_name']).upper()  # Get the channel type and capitalize it
+        ch_type = raw.get_channel_types()[idx].upper()  # Get the channel type and capitalize it
         
         # Define channel types for BIDS
         if ch_type == 'MAG':
@@ -223,7 +226,7 @@ def get_channel_info(raw):
             units,
             low_cutoff,
             high_cutoff,
-            mne.io.pick.channel_type(raw.info, ch_name),
+            ch_type,
             raw.info['sfreq'],
             status,
             status_description
@@ -241,7 +244,7 @@ def get_channel_info(raw):
 def get_event_info(raw):
 
     # Extract events using the mne.find_events function
-    events = mne.find_events(raw)
+    events = mne.find_events(raw, shortest_event=1)
 
     # Create a DataFrame for the events
     events_df = pd.DataFrame(events, columns=['onset', 'duration', 'value'])
