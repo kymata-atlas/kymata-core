@@ -191,17 +191,6 @@ html5lib = ["html5lib"]
 lxml = ["lxml"]
 
 [[package]]
-name = "bids-validator"
-version = "1.14.6"
-description = "Validator for the Brain Imaging Data Structure"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "bids_validator-1.14.6-py3-none-any.whl", hash = "sha256:e7194193d97bedc6fb173b8606f6d3ed5a467c141f01bca11cd0f38ad1717941"},
-    {file = "bids_validator-1.14.6.tar.gz", hash = "sha256:df2b6b5d1aaad61d34ccad0494f2ed73ce3082825ada31954c4e14c2538d485c"},
-]
-
-[[package]]
 name = "bleach"
 version = "6.1.0"
 description = "An easy safelist-based HTML-sanitizing tool."
@@ -3796,4 +3785,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "8dac0e7867c786d9df3b5328a34fc78ab0d5831847f3637708b517aa3a49f338"
+content-hash = "a244ea67d875cda342317b6b5e22d46468061a6461ea4ab528492881be3de26b"
