@@ -3,6 +3,9 @@ import json
 import shutil
 import pandas as pd
 import mne
+import matplotlib.pyplot as plt
+import nibabel as nib
+import numpy as np
 
 # Mapping dictionary
 participant_mapping = {
@@ -259,3 +262,101 @@ def get_event_info(raw):
     events_df.rename(columns={'onset': 'onset', 'duration': 'duration', 'value': 'trial_type'}, inplace=True)
 
     return events_df
+
+import nibabel as nib
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_and_save_nii(nii_file, output_file):
+    # Load the NIfTI file using nibabel
+    img = nib.load(nii_file)
+    data = img.get_fdata()
+    
+    # Get the middle slice for each axis (x, y, z)
+    slice_x = data[data.shape[0] // 2, :, :]  # Sagittal slice
+    slice_y = data[:, data.shape[1] // 2, :]  # Coronal slice
+    slice_z = data[:, :, data.shape[2] // 2]  # Axial slice
+
+    # Rotate the slices as specified
+    slice_x = np.rot90(slice_x, k=3)  # 90 degrees clockwise
+    slice_z = np.rot90(slice_z, k=2)  # 180 degrees
+
+    # Create a figure with subplots
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    # Plot each slice
+    axes[0].imshow(slice_x.T, cmap='gray', origin='lower')
+    axes[0].set_title('Sagittal Slice')
+    axes[0].axis('off')
+
+    axes[1].imshow(slice_y.T, cmap='gray', origin='lower')
+    axes[1].set_title('Coronal Slice')
+    axes[1].axis('off')
+
+    axes[2].imshow(slice_z.T, cmap='gray', origin='lower')
+    axes[2].set_title('Axial Slice')
+    axes[2].axis('off')
+
+    # Save the plot to a file
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
+
+def convert_mri_to_bids(participant, new_id, input_base_path, output_base_path):
+    # Define paths
+    mri_input_dir = os.path.join(input_base_path, participant, 'mri/deface')
+    output_participant_dir = os.path.join(output_base_path, f'sub-{new_id}')
+    anat_dir = os.path.join(output_participant_dir, 'anat')
+    
+    # Ensure the output directories exist
+    os.makedirs(anat_dir, exist_ok=True)
+    
+    # Locate the defaced MRI file
+    defaced_mri_file = os.path.join(mri_input_dir, '001_defaced.nii')
+    if not os.path.isfile(defaced_mri_file):
+        print(f"No defaced MRI file found for participant {participant} at {defaced_mri_file}.")
+        return
+
+    # Define the output file paths
+    bids_mri_file = os.path.join(anat_dir, f'sub-{new_id}_T1w.nii.gz')
+    plot_file = os.path.join(anat_dir, f'sub-{new_id}_T1w_deface_check_plot.png')
+    json_file = os.path.join(anat_dir, f'sub-{new_id}_T1w.json')
+
+    # Visualize and save the defaced MRI image
+    plot_and_save_nii(defaced_mri_file, plot_file)
+    
+    # Copy the defaced MRI file to the BIDS output path
+    shutil.copyfile(defaced_mri_file, bids_mri_file)
+    print(f"Copied {defaced_mri_file} to {bids_mri_file}")
+
+    # Extract and create JSON metadata file
+    mri_metadata = extract_mri_metadata(defaced_mri_file)
+    with open(json_file, 'w') as jf:
+        json.dump(mri_metadata, jf, indent=4)
+    print(f"Metadata JSON file created at {json_file}")
+
+def extract_mri_metadata(nii_file):
+    img = nib.load(nii_file)
+    hdr = img.header
+
+    # Extract metadata from the NIfTI header
+    metadata = {
+        "Manufacturer": "Unknown",
+        "ManufacturersModelName": "Unknown",
+        "SoftwareVersions": "Unknown",
+        "MagneticFieldStrength": hdr.get('magnetic_field_strength', 3), # Assume default 3T if not available
+        "ReceiveCoilName": "Unknown",
+        "ScanningSequence": "Unknown",
+        "SequenceVariant": "Unknown",
+        "ScanOptions": "Unknown",
+        "EchoTime": float(hdr.get('te', np.nan)),
+        "InversionTime": float(hdr.get('ti', np.nan)),
+        "FlipAngle": float(hdr.get('flip_angle', np.nan)),
+        "RepetitionTime": float(hdr.get('tr', np.nan))
+    }
+
+    # # Handle missing data gracefully
+    # for key, value in metadata.items():
+    #     if np.isnan(value):
+    #         metadata[key] = "n/a"
+    
+    return metadata
