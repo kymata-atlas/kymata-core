@@ -6,23 +6,27 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 32
+    layer = 34
 
     neuron = 1280
 
-    thres = 20
+    thres = 20 # 15
 
     x_upper = 700
 
     size = 'large'
 
     neuron_selection = False
+
+    exclude_tvl = True
     
     n = 1
     
-    lat_sig = np.zeros((n, layer, neuron, 5)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no) )
+    lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_large_multi_log/decoder_all_der_5/'
+    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_large_multi_log/encoder_all_der_5/'
+
+    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/low_level_func/log/'
 
     for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
@@ -32,7 +36,7 @@ def asr_models_loop_full():
                 if 'model' in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n]
+                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -70,9 +74,27 @@ def asr_models_loop_full():
 
     # import ipdb;ipdb.set_trace()
     _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 
-    # import ipdb;ipdb.set_trace()
+    import ipdb;ipdb.set_trace()
+    if exclude_tvl:
+        color = _lats[:, 4]
+        for i in range(layer):
+            file_name = f'slurm_log_{i}.txt'
+            with open(log_tvl_dir + file_name, 'r') as f:
+                a = f.readlines()
+                for ia in range(len(a)):
+                    if 'model' in a[ia]:
+                        for k in range(neuron):
+                            _a = [j for j in a[ia].split()]
+                            lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                            ia += 1
+                        break        
+        lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
+        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+        # color[i] = 
+
 
     scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15)
     cbar = plt.colorbar(scatter, ax=ax, label='layers')
