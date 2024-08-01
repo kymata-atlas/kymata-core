@@ -339,21 +339,16 @@ def extract_mri_metadata(nii_file):
     hdr = img.header
 
     # Extract metadata from the NIfTI header
-    metadata = {
-        "Manufacturer": "Unknown",
-        "ManufacturersModelName": "Unknown",
-        "SoftwareVersions": "Unknown",
-        "MagneticFieldStrength": hdr.get('magnetic_field_strength', 3), # Assume default 3T if not available
-        "ReceiveCoilName": "Unknown",
-        "ScanningSequence": "Unknown",
-        "SequenceVariant": "Unknown",
-        "ScanOptions": "Unknown",
-        "EchoTime": float(hdr.get('te', np.nan)),
-        "InversionTime": float(hdr.get('ti', np.nan)),
-        "FlipAngle": float(hdr.get('flip_angle', np.nan)),
-        "RepetitionTime": float(hdr.get('tr', np.nan))
-    }
-
+    metadata = {"Manufacturer":"Siemens",
+                "ManufacturersModelName":"3T Tim Trio",
+                "MagneticFieldStrength":3,
+                "ReceiveCoilName":"32Ch_Head",
+                "ScanningSequence":"CBU_MPRAGE",
+                "EchoTime":0.00299,
+                "InversionTime":0.9,
+                "FlipAngle":9,
+                "RepetitionTime":2.250}
+    
     # # Handle missing data gracefully
     # for key, value in metadata.items():
     #     if np.isnan(value):
