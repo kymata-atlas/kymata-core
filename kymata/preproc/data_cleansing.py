@@ -122,7 +122,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig.savefig(Path(processed_path, "power_spectral_density_checks", f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
@@ -138,11 +139,14 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     mne.viz.plot_head_positions(
                         head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
-                # Calculate 2 empty room MEG projectors - wee will add these into maxfilter
+                # Calculate 2 empty room MEG projectors - we will add these into maxfilter
                 # to remove these from the signal as well
-                emptyroom_raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_emptyroom_raw.fif"),
+                emptyroom_raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_empty_room_raw.fif"),
                                           preload=True)
-                emptyroom_proj = mne.compute_proj_raw(raw=emptyroom_raw_fif_data, n_grad=2, n_mag=2)
+                emptyroom_raw_fif_data = emptyroom_raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+                emptyroom_raw_fif_data.del_proj() # remove the system created projectors - these have
+                                                  # been setup during yearly maintanance.
+                emptyroom_proj = mne.compute_proj_raw(raw=emptyroom_raw_fif_data, n_grad=3, n_mag=3, meg="combined")
 
                 raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
                     raw_fif_data,
@@ -155,6 +159,9 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     destination=(0, 0, 0.04),
                     extended_proj = emptyroom_proj,
                     verbose=True)
+
+                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig.savefig(Path(processed_path, "power_spectral_density_checks", f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
@@ -411,9 +418,14 @@ def estimate_noise_cov(data_root_dir: str,
             emptyroom_fname = Path(emeg_dir, p, p + '_empty_room_raw.fif')
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
 
-            # Calculate 2 SSP projectors for use in maxwell_filter's extended_proj argument
+            # Remove mains line from emptyroom
+            meg_picks = mne.pick_types(emptyroom_raw.info, meg=True)
+            meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
+            emptyroom_raw = emptyroom_raw.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+            # Calculate 3 SSP projectors from emptyroom for use in maxwell_filter's extended_proj argument
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
-            emptyroom_raw_proj = mne.compute_proj_raw(raw=emptyroom_raw, n_grad=2, n_mag=2)
+            emptyroom_raw_proj = mne.compute_proj_raw(raw=emptyroom_raw, n_grad=3, n_mag=3, meg='combined')
 
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
