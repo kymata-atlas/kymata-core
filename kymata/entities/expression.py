@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, Collection, Self, TypeVar
+from typing import Sequence, Union, get_args, Tuple, TypeVar
 from warnings import warn
 
 from numpy import array, array_equal, ndarray
