@@ -29,7 +29,22 @@ participant_mapping = {
     'participant_16': 'E17',
     'participant_17': 'E18',
     'participant_18': 'E19',
-    'participant_19': 'E20'
+    'participant_19': 'E20',
+    "meg15_0045": 'R1',
+    "meg15_0051": 'R2',
+    "meg15_0054": 'R3',
+    "meg15_0055": 'R4',
+    "meg15_0056": 'R5',
+    "meg15_0058": 'R6',
+    "meg15_0060": 'R7',
+    "meg15_0065": 'R8',
+    "meg15_0066": 'R9',
+    "meg15_0070": 'R10',
+    "meg15_0071": 'R11',
+    "meg15_0072": 'R12',
+    "meg15_0079": 'R13',
+    "meg15_0081": 'R14',
+    "meg15_0082": 'R15',
 }
 
 def create_dirs(path):
@@ -48,16 +63,16 @@ def convert_meg_to_bids(participant, new_id, task, input_base_path, output_base_
         if file.endswith('.fif'):
             task_name = 'rest'
             if 'empty_room' in file:
-                task_name = 'emptyroom'
+                task_name = 'task-emptyroom_run-0'
             elif 'run' in file:
                 run_number = file.split('_')[2].replace('run', '').replace('.fif', '')
                 task_name = f'task-{task}_run-{run_number}'
 
-            # Determine new filename
-            new_filename = f'{participant_id}_{task_name}_meg.fif'
+            # # Determine new filename
+            # new_filename = f'{participant_id}_{task_name}_meg.fif'
             src = os.path.join(participant_path, file)
-            dest = os.path.join(meg_dir, new_filename)
-            shutil.copy(src, dest)
+            # dest = os.path.join(meg_dir, new_filename)
+            # shutil.copy(src, dest)
 
             # Create corresponding metadata files
             create_metadata_files(participant_id, task_name, src, meg_dir)
@@ -70,7 +85,7 @@ def create_metadata_files(participant_id, task_name, src, meg_dir):
 
     channels_tsv = get_channel_info(raw)
 
-    if task_name != 'emptyroom':
+    if task_name != 'task-emptyroom_run-0':
         coordsystem_json = get_coordinate_info(raw)
     
     events_tsv = get_event_info(raw)
@@ -78,14 +93,14 @@ def create_metadata_files(participant_id, task_name, src, meg_dir):
     # Write metadata files
     meg_json_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_meg.json')
     channels_tsv_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_channels.tsv')
-    if task_name != 'emptyroom':
+    if task_name != 'task-emptyroom_run-0':
         coordsystem_json_path = os.path.join(meg_dir, f'{participant_id}_coordsystem.json')
     events_tsv_path = os.path.join(meg_dir, f'{participant_id}_{task_name}_events.tsv')
 
     with open(meg_json_path, 'w') as f:
         json.dump(meg_json, f, indent=4)
     channels_tsv.to_csv(channels_tsv_path, sep='\t', index=False)
-    if task_name != 'emptyroom':
+    if task_name != 'task-emptyroom_run-0':
         with open(coordsystem_json_path, 'w') as f:
             json.dump(coordsystem_json, f, indent=4)
     events_tsv.to_csv(events_tsv_path, sep='\t', index=False)
@@ -167,7 +182,7 @@ def get_meg_info(raw, task_name):
         "MEGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_MEG_CH),
         "MEGREFChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_REF_MEG_CH),
         "ContinuousHeadLocalization": True,
-        "HeadCoilFrequency": [raw.info.get('hpi_meas', [{}])[0].get('hpi_coils', {})[i].get('coil_freq', []) for i in range(5)] if task_name != 'emptyroom' else [],
+        "HeadCoilFrequency": [raw.info.get('hpi_meas', [{}])[0].get('hpi_coils', {})[i].get('coil_freq', []) for i in range(5)] if task_name != 'task-emptyroom_run-0' else [],
         "EEGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_EEG_CH),
         "EOGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_EOG_CH),
         "ECGChannelCount": sum(1 for ch in raw.info['chs'] if ch['kind'] == mne.io.constants.FIFF.FIFFV_ECG_CH),
@@ -208,15 +223,15 @@ def get_channel_info(raw):
             ch_type_bids = 'EMG'
             units = 'uV'  # Microvolts for EMG
         elif ch_type == 'STIM':
-            ch_type_bids = 'TRIGGER'
+            ch_type_bids = 'TRIG'
             units = 'n/a'  # No units for trigger channels
         else:
             ch_type_bids = 'MISC'
             units = 'n/a'  # Miscellaneous channels may not have units
 
         # Extract low and high pass filter information, if available
-        low_cutoff = ch['loc'][3] if ch['loc'][3] > 0 else 0.0
-        high_cutoff = ch['loc'][4] if ch['loc'][4] > 0 else raw.info['sfreq'] / 2
+        low_cutoff = raw.info['highpass']
+        high_cutoff = raw.info['lowpass']
 
         # Default channel status
         status = 'good'
@@ -263,10 +278,6 @@ def get_event_info(raw):
 
     return events_df
 
-import nibabel as nib
-import numpy as np
-import matplotlib.pyplot as plt
-
 def plot_and_save_nii(nii_file, output_file):
     # Load the NIfTI file using nibabel
     img = nib.load(nii_file)
@@ -301,7 +312,7 @@ def plot_and_save_nii(nii_file, output_file):
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
     plt.close(fig)
 
-def convert_mri_to_bids(participant, new_id, input_base_path, output_base_path):
+def convert_mri_to_bids(participant, new_id, input_base_path, output_base_path, deface_check_dir):
     # Define paths
     mri_input_dir = os.path.join(input_base_path, participant, 'mri/deface')
     output_participant_dir = os.path.join(output_base_path, f'sub-{new_id}')
@@ -317,8 +328,8 @@ def convert_mri_to_bids(participant, new_id, input_base_path, output_base_path):
         return
 
     # Define the output file paths
-    bids_mri_file = os.path.join(anat_dir, f'sub-{new_id}_T1w.nii.gz')
-    plot_file = os.path.join(anat_dir, f'sub-{new_id}_T1w_deface_check_plot.png')
+    bids_mri_file = os.path.join(anat_dir, f'sub-{new_id}_T1w.nii')
+    plot_file = os.path.join(deface_check_dir, f'sub-{new_id}_T1w_deface_check_plot.png')
     json_file = os.path.join(anat_dir, f'sub-{new_id}_T1w.json')
 
     # Visualize and save the defaced MRI image
@@ -335,8 +346,8 @@ def convert_mri_to_bids(participant, new_id, input_base_path, output_base_path):
     print(f"Metadata JSON file created at {json_file}")
 
 def extract_mri_metadata(nii_file):
-    img = nib.load(nii_file)
-    hdr = img.header
+    # img = nib.load(nii_file)
+    # hdr = img.header
 
     # Extract metadata from the NIfTI header
     metadata = {"Manufacturer":"Siemens",
