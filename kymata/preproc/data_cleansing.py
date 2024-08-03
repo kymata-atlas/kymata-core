@@ -373,6 +373,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
@@ -407,19 +408,6 @@ def estimate_noise_cov(data_root_dir: str,
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 
-            # Now calcualte the covariance for MEG using emptyroom
-            emptyroom_fname = Path(emeg_dir, p, p + '_empty_room_raw.fif')
-            emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
-
-            # Remove mains line from emptyroom
-            meg_picks = mne.pick_types(emptyroom_raw.info, meg=True)
-            meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
-            emptyroom_raw = emptyroom_raw.notch_filter(freqs=meg_freqs, picks=meg_picks)
-
-            # Calculate 3 SSP projectors from emptyroom for use in maxwell_filter's extended_proj argument
-            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
-            emptyroom_raw_proj = mne.compute_proj_raw(raw=emptyroom_raw, n_grad=3, n_mag=3, meg='combined')
-
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
@@ -429,7 +417,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
-                        extended_proj = emptyroom_raw_proj,
+                        #ess
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
