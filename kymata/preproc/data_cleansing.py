@@ -123,7 +123,9 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
-                fig.savefig(Path(processed_path, "power_spectral_density_checks", f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
+                psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                psd_checks_dir.mkdir(exist_ok=True)
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
@@ -139,14 +141,13 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     mne.viz.plot_head_positions(
                         head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
-                # Calculate 2 empty room MEG projectors - we will add these into maxfilter
-                # to remove these from the signal as well
+                # Remove 4 empty room MEG projectors from raw_fif
                 emptyroom_raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_empty_room_raw.fif"),
                                           preload=True)
                 emptyroom_raw_fif_data = emptyroom_raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
-                emptyroom_raw_fif_data.del_proj() # remove the system created projectors - these have
-                                                  # been setup during yearly maintanance.
-                emptyroom_proj = mne.compute_proj_raw(raw=emptyroom_raw_fif_data, n_grad=3, n_mag=3, meg="combined")
+                raw_fif_data.del_proj()
+                raw_fif_data.add_proj(mne.compute_proj_raw(raw=emptyroom_raw_fif_data))
+                raw_fif_data.apply_proj()
 
                 raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
                     raw_fif_data,
@@ -157,11 +158,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
-                    extended_proj = emptyroom_proj,
+                    # note that using extended_proj/eSSS makes no difference
                     verbose=True)
 
                 fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
-                fig.savefig(Path(processed_path, "power_spectral_density_checks", f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
