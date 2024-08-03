@@ -417,7 +417,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
-                        #ess
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
