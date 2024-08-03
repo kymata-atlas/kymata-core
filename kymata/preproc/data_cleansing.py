@@ -141,14 +141,6 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     mne.viz.plot_head_positions(
                         head_pos_data, mode='field', destination=raw_fif_data.info['dev_head_t'], info=raw_fif_data.info)
 
-                # Remove 4 empty room MEG projectors from raw_fif
-                emptyroom_raw_fif_data = mne.io.Raw(Path(raw_emeg_path, participant, f"{participant}_empty_room_raw.fif"),
-                                          preload=True)
-                emptyroom_raw_fif_data = emptyroom_raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
-                raw_fif_data.del_proj()
-                raw_fif_data.add_proj(mne.compute_proj_raw(raw=emptyroom_raw_fif_data))
-                raw_fif_data.apply_proj()
-
                 raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
                     raw_fif_data,
                     cross_talk=crosstalk_file,
