@@ -408,6 +408,11 @@ def estimate_noise_cov(data_root_dir: str,
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 
+            # Now calcualte the covariance for MEG using emptyroom
+            emptyroom_fname = Path(emeg_dir, p, p + '_empty_room_raw.fif')
+            emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
+            emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
+
             fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
             crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
