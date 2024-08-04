@@ -11,10 +11,21 @@ permissions:
   contents: read
 
 jobs:
+
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: 🗑 Delete deployment
+        uses: strumwolf/delete-deployment-environment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: pypi
+          onlyRemoveDeployments: true
+
   build:
 
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -37,6 +48,7 @@ jobs:
     name: Publish Python distribution to PyPI
     needs:
       - build
+      - cleanup
     runs-on: ubuntu-latest
 
     environment:
