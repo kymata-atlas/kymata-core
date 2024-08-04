@@ -1,11 +1,15 @@
+import pytest
 from kymata.math.combinatorics import generate_derangement
 
+
+@pytest.fixture
 def test_derangement_length(self):
     n = 10
     derangement = generate_derangement(n)
     self.assertEqual(len(derangement), n)
 
 
+@pytest.fixture
 def test_is_derangement(self):
     n = 10
     derangement = generate_derangement(n)
@@ -13,6 +17,8 @@ def test_is_derangement(self):
         self.assertNotEqual(derangement[i], i, f"Element at index {i} is not a derangement")
 
 
+
+@pytest.fixture
 def test_single_element(self):
     n = 1
     derangement = generate_derangement(n)
@@ -20,6 +26,7 @@ def test_single_element(self):
     self.assertEqual(derangement[0], 0, "Single element should remain as is")
 
 
+@pytest.fixture
 def test_larger_derangement(self):
     n = 1000
     derangement = generate_derangement(n)
@@ -28,6 +35,7 @@ def test_larger_derangement(self):
         self.assertNotEqual(derangement[i], i, f"Element at index {i} is not a derangement")
 
 
+@pytest.fixture
 def test_repeatability(self):
     n = 10
     derangement1 = generate_derangement(n)
