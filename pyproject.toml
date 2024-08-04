@@ -1,10 +1,13 @@
 [tool.poetry]
 name = "kymata"
-version = "0.1.13"
+version = "0.1.12"
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
 authors = [
-    {name = "Lakra, Anirudh", email = "anirudh.lakra.19@alumni.ucl.ac.uk"},
-    {name = "Parish, Oliver", email = "oliver.parish.23@ucl.ac.uk"}
+    "Lakra, Anirudh <anirudh.lakra.19@alumni.ucl.ac.uk>",
+    "Parish, Oliver <oliver.parish.23@ucl.ac.uk>",
+    "Thwaites, Andrew <acgt2@cam.ac.uk>",
+    "Wingfield, Cai <cai@caiwingfield.net>",
+    "Yang, Chentianyi <cy334@cam.ac.uk>",
 ]
 homepage = "https://kymata-atlas.github.io/kymata-core/"
 repository = "https://github.com/kymata-atlas/kymata-core"
