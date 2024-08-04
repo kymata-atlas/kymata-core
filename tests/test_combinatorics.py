@@ -1,4 +1,3 @@
-import pytest
 from kymata.math.combinatorics import generate_derangement
 
 
