@@ -16,15 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - name: 🗑 Delete deployment
+      - name: 🗑 Delete previous pypi deployment
         uses: strumwolf/delete-deployment-environment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: pypi
           onlyRemoveDeployments: true
+      - name: 🗑 Delete previous testpypi deployment
+        uses: strumwolf/delete-deployment-environment@v2
+        with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           environment: testpypi
+           onlyRemoveDeployments: true
 
   build:
-
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
