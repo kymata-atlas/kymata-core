@@ -50,9 +50,9 @@ mkdocstrings = {extras = ["python"], version = "^0.25.1"}
 twine = "^5.1.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.2"
+pytest = "^8.3.2"
 ipdb = "^0.13.13"
-ruff = "^0.2.2"
+ruff = "^0.5.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
