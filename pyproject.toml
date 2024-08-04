@@ -2,18 +2,29 @@
 name = "kymata"
 version = "0.1.0"
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
+license = {text = "MIT License"}
 authors = [
-    "Lakra, Anirudh <anirudh.lakra.19@alumni.ucl.ac.uk>",
-    "Parish, Oliver <op283@cam.ac.uk>",
-    "Thwaites, Andrew <acgt2@cam.ac.uk>",
-    "Wingfield, Cai <cai@caiwingfield.net>",
-    "Yang, Chentianyi <cy334@cam.ac.uk>",
+    {name = "Lakra, Anirudh", email = "anirudh.lakra.19@alumni.ucl.ac.uk>"},
+    {name = "Parish, Oliver", email = "oliver.parish.23@ucl.ac.uk"},
+    {name = "Thwaites, Andrew", email = "acgt2@cam.ac.uk"},
+    {name = "Wingfield, Cai", email = "cai@caiwingfield.net"},
+    {name = "Yang, Chentianyi", email = "cy334@cam.ac.uk"},
 ]
 homepage = "https://kymata-atlas.github.io/kymata-core/"
 repository = "https://github.com/kymata-atlas/kymata-core"
 documentation = "https://kymata-atlas.github.io/kymata-core/"
 readme = "README.md"
 packages = [{include = "kymata"}]
+keywords = ["neuroscience", "neuroimaging"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Medical Science Apps",
+    "Topic :: Scientific/Engineering :: Visualization"
+]
 
 [tool.poetry.dependencies]
 python = "~3.11"
