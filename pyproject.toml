@@ -9,6 +9,10 @@ authors = [
     "Wingfield, Cai <cai@caiwingfield.net>",
     "Yang, Chentianyi <cy334@cam.ac.uk>",
 ]
+homepage = "https://kymata-atlas.github.io/kymata-core/"
+repository = "https://github.com/kymata-atlas/kymata-core"
+documentation = "https://kymata-atlas.github.io/kymata-core/"
+readme = "README.md"
 packages = [{include = "kymata"}]
 
 [tool.poetry.dependencies]
