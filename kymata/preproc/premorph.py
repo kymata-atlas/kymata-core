@@ -29,7 +29,6 @@ def premorph_inverse_operator(
     return_residual=False,
     use_cps=True,
 ):
-    mne.set_eeg_reference(evoked, projection=True, verbose=False)
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator_path, verbose=False)
     _validate_type(evoked, Evoked, "evoked")
     _check_reference(evoked, inverse_operator["info"]["ch_names"])

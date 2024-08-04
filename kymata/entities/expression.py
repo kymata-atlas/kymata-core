@@ -64,7 +64,7 @@ class ExpressionSet(ABC):
         self._dims = (channel_coord_name, DIM_LATENCY, DIM_FUNCTION)
 
         self._block_names: list[str] = list(data_blocks.keys())
-        self._channel_coord_name = channel_coord_name
+        self.channel_coord_name = channel_coord_name
 
         # Validate arguments
         assert set(self._block_names) == set(channel_coord_values.keys()), "Ensure data block names match channel block names"
@@ -80,7 +80,8 @@ class ExpressionSet(ABC):
             for bn in self._block_names:
                 data_blocks[bn] = [data_blocks[bn]]
 
-        assert len(functions) == len(set(functions)), "Duplicated functions in input"
+        self._validate_functions_no_duplicates(functions)
+
         for data in data_blocks.values():
             assert len(functions) == len(data), _length_mismatch_message
         assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
@@ -133,6 +134,15 @@ class ExpressionSet(ABC):
 
             self._data[block_name] = data_array
 
+    def _validate_functions_no_duplicates(self, functions):
+        if not len(functions) == len(set(functions)):
+            checked = []
+            for f in functions:
+                if f in checked:
+                    break
+                checked.append(f)
+            raise ValueError(f"Duplicated functions in input, e.g. {f}")
+
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
         if isinstance(data, ndarray):
@@ -146,7 +156,7 @@ class ExpressionSet(ABC):
     # block → channels
     def _channels(self) -> dict[str, NDArray]:
         return {
-            bn: data.coords[self._channel_coord_name].values
+            bn: data.coords[self.channel_coord_name].values
             for bn, data in self._data.items()
         }
 
@@ -189,7 +199,7 @@ class ExpressionSet(ABC):
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
         # Override this method and provide additional checks after calling super().__eq__(other)
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
         if not self.functions == other.functions:
             return False
@@ -234,7 +244,7 @@ class ExpressionSet(ABC):
         # (channel) -> latency of the best function
         best_latencies = best_latency.sel({
             # e.g. hexels          -> array([0, ..., 10241])
-            self._channel_coord_name: self._channels[block_name],
+            self.channel_coord_name: self._channels[block_name],
             #          -> DataArray((hexel) -> function)
             DIM_FUNCTION: best_function
         }).data
@@ -243,7 +253,7 @@ class ExpressionSet(ABC):
         idxs = logp_vals < 0
 
         return DataFrame.from_dict({
-            self._channel_coord_name: self._channels[block_name][idxs],
+            self.channel_coord_name: self._channels[block_name][idxs],
             DIM_FUNCTION: best_functions[idxs],
             DIM_LATENCY: best_latencies[idxs],
             "value": logp_vals[idxs],

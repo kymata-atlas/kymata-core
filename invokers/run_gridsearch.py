@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--input-stream', type=str, required=True, choices=["auditory", "visual", "tactile"], help="The input stream for the functions being tested.")
     parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
+    parser.add_argument('--replace-nans', type=str, required=False, choices=["zero", "mean"], default=None, help="If the function contour contains NaN values, this will replace them with the specified values.")
 
     # For source space
     parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
@@ -60,7 +61,7 @@ def main():
     parser.add_argument('--downsample-rate', type=int,   default=5, help='downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz')
 
     parser.add_argument('--seconds-per-split', type=float, default=1, help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits',          type=int, default=400, help='number of splits to split the recording into, (set to 400/seconds_per_split for full file)')
+    parser.add_argument('--n-splits',          type=int, default=400, help='number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)')
     parser.add_argument('--n-derangements',    type=int, default=5, help='number of deragements for the null distribution')
     parser.add_argument('--start-latency',     type=float, default=-200, help='earliest latency to check in cross correlation')
     parser.add_argument('--emeg-t-start',      type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
@@ -69,6 +70,7 @@ def main():
     parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
     parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir), help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir), help="Save an expression plots, and other plots, in this location")
+    parser.add_argument('--plot-top-channels', action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
@@ -123,7 +125,12 @@ def main():
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    _logger.info(f"Gridsearch in {channel_space} space")
+    _logger.info("Starting Kymata Gridsearch")
+    _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
+    _logger.info(f"Functions to be tested: {args.function_name}")
+    _logger.info(f"Gridsearch will be applied in {channel_space} space")
+    if args.use_inverse_operator:
+        _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
     if args.morph:
         _logger.info("Morphing to common space")
 
@@ -157,6 +164,7 @@ def main():
         _logger.info(f"Running gridsearch on {function_name}")
         function_values = load_function(Path(base_dir, args.function_path),
                                         func_name=function_name,
+                                        replace_nans=args.replace_nans,
                                         bruce_neurons=(5, 10))
         function_values = function_values.downsampled(args.downsample_rate)
 
@@ -174,6 +182,7 @@ def main():
             emeg_t_start=args.emeg_t_start,
             stimulus_shift_correction=stimulus_shift_correction,
             stimulus_delivery_latency=stimulus_delivery_latency,
+            plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
         )
 
@@ -204,7 +213,8 @@ def main():
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
 
-    _logger.info(f'Time taken for code to run: {time.time() - start:.4f} s')
+    total_time_in_seconds = time.time() - start
+    _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)')
 
 
 if __name__ == '__main__':

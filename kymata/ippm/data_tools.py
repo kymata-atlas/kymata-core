@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 import math
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
-Node = namedtuple('Node', 'magnitude position in_edges')
+Node = namedtuple('Node', 'magnitude position inc_edges')
 
 
 class IPPMHexel(object):
@@ -307,7 +307,7 @@ def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_d
         -------
         A ratio indicating how many channels were incorporated into the IPPM out of all relevant channels.
     """
-    assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
+    assert(hemi == 'rightHemisphere' or hemi == 'leftHemisphere')
 
     # Step 1: Calculate significance level
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      

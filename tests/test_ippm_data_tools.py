@@ -3,7 +3,7 @@ from collections import namedtuple
 import kymata.ippm.data_tools as data_tools
 import pytest
 
-Node = namedtuple('Node', 'magnitude position in_edges')
+Node = namedtuple('Node', 'magnitude position inc_edges')
 
 def test_hexel():
     hexel = IPPMHexel('test', 'test description', 'test commit')

@@ -10,6 +10,7 @@ from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
@@ -121,7 +122,10 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                psd_checks_dir.mkdir(exist_ok=True)
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
@@ -146,7 +150,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
+                    # note that using extended_proj/eSSS makes no difference
                     verbose=True)
+
+                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
@@ -211,7 +219,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -330,10 +338,10 @@ def estimate_noise_cov(data_root_dir: str,
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
     cleaned_dir.mkdir(exist_ok=True)
 
-    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_evoked_sensor_data")
+    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "4_hexel_current_reconstruction")
     sensor_data_dir.mkdir(exist_ok=True)
 
-    cov_dir = Path(sensor_data_dir, "covariance_grand_average")
+    cov_dir = Path(sensor_data_dir, "noise_covariance_files")
     cov_dir.mkdir(exist_ok=True)
 
     for p in list_of_participants:
@@ -365,6 +373,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
@@ -413,6 +422,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
@@ -420,7 +430,9 @@ def estimate_noise_cov(data_root_dir: str,
 
             # Now combine the two covariance matrices
             cov_data = cov_eeg.data
-            cov_data[64:,64:] = cov_meg.data[64:,64:]
+            meg_indices_ave = [index for index, channel in enumerate(cov_eeg.ch_names) if 'EEG' not in channel]
+            meg_indices_emp = [index for index, channel in enumerate(cov_meg.ch_names) if 'EEG' not in channel]
+            cov_data[np.ix_(meg_indices_ave, meg_indices_ave)] = cov_meg.data[np.ix_(meg_indices_emp, meg_indices_emp)]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
 
             mne.write_cov(Path(cov_dir, p + '-fusion-cov.fif'), cov)
