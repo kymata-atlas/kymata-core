@@ -2,7 +2,6 @@
 name = "kymata"
 version = "0.1.0"
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
-license = {text = "MIT License"}
 authors = [
     {name = "Lakra, Anirudh", email = "anirudh.lakra.19@alumni.ucl.ac.uk>"},
     {name = "Parish, Oliver", email = "oliver.parish.23@ucl.ac.uk"},
