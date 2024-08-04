@@ -21,7 +21,7 @@ welcomed, we are unable to prioritise installation support.
 
 Please use the following reference in all citations: 
 
-> TBC
+> T.B.C
 
 ## Usage
 
