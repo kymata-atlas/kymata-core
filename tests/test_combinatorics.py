@@ -14,7 +14,7 @@ def test_is_derangement(self):
     n = 10
     derangement = generate_derangement(n)
     for i in range(n):
-        self.assertNotEqual(derangement[i], i, f"Element at index {i} is not a derangement")
+        self.assertNotEqual(derangement[i], i, f"Element at index {i} is not a derangement") 
 
 
 
