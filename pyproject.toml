@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kymata"
-version = "0.1.14"
+version = "0.1.15"
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
 authors = [
     "Thwaites, Andrew <acgt2@cam.ac.uk>",
