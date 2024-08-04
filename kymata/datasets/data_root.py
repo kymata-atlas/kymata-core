@@ -6,7 +6,7 @@ from kymata.io.file import PathType
 
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
-DATA_DIR_NAME = "kymata-toolbox-data"
+DATA_DIR_NAME = "kymata-core-data"
 
 # Places downloaded datasets could go, in order of preference
 _preferred_default_data_locations = [

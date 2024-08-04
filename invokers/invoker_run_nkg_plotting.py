@@ -1,12 +1,15 @@
+from logging import basicConfig, INFO
 from pathlib import Path
 from os import path
+
+from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict
 
 def main():
     function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-toolbox-data", "output")
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
 
@@ -91,7 +94,7 @@ def main():
         expression_plot(expression_data,
                         ylim=-400,
                         xlims=(-200, 800),
-                        save_to=Path(Path(path.abspath("")).parent, "kymata-toolbox/kymata-toolbox-data", "output/encoder_all.jpg"),
+                        save_to=Path(Path(path.abspath("")).parent, "kymata-core/kymata-core-data", "output/encoder_all.jpg"),
                         show_legend=True,
                         color= constant_color_dict(conv1_list, color='red')
                                 | constant_color_dict(conv2_list, color='green')
@@ -112,4 +115,5 @@ def main():
                                        | legend_display_dict(encoder5_list, 'Encoder layer 6'))
 
 if __name__ == '__main__':
+    basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

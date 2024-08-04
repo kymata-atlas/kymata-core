@@ -1,17 +1,25 @@
 import os.path
+from logging import getLogger
 from typing import Optional
 
 from colorama import Fore, Style
 import mne
-from numpy import zeros, nanmin
+from numpy import nanmin
+from numpy.typing import NDArray
 from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
 from kymata.io.file import PathType
+
+_logger = getLogger(__name__)
+
+CHANNEL_TRIGGER = 'STI101'
+TRIGGER_REP_ONSET  = 3
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[str],
@@ -114,7 +122,10 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                psd_checks_dir.mkdir(exist_ok=True)
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
@@ -123,8 +134,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 # Apply SSS and movement compensation
                 print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-                crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+                fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+                crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
                 
                 if not supress_excessive_plots_and_prompts:
                     mne.viz.plot_head_positions(
@@ -139,7 +150,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
+                    # note that using extended_proj/eSSS makes no difference
                     verbose=True)
+
+                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
@@ -204,7 +219,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -323,10 +338,10 @@ def estimate_noise_cov(data_root_dir: str,
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
     cleaned_dir.mkdir(exist_ok=True)
 
-    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "3_evoked_sensor_data")
+    sensor_data_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "4_hexel_current_reconstruction")
     sensor_data_dir.mkdir(exist_ok=True)
 
-    cov_dir = Path(sensor_data_dir, "covariance_grand_average")
+    cov_dir = Path(sensor_data_dir, "noise_covariance_files")
     cov_dir.mkdir(exist_ok=True)
 
     for p in list_of_participants:
@@ -349,8 +364,8 @@ def estimate_noise_cov(data_root_dir: str,
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
-            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
             raw_fif_data_sss = mne.preprocessing.maxwell_filter(
                         emptyroom_raw,
@@ -358,6 +373,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
@@ -397,8 +413,8 @@ def estimate_noise_cov(data_root_dir: str,
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(emptyroom_raw, raw=raw)
 
-            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
-            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-toolbox-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
+            fine_cal_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/sss_cal_' + emeg_machine_used_to_record_data + '.dat'))
+            crosstalk_file = str(Path(Path(__file__).parent.parent.parent, 'kymata-core-data', 'cbu_specific_files/SSS/ct_sparse_' + emeg_machine_used_to_record_data + '.fif'))
   
             raw_fif_data_sss = mne.preprocessing.maxwell_filter(
                         emptyroom_raw,
@@ -406,6 +422,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)
@@ -413,28 +430,22 @@ def estimate_noise_cov(data_root_dir: str,
 
             # Now combine the two covariance matrices
             cov_data = cov_eeg.data
-            cov_data[64:,64:] = cov_meg.data[64:,64:]
+            meg_indices_ave = [index for index, channel in enumerate(cov_eeg.ch_names) if 'EEG' not in channel]
+            meg_indices_emp = [index for index, channel in enumerate(cov_meg.ch_names) if 'EEG' not in channel]
+            cov_data[np.ix_(meg_indices_ave, meg_indices_ave)] = cov_meg.data[np.ix_(meg_indices_emp, meg_indices_emp)]
             cov = mne.Covariance(cov_data, names=cov_eeg.ch_names, bads=cov_eeg['bads'], projs=cov_eeg['projs'], nfree=cov_eeg.nfree)
 
             mne.write_cov(Path(cov_dir, p + '-fusion-cov.fif'), cov)
 
 
 def create_trialwise_data(data_root_dir: PathType,
-                        dataset_directory_name: str,
-                        list_of_participants: list[str],
-                        repetitions_per_runs: int,
-                        number_of_runs: int,
-                        number_of_trials: int,
-                        input_streams: list[str],
-                        eeg_thresh: float,
-                        grad_thresh: float,
-                        mag_thresh: float,
-                        visual_delivery_latency: float,  # seconds
-                        audio_delivery_latency: float,  # seconds
-                        audio_delivery_shift_correction: float,  # seconds
-                        trial_length: float,  # seconds
-                        latency_range: tuple[float, float]  # seconds
-                        ):
+                          dataset_directory_name: str,
+                          list_of_participants: list[str],
+                          repetitions_per_runs: int,
+                          stimulus_length: int,  # seconds
+                          number_of_runs: int,
+                          latency_range: tuple[float, float]  # seconds
+                          ):
     """Create trials objects from the raw data files (still in sensor space)"""
 
     cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
@@ -447,8 +458,6 @@ def create_trialwise_data(data_root_dir: PathType,
 
     logs_path = Path(trialwise_sensorspace_dir, "logs")
     logs_path.mkdir(exist_ok=True)
-
-    global_droplog = []
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
@@ -463,251 +472,53 @@ def create_trialwise_data(data_root_dir: PathType,
             print(f"Loading {raw_path}...")
             if os.path.isfile(raw_path):
                 raw = mne.io.Raw(raw_path, preload=True)
-                #events_ = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
-                #print([i[0] for i in mne.pick_events(events_, include=2)])
-                #print(mne.pick_events(events_, include=3))
                 cleaned_raws.append(raw)
 
-        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
-        raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1) #, uint_cast=True)
+        raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding visual events{Style.RESET_ALL}")
+        raw_events = mne.find_events(raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1)
+        repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
+        # name repetitions
+        for i in range(len(repetition_events)):
+            repetition_events[i][2] = str(i)
 
-        #	Extract visual events
-        visual_events = mne.pick_events(raw_events, include=[2, 3])
-
-        #	Correct for visual equiptment latency error
-        visual_events = mne.event.shift_time_events(visual_events, [2, 3],
-                                                    visual_delivery_latency * 1000,  # convert to milliseconds
-                                                    1)
-
-        # trigger_name = 1
-        # for trigger in visual_events:
-        #    trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
-        #    if trigger_name == 400:
-        #        trigger_name = 1
-        #    else:
-        #        trigger_name = trigger_name + 1
-        #
-        # #  Test there are the correct number of events
-        # assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
-
-        print(f"{Fore.GREEN}{Style.BRIGHT}...finding audio events{Style.RESET_ALL}")
-
-        #	Extract audio events
-        audio_events_raw = mne.pick_events(raw_events, include=3)
-
-        #	Correct for audio latency error
-        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3],
-                                                       audio_delivery_latency * 1000,  # convert to milliseconds
-                                                       1)
-
-        audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
-        for run, item in enumerate(audio_events_raw):
-            print('item: ', item)
-            audio_events_raw[run][2] = run # rename the audio events raw to pick apart later
-            for trial in range(number_of_trials):
-                audio_events[(trial + (number_of_trials * run))][0] = item[0] + round(
-                    trial * (1000 + audio_delivery_shift_correction))
-                audio_events[(trial + (number_of_trials * run))][1] = 0
-                audio_events[(trial + (number_of_trials * run))][2] = trial
-
-        #  Test there are the correct number of events
-        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
-        
-        print(f'\n Runs found: {audio_events.shape[0]} \n')
-
-        #	Denote picks
-        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
-
-        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
-
-        for input_stream in input_streams:
-
-            if input_stream == 'auditory':
-                # events = audio_events
-                # else:
-                #    events = visual_events
-
-                #	Extract trial instances ('epochs')
-
-                _tmin = latency_range[0]
-                _tmax = (number_of_trials * trial_length
-                         # extra padding at the end to accomodate range of latencies
-                         + latency_range[1]
-                         # Extra space to account for audio latency drift
-                         + 2)
-                epochs = mne.Epochs(raw, audio_events_raw, None, _tmin, _tmax, picks=picks,
-                                baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
-                                preload=True)
-
-                # 	Log which channels are worst
-                dropfig = epochs.plot_drop_log(subject=p)
-                dropfig.savefig(Path(logs_path, f"f{input_stream}_drop-log_{p}.jpg"))
-
-                global_droplog.append(f'[{input_stream}]{p}:{epochs.drop_log_stats(epochs.drop_log)}')
-
-                for i in range(len(audio_events_raw)):
-                    evoked = epochs[str(i)].average()
-                    evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
-
-                evoked = epochs.average()
-                evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
-
-
-def create_trials(data_root_dir: str,
-                  dataset_directory_name: str,
-                  list_of_participants: list[str],
-                  repetitions_per_runs: int,
-                  number_of_runs: int,
-                  number_of_trials: int,
-                  input_streams: list[str],
-                  eeg_thresh: float,
-                  grad_thresh: float,
-                  mag_thresh: float,
-                  visual_delivery_latency: float,  # seconds
-                  audio_delivery_latency: float,  # seconds
-                  audio_delivery_shift_correction: float,  # seconds
-                  tmin: float,
-                  tmax: float,
-                  ):
-    """Create trials objects from the raw data files (still in sensor space)."""
-
-    cleaned_dir = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files", "2_cleaned")
-
-    trialwise_sensorspace_dir = Path(data_root_dir, dataset_directory_name, "3_trialwise_sensorspace")
-    trialwise_sensorspace_dir.mkdir(exist_ok=True)
-
-    logs_path = Path(trialwise_sensorspace_dir, "logs")
-    logs_path.mkdir(exist_ok=True)
-
-    global_droplog = []
-
-    print_with_color("Starting trials and ", Fore.GREEN)
-
-    for p in list_of_participants:
-
-        print_with_color("...Concatenating trials", Fore.GREEN)
-
-        cleaned_raws = []
-
-        for run in range(1, number_of_runs + 1):
-            raw_fname = Path(cleaned_dir, p + '_run' + str(run) + '_cleaned_raw.fif.gz')
-            raw = mne.io.Raw(raw_fname, preload=True)
-            cleaned_raws.append(raw)
-
-        raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
-
-        raw_events = mne.find_events(raw, stim_channel='STI101', shortest_event=1)
-
-        print_with_color("...finding visual events", Fore.GREEN)
-
-        # Extract visual events
-        visual_events = mne.pick_events(raw_events, include=[2, 3])
-
-        # Correct for visual equiptment latency error
-        visual_events = mne.event.shift_time_events(visual_events, [2, 3],
-                                                    visual_delivery_latency * 1000,  # convert to milliseconds
-                                                    1)
-
-        trigger_name = 1
-        for trigger in visual_events:
-            trigger[2] = trigger_name  # rename as '1,2,3 ...400' etc
-            if trigger_name == 400:
-                trigger_name = 1
-            else:
-                trigger_name = trigger_name + 1
-
-        #  Test there are the correct number of events
-        assert visual_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
-
-        print_with_color("...finding audio events", Fore.GREEN)
-
-        # Extract audio events
-        audio_events_raw = mne.pick_events(raw_events, include=3)
-
-        # Correct for audio latency error
-        audio_events_raw = mne.event.shift_time_events(audio_events_raw, [3],
-                                                       audio_delivery_latency * 1000,  # convert to milliseconds
-                                                       1)
-
-        audio_events = zeros((len(audio_events_raw) * 400, 3), dtype=int)
-        for run, item in enumerate(audio_events_raw):
-            for trial in range(1, number_of_trials + 1):
-                audio_events[(trial + (number_of_trials * run)) - 1][0] = item[0] + round(
-                    (trial - 1) * 1000 * (1 + audio_delivery_shift_correction))
-                audio_events[(trial + (number_of_trials * run)) - 1][1] = 0
-                audio_events[(trial + (number_of_trials * run)) - 1][2] = trial
-
-        #  Test there are the correct number of events
-        assert audio_events.shape[0] == repetitions_per_runs * number_of_runs * number_of_trials
+        # Validate repetition events
+        assert len(repetition_events) == number_of_runs * repetitions_per_runs, \
+            f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+        picks: NDArray = mne.pick_types(raw.info, meg=True, eeg=True, stim=False, exclude='bads', include=include)
+        _logger.info(f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}")
 
-        print_with_color("... extract and save evoked data", Fore.GREEN)
+        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        for input_stream in input_streams:
+        # Extract trial instances ('epochs')
+        _tmin = latency_range[0]
+        _tmax = (stimulus_length
+                 # extra padding at the end to accommodate range of latencies
+                 + latency_range[1]
+                 # Extra space to account for audio latency drift
+                 + 2)
 
-            if input_stream == 'auditory':
-                events = audio_events
-            else:
-                events = visual_events
+        epochs = mne.Epochs(raw, repetition_events, None, _tmin, _tmax, picks=picks, baseline=(None, None), preload=True)
+        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
-            # Extract trial instances ('epochs')
-            epochs = mne.Epochs(raw, events, None, tmin, tmax, picks=picks,
-                                baseline=(None, None), reject=dict(eeg=eeg_thresh, grad=grad_thresh, mag=mag_thresh),
-                                preload=True)
+        # Log which channels are worst
+        dropfig = epochs.plot_drop_log(subject=p)
+        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
 
-            # 	Log which channels are worst
-            dropfig = epochs.plot_drop_log(subject=p)
-            dropfig.savefig(Path(logs_path, input_stream + '_drop-log_' + p + '.jpg'))
+        # Save individual repetitions
+        for i in range(len(repetition_events)):
+            evoked = epochs[str(i)].average()
+            _logger.info(f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
+            evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
-            global_droplog.append('[' + input_stream + ']' + p + ':' + str(epochs.drop_log_stats(epochs.drop_log)))
+        # Average over repetitions
+        evoked = epochs.average()
+        _logger.info(f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
 
-            # Make and save trials as evoked data
-#            for i in range(1, number_of_trials + 1):
-                # evoked_one.plot() #(on top of each other)
-                # evoked_one.plot_image() #(side-by-side)
-
-#                evoked = epochs[str(i)].average()  # average epochs and get an Evoked dataset.
-#                evoked.save(
-#                    'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
-#                        i) + '-ave.fif', overwrite=True)
-
-        # save grand average
-#        print_with_color(f"... save grand average", Fore.GREEN)
-#
-#        evoked_grandaverage = epochs.average()
-#        evoked_grandaverage.save(
-#            'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_grand_average/' + p + '-grandave.fif',
-#            overwrite=True)
-
-# Save global droplog
-#    with open('data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/logs/drop-log.txt', 'a') as file:
-#        file.write('Average drop rate for each participant\n')
-#        for item in global_droplog:
-#            file.write(item + '/n')
-
-    # Create average participant EMEG
-
-#    print_with_color(f"... save participant average", Fore.GREEN)
-
-#    for input_stream in input_streams:
-#        for trial in range(1, number_of_trials + 1):
-#            evokeds_list = []
-#            for p in list_of_participants:
-##                individual_evoked = mne.read_evokeds(
-#                    'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/' + p + '_item' + str(
-##                        trial) + '-ave.fif', condition=str(trial))
-#                evokeds_list.append(individual_evoked)
-#
-##            average_participant_evoked = mne.combine_evoked(evokeds_list, weights="nave")
-#            average_participant_evoked.save(
-#                'data/' + dataset_directory_name + '/interim_preprocessing_files/3_evoked_sensor_data/evoked_data/' + input_stream + '/item' + str(
-#                    trial) + '-ave.fif', overwrite=True)
+        evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
 
 def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, machine_used: str, plot: bool = True):
@@ -715,10 +526,10 @@ def apply_automatic_bad_channel_detection(raw_fif_data: mne.io.Raw, machine_used
     raw_check = raw_fif_data.copy()
 
     fine_cal_file = Path(Path(__file__).parent.parent,
-                         'kymata-toolbox-data', 'cbu_specific_files',
+                         'kymata-core-data', 'cbu_specific_files',
                          'sss_cal' + machine_used + '.dat')
     crosstalk_file = Path(Path(__file__).parent.parent,
-                          'kymata-toolbox-data', 'cbu_specific_files',
+                          'kymata-core-data', 'cbu_specific_files',
                           'ct_sparse' + machine_used + '.fif')
 
     auto_noisy_chs, auto_flat_chs, auto_scores = mne.preprocessing.find_bad_channels_maxwell(

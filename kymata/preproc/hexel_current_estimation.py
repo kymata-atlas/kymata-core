@@ -1,7 +1,12 @@
+from logging import getLogger
 from os import path
 from pathlib import Path
+import numpy as np
+import nibabel as nib
 
 import mne
+
+_logger = getLogger(__file__)
 
 
 def create_current_estimation_prerequisites(data_root_dir, config: dict):
@@ -13,7 +18,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
     interim_preprocessing_directory_name = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
-    #mri_structural_type = config['mri_structural_type'] 
+    # mri_structural_type = config['mri_structural_type']
     mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
 
     '''    
@@ -134,11 +139,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
                                      "src_files",
                                      participant + "_ico5-src.fif"), src)
 
-    #        mne.viz.plot_bem(subject=participant,
-    #                         subjects_dir=mri_structurals_directory,
-    #                         brain_surfaces="white",
-    #                         orientation="coronal",
-    #                         slices=[50, 100, 150, 200])
+        fig = mne.viz.plot_bem(subject=participant,
+                             subjects_dir=mri_structurals_directory,
+                             brain_surfaces=["white"],
+                             orientation="coronal",
+                             slices=[50, 100, 150, 200])
+        fig.savefig(Path(interim_preprocessing_directory_name, "4_hexel_current_reconstruction", "bem_checks", participant + "_bem_sliced.png"))
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
@@ -158,8 +164,8 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         mne.bem.write_bem_solution(Path(mri_structurals_directory, participant, 'bem',
                                         output_filename), bem_sol, overwrite=True)
 
-def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
+def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
 
@@ -184,30 +190,39 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # Compute forward solution
     for participant in list_of_participants:
-         fwd = mne.make_forward_solution(
-             # Path(Path(path.abspath("")), "data",
-             Path(data_root_dir,
-                  dataset_directory_name,
-                  'raw_emeg', participant, participant +
-                  '_run1_raw.fif'), # note this file is only used for the sensor positions.
-             trans=Path(coregistration_dir, participant + '-trans.fif'),
-             src=Path(src_dir, participant + '_ico5-src.fif'),
-             bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
-             meg=config['meg'],
-             eeg=config['eeg'],
-             mindist=5.0,
-             n_jobs=None,
-             verbose=True
-         )
-         print(fwd)
-         if config['meg'] and config['eeg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd, overwrite=True)
-         elif config['meg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-megonly.fif'), fwd)
-         elif config['eeg']:
-             mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd-eegonly.fif'), fwd)
-         else:
-             raise Exception('eeg and meg in the dataset_config file cannot be both False')
+
+        fwd = mne.make_forward_solution(
+            Path(data_root_dir,
+                 dataset_directory_name,
+                 'raw_emeg', participant, participant +
+                 '_run1_raw.fif'),  # note this file is only used for the sensor positions.
+            trans=Path(coregistration_dir, participant + '-trans.fif'),
+            src=Path(src_dir, participant + '_ico5-src.fif'),
+            bem=Path(mri_structurals_directory, participant, "bem", participant + '-5120-5120-5120-bem-sol.fif'),
+            meg=config['meg'],
+            eeg=config['eeg'],
+            mindist=5.0,
+            n_jobs=None,
+            verbose=True
+        )
+        print(fwd)
+
+        # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
+        # which does not include those in the medial wall)
+        labels = mne.read_labels_from_annot(subject=participant,
+                                            subjects_dir=mri_structurals_directory,
+                                            parc='aparc.a2009s',
+                                            hemi='both')
+        fwd = mne.forward.restrict_forward_to_label(fwd, labels)
+
+        if config['meg'] and config['eeg']:
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-fwd.fif'), fwd=fwd, overwrite=True)
+        elif config['meg']:
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-megonly-fwd.fif'), fwd=fwd)
+        elif config['eeg']:
+            mne.write_forward_solution(Path(forward_sol_dir, participant + '-eegonly-fwd.fif'), fwd=fwd)
+        else:
+            raise Exception('eeg and meg in the dataset_config file cannot be both False')
 
     # Compute inverse operator
 
@@ -221,26 +236,24 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         elif config['meg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-fwd-megonly.fif'))
+                participant + '-megonly-fwd.fif'))
         elif config['eeg']:
             fwd = mne.read_forward_solution(Path(
                 forward_sol_dir,
-                participant + '-fwd-eegonly.fif'))
-            
+                participant + '-eegonly-fwd.fif'))
+
         # Read noise covariance matrix
         if config['duration'] is None or config['cov_method'] != 'emptyroom':
             noise_cov = mne.read_cov(str(Path(
-                interim_preprocessing_directory,
-                '3_evoked_sensor_data',
-                'covariance_grand_average',
+                hexel_current_reconstruction_dir,
+                'noise_covariance_files',
                 participant + "-" + config['cov_method'] + '-cov.fif')))
         else:
             noise_cov = mne.read_cov(str(Path(
-            interim_preprocessing_directory,
-                '3_evoked_sensor_data',
-                'covariance_grand_average',
+                hexel_current_reconstruction_dir,
+                'noise_covariance_files',
                 participant + "-" + config['cov_method'] + str(config['duration']) + '-cov.fif')))
-        
+
         # note this file is only used for the sensor positions.
         raw = mne.io.Raw(Path(
             Path(path.abspath("")),
@@ -259,33 +272,178 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         if config['meg'] and config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
-                        inverse_operator_dir,
-                        participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
+                    inverse_operator_dir,
+                    participant + '_ico5-3L-loose02-cps-nodepth-' + config['cov_method'] + '-inv.fif')),
                 inverse_operator, overwrite=True)
         elif config['meg']:
             if config['duration'] is None:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
-                            inverse_operator_dir,
-                            participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')),
+                        inverse_operator_dir,
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + '-inv.fif')),
                     inverse_operator)
             else:
                 mne.minimum_norm.write_inverse_operator(
                     str(Path(
-                            inverse_operator_dir,
-                            participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(config['duration']) + '-inv.fif')),
-                    inverse_operator)               
+                        inverse_operator_dir,
+                        participant + '_ico5-3L-loose02-cps-nodepth-megonly-' + config['cov_method'] + str(
+                            config['duration']) + '-inv.fif')),
+                    inverse_operator)
         elif config['eeg']:
             mne.minimum_norm.write_inverse_operator(
                 str(Path(
-                        inverse_operator_dir,
-                        participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')),
+                    inverse_operator_dir,
+                    participant + '_ico5-3L-loose02-cps-nodepth-eegonly-' + config['cov_method'] + '-inv.fif')),
 
                 inverse_operator)
 
+def confirm_digitisation_locations(data_root_dir, config):
+
+    list_of_participants = config['participants']
+
+    dataset_directory_name = config['dataset_directory_name']
+    interim_preprocessing_directory = Path(data_root_dir, dataset_directory_name, "interim_preprocessing_files")
+    hexel_current_reconstruction_dir = Path(interim_preprocessing_directory, "4_hexel_current_reconstruction")
+    mri_structurals_directory = Path(data_root_dir, dataset_directory_name, config['mri_structurals_directory'])
+    coregistration_dir = Path(hexel_current_reconstruction_dir, "coregistration_files")
+    src_dir = Path(hexel_current_reconstruction_dir, "src_files")
+    fwd_dir = Path(hexel_current_reconstruction_dir, "forward_sol_files")
+    coregistration_checks_dir = Path(coregistration_dir, "confirmation_of_digitisation_locations")
+    helmet_intersection_check_dir = Path(coregistration_checks_dir, 'helmet-intersection-check')
+    sensor_location_check_dir = Path(coregistration_checks_dir, 'sensor-location-check')
+    src_check_dir = Path(coregistration_checks_dir, 'src-check')
+    fwd_check_dir = Path(coregistration_checks_dir, 'fwd-check')
+    medial_wall_omitted_check_dir = Path(coregistration_checks_dir, 'medial-wall-omitted-check')
+    side_check_dir = Path(coregistration_checks_dir, 'side-check')
+
+    coregistration_checks_dir.mkdir(exist_ok=True)
+    helmet_intersection_check_dir.mkdir(exist_ok=True)
+    sensor_location_check_dir.mkdir(exist_ok=True)
+    src_check_dir.mkdir(exist_ok=True)
+    fwd_check_dir.mkdir(exist_ok=True)
+    medial_wall_omitted_check_dir.mkdir(exist_ok=True)
+    side_check_dir.mkdir(exist_ok=True)
+
+    for participant in list_of_participants:
+
+        raw_fname = Path(interim_preprocessing_directory, '2_cleaned', participant + '_run1_cleaned_raw.fif.gz')
+        trans_fname = Path(coregistration_dir, participant + '-trans.fif')
+        src_name = Path(src_dir, participant + '_ico5-src.fif')
+        fwd_name = Path(fwd_dir, participant + '-fwd.fif')
+
+        raw = mne.io.read_raw_fif(raw_fname)
+        trans = mne.read_trans(trans_fname)
+        src = mne.read_source_spaces(src_name)
+        fwd = mne.read_forward_solution(fwd_name)
+
+        fwd_fixed = mne.convert_forward_solution(
+            fwd, surf_ori=True, force_fixed=True, use_cps=True
+        )
+
+        # Load the T1 file and change the header information to the correct units
+        t1w = nib.load(Path(mri_structurals_directory, participant, "mri", "T1.mgz"))
+        t1w = nib.Nifti1Image(t1w.dataobj, t1w.affine)
+        t1w.header["xyzt_units"] = np.array(10, dtype="uint8")
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["head-dense", "white"],
+            show_axes=True,
+            dig=True,
+            meg={"helmet": 0.1,
+                 "sensors": 0.1},
+            coord_frame="meg",
+            mri_fiducials="estimated",
+        )
+        mne.viz.set_3d_view(fig, 0, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(helmet_intersection_check_dir, participant+'-helmet-intersection-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["head-dense", "white"],
+            show_axes=True,
+            dig=True,
+            eeg=dict(original=0, projected=1),
+            meg={"sensors": 0.1},
+            coord_frame="meg",
+            mri_fiducials="estimated",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(sensor_location_check_dir, participant + '-sensor-location-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            src=src,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            eeg=False,
+            dig='fiducials',
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(src_check_dir, participant + '-src-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 45, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(fwd_check_dir, participant + '-fwd-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant, 
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 0, 180, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(medial_wall_omitted_check_dir, participant + '-medial-wall-omitted-check.png'))
+
+        fig = mne.viz.plot_alignment(
+            raw.info,
+            trans=trans,
+            subject=participant,
+            dig=False,
+            eeg=False,
+            fwd=fwd_fixed,
+            subjects_dir=mri_structurals_directory,
+            surfaces=["white"],
+            show_axes=True,
+            meg={"sensors": 0.0},
+            coord_frame="meg",
+        )
+        mne.viz.set_3d_view(fig, 0, 90, distance=0.4, focalpoint=(0.0, 0.0, 0.0))
+        fig.plotter.screenshot(Path(side_check_dir, participant + '-side-check.png'))
+
+
 
 def create_hexel_morph_maps(data_root_dir, config: dict):
-
     list_of_participants = config['participants']
     dataset_directory_name = config['dataset_directory_name']
 
@@ -311,7 +469,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
         # First compute morph matrices for participant
         if not path.isfile(morphmap_filename):
-            
+
             # read the src space not from the original but from the version in fwd or
             # inv, incase any vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
@@ -319,7 +477,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 forward_sol_dir,
                 participant + '-fwd.fif'))
             src_from = fwd['src']
-            
+
             src_to = mne.read_source_spaces(Path(
                 src_dir,
                 'fsaverage_ico5-src.fif'))
@@ -333,36 +491,4 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
             )
             morph.save(morphmap_filename)
         else:
-            print("Morph maps already created")
-
-
-def average_participants_hexel_currents(participants, inputstream):
-    from functools import reduce
-
-    dataset_root = Path('/imaging/at03/NKG_Data_Sets/DATASET_3-01_visual-and-auditory/')
-
-    with Path(dataset_root, 'items.txt').open("r") as f:
-        words = list(f.read().split())
-
-    stc_dir = Path(dataset_root,
-                   '4-single-trial-source-data',
-                   'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
-                   inputstream)
-
-    for w in words:
-        stcs = [
-            mne.read_source_estimate(
-                str(Path(stc_dir, f"{subject}{w}-lh.stc")),
-                subject='fsaverage')
-            for subject in participants
-        ]
-
-        # take mean average
-        stc_avg = reduce(lambda x, y: x + y, stcs)
-        stc_avg /= len(stcs)
-        stc_avg.save(str(Path(
-            dataset_root,
-            '5-averaged-by-trial-data',
-            'vert10242-nodepth-diagonly-snr1-signed-fsaverage-baselineNone',
-            inputstream,
-            w)))
+            _logger.info("Morph maps already created")

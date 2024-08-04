@@ -1,12 +1,29 @@
 [tool.poetry]
-name = "kymata-toolbox"
-version = "0.1.0"
-description = ""
+name = "kymata"
+version = "1.0.0"
+description = "Core Kymata codebase, including statistical analysis and plotting tools"
 authors = [
-    "Andrew Thwaites <acgt2@cam.ac.uk>",
-    "Cai Wingfield <cai@caiwingfield.net>"
+    "Kymata Research Group <acgt2@cam.ac.uk>",
+    "Lakra, Anirudh <anirudh.lakra.19@alumni.ucl.ac.uk>",
+    "Parish, Oliver <oliver.parish.23@ucl.ac.uk>",
+    "Thwaites, Andrew <acgt2@cam.ac.uk>",
+    "Wingfield, Cai <cai@caiwingfield.net>",
+    "Yang, Chentianyi <cy334@cam.ac.uk>",
 ]
+homepage = "https://kymata.org"
+repository = "https://github.com/kymata-atlas/kymata-core"
+documentation = "https://kymata-atlas.github.io/kymata-core/"
+readme = "README.md"
 packages = [{include = "kymata"}]
+keywords = ["neuroscience", "neuroimaging"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization"
+]
 
 [tool.poetry.dependencies]
 python = "~3.11"
@@ -30,11 +47,12 @@ pyqt6 = "^6.6.1"
 h5io = "^0.1.9"
 mkdocs-material = "^9.5.24"
 mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+twine = "^5.1.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.2"
+pytest = "^8.3.2"
 ipdb = "^0.13.13"
-ruff = "^0.2.2"
+ruff = "^0.5.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
