@@ -5,3 +5,4 @@
 *.err.txt
 *.out.txt
 *.log.txt
+*.trace.txt

@@ -28,7 +28,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     # Set location in the Kymata Project directory
     # where the converted MRI structurals will reside, and create the folder structure
     $ freesurfer_6.0.0
-    $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4-english-narratives/raw_mri_structurals/
+    $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4-english_narratives/raw_mri_structurals/
     for all participants:
         $ mksubjdirs participant_01 # note - this appears to ignore SUBJECTS_DIR and uses the folder you are in.
 
