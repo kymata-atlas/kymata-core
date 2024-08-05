@@ -60,7 +60,7 @@ def convert_meg_to_bids(participant, new_id, task, input_base_path, output_base_
     # Iterate over files in participant directory
     participant_path = os.path.join(input_base_path, participant)
     for file in os.listdir(participant_path):
-        if file.endswith('.fif'):
+        if file.endswith('.fif') and 'raw.' in file:
             task_name = 'rest'
             if 'empty_room' in file:
                 task_name = 'task-emptyroom_run-0'
@@ -68,11 +68,11 @@ def convert_meg_to_bids(participant, new_id, task, input_base_path, output_base_
                 run_number = file.split('_')[2].replace('run', '').replace('.fif', '')
                 task_name = f'task-{task}_run-{run_number}'
 
-            # # Determine new filename
-            # new_filename = f'{participant_id}_{task_name}_meg.fif'
+            # Determine new filename
+            new_filename = f'{participant_id}_{task_name}_meg.fif'
             src = os.path.join(participant_path, file)
-            # dest = os.path.join(meg_dir, new_filename)
-            # shutil.copy(src, dest)
+            dest = os.path.join(meg_dir, new_filename)
+            shutil.copy(src, dest)
 
             # Create corresponding metadata files
             create_metadata_files(participant_id, task_name, src, meg_dir)
