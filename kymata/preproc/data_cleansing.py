@@ -122,7 +122,10 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                 eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                psd_checks_dir.mkdir(exist_ok=True)
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
@@ -147,7 +150,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(list_of_participants: list[st
                     st_correlation=0.980,
                     st_duration=10,
                     destination=(0, 0, 0.04),
+                    # note that using extended_proj/eSSS makes no difference
                     verbose=True)
+
+                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average='mean').plot()
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt='short')
 
@@ -212,7 +219,7 @@ def run_second_pass_cleansing_and_eog_removal(list_of_participants: list[str],
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                # raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels='average')
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -366,6 +373,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=duration_emp, method=reg_method, return_estimators=True)
@@ -397,7 +405,6 @@ def estimate_noise_cov(data_root_dir: str,
                 cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(raw_combined, duration=800, preload=True, reject_by_annotation=False)
-            raw_epoch.set_eeg_reference(ref_channels='average', projection=True, verbose=False)
             cov_eeg = mne.compute_covariance(raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True)
             del cleaned_raws, raw_combined, raw_epoch
 
@@ -415,6 +422,7 @@ def estimate_noise_cov(data_root_dir: str,
                         calibration=fine_cal_file,
                         st_correlation=0.980,
                         st_duration=10,
+                        # note that using extended_proj/eSSS makes no difference
                         verbose=True)
 
             cov_meg = mne.compute_raw_covariance(raw_fif_data_sss, tmin=0, tmax=1, method=reg_method, return_estimators=True)

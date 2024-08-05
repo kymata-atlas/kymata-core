@@ -4,7 +4,7 @@
 <br />
 <div>
       <a href="https://github.com/kymata-atlas/kymata-core">
-        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" height="112" align="left">
+        <img src="https://kymata.org/assets/img/toolbox_logo.png" alt="Logo" height="112" align="left">
       </a>
     <div>
         <div>

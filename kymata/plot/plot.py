@@ -292,7 +292,7 @@ def expression_plot(
         # Style kwargs
         color: Optional[str | dict[str, str] | list[str]] = None,
         ylim: Optional[float] = None,
-        xlims: tuple[Optional[float], Optional[float]] = (-100, 800),
+        xlims: Optional[tuple[float | None, float | None]] = None,
         hidden_functions_in_legend: bool = True,
         title: str = "Function expression",
         fig_size: tuple[float, float] = (12, 7),
@@ -319,28 +319,30 @@ def expression_plot(
             When False, all points are shown on the same axis. Default is True.
         alpha (float, optional): Significance level for statistical tests, defaulting to a 5-sigma threshold.
         color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single
-            color,
-            a dictionary mapping function names to colors, or a list of colors. Default is None.
-        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is
-            None.
-        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default
-            values,
-            or set either entry to None to use the default for that value. Default is (-100, 800).
-        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
-            True.
+            color, a dictionary mapping function names to colors, or a list of colors. Default is None.
+        ylim (Optional[float], optional): The y-axis limit (p-value). Use log10 of the desired value — e.g. if the
+            desired limit is 10^-100, supply ylim=-100. If None, it will be determined automatically. Default is None.
+        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple (in ms). None to use
+            default values, or set either entry to None to use the default for that value. Default is (-100, 800).
+        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend.
+            Default is True.
         title (str, optional): Title over the top axis in the figure. Default is "Function expression".
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
-            `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is visible.
-            `"medial"`: From the left or right side such that the medial (inside) surface of the given hemisphere is visible (at least when in split or single-hemi mode).
+            `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is
+                         visible.
+            `"medial"`: From the left or right side such that the medial (inside) surface of the given hemisphere is
+                        visible (at least when in split or single-hemi mode).
             `"rostral"`: From the front.
             `"caudal"`: From the rear.
             `"dorsal"`: From above, with the front of the brain pointing up.
             `"ventral"`: From below, with the front of the brain pointing up.
-            `"frontal"`: From the front and slightly lateral, with the brain slightly tilted forward (yielding a view from slightly above).
-            `"parietal"`: From the rear and slightly lateral, with the brain slightly tilted backward (yielding a view from slightly above).
+            `"frontal"`: From the front and slightly lateral, with the brain slightly tilted forward (yielding a view
+                         from slightly above).
+            `"parietal"`: From the rear and slightly lateral, with the brain slightly tilted backward (yielding a view
+                          from slightly above).
             `"axial"`: From above with the brain pointing up (same as 'dorsal').
             `"sagittal"`: From the right side.
             `"coronal"`: From the rear.
@@ -354,8 +356,8 @@ def expression_plot(
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
         show_legend (bool, optional): If True, displays the legend. Default is True.
         legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend
-            item.
-            Provide a dictionary mapping true function names to display names. Default is None.
+            item. Provide a dictionary mapping true function names to display names. None applies no grouping.
+            Default is None.
 
     Returns:
         pyplot.Figure: The matplotlib figure object containing the generated plot.
