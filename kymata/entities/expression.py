@@ -82,8 +82,6 @@ class ExpressionSet(ABC):
 
         self._validate_functions_no_duplicates(functions)
 
-        for data in data_blocks.values():
-            assert len(functions) == len(data), _length_mismatch_message
         assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
 
         # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
@@ -101,38 +99,65 @@ class ExpressionSet(ABC):
         # i.e. a dict mapping block names to a DataArray containing data for all functions
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
-        for block_name, data_for_functions in data_blocks.items():
-            for function_name, data in zip(functions, data_for_functions):
-                assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
-                assert len(latencies) == data.shape[1], f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
-            data_array: DataArray = concat(
-                (
-                    DataArray(self._init_prep_data(d),
-                              coords={
-                                  channel_coord_name: channels[block_name],
-                                  DIM_LATENCY: latencies,
-                                  DIM_FUNCTION: [function]
-                              })
-                    for function, d in zip(functions, data_for_functions)
-                ),
-                dim=DIM_FUNCTION,
-                data_vars="all",  # Required by concat of DataArrays
-                )
+        for data in data_blocks.values():
+            if len(functions) == len(data):
+                for block_name, data_for_functions in data_blocks.items():
+                    for function_name, data in zip(functions, data_for_functions):
+                        assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
+                        assert len(latencies) == data.shape[1], f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
+                    data_array: DataArray = concat(
+                        (
+                            DataArray(self._init_prep_data(d),
+                                    coords={
+                                        channel_coord_name: channels[block_name],
+                                        DIM_LATENCY: latencies,
+                                        DIM_FUNCTION: [function]
+                                    })
+                            for function, d in zip(functions, data_for_functions)
+                        ),
+                        dim=DIM_FUNCTION,
+                        data_vars="all",  # Required by concat of DataArrays
+                        )
 
-            # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
-            # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
-            # warn the user about it.
-            if data_array.isnull().any():
-                data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
-                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
-                    nan_warning_sent = True
+                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
+                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
+                    # warn the user about it.
+                    if data_array.isnull().any():
+                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
+                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
+                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                            nan_warning_sent = True
 
-            assert data_array.dims == self._dims
-            assert set(data_array.coords.keys()) == set(self._dims)
-            assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
+                    assert data_array.dims == self._dims
+                    assert set(data_array.coords.keys()) == set(self._dims)
+                    assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
 
-            self._data[block_name] = data_array
+                    self._data[block_name] = data_array
+            
+            else:
+                for block_name, data_for_functions in data_blocks.items():
+                    data_array = DataArray(data_for_functions,
+                                    coords={
+                                        channel_coord_name: channels[block_name],
+                                        DIM_LATENCY: latencies,
+                                        DIM_FUNCTION: functions
+                                    })
+
+                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
+                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
+                    # warn the user about it.
+                    if data_array.isnull().any():
+                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
+                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
+                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                            nan_warning_sent = True
+
+                    assert data_array.dims == self._dims
+                    assert set(data_array.coords.keys()) == set(self._dims)
+                    assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
+
+                    self._data[block_name] = data_array
+            
 
     def _validate_functions_no_duplicates(self, functions):
         if not len(functions) == len(set(functions)):
