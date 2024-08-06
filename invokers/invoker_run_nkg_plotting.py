@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 def main():
 
-    function_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
+    function_family_type = 'ANN' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
 
     # template invoker for printing out expression set .nkgs
