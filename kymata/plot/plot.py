@@ -25,6 +25,8 @@ from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
 
+from tqdm import tqdm
+
 transparent = (0, 0, 0, 0)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -393,8 +395,6 @@ def expression_plot(
         if function not in color:
             color[function] = to_hex(next(cycol))
 
-    print('Start best function selection')
-
     best_functions = expression_set.best_functions()
 
     print('Finish best function selection')
@@ -462,7 +462,7 @@ def expression_plot(
     custom_labels = []
     data_x_min, data_x_max = np.Inf, -np.Inf
     data_y_min             = np.Inf
-    for function in show_only:
+    for function in tqdm(show_only):
 
         custom_label = _custom_label(function)
         if custom_label not in custom_labels:
