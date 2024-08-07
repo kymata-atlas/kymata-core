@@ -14,6 +14,8 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
+import numpy as np
+
 from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
     Latency
 from kymata.entities.iterables import all_equal
@@ -40,7 +42,7 @@ class ExpressionSet(ABC):
     """
 
     def __init__(self,
-                 functions: str | Sequence[str],
+                 functions: str | Sequence[str] | Sequence[Sequence[str]],
                  # Metadata
                  latencies: Sequence[Latency],
                  # In general, we will combine flipped and non-flipped versions
@@ -80,7 +82,10 @@ class ExpressionSet(ABC):
             for bn in self._block_names:
                 data_blocks[bn] = [data_blocks[bn]]
 
-        self._validate_functions_no_duplicates(functions)
+        if isinstance(functions[0], str):
+            self._validate_functions_no_duplicates(functions)
+        else:
+            self._validate_functions_no_duplicates(sum(functions, []))
 
         assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
 
@@ -91,7 +96,10 @@ class ExpressionSet(ABC):
             for bn in self._block_names
         }
         latencies = array(latencies, dtype=LatencyDType)
-        functions = array(functions, dtype=FunctionNameDType)
+        if isinstance(functions[0], str):
+            functions = array(functions, dtype=FunctionNameDType)
+        else:
+            functions = [array(function_block, dtype=FunctionNameDType) for function_block in functions]
 
         # Input value `data_blocks` has type something like dict[str, list[array]].
         #  i.e. a dict mapping block names to a list of 2d data volumes, one for each function
@@ -100,7 +108,7 @@ class ExpressionSet(ABC):
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
         for data in data_blocks.values():
-            if len(functions) == len(data):
+            if isinstance(data, list) and data[0].ndim == 2:
                 for block_name, data_for_functions in data_blocks.items():
                     for function_name, data in zip(functions, data_for_functions):
                         assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
@@ -136,12 +144,27 @@ class ExpressionSet(ABC):
             
             else:
                 for block_name, data_for_functions in data_blocks.items():
-                    data_array = DataArray(data_for_functions,
-                                    coords={
-                                        channel_coord_name: channels[block_name],
-                                        DIM_LATENCY: latencies,
-                                        DIM_FUNCTION: functions
-                                    })
+                    if not isinstance(data_for_functions, list):
+                        data_array = DataArray(data_for_functions,
+                                        coords={
+                                            channel_coord_name: channels[block_name],
+                                            DIM_LATENCY: latencies,
+                                            DIM_FUNCTION: functions
+                                        })
+                    else:
+                        data_array: DataArray = concat(
+                            (
+                                DataArray(d,
+                                        coords={
+                                            channel_coord_name: channels[block_name],
+                                            DIM_LATENCY: latencies,
+                                            DIM_FUNCTION: function
+                                        })
+                                for function, d in zip(functions, data_for_functions)
+                            ),
+                            dim=DIM_FUNCTION,
+                            data_vars="all",  # Required by concat of DataArrays
+                            )
 
                     # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
                     # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
@@ -154,7 +177,10 @@ class ExpressionSet(ABC):
 
                     assert data_array.dims == self._dims
                     assert set(data_array.coords.keys()) == set(self._dims)
-                    assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
+                    if isinstance(functions, list):
+                        assert array_equal(data_array.coords[DIM_FUNCTION].values, np.concatenate(functions))
+                    else:
+                        assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
 
                     self._data[block_name] = data_array
             
@@ -510,16 +536,11 @@ class SensorExpressionSet(ExpressionSet):
         assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
-        functions = []
-        data = []
-        for expr_set in [self, other]:
-            for i, function in enumerate(expr_set.functions):
-                functions.append(function)
-                data.append(expr_set._data[BLOCK_SCALP].data[:, :, i])
         return SensorExpressionSet(
-            functions=functions,
-            sensors=self.sensors, latencies=self.latencies,
-            data=data,
+            functions=[self.functions, other.functions],
+            sensors=self.sensors, 
+            latencies=self.latencies,
+            data=[self._data[BLOCK_SCALP].data, other._data[BLOCK_SCALP].data],
         )
 
     def __getitem__(self, functions: str | Sequence[str]) -> SensorExpressionSet:
