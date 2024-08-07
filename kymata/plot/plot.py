@@ -393,7 +393,11 @@ def expression_plot(
         if function not in color:
             color[function] = to_hex(next(cycol))
 
+    print('Start best function selection')
+
     best_functions = expression_set.best_functions()
+
+    print('Finish best function selection')
 
     if paired_axes:
         if isinstance(expression_set, HexelExpressionSet):
