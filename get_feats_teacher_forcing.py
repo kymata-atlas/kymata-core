@@ -22,21 +22,24 @@ w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
 
-data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
+data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
 # data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
 T_max = 401 #seconds
 
-# func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
-func_dir = '/imaging/woolgar/projects/Tianyi/data'
+func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
+# func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
-func_name = 'whisper_all_no_reshape_large_teacher'
+size = 'large'
+
+func_name = f'whisper_{size}_teacher'
 
 features = {}
 
 def get_features(name):
   def hook(model, input, output):
-    if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
+    # if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
+    if isinstance(output,torch.Tensor) and ('final_layer_norm' in name or 'fc2' in name):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
@@ -124,9 +127,9 @@ if whisper_outs:
     model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
     tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-tiny")
   else:
-    processor = WhisperProcessor.from_pretrained("openai/whisper-large")
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
-    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-large")
+    processor = WhisperProcessor.from_pretrained(f"openai/whisper-{size}")
+    model = WhisperForConditionalGeneration.from_pretrained(f"openai/whisper-{size}")
+    tokenizer = WhisperTokenizer.from_pretrained(f"openai/whisper-{size}")
 
   for name, layer in model.named_modules():
     # import ipdb;ipdb.set_trace()
@@ -136,8 +139,8 @@ if whisper_outs:
   reference_word_piece = []
 
   for i in range(14):
-    audio_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.wav')
-    transcription_path = os.path.join(data_path, 'stimuli/tianyi_whisper', f'segment_{i}.txt')
+    audio_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.wav')
+    transcription_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.txt')
 
     # Load audio segment
     audio_data, sr = librosa.load(audio_path, sr=16_000)
@@ -192,10 +195,8 @@ if whisper_outs and save_outs:
 
   # s_num = T_max * 1000
 
-  # import ipdb;ipdb.set_trace()
-
   # Check if the directory exists, if not, create it
-  directory = f'{func_dir}/predicted_function_contours/asr_models/'
+  directory = f'{func_dir}/predicted_function_contours/asr_models/whisper_fc2_and_final_layer_norm/'
   if not os.path.exists(directory):
     os.makedirs(directory)
 
@@ -203,7 +204,7 @@ if whisper_outs and save_outs:
   if not os.path.isfile(f'{directory}{func_name}.npz'):
     np.savez(f'{directory}{func_name}.npz', **features)
 
-  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
+  if not os.path.isfile(f"{directory}{func_name}_whisper_transcription.txt"):
     text = "\n".join(reference_word_piece)
-    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
+    with open(f"{directory}{func_name}_whisper_transcription.txt", "w") as file:
       file.write(text)

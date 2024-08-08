@@ -24,7 +24,7 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/woolgar/projects/Tianyi/kymata-toolbox/ ; \
+    " cd /imaging/woolgar/projects/Tianyi/kymata-core/ ; \
       export VENV_PATH=~/poetry/ ; \
       export HF_HOME=/imaging/woolgar/projects/Tianyi/models ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \

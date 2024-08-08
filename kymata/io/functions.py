@@ -15,7 +15,7 @@ _logger = getLogger(__file__)
 
 
 def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[bool] = None,
-                  n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: int = 201, mfa: bool = False) -> Function:
+                  n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: str = 'ave', mfa: bool = False) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
     if 'neurogram' in func_name:
@@ -85,8 +85,10 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                                 time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
                                 time_stamps_samples = np.append(time_stamps_samples, 402_000)
                             whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
-                            mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
-                            mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
+                            # mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
+                            # mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
+                            mfa_text = load_txt(f'teacher_mfa_text.txt')
+                            mfa_time = np.array(load_txt(f'teacher_mfa_stime.txt')).astype(float)
                             mfa_time_samples = (mfa_time * 1000).astype(int)
                             mfa_time_samples = np.append(mfa_time_samples, 402_000)
                             special_tokens = ['<|en|>', '<|transcribe|>', '<|notimestamps|>', '<|endoftext|>']
