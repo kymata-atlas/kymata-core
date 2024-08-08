@@ -49,7 +49,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
             func = np.mean(func[bruce_neurons[0]:bruce_neurons[1]], axis=0)
 
     elif 'asr_models' in str(function_path_without_suffix):
-        if 'whisper_all_no_reshape' in str(function_path_without_suffix):
+        if 'whisper' in str(function_path_without_suffix):
             if 'logmel' in str(function_path_without_suffix):
                 func = np.load(function_path_without_suffix.with_suffix(".npy"))
             else:
