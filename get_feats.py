@@ -31,7 +31,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_tiny_test'
+func_name = 'whisper_all_no_reshape_large'
 
 features = {}
 timestamps = []
@@ -40,9 +40,9 @@ text_with_time = []
 
 def get_features(name):
   def hook(model, input, output):
-    if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
+    # if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name and 'final_layer_norm' in name) or 'proj_out' in name):
     # if isinstance(output,torch.Tensor) and (('model.decoder.layers' in name) or 'proj_out' in name):
-      import ipdb;ipdb.set_trace()
+    if isinstance(output,torch.Tensor):
       if name in features.keys():
         if name == 'model.encoder.conv1' or name == 'model.encoder.conv2':
           # import ipdb;ipdb.set_trace()
@@ -63,8 +63,8 @@ if whisper_outs:
 
   dataset = dataset[:T_max*16_000]
 
-  processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
-  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+  processor = WhisperProcessor.from_pretrained("openai/whisper-large")
+  model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-large")
   # import ipdb;ipdb.set_trace()
   # for layer in model.children():
   #   layer.register_forward_hook(get_features("feats"))
@@ -221,9 +221,9 @@ if whisper_outs and save_outs:
     plt.plot(timestamps)
     plt.savefig(f'kymata-toolbox-data/output/test/{func_name}_timestamp.png')
     plt.close()
-  if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt"):
+  if not os.path.isfile(f"{directory}{func_name}_whisper_transcription.txt"):
     text = "\n".join(text)
-    with open(f"kymata-toolbox-data/output/test/{func_name}_transcription.txt", "w") as file:
+    with open(f"{directory}{func_name}_whisper_transcription.txt", "w") as file:
       file.write(text)
   if not os.path.isfile(f"kymata-toolbox-data/output/test/{func_name}_transcription_time.txt"):
     text_with_time = "\n".join(text_with_time)
