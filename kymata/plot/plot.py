@@ -734,11 +734,12 @@ def plot_top_five_channels_of_gridsearch(
     figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
     figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
 
-    corr_avrs = np.mean(corrs[:, 0], axis=-2) ** 2 # (n_chans, n_derangs, n_splits, t_steps) -> (n_chans, t_steps)
-    maxs = np.max(corr_avrs, axis=1)
+    # maxs = np.max(corr_avrs, axis=1)
+    maxs = np.min(log_pvalues, axis=1)
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
-    amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
+    # amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
+    amax = np.argmin(log_pvalues) // (n_samples_per_split // 2)
     amaxs = [i for i in amaxs if i != amax]
 
     axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
@@ -750,7 +751,8 @@ def plot_top_five_channels_of_gridsearch(
     axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
     axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
 
-    peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
+    # peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
+    peak_lat_ind = np.argmin(log_pvalues) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
     print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')

@@ -3,8 +3,8 @@ import os
 from kymata.io.nkg import load_expression_set
 
 # Define the base path for the expression sets and the output directory
-base_path = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/fc2_test/mfa/expression_set"
-output_dir = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/fc2_test/fake_log"
+base_path = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ru_narr_en_native/language_pilots_all/expression_set"
+output_dir = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ru_narr_en_native/language_pilots_all/fake_log"
 
 # Ensure the output directory exists
 os.makedirs(output_dir, exist_ok=True)

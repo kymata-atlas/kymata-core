@@ -16,7 +16,7 @@ def asr_models_loop_full():
 
     size = 'large'
 
-    neuron_selection = False
+    neuron_selection = True
 
     exclude_tvl = False
     
@@ -154,6 +154,7 @@ def asr_models_loop_full():
         scatter = ax.scatter(_lats[mask, 0], _lats[mask, 4], c='black', marker='.', s=4, alpha=0.6)
     else:
         scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15)
+        ax.set_ylim(-5, 65)
     cbar = plt.colorbar(scatter, ax=ax, label='layers')
     # ax.scatter(lat_sig[i, :1, 0], lat_sig[i, :1, 3], marker='o')
     #for j in range(_lats.shape[0]):
