@@ -748,7 +748,7 @@ def plot_top_five_channels_of_gridsearch(
     axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
     axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
 
-    peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
+    peak_lat_ind = np.argmax(log_pvalues) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
     print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
