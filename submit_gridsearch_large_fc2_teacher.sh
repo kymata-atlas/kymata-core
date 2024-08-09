@@ -38,6 +38,7 @@ apptainer exec \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --config dataset4.yaml \
         --input-stream auditory \
+        --plot-top-channels \
         --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/whisper_fc2_and_final_layer_norm/whisper_large_teacher' \
         --num-neurons 1280 \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
