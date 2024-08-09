@@ -191,7 +191,7 @@ def do_gridsearch(
             n_splits=n_splits,
             n_samples_per_split=n_samples_per_split,
             latencies=latencies_ms,
-            save_to=None,
+            save_to=plot_location,
             log_pvalues=log_pvalues,
             overwrite=overwrite,
         )
