@@ -221,7 +221,118 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
             func_name += f'_{str(nn_neuron)}'
 
             # import ipdb;ipdb.set_trace()
+        elif 'salmonn' in str(function_path_without_suffix):
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                for j in range(place_holder.shape[0]):
+                    if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                        time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                        time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                        time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                    whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
+                    # mfa_text = load_txt(f'{function_path_without_suffix}_mfa_text.txt')
+                    # mfa_time = np.array(load_txt(f'{function_path_without_suffix}_mfa_stime.txt')).astype(float)
+                    mfa_text = load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_text.txt'))
+                    mfa_time = np.array(load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
+                    mfa_time_samples = (mfa_time * 1000).astype(int)
+                    mfa_time_samples = np.append(mfa_time_samples, 402_000)
+                    special_tokens = ['<|en|>', '<|transcribe|>', '<|notimestamps|>', '<|endoftext|>']
+                    k = 0       # k is the index for whisper space, and i is the index for mfa space
+                    for i in range(len(mfa_time_samples) - 1):
+                        start_idx = mfa_time_samples[i]
+                        end_idx = mfa_time_samples[i + 1]
+                        if start_idx < s_num:
+                            while whisper_text[k] in special_tokens:
+                                k += 1
+                            if mfa_text[i] != whisper_text[k]:
+                                if mfa_text[i] == '<sp>':
+                                    # if whisper_text[k] == '.' or whisper_text[k] == ',':
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                    # print('<sp> in mfa encountered')
+                                else:
+                                    search_txt = whisper_text[k]
+                                    id_tracker = [k]
+                                    if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                        weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                    # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
+                                    while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
+                                        k += 1
+                                        if whisper_text[k] not in special_tokens:
+                                            search_txt += whisper_text[k]
+                                            id_tracker.append(k)
+                                            if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                                weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
+                                    if not os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                    elif sum(weight_tracker) == 0:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                    else:
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
+                                    k += 1
+                                    # print(f'mapping is from the mfa token {[mfa_text[i]]} to the whisper token {[whisper_text[k] for k in id_tracker]}')
+                            else:
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                k += 1
+                                # print('match')
+                    # import ipdb;ipdb.set_trace()
+                    assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
+            else:
+                j = nn_neuron
+                if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                    time_stamps_seconds = np.load(f'{function_path_without_suffix}_timestamp.npy')
+                    time_stamps_samples = (time_stamps_seconds * 1000).astype(int)
+                    time_stamps_samples = np.append(time_stamps_samples, 402_000)
+                whisper_text = [i.lower() for i in load_txt(f'{function_path_without_suffix}_whisper_transcription.txt') if i != '<|startoftranscript|>']
+                mfa_text = load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_text.txt'))
+                mfa_time = np.array(load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
+                mfa_time_samples = (mfa_time * 1000).astype(int)
+                mfa_time_samples = np.append(mfa_time_samples, 402_000)
+                special_tokens = ['<|en|>', '<|transcribe|>', '<|notimestamps|>', '<|endoftext|>']
+                k = 0       # k is the index for whisper space, and i is the index for mfa space
+                for i in range(len(mfa_time_samples) - 1):
+                    start_idx = mfa_time_samples[i]
+                    end_idx = mfa_time_samples[i + 1]
+                    if start_idx < s_num:
+                        while whisper_text[k] in special_tokens:
+                            k += 1
+                        if mfa_text[i] != whisper_text[k]:
+                            if mfa_text[i] == '<sp>':
+                                # if whisper_text[k] == '.' or whisper_text[k] == ',':
+                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                # print('<sp> in mfa encountered')
+                            else:
+                                search_txt = whisper_text[k]
+                                id_tracker = [k]
+                                if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                    weight_tracker = [time_stamps_samples[k+1]-time_stamps_samples[k]]
+                                # combine word pieces in whisper text, and also combine potential '.' and ',' to the following word in whisper
+                                while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
+                                    k += 1
+                                    if whisper_text[k] not in special_tokens:
+                                        search_txt += whisper_text[k]
+                                        id_tracker.append(k)
+                                        if os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                            weight_tracker.append(time_stamps_samples[k+1]-time_stamps_samples[k])
+                                if not os.path.exists(f'{function_path_without_suffix}_timestamp.npy'):
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                elif sum(weight_tracker) == 0:
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                else:
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker], weights=weight_tracker))
+                                k += 1
+                                # print(f'mapping is from the mfa token {[mfa_text[i]]} to the whisper token {[whisper_text[k] for k in id_tracker]}')
+                        else:
+                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                            k += 1
+                            # print('match')
+                # import ipdb;ipdb.set_trace()
+                # assert k == len(whisper_text) - 1, 'end of whisper text not reached'                            
 
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
+            else:
+                func = place_holder[nn_neuron, :400_000]
+            func_name += f'_{str(nn_neuron)}'
+                        
         else:
             func_dict = np.load(function_path_without_suffix.with_suffix(".npz"))
             func = func_dict[func_name]
