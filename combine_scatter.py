@@ -6,17 +6,17 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 64 # 66 # 34
+    layer = 8 # 66 64 34
 
-    neuron = 1280
+    neuron = 384
 
     thres = 20 # 15
 
     x_upper = 800
 
-    size = 'large'
+    size = 'tiny'
 
-    neuron_selection = True
+    neuron_selection = 'layer'
 
     exclude_tvl = False
     
@@ -24,9 +24,9 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/whisper_large_multi_log/encoder_all_der_5/'
+    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tiny/fc2/log/'
 
-    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/low_level_func/log/'
+    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/tvl/log/'
 
     # for i in range(layer):
     #     file_name = f'slurm_log_{i}.txt'
@@ -40,44 +40,63 @@ def asr_models_loop_full():
     #                     ia += 1
     #                 break
 
-    log_dir_1 = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/fc2_test/fake_log/'
+    log_dir_1 = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/fc2/log/'
 
-    log_dir_2 = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/fc2_test/decoder/log/'
+    log_dir_2 = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/fc2/log/'
 
-    for i in range(layer-32):
-        # file_name = f'slurm_log_{i}.txt'
-        file_name = f'model.encoder.layers.{i}.fc2_1279_gridsearch_results.txt'
-        with open(log_dir_1 + file_name, 'r') as f:
-            a = f.readlines()
-            for ia in range(len(a)):
-                if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
-                    for k in range(neuron):
-                        _a = [j for j in a[ia].split()]
-                        try:
-                            if len(_a) == 12:
-                                lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
-                            else:
-                                lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
-                        except:
-                            pass
-                        ia += 1
-                    break
+    # for i in range(layer-32):
+    #     if 'fake' in log_dir_1:
+    #         # file_name = f'model.encoder.layers.{i}.fc2_1279_gridsearch_results.txt'
+    #         file_name = f'model.encoder.layers.{i}.final_layer_norm_1279_gridsearch_results.txt'
+    #     else:
+    #         file_name = f'slurm_log_{i}.txt'
+    #     with open(log_dir_1 + file_name, 'r') as f:
+    #         a = f.readlines()
+    #         for ia in range(len(a)):
+    #             if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
+    #                 for k in range(neuron):
+    #                     _a = [j for j in a[ia].split()]
+    #                     try:
+    #                         if len(_a) == 12:
+    #                             lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+    #                         else:
+    #                             lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+    #                     except:
+    #                         pass
+    #                     ia += 1
+    #                 break
 
-    for i in range(layer-32): # (layer-34)
+    # for i in range(layer-32 if layer == 64 else layer-34): # (layer-34)
+    #     if 'fake' in log_dir_1:
+    #         # file_name = f'model.decoder.layers.{i}.fc2_1279_gridsearch_results.txt'
+    #         file_name = f'model.decoder.layers.{i}.final_layer_norm_1279_gridsearch_results.txt'
+    #     else:
+    #         file_name = f'slurm_log_{i}.txt'
+    #     with open(log_dir_2 + file_name, 'r') as f:
+    #         a = f.readlines()
+    #         for ia in range(len(a)):
+    #             if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
+    #                 for k in range(neuron):
+    #                     _a = [j for j in a[ia].split()]
+    #                     try:
+    #                         if len(_a) == 12:
+    #                             lat_sig[(i+layer-32) % n, (i+layer-32) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+layer-32) // n, float(_a[0].split('_')[-1].rstrip(':'))]
+    #                         else:
+    #                             lat_sig[(i+layer-32) % n, (i+layer-32) // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), (i+layer-32) // n, float(_a[0].split('_')[-1].rstrip(':'))]
+    #                     except: 
+    #                         pass
+    #                     ia += 1
+    #                 break
+    
+    for i in range(layer):
         file_name = f'slurm_log_{i}.txt'
-        with open(log_dir_2 + file_name, 'r') as f:
+        with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
             for ia in range(len(a)):
                 if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        try:
-                            if len(_a) == 12:
-                                lat_sig[(i+layer-32) % n, (i+layer-32) // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), (i+layer-32) // n, float(_a[0].split('_')[-1].rstrip(':'))]
-                            else:
-                                lat_sig[(i+layer-32) % n, (i+layer-32) // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), (i+layer-32) // n, float(_a[0].split('_')[-1].rstrip(':'))]
-                        except: 
-                            pass
+                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -94,26 +113,28 @@ def asr_models_loop_full():
     # import ipdb;ipdb.set_trace()
 
     # Neuron selection
-    if neuron_selection:
+    if neuron_selection is not None:
         col_2 = lat_sig[:, :, 2]
         col_3 = lat_sig[:, :, 3]
         unique_values = np.unique(col_2)
         max_indices = []
-        for val in unique_values:
-            indices = np.where(col_2 == val)
-            col_3_subset = col_3[indices]
-            max_index = indices[1][np.argmax(col_3_subset)]
-            max_indices.append(max_index)
-        # for val in unique_values:
-        #     for i in range(layer):
-        #         # import ipdb;ipdb.set_trace()
-        #         indices = np.where(np.logical_and(col_2 == val, lat_sig[:, :, 4] == i))
-        #         col_3_subset = col_3[indices]
-        #         try:
-        #             max_index = indices[1][np.argmax(col_3_subset)]
-        #             max_indices.append(max_index)
-        #         except:
-        #             pass
+        if neuron_selection == 'all':
+            for val in unique_values:
+                indices = np.where(col_2 == val)
+                col_3_subset = col_3[indices]
+                max_index = indices[1][np.argmax(col_3_subset)]
+                max_indices.append(max_index)
+        else:
+            for val in unique_values:
+                for i in range(layer):
+                    # import ipdb;ipdb.set_trace()
+                    indices = np.where(np.logical_and(col_2 == val, lat_sig[:, :, 4] == i))
+                    col_3_subset = col_3[indices]
+                    try:
+                        max_index = indices[1][np.argmax(col_3_subset)]
+                        max_indices.append(max_index)
+                    except:
+                        pass
         lat_sig = lat_sig[:, max_indices, :]
 
     # import ipdb;ipdb.set_trace()
@@ -154,8 +175,8 @@ def asr_models_loop_full():
         scatter = ax.scatter(_lats[mask, 0], _lats[mask, 4], c='black', marker='.', s=4, alpha=0.6)
     else:
         scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15)
-        ax.set_ylim(-5, 65)
-    cbar = plt.colorbar(scatter, ax=ax, label='layers')
+        cbar = plt.colorbar(scatter, ax=ax, label='layers')
+    ax.set_ylim(-1, layer)
     # ax.scatter(lat_sig[i, :1, 0], lat_sig[i, :1, 3], marker='o')
     #for j in range(_lats.shape[0]):
     #    ax.annotate(j+1, (_lats[j, 0], _lats[j, 3]))
@@ -166,7 +187,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/fc2_test.png', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tiny/fc2/layer_select', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

@@ -12,7 +12,8 @@ os.makedirs(output_dir, exist_ok=True)
 # Iterate over all directories and files in the base path
 for root, dirs, files in os.walk(base_path):
     for file in files:
-        if file.endswith(".nkg"):  # Assuming .nkg is the file extension for the expression sets
+        # if file.endswith(".nkg") and not os.path.isfile(os.path.join(output_dir, f"{os.path.splitext(file)[0]}_results.txt")):  # Assuming .nkg is the file extension for the expression sets
+        if file.endswith(".nkg"):
             file_path = os.path.join(root, file)
             expression_data = load_expression_set(file_path)
             data_array = expression_data.scalp
