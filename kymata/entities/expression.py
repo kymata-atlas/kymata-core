@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple
+from typing import Sequence, Union, get_args, Tuple, TypeVar
 from warnings import warn
 
 from numpy import array, array_equal, ndarray
@@ -196,6 +196,22 @@ class ExpressionSet(ABC):
     def __add__(self, other) -> ExpressionSet:
         pass
 
+    def _add_compatibility_check(self, other) -> None:
+        """
+        Checks whether the `other` ExpressionSet is compatible with this one, for purposes of adding them.
+        Should return silently if all is well.
+        """
+        # Type is the same
+        if type(self) is not type(other):
+            raise ValueError("Can only add ExpressionSets of the same type")
+        # Channels are the same
+        for bn in self._block_names:
+            if not array_equal(self._channels[bn], other._channels[bn]):
+                raise ValueError(f"Can only add ExpressionSets with matching {self.channel_coord_name}s")
+        # Latencies are the same
+        if not array_equal(self.latencies, other.latencies):
+            raise ValueError("Can only add ExpressionSets with matching latencies")
+
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
         # Override this method and provide additional checks after calling super().__eq__(other)
@@ -259,18 +275,33 @@ class ExpressionSet(ABC):
             "value": logp_vals[idxs],
         })
 
-    def rename(self, functions: dict[str, str]) -> None:
+    def rename(self, functions: dict[str, str] = None, channels: dict = None) -> None:
         """
-        Renames the functions within an ExpressionSet.
+        Renames the functions and channels within an ExpressionSet.
 
-        Supply a dictionary mapping old function names to new function names.
+        Supply a dictionary mapping old values to new values.
 
         Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
         """
+        # Default values
+        if functions is None:
+            functions = dict()
+        if channels is None:
+            channels = dict()
+
+        # Validate
         for old, new in functions.items():
             if old not in self.functions:
                 raise KeyError(f"{old} is not a function in this expression set")
+        for old, new in channels.items():
+            for bn in self._block_names:
+                if old not in self._channels[bn]:
+                    raise KeyError(f"{old} is not a {bn} {self.channel_coord_name} in this expression set")
+
+        # Replace
         for bn, data in self._data.items():
+
+            # Functions
             new_names = []
             for old_name in self._data[bn][DIM_FUNCTION].values:
                 if old_name in functions:
@@ -278,6 +309,15 @@ class ExpressionSet(ABC):
                 else:
                     new_names.append(old_name)
             self._data[bn][DIM_FUNCTION] = new_names
+
+            # Channels
+            new_channels = []
+            for old_channel in self._data[bn][self.channel_coord_name].values:
+                if old_channel in channels:
+                    new_channels.append(channels[old_channel])
+                else:
+                    new_channels.append(old_channel)
+            self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
@@ -362,16 +402,20 @@ class HexelExpressionSet(ExpressionSet):
         )
 
     def __copy__(self):
+        data_left:  NDArray = self._data[BLOCK_LEFT].data.todense()
+        data_right: NDArray = self._data[BLOCK_RIGHT].data.todense()
         return HexelExpressionSet(
             functions=self.functions.copy(),
             hexels_lh=self.hexels_left.copy(),
             hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            data_lh=self._data[BLOCK_LEFT].values.copy(),
-            data_rh=self._data[BLOCK_RIGHT].values.copy(),
+            # Slice by function
+            data_lh=[data_left[:, :, i].copy() for i in range(data_left.shape[2])],
+            data_rh=[data_right[:, :, i].copy() for i in range(data_right.shape[2])],
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
+        self._add_compatibility_check(other)
         assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
         assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
@@ -474,14 +518,17 @@ class SensorExpressionSet(ExpressionSet):
         return True
 
     def __copy__(self):
+        data: NDArray = self._data[BLOCK_SCALP].data.todense()
         return SensorExpressionSet(
             functions=self.functions.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
-            data=self._data[BLOCK_SCALP].values.copy(),
+            # Slice by function
+            data=[data[:, :, i].copy() for i in range(data.shape[2])],
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
+        self._add_compatibility_check(other)
         assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
@@ -523,3 +570,18 @@ class SensorExpressionSet(ExpressionSet):
         Note that channels for which the best p-value is 1 will be omitted.
         """
         return super()._best_functions_for_block(BLOCK_SCALP)
+
+
+T_ExpressionSetSubclass = TypeVar('T_ExpressionSetSubclass', bound=ExpressionSet)
+
+
+def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionSetSubclass:
+    """
+    Combines a sequence of `ExpressionSet`s into a single `ExpressionSet`.
+    All must be suitable for combination, e.g. same type, same channels, etc.
+    """
+    if len(expression_sets) == 0:
+        raise ValueError("Cannot combine empty collection of ExpressionSets")
+    if len(expression_sets) == 1:
+        return expression_sets[0]
+    return expression_sets[0] + combine(expression_sets[1:])

@@ -1,7 +1,9 @@
+from copy import copy
+
 import pytest
 import numpy as np
 
-from kymata.entities.expression import SensorExpressionSet, HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+from kymata.entities.expression import SensorExpressionSet, HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY, combine
 from kymata.math.p_values import p_to_logp, logp_to_p
 
 
@@ -25,17 +27,129 @@ def test_unlog_p_array():
     assert np.isclose(logp_to_p(logps), np.array([0.000_1, 0.001, 0.01, 0.1, 1])).all()
 
 
-def test_hes_hexels():
+@pytest.fixture
+def hexel_expression_set_5_hexels() -> HexelExpressionSet:
+    return HexelExpressionSet(functions="function",
+                              hexels_lh=range(5),
+                              hexels_rh=range(5),
+                              latencies=range(10),
+                              data_lh=np.random.randn(5, 10),
+                              data_rh=np.random.randn(5, 10),
+                              )
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_3_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+    sensors = [str(i) for i in range(4)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        # 0   1   2  latencies
+        [1,  .1,  1],  # 0
+        [1,   1, .2],  # 1
+        [.1,  1,  1],  # 2
+        [.2,  1,  1],  # 3 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [1,   1, .2],
+        [1,  .1,  1],
+        [1,  .2,  1],
+        [1,   1, .1],
+    ])))
+    return SensorExpressionSet(functions=["a", "b"],
+                               sensors=sensors,  # 4
+                               latencies=range(3),
+                               data=[function_a_data, function_b_data])
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_4_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+    sensors = [str(i) for i in range(4)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        # 0   1   2   3  latencies
+        [1,  .1,  1,  1],  # 0
+        [1,   1, .2,  1],  # 1
+        [.1,  1,  1,  1],  # 2
+        [.2,  1,  1,  1],  # 3 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [1,   1, .2,  1],
+        [1,  .1,  1,  1],
+        [1,  .2,  1,  1],
+        [1,   1, .1,  1],
+    ])))
+    return SensorExpressionSet(functions=["a", "b"],
+                               sensors=sensors,  # 4
+                               latencies=range(4),
+                               data=[function_a_data, function_b_data])
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_4_different_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+    sensors = [str(i) for i in range(4)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        # 0   1   2   3  latencies
+        [1,  .1,  1,  1],  # 0
+        [1,   1, .2,  1],  # 1
+        [.1,  1,  1,  1],  # 2
+        [.2,  1,  1,  1],  # 3 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [1,   1, .2,  1],
+        [1,  .1,  1,  1],
+        [1,  .2,  1,  1],
+        [1,   1, .1,  1],
+    ])))
+    return SensorExpressionSet(functions=["a", "b"],
+                               sensors=sensors,  # 4
+                               latencies=range(1, 5),
+                               data=[function_a_data, function_b_data])
+
+
+@pytest.fixture
+def sensor_expression_set_5_sensors() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+    sensors = [str(i) for i in range(5)]
+    function_a_data: NDArray = array(p_to_logp(array([
+        # 0   1   2  latencies
+        [1,  .1,  1],  # 0
+        [1,   1, .2],  # 1
+        [.1,  1,  1],  # 2
+        [.2,  1,  1],  # 3
+        [1,  .1,  1],  # 4 sensors
+    ])))
+    function_b_data: NDArray = array(p_to_logp(array([
+        [1,   1, .2],
+        [1,  .1,  1],
+        [1,  .2,  1],
+        [1,   1, .1],
+        [1,   1, .1],
+    ])))
+    return SensorExpressionSet(functions=["a", "b"],
+                               sensors=sensors,  # 5
+                               latencies=range(3),
+                               data=[function_a_data, function_b_data])
+
+
+def test_copy_ses(sensor_expression_set_4_sensors_3_latencies):
+    c = copy(sensor_expression_set_4_sensors_3_latencies)
+    assert sensor_expression_set_4_sensors_3_latencies == c
+
+
+def test_copy_hes(hexel_expression_set_5_hexels):
+    c = copy(hexel_expression_set_5_hexels)
+    assert hexel_expression_set_5_hexels == c
+
+
+def test_hes_hexels_left_equals_right(hexel_expression_set_5_hexels):
     from numpy import array, array_equal
-    es = HexelExpressionSet(functions="function",
-                            hexels_lh=range(5),
-                            hexels_rh=range(5),
-                            latencies=range(10),
-                            data_lh=np.random.randn(5, 10),
-                            data_rh=np.random.randn(5, 10),
-                            )
-    assert array_equal(es.hexels_left, array(range(5)))
-    assert array_equal(es.hexels_right, array(range(5)))
+    assert array_equal(hexel_expression_set_5_hexels.hexels_left, array(range(5)))
+    assert array_equal(hexel_expression_set_5_hexels.hexels_right, array(range(5)))
 
 
 def test_ses_best_function():
@@ -279,6 +393,24 @@ def test_hes_rename_functions():
     assert es == target_es
 
 
+def test_hes_rename_functions_noop():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = copy(es)
+
+    assert es == target_es
+    es.rename()
+    assert es == target_es
+
+
 def test_hes_rename_functions_just_one():
     data_left = [np.random.randn(5, 10) for _ in range(2)]
     data_right = [np.random.randn(5, 10) for _ in range(2)]
@@ -315,3 +447,72 @@ def test_hes_rename_functions_wrong_name():
                             )
     with pytest.raises(KeyError):
         es.rename(functions={"first": "first_renamed", "missing": "second_renamed"})
+
+
+def test_hes_rename_hexels():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(functions=["first", "second"],
+                            hexels_lh=range(5),
+                            hexels_rh=range(5),
+                            latencies=range(10),
+                            data_lh=data_left,
+                            data_rh=data_right,
+                            )
+    target_es = HexelExpressionSet(functions=["first", "second"],
+                                   hexels_lh=range(1, 6),
+                                   hexels_rh=range(1, 6),
+                                   latencies=range(10),
+                                   data_lh=data_left,
+                                   data_rh=data_right,
+                                   )
+    assert es != target_es
+    es.rename(channels={c: c+1 for c in range(5)})
+    assert es == target_es
+
+
+def test_combine_vaild_ses_works(sensor_expression_set_4_sensors_3_latencies):
+    ses_1 = copy(sensor_expression_set_4_sensors_3_latencies)
+    ses_2 = copy(sensor_expression_set_4_sensors_3_latencies)
+    ses_2.rename({
+        f: f"{f}+++"
+        for f in ses_2.functions
+    })
+    combined = combine([ses_1, ses_2])
+    assert np.array_equal(combined.sensors, ses_1.sensors)
+    assert np.array_equal(combined.sensors, ses_2.sensors)
+    assert np.array_equal(combined.latencies, ses_1.latencies)
+    assert np.array_equal(combined.latencies, ses_2.latencies)
+    assert set(ses_1.functions) | set(ses_2.functions) == set(combined.functions)
+
+
+def test_combine_fails_with_mixed_types(hexel_expression_set_5_hexels,
+                                        sensor_expression_set_4_sensors_3_latencies):
+    with pytest.raises(ValueError):
+        combine([hexel_expression_set_5_hexels, sensor_expression_set_4_sensors_3_latencies])
+
+
+def test_combine_fails_with_mismatched_sensor_counts(sensor_expression_set_4_sensors_3_latencies,
+                                                     sensor_expression_set_5_sensors):
+    with pytest.raises(ValueError):
+        combine([sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_5_sensors])
+
+
+def test_combine_fails_with_mismatched_sensor_names(sensor_expression_set_4_sensors_3_latencies):
+    ses_renamed_sensors: SensorExpressionSet = copy(sensor_expression_set_4_sensors_3_latencies)
+    ses_renamed_sensors.rename(channels={c: f"{c}'" for c in sensor_expression_set_4_sensors_3_latencies.sensors})
+    with pytest.raises(ValueError):
+        combine([sensor_expression_set_4_sensors_3_latencies, ses_renamed_sensors])
+
+
+def test_combine_fails_with_mismatched_latency_counts(sensor_expression_set_4_sensors_3_latencies,
+                                                      sensor_expression_set_4_sensors_4_latencies):
+    with pytest.raises(ValueError):
+        combine([sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_4_sensors_4_latencies])
+
+
+def test_combine_fails_with_mismatched_latencies(sensor_expression_set_4_sensors_4_latencies,
+                                                 sensor_expression_set_4_sensors_4_different_latencies):
+    with pytest.raises(ValueError):
+        combine([sensor_expression_set_4_sensors_4_latencies, sensor_expression_set_4_sensors_4_different_latencies])

@@ -13,7 +13,7 @@ from kymata.io.file import PathType
 _logger = getLogger(__file__)
 
 
-def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[bool] = None,
+def load_function(function_path_without_suffix: PathType, func_name: str, replace_nans: Optional[str] = None,
                   n_derivatives: int = 0, bruce_neurons: tuple = (0, 10)) -> Function:
     function_path_without_suffix = Path(function_path_without_suffix)
     func: NDArray
