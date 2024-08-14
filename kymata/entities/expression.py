@@ -192,13 +192,25 @@ class ExpressionSet(ABC):
     def __copy__(self) -> ExpressionSet:
         pass
 
-    def _add_compatible(self, other):
-        if type(self) is not type(other):
-            raise ValueError("Can only add ExpressionSets of the same type")
-
     @abstractmethod
     def __add__(self, other) -> ExpressionSet:
         pass
+
+    def _add_compatibility_check(self, other) -> None:
+        """
+        Checks whether the `other` ExpressionSet is compatible with this one, for purposes of adding them.
+        Should return silently if all is well.
+        """
+        # Type is the same
+        if type(self) is not type(other):
+            raise ValueError("Can only add ExpressionSets of the same type")
+        # Channels are the same
+        for bn in self._block_names:
+            if not array_equal(self._channels[bn], other._channels[bn]):
+                raise ValueError(f"Can only add ExpressionSets with matching {self.channel_coord_name}s")
+        # Latencies are the same
+        if not array_equal(self.latencies, other.latencies):
+            raise ValueError("Can only add ExpressionSets with matching latencies")
 
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
@@ -516,7 +528,7 @@ class SensorExpressionSet(ExpressionSet):
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
-        self._add_compatible(other)
+        self._add_compatibility_check(other)
         assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
