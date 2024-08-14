@@ -68,17 +68,17 @@ def sensor_expression_set_4_sensors_4_latencies() -> SensorExpressionSet:
     from numpy.typing import NDArray
     sensors = [str(i) for i in range(4)]
     function_a_data: NDArray = array(p_to_logp(array([
-        # 0   1   2  latencies
-        [1,  .1,  1],  # 0
-        [1,   1, .2],  # 1
-        [.1,  1,  1],  # 2
-        [.2,  1,  1],  # 3 sensors
+        # 0   1   2   3  latencies
+        [1,  .1,  1,  1],  # 0
+        [1,   1, .2,  1],  # 1
+        [.1,  1,  1,  1],  # 2
+        [.2,  1,  1,  1],  # 3 sensors
     ])))
     function_b_data: NDArray = array(p_to_logp(array([
-        [1,   1, .2],
-        [1,  .1,  1],
-        [1,  .2,  1],
-        [1,   1, .1],
+        [1,   1, .2,  1],
+        [1,  .1,  1,  1],
+        [1,  .2,  1,  1],
+        [1,   1, .1,  1],
     ])))
     return SensorExpressionSet(functions=["a", "b"],
                                sensors=sensors,  # 4
@@ -92,17 +92,17 @@ def sensor_expression_set_4_sensors_4_different_latencies() -> SensorExpressionS
     from numpy.typing import NDArray
     sensors = [str(i) for i in range(4)]
     function_a_data: NDArray = array(p_to_logp(array([
-        # 0   1   2  latencies
-        [1,  .1,  1],  # 0
-        [1,   1, .2],  # 1
-        [.1,  1,  1],  # 2
-        [.2,  1,  1],  # 3 sensors
+        # 0   1   2   3  latencies
+        [1,  .1,  1,  1],  # 0
+        [1,   1, .2,  1],  # 1
+        [.1,  1,  1,  1],  # 2
+        [.2,  1,  1,  1],  # 3 sensors
     ])))
     function_b_data: NDArray = array(p_to_logp(array([
-        [1,   1, .2],
-        [1,  .1,  1],
-        [1,  .2,  1],
-        [1,   1, .1],
+        [1,   1, .2,  1],
+        [1,  .1,  1,  1],
+        [1,  .2,  1,  1],
+        [1,   1, .1,  1],
     ])))
     return SensorExpressionSet(functions=["a", "b"],
                                sensors=sensors,  # 4
