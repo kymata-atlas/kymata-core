@@ -366,17 +366,20 @@ class HexelExpressionSet(ExpressionSet):
         )
 
     def __copy__(self):
+        data_left:  NDArray = self._data[BLOCK_LEFT].data.todense()
+        data_right: NDArray = self._data[BLOCK_RIGHT].data.todense()
         return HexelExpressionSet(
             functions=self.functions.copy(),
             hexels_lh=self.hexels_left.copy(),
             hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            data_lh=self._data[BLOCK_LEFT].values.copy(),
-            data_rh=self._data[BLOCK_RIGHT].values.copy(),
+            # Slice by function
+            data_lh=[data_left[:, :, i].copy() for i in range(data_left.shape[2])],
+            data_rh=[data_right[:, :, i].copy() for i in range(data_right.shape[2])],
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
-        self._add_compatible(other)
+        self._add_compatibility_check(other)
         assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
         assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
@@ -479,11 +482,13 @@ class SensorExpressionSet(ExpressionSet):
         return True
 
     def __copy__(self):
+        data: NDArray = self._data[BLOCK_SCALP].data.todense()
         return SensorExpressionSet(
             functions=self.functions.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
-            data=self._data[BLOCK_SCALP].values.copy(),
+            # Slice by function
+            data=[data[:, :, i].copy() for i in range(data.shape[2])],
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
