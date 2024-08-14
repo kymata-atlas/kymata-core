@@ -432,8 +432,10 @@ def test_combine_vaild_ses_works(sensor_expression_set_4_sensors):
         for f in ses_2.functions
     })
     combined = combine([ses_1, ses_2])
-    assert ses_1.sensors == ses_2.sensors == combined.sensors
-    assert ses_1.latencies == ses_2.latencies == combined.latencies
+    assert np.array_equal(combined.sensors, ses_1.sensors)
+    assert np.array_equal(combined.sensors, ses_2.sensors)
+    assert np.array_equal(combined.latencies, ses_1.latencies)
+    assert np.array_equal(combined.latencies, ses_2.latencies)
     assert set(ses_1.functions) | set(ses_2.functions) == set(combined.functions)
 
 
