@@ -1,13 +1,9 @@
 from copy import deepcopy
 from typing import List, Dict
-from collections import namedtuple
 
 import numpy as np
 
-from .data_tools import IPPMHexel
-
-# convenient tuple/class to hold information about nodes.
-Node = namedtuple('Node', 'magnitude position in_edges')
+from .data_tools import IPPMHexel, Node
 
 
 class IPPMBuilder(object):

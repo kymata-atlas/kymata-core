@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from kymata.ippm.ippm_builder import IPPMBuilder
+from kymata.ippm.build import IPPMBuilder
 from kymata.ippm.data_tools import IPPMHexel
 from kymata.ippm.plot import plot_ippm
 

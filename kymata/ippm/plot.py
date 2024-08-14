@@ -5,7 +5,7 @@ import matplotlib.patheffects as pe
 import numpy as np
 from scipy.interpolate import splev
 
-from .builder import Node
+from kymata.ippm.data_tools import Node
 
 
 def plot_ippm(graph: Dict[str, Node],

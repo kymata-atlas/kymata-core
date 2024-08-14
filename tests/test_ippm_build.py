@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from kymata.ippm.ippm_builder import IPPMBuilder
+from kymata.ippm.build import IPPMBuilder
 from kymata.ippm.data_tools import IPPMHexel
 
 test_hexels = {
@@ -24,6 +24,8 @@ test_hierarchy = {
 }
 test_inputs = ["input"]
 test_hemi = "rightHemisphere"
+
+
 def map_mag_to_size(x):
     return -10 * np.log10(x)
 
