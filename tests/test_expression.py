@@ -114,7 +114,7 @@ def sensor_expression_set_4_sensors_4_different_latencies() -> SensorExpressionS
 def sensor_expression_set_5_sensors() -> SensorExpressionSet:
     from numpy import array
     from numpy.typing import NDArray
-    sensors = [str(i) for i in range(4)]
+    sensors = [str(i) for i in range(5)]
     function_a_data: NDArray = array(p_to_logp(array([
         # 0   1   2  latencies
         [1,  .1,  1],  # 0
@@ -487,28 +487,32 @@ def test_combine_vaild_ses_works(sensor_expression_set_4_sensors_3_latencies):
     assert set(ses_1.functions) | set(ses_2.functions) == set(combined.functions)
 
 
-def test_combine_fails_with_mixed_types(hexel_expression_set_5_hexels, sensor_expression_set_4_sensors_3_latencies):
+def test_combine_fails_with_mixed_types(hexel_expression_set_5_hexels,
+                                        sensor_expression_set_4_sensors_3_latencies):
     with pytest.raises(ValueError):
         combine([hexel_expression_set_5_hexels, sensor_expression_set_4_sensors_3_latencies])
 
 
-def test_combine_fails_with_mismatched_sensor_counts(sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_5_sensors):
+def test_combine_fails_with_mismatched_sensor_counts(sensor_expression_set_4_sensors_3_latencies,
+                                                     sensor_expression_set_5_sensors):
     with pytest.raises(ValueError):
         combine([sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_5_sensors])
 
 
 def test_combine_fails_with_mismatched_sensor_names(sensor_expression_set_4_sensors_3_latencies):
     ses_renamed_sensors: SensorExpressionSet = copy(sensor_expression_set_4_sensors_3_latencies)
-    ses_renamed_sensors.rename(channels={c: c+1 for c in sensor_expression_set_4_sensors_3_latencies.sensors})
+    ses_renamed_sensors.rename(channels={c: f"{c}'" for c in sensor_expression_set_4_sensors_3_latencies.sensors})
     with pytest.raises(ValueError):
         combine([sensor_expression_set_4_sensors_3_latencies, ses_renamed_sensors])
 
 
-def test_combine_fails_with_mismatched_latency_counts(sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_4_sensors_4_latencies):
+def test_combine_fails_with_mismatched_latency_counts(sensor_expression_set_4_sensors_3_latencies,
+                                                      sensor_expression_set_4_sensors_4_latencies):
     with pytest.raises(ValueError):
         combine([sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_4_sensors_4_latencies])
 
 
-def test_combine_fails_with_mismatched_latencies(sensor_expression_set_4_sensors_4_latencies, sensor_expression_set_4_sensors_4_different_latencies):
+def test_combine_fails_with_mismatched_latencies(sensor_expression_set_4_sensors_4_latencies,
+                                                 sensor_expression_set_4_sensors_4_different_latencies):
     with pytest.raises(ValueError):
         combine([sensor_expression_set_4_sensors_4_latencies, sensor_expression_set_4_sensors_4_different_latencies])
