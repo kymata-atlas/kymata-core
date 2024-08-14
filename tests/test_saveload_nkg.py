@@ -1,3 +1,8 @@
+"""
+Tests the saving and loading of .nkg files.
+"""
+
+import pytest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -120,3 +125,17 @@ def test_load_v0_4_sensor_nkg():
     assert len(es.latencies) == 10
     assert len(es.sensors) == 305
     assert es.scalp.shape == (305, 10, 1)
+
+
+def test_load_multiple_files():
+    v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor.nkg")
+    v04_renamed_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor_renamed_function.nkg")
+    separate = load_expression_set(v04_path) + load_expression_set(v04_renamed_path)
+    together = load_expression_set([v04_path, v04_renamed_path])
+    assert len(separate.functions) == 2
+    assert separate == together
+
+
+def test_multiple_files_empty_list():
+    with pytest.raises(ValueError):
+        load_expression_set([])
