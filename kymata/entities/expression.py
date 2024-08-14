@@ -263,18 +263,33 @@ class ExpressionSet(ABC):
             "value": logp_vals[idxs],
         })
 
-    def rename(self, functions: dict[str, str]) -> None:
+    def rename(self, functions: dict[str, str] = None, channels: dict = None) -> None:
         """
-        Renames the functions within an ExpressionSet.
+        Renames the functions and channels within an ExpressionSet.
 
-        Supply a dictionary mapping old function names to new function names.
+        Supply a dictionary mapping old values to new values.
 
         Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
         """
+        # Default values
+        if functions is None:
+            functions = dict()
+        if channels is None:
+            channels = dict()
+
+        # Validate
         for old, new in functions.items():
             if old not in self.functions:
                 raise KeyError(f"{old} is not a function in this expression set")
+        for old, new in channels.items():
+            for bn in self._block_names:
+                if old not in self._channels[bn]:
+                    raise KeyError(f"{old} is not a {bn} {self.channel_coord_name} in this expression set")
+
+        # Replace
         for bn, data in self._data.items():
+
+            # Functions
             new_names = []
             for old_name in self._data[bn][DIM_FUNCTION].values:
                 if old_name in functions:
@@ -282,6 +297,15 @@ class ExpressionSet(ABC):
                 else:
                     new_names.append(old_name)
             self._data[bn][DIM_FUNCTION] = new_names
+
+            # Channels
+            new_channels = []
+            for old_channel in self._data[bn][self.channel_coord_name].values:
+                if old_channel in channels:
+                    new_channels.append(channels[old_channel])
+                else:
+                    new_channels.append(old_channel)
+            self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
