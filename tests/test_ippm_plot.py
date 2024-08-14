@@ -1,36 +1,19 @@
-from unittest.mock import patch
+"""
+Testing Philosophy for IPPM plotting functionality
+==================================
+It is a pain to test matplotlib plotting works correctly. Therefore, we will omit testing
+that code since it will be tested by actively using the IPPM module.
 
-from kymata.ippm.plot import IPPMPlotter
-from tests.test_ippm_data_tools import Node
+On the other hand, rather than have no tests at all, we can still test the numerical computations
+even though they are private functions.
+"""
+
+from unittest.mock import patch
 
 import numpy as np
 
-"""
-    Testing Philosophy for IPPMPlotter
-    ==================================
-    It is a pain to test matplotlib plotting works correctly. Therefore, we will omit testing
-    that code since it will be tested by actively using the IPPM module.
+from kymata.ippm.plot import _make_bspline_paths, _make_bspline_ctr_points, _make_bspline_path
 
-    On the other hand, rather than have no tests at all, we can still test the numerical computations
-    even though they are private functions.
-"""
-
-test_graph = {
-    "input": Node(100, (0, 0.2), []),
-    "func1-0": Node(280, (10, 0.4), ["input"]),
-    "func1-1": Node(790, (25, 0.4), ["func1-0"]),
-    "func2-0": Node(610, (50, 0.6), ["input", "func1-1"]),
-    "func3-0": Node(920, (60, 0.8), ["func2-0"]),
-    "func3-1": Node(120, (65, 0.8), ["func3-0"]),
-    "func4-0": Node(420, (70, 1), ["func3-1"]),
-}
-test_colors = {
-    "func1": "#023eff",
-    "func2": "#0ff7c00",
-    "func3": "#1ac938",
-    "func4": "#e8000b",
-    "input": "#a201e9"
-}
 
 @patch("kymata.ippm.plot.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
@@ -42,15 +25,13 @@ def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
                            (85, 1),
                            (95, 1),
                            ])
-    plotter = IPPMPlotter()
-    actual_bspline_paths = plotter._make_bspline_path(ctr_points)
+    actual_bspline_paths = _make_bspline_path(ctr_points)
     assert actual_bspline_paths == expected_b_spline_paths
 
 
 def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
     coords = [(65, 0.8), (70, 1)]
-    plotter = IPPMPlotter()
-    actual_ctr_points = plotter._make_bspline_ctr_points(coords)
+    actual_ctr_points = _make_bspline_ctr_points(coords)
     expected_ctr_points = [(65, 0.8), (70, 0.8), (80, 0.8), (85, 1), (95, 1), (70, 1)]
 
     for expected_point, actual_point in zip(expected_ctr_points, actual_ctr_points):
@@ -62,8 +43,7 @@ def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
 def test_IPPMPlotter_MakeBSplinePath_Successfully(mock_splev):
     mock_splev.return_value = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
     pairs = [[(65, 0.8), (70, 1)]]
-    plotter = IPPMPlotter()
-    actual_b_splines = plotter._make_bspline_paths(pairs)
+    actual_b_splines = _make_bspline_paths(pairs)
     expected_b_spline_paths = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
 
     for actual_path_x_coord, expected_path_x_coord in zip(actual_b_splines[0][0], expected_b_spline_paths[0]):
