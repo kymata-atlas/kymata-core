@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from kymata.ippm.plotter import IPPMPlotter
+from kymata.ippm.plot import IPPMPlotter
 from tests.test_ippm_data_tools import Node
 
 import numpy as np
@@ -32,7 +32,7 @@ test_colors = {
     "input": "#a201e9"
 }
 
-@patch("kymata.ippm.plotter.splev")
+@patch("kymata.ippm.plot.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
     expected_b_spline_paths = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
     mock_splev.return_value = expected_b_spline_paths
@@ -58,7 +58,7 @@ def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
         assert expected_point[1] == actual_point[1]
 
 
-@patch("kymata.ippm.plotter.splev")
+@patch("kymata.ippm.plot.splev")
 def test_IPPMPlotter_MakeBSplinePath_Successfully(mock_splev):
     mock_splev.return_value = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
     pairs = [[(65, 0.8), (70, 1)]]

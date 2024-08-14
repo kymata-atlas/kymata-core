@@ -1,6 +1,6 @@
 import unittest.mock
 import numpy as np
-from kymata.ippm.plotter import IPPMPlotter
+from kymata.ippm.plot import IPPMPlotter
 
 
 class TestIPPMPlotter(unittest.TestCase):

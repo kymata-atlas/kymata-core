@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from kymata.ippm.ippm_builder import IPPMBuilder
 from kymata.ippm.data_tools import IPPMHexel
-from kymata.ippm.plotter import IPPMPlotter
+from kymata.ippm.plot import IPPMPlotter
 
 
 class IPPM:
