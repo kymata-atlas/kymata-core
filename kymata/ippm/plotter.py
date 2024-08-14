@@ -1,7 +1,6 @@
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import matplotlib.patheffects as pe
 import numpy as np
 from scipy.interpolate import splev
@@ -155,12 +154,12 @@ class IPPMPlotter(object):
         bspline_ctr_points.append((start_X,start_Y))
 
         # first 2
-        bspline_ctr_points.append((start_X + 20, start_Y))
-        bspline_ctr_points.append((start_X + 25, start_Y))
+        bspline_ctr_points.append((start_X + 5, start_Y))
+        bspline_ctr_points.append((start_X + 15, start_Y))
 
         # second 2
+        bspline_ctr_points.append((start_X + 20, end_Y))
         bspline_ctr_points.append((start_X + 30, end_Y))
-        bspline_ctr_points.append((start_X + 35, end_Y))
 
         bspline_ctr_points.append((end_X, end_Y))
 
