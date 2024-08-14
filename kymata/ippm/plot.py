@@ -46,7 +46,7 @@ def plot_ippm(graph: Dict[str, Node],
         hexel_y[i] = graph[node].position[1]
 
         pairs = []
-        for inc_edge in graph[node].in_edges:
+        for inc_edge in graph[node].inc_edges:
             # save edge coordinates and color the edge the same color as the finishing node.
             start = graph[inc_edge].position
             end = graph[node].position

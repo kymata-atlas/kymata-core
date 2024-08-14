@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from kymata.ippm.build import IPPMBuilder
+from kymata.ippm.build import build_graph_dict
 from kymata.ippm.data_tools import IPPMHexel
 
 test_hexels = {
@@ -31,8 +31,6 @@ def map_mag_to_size(x):
 
 
 def test_IPPMBuilder_BuildGraph_Successfully():
-
-    builder = IPPMBuilder(test_hexels, test_inputs, test_hierarchy, test_hemi)
     expected_graph = {
         "input": (100, "abc", (0, 0.2), []),
         "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), ["input"]),
@@ -42,7 +40,7 @@ def test_IPPMBuilder_BuildGraph_Successfully():
         "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
         "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
     }
-    actual_graph = builder.build_graph_dict()
+    actual_graph = build_graph_dict(test_hexels, test_hierarchy, test_inputs, test_hemi)
 
     assert set(actual_graph.keys()) == set(expected_graph.keys())
     for node, val in actual_graph.items():
@@ -52,10 +50,8 @@ def test_IPPMBuilder_BuildGraph_Successfully():
 
 
 def test_IPPMBuilder_BuildGraph_EmptyHexels_Successfully():
-    empty_hexels = {}
-    builder = IPPMBuilder(empty_hexels, test_inputs, test_hierarchy, test_hemi)
     expected_graph = {"input": (100, "abc", (0, 0.2), [])}
-    actual_graph = builder.build_graph_dict()
+    actual_graph = build_graph_dict(dict(), test_hierarchy, test_inputs, test_hemi)
 
     assert set(actual_graph.keys()) == set(expected_graph.keys())
     for node, val in actual_graph.items():
@@ -65,17 +61,13 @@ def test_IPPMBuilder_BuildGraph_EmptyHexels_Successfully():
 
 
 def test_IPPMBuilder_BuildGraph_EmptyHierarchy_Successfully():
-    empty_hierarchy = {}
-    builder = IPPMBuilder(test_hexels, test_inputs, empty_hierarchy, test_hemi)
     expected_graph = {}
-    actual_graph = builder.build_graph_dict()
+    actual_graph = build_graph_dict(test_hexels, dict(), test_inputs, test_hemi)
 
     assert actual_graph == expected_graph
 
 
 def test_IPPMBuilder_BuildGraph_EmptyInputs_Successfully():
-    empty_inputs = []
-    builder = IPPMBuilder(test_hexels, empty_inputs, test_hierarchy, test_hemi)
     expected_graph = {
         "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), []),
         "func1-1": (map_mag_to_size(1e-79), "#023eff", (25, 0.4), ["func1-0"]),
@@ -84,7 +76,7 @@ def test_IPPMBuilder_BuildGraph_EmptyInputs_Successfully():
         "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
         "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
     }
-    actual_graph = builder.build_graph_dict()
+    actual_graph = build_graph_dict(test_hexels, test_hierarchy, [], test_hemi)
 
     assert set(actual_graph.keys()) == set(expected_graph.keys())
     for node, val in actual_graph.items():
@@ -96,7 +88,6 @@ def test_IPPMBuilder_BuildGraph_EmptyInputs_Successfully():
 def test_IPPMBuilder_BuildGraph_MissingFunctionsInHexels_Successfully():
     mismatched_hexels = deepcopy(test_hexels)
     mismatched_hexels.pop("func2")
-    builder = IPPMBuilder(mismatched_hexels, test_inputs, test_hierarchy, test_hemi)
     expected_graph = {
         "input": (100, "abc", (0, 0.2), []),
         "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), ["input"]),
@@ -105,7 +96,7 @@ def test_IPPMBuilder_BuildGraph_MissingFunctionsInHexels_Successfully():
         "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
         "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),
     }
-    actual_graph = builder.build_graph_dict()
+    actual_graph = build_graph_dict(mismatched_hexels, test_hierarchy, test_inputs, test_hemi)
 
     assert set(actual_graph.keys()) == set(expected_graph.keys())
     for node, val in actual_graph.items():

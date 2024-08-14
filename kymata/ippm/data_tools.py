@@ -1,8 +1,8 @@
 import json
+from dataclasses import dataclass
 from itertools import cycle
 from statistics import NormalDist
 from typing import Tuple, Dict, List
-from collections import namedtuple
 
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -16,28 +16,33 @@ from matplotlib.lines import Line2D
 import math
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
-Node = namedtuple('Node', 'magnitude position inc_edges')
+
+@dataclass
+class Node:
+    magnitude: float
+    position: tuple[float, float]
+    inc_edges: list
 
 
 class IPPMHexel(object):
     """
         Container to hold data about a hexel spike.
-        
+
         Attributes
-        ----------   
+        ----------
             function : the name of the function who caused the spike
             right_best_pairings : right hemisphere best pairings. pvalues are taken to the base 10 by default. latency is in milliseconds
             left_best_pairings : right hemisphere best pairings. same info as right for (latency, pvalue)
             description : optional written description
             github_commit : github commit of the function
     """
-    
+
     def __init__(
-                self, 
-                function_name: str, 
-                description: str=None, 
+                self,
+                function_name: str,
+                description: str=None,
                 github_commit: str=None,
-            ): 
+            ):
             self.function = function_name
             self.right_best_pairings = []
             self.left_best_pairings = []
@@ -46,7 +51,7 @@ class IPPMHexel(object):
             self.color = None
 
             self.input_stream = None
-            
+
     def add_pairing(self, hemi: str, pairing: Tuple[float, float]):
         """
             Use this to add new pairings. Pair = (latency (ms), pvalue (log_10))
@@ -122,7 +127,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
         -------
             Dict of the format [function name, Hexel(func_name, id, left_pairings, right_pairings)]
     """
-    hexels = {}        
+    hexels = {}
     for hemi in ['leftHemisphere', 'rightHemisphere']:
         for (_, latency, pval, func) in dict_[hemi]:
             # we have id, latency (ms), pvalue (log_10), function name.
@@ -130,9 +135,9 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
             if func not in hexels:
                 # first time seeing function, so create key and hexel object.
                 hexels[func] = IPPMHexel(func)
-            
+
             hexels[func].add_pairing(hemi, (latency, pow(10, pval)))
-    
+
     return hexels
 
 
@@ -237,7 +242,7 @@ def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: 
                 total_arrows++
         return violations / total_arrows if total_arrows > 0 else 0
     """
-    
+
     assert(hemi == 'rightHemisphere'  or hemi == 'leftHemisphere')
 
     def get_latency(func_hexels: IPPMHexel, mini: bool):
@@ -261,7 +266,7 @@ def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: 
         else:
             if len(denoised_hexels[func].right_best_pairings) == 0:
                 continue
-        
+
         child_latency = get_latency(denoised_hexels[func], mini=True)[0]
         for inc_edge in inc_edges:
             if inc_edge in inputs:
@@ -279,7 +284,7 @@ def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: 
             else:
                 if len(denoised_hexels[inc_edge].right_best_pairings) == 0:
                     continue
-                    
+
             parent_latency = get_latency(denoised_hexels[inc_edge], mini=False)[0]
             if child_latency < parent_latency:
                 causality_violations += 1
@@ -310,7 +315,7 @@ def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_d
     assert(hemi == 'rightHemisphere' or hemi == 'leftHemisphere')
 
     # Step 1: Calculate significance level
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)      
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     bonferroni_corrected_alpha = 1-(pow((1-alpha),(1/(2*201*200000))))
     funcs_present_in_data = 0
     detected_funcs = 0
@@ -320,7 +325,7 @@ def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_d
             # Step 2: Find a pairing that is significant
             if spike <= bonferroni_corrected_alpha:
                 funcs_present_in_data += 1
-                
+
                 # Step 3: Found a function, look in ippm_dict.keys() for the function.
                 for node_name in ippm_dict.keys():
                     if func in node_name:
@@ -330,10 +335,10 @@ def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_d
                 break
 
     # Step 3: Return [ratio, numerator, denominator] primarily because both the denominator and numerator can vary.
-    return (detected_funcs / funcs_present_in_data if funcs_present_in_data > 0 else 0, 
-            detected_funcs, 
+    return (detected_funcs / funcs_present_in_data if funcs_present_in_data > 0 else 0,
+            detected_funcs,
             funcs_present_in_data)
-    
+
 
 def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
     """
@@ -396,7 +401,7 @@ def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: boo
         -------
         Nothing but plots a graph.
     """
-    
+
     alpha = 3.55e-15
     X = pd.DataFrame(columns=['Latency'])
     for latency, spike in pairings:
@@ -405,7 +410,7 @@ def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: boo
 
     if normalise:
         X = normalize(X)
-            
+
     distance_M = euclidean_distances(X) # rows are points, columns are other points same order with values as distances
     k_dists = []
     for r in range(len(distance_M)):
@@ -417,8 +422,8 @@ def plot_k_dist_1D(pairings: List[Tuple[float, float]], k: int=4, normalise: boo
 
 
 def copy_hemisphere(
-    hexels_to: Dict[str, IPPMHexel], 
-    hexels_from: Dict[str, IPPMHexel], 
+    hexels_to: Dict[str, IPPMHexel],
+    hexels_from: Dict[str, IPPMHexel],
     hemi_to: str,
     hemi_from: str,
     func: str = None):
@@ -449,7 +454,7 @@ def copy_hemisphere(
         else:
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
         return
-        
+
     for func, hexel in hexels_from.items():
         if hemi_to == 'rightHemisphere' and hemi_from == 'rightHemisphere':
             hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
