@@ -140,32 +140,29 @@ class IPPMPlotter(object):
             np.array: A list of tuples of coordinates. Each coordinate pair represents a control point.
         """
 
-        start_X = start_and_end_node_coordinates[0][0]
-        start_Y = start_and_end_node_coordinates[0][1]
-        end_X = start_and_end_node_coordinates[1][0]
-        end_Y = start_and_end_node_coordinates[1][1]
+        start_X, start_Y = start_and_end_node_coordinates[0]
+        end_X, end_Y = start_and_end_node_coordinates[1]
         
         if end_X < start_X:
             # reverse BSpline
             start_X, end_X = end_X, start_X
             start_Y, end_Y = end_Y, start_Y
 
-        bspline_ctr_points = []
-        bspline_ctr_points.append((start_X,start_Y))
+        return np.array([
+            # start
+            (start_X, start_Y),
 
-        # first 2
-        bspline_ctr_points.append((start_X + 5, start_Y))
-        bspline_ctr_points.append((start_X + 15, start_Y))
+            # first 2
+            (start_X + 5, start_Y),
+            (start_X + 15, start_Y),
 
-        # second 2
-        bspline_ctr_points.append((start_X + 20, end_Y))
-        bspline_ctr_points.append((start_X + 30, end_Y))
+            # second 2
+            (start_X + 20, end_Y),
+            (start_X + 30, end_Y),
 
-        bspline_ctr_points.append((end_X, end_Y))
-
-        bspline_ctr_points = np.array(bspline_ctr_points)
-
-        return bspline_ctr_points
+            # end
+            (end_X, end_Y),
+        ])
 
     def _make_bspline_path(self, ctr_points: np.array) -> List[np.array]:
         """
