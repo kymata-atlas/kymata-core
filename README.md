@@ -1,5 +1,6 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core/badge)](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core)
 <br />
 <br />
 <div>
