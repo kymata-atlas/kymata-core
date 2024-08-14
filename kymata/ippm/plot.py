@@ -5,10 +5,10 @@ import matplotlib.patheffects as pe
 import numpy as np
 from scipy.interpolate import splev
 
-from kymata.ippm.data_tools import Node
+from kymata.ippm.data_tools import IPPMNode
 
 
-def plot_ippm(graph: Dict[str, Node],
+def plot_ippm(graph: Dict[str, IPPMNode],
               colors: Dict[str, str],
               title: str,
               scaled_hexels: bool = False,
@@ -18,7 +18,7 @@ def plot_ippm(graph: Dict[str, Node],
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
     Args:
-        graph (Dict[str, Node]): Dictionary with keys as node names and values as Hexel objects.
+        graph (Dict[str, IPPMNode]): Dictionary with keys as node names and values as Hexel objects.
             Contains nodes as keys and magnitude, position, and incoming edges in the Hexel object.
         colors (Dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each function. The nodes and edges are colored accordingly.
