@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib.patheffects as pe
 import numpy as np
 from scipy.interpolate import splev
 
@@ -13,8 +14,9 @@ class IPPMPlotter(object):
              graph: Dict[str, Node],
              colors: Dict[str, str],
              title: str,
-             figheight: int=5,
-             figwidth: int=10):
+             scaled_hexels: bool = False,
+             figheight: int = 5,
+             figwidth: int = 10):
         """
         Generates an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
@@ -24,6 +26,7 @@ class IPPMPlotter(object):
             colors (Dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
                 Contains the color for each function. The nodes and edges are colored accordingly.
             title (str): Title of the plot.
+            scaled_hexels (bool, optional): scales the node by the significance. Default is False
             figheight (int, optional): Height of the plot. Defaults to 5.
             figwidth (int, optional): Width of the plot. Defaults to 10.
         """
@@ -54,19 +57,24 @@ class IPPMPlotter(object):
                 edge_colors.append(node_colors[i])
 
             bsplines += self._make_bspline_paths(pairs)
-        
+
+        # override node size
+        if not scaled_hexels:
+            node_sizes = [150] * len(graph.keys())
+
         fig, ax = plt.subplots()
     
         for path, color in zip(bsplines, edge_colors):
             ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
+            ax.text(x=path[0][0] + 10,
+                    y=path[1][0] - 0.006,
+                    s="function_name()",
+                    color=color,
+                    zorder=1,
+                    path_effects=[pe.withStroke(linewidth=4, foreground="white")])
 
-        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
-        
-        legend = []
-        for f in colors.keys():
-            legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=colors[f], markersize=15))
+        ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=2)
 
-        plt.legend(handles=legend, loc='upper left')
         plt.title(title)
 
         ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
