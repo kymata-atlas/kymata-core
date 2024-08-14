@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from kymata.ippm.ippm_plotter import IPPMPlotter
+from kymata.ippm.plotter import IPPMPlotter
 from tests.test_ippm_data_tools import Node
 
 import numpy as np
