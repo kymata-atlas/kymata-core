@@ -70,16 +70,17 @@ def file_version(from_path_or_file: PathType | FileType) -> version.Version:
             return version.parse(str(f.read()).strip())
 
 
-def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet:
+def load_expression_set(from_path_or_file: PathType | FileType | list[PathType]) -> ExpressionSet:
     """
-    Loads an ExpressionSet from the specified path or file.
+    Loads an ExpressionSet from the specified path(s) or open file.
 
     The function determines the type of ExpressionSet (HexelExpressionSet or SensorExpressionSet)
     based on the data loaded from the provided path or file. It then constructs and returns an
     instance of the appropriate ExpressionSet subclass.
 
     Args:
-        from_path_or_file (PathType | FileType): The path or file from which to load the data.
+        from_path_or_file (PathType | FileType | list[PathType]): The path, file, or list of paths from which to load
+                                                                      the data.
 
     Returns:
         ExpressionSet: An instance of either HexelExpressionSet or SensorExpressionSet,
@@ -89,6 +90,19 @@ def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet
         KeyError: If required keys are missing in the data dictionary.
         ValueError: If the type identifier is not recognized.
     """
+
+    if isinstance(from_path_or_file, list):
+        if len(from_path_or_file) == 0:
+            raise ValueError("Must supply at least one path")
+        first_path = from_path_or_file[0]
+        # Head
+        first_es = load_expression_set(first_path)
+        if len(from_path_or_file) == 1:
+            # Supplied a list of one path
+            return first_es
+        # Tail
+        return first_es + load_expression_set(from_path_or_file[1:])
+
     _v, data_dict = _load_data(from_path_or_file)
 
     type_identifier = data_dict[_Keys.expressionset_type]
