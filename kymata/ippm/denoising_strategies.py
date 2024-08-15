@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN, MeanShift
 from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
-from .custom_clusterers import MaxPooler, AdaptiveMaxPooler, CustomGMM
+from .custom_clusterers import MaxPooler, AdaptiveMaxPooler, GMM
 from .data_tools import IPPMHexel
 
 
