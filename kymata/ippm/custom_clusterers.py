@@ -137,7 +137,7 @@ class AdaptiveMaxPooler(MaxPooler):
         return self.labels_
 
 
-class GMM(CustomClusterer):
+class CustomGMM(CustomClusterer):
     def __init__(
         self,
         number_of_clusters_upper_bound: int = 5,

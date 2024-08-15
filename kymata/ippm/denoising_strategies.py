@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN, MeanShift
 from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
-from .custom_clusterers import MaxPooler, AdaptiveMaxPooler, GMM
+from .custom_clusterers import MaxPooler, AdaptiveMaxPooler, CustomGMM
 from .data_tools import IPPMHexel
 
 
@@ -319,7 +319,7 @@ class GMMStrategy(DenoisingStrategy):
             should_max_pool,
             normal_dist_threshold,
         )
-        self._clusterer = GMM(
+        self._clusterer = CustomGMM(
             number_of_clusters_upper_bound,
             covariance_type,
             max_iter,
