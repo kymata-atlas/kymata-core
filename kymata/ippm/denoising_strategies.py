@@ -319,7 +319,7 @@ class GMMStrategy(DenoisingStrategy):
             should_max_pool,
             normal_dist_threshold,
         )
-        self._clusterer = CustomGMM(
+        self._clusterer = GMM(
             number_of_clusters_upper_bound,
             covariance_type,
             max_iter,
