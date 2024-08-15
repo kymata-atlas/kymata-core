@@ -9,7 +9,11 @@ from scipy import stats
 from kymata.entities.functions import Function
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
-from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
+from kymata.entities.expression import (
+    ExpressionSet,
+    SensorExpressionSet,
+    HexelExpressionSet,
+)
 from kymata.math.p_values import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
@@ -17,22 +21,22 @@ _logger = getLogger(__name__)
 
 
 def do_gridsearch(
-        emeg_values: NDArray,  # chan x time
-        function: Function,
-        channel_names: list,
-        channel_space: str,
-        start_latency: float,   # ms
-        emeg_t_start: float,    # ms
-        stimulus_shift_correction: float,  # seconds/second
-        stimulus_delivery_latency: float,  # seconds
-        plot_location: Optional[Path] = None,
-        emeg_sample_rate: int = 1000,  # Hertz
-        n_derangements: int = 1,
-        seconds_per_split: float = 1,
-        n_splits: int = 400,
-        n_reps: int = 1,
-        plot_top_five_channels: bool = False,
-        overwrite: bool = True,
+    emeg_values: NDArray,  # chan x time
+    function: Function,
+    channel_names: list,
+    channel_space: str,
+    start_latency: float,  # ms
+    emeg_t_start: float,  # ms
+    stimulus_shift_correction: float,  # seconds/second
+    stimulus_delivery_latency: float,  # seconds
+    plot_location: Optional[Path] = None,
+    emeg_sample_rate: int = 1000,  # Hertz
+    n_derangements: int = 1,
+    seconds_per_split: float = 1,
+    n_splits: int = 400,
+    n_reps: int = 1,
+    plot_top_five_channels: bool = False,
+    overwrite: bool = True,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given function.
@@ -89,14 +93,18 @@ def do_gridsearch(
     # We'll need to downsample the EMEG to match the function's sample rate
     downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
 
-    n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
+    n_samples_per_split = int(
+        seconds_per_split * emeg_sample_rate * 2 // downsample_rate
+    )
 
     # the number of samples in the function 'trial' which is half that needed for the EMEG
     n_func_samples_per_split = n_samples_per_split // 2
 
     func_length = n_splits * n_func_samples_per_split
     if func_length < function.values.shape[0]:
-        _logger.warning(f'WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)')
+        _logger.warning(
+            f"WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)"
+        )
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
@@ -108,19 +116,30 @@ def do_gridsearch(
         func = normalize(func)
     except (ZeroDivisionError, FloatingPointError) as ex:
         _logger.error("Could not normalize function.")
-        _logger.error(f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
-                      "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
-                      f"{seconds_per_split} seconds, and adjust `n_splits` accordingly")
+        _logger.error(
+            f"It's possible that the {function.name} function contains a constant {seconds_per_split}-second "
+            "segment, which is invalid for gridsearch. Try increasing the seconds-per-split to greater than "
+            f"{seconds_per_split} seconds, and adjust `n_splits` accordingly"
+        )
         raise ex
 
     n_channels = emeg_values.shape[0]
 
     # Reshape EMEG into splits of `seconds_per_split` s
     split_initial_timesteps = [
-        int(start_latency - emeg_t_start
-            + round(i * emeg_sample_rate * seconds_per_split * (1 + stimulus_shift_correction))  # splits, stretched by the shift correction
-            + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
-            )
+        int(
+            start_latency
+            - emeg_t_start
+            + round(
+                i
+                * emeg_sample_rate
+                * seconds_per_split
+                * (1 + stimulus_shift_correction)
+            )  # splits, stretched by the shift correction
+            + round(
+                stimulus_delivery_latency * emeg_sample_rate
+            )  # correct for stimulus delivery latency delay
+        )
         for i in range(n_splits)
     ]
 
@@ -129,7 +148,9 @@ def do_gridsearch(
         for split_i in range(n_splits):
             split_start = split_initial_timesteps[split_i]
             split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
-            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[:, j, split_start:split_stop:downsample_rate]
+            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
+                :, j, split_start:split_stop:downsample_rate
+            ]
 
     del emeg_values
 
@@ -137,7 +158,9 @@ def do_gridsearch(
     derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
     for der_i in range(n_derangements):
         derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
-    derangements = np.vstack((np.arange(n_splits * n_reps), derangements))  # Include the identity on top
+    derangements = np.vstack(
+        (np.arange(n_splits * n_reps), derangements)
+    )  # Include the identity on top
 
     # Fast cross-correlation using FFT
     normalize(emeg_reshaped, inplace=True)
@@ -146,10 +169,15 @@ def do_gridsearch(
     F_func = np.conj(np.fft.rfft(func, n=n_samples_per_split, axis=-1))
     if n_reps > 1:
         F_func = np.tile(F_func, (n_reps, 1))
-    corrs = np.zeros((n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split))
+    corrs = np.zeros(
+        (n_channels, n_derangements + 1, n_splits * n_reps, n_func_samples_per_split)
+    )
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split] / emeg_stds[:, derangement]
+        corrs[:, der_i] = (
+            np.fft.irfft(deranged_emeg * F_func)[:, :, :n_func_samples_per_split]
+            / emeg_stds[:, derangement]
+        )
 
     del deranged_emeg, emeg_reshaped
 
@@ -159,7 +187,11 @@ def do_gridsearch(
     # derive pvalues
     log_pvalues = _ttest(corrs)
 
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
+    latencies_ms = np.linspace(
+        start_latency,
+        start_latency + (seconds_per_split * 1000),
+        n_func_samples_per_split + 1,
+    )[:-1]
 
     if plot_top_five_channels:
         # work out autocorrelation for channel-by-channel plots
@@ -201,8 +233,8 @@ def do_gridsearch(
             hexels_lh=channel_names[0],
             hexels_rh=channel_names[1],
             # Unstack the data
-            data_lh=log_pvalues[:len(channel_names[0]), :],
-            data_rh=log_pvalues[len(channel_names[0]):, :],
+            data_lh=log_pvalues[: len(channel_names[0]), :],
+            data_rh=log_pvalues[len(channel_names[0]) :, :],
         )
     else:
         raise NotImplementedError(channel_space)
@@ -259,20 +291,29 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
 
     # Recompute mean and var for null correlations
     if use_all_lats:
-        rand_mean = np.mean(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1).reshape(n_channels, 1)
-        rand_var = np.var(corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1, ddof=1).reshape(n_channels, 1)
+        rand_mean = np.mean(
+            corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1
+        ).reshape(n_channels, 1)
+        rand_var = np.var(
+            corrs_z[:, 1:, :, :].reshape(n_channels, -1), axis=1, ddof=1
+        ).reshape(n_channels, 1)
         rand_n = n_splits * n_derangements * t_steps
     else:
-        rand_mean = np.mean(corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1)
-        rand_var = np.var(corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1, ddof=1)
+        rand_mean = np.mean(
+            corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1
+        )
+        rand_var = np.var(
+            corrs_z[:, 1:, :, :].reshape(n_channels, -1, t_steps), axis=1, ddof=1
+        )
         rand_n = n_splits * n_derangements
 
     # Vectorized two-sample t-tests for all channels and time steps
     numerator = true_mean - rand_mean
     denominator = np.sqrt(true_var / true_n + rand_var / rand_n)
-    df = ((true_var / true_n + rand_var / rand_n) ** 2 /
-          ((true_var / true_n) ** 2 / (true_n - 1) +
-           (rand_var / rand_n) ** 2 / (rand_n - 1)))
+    df = (true_var / true_n + rand_var / rand_n) ** 2 / (
+        (true_var / true_n) ** 2 / (true_n - 1)
+        + (rand_var / rand_n) ** 2 / (rand_n - 1)
+    )
 
     t_stat = numerator / denominator
 

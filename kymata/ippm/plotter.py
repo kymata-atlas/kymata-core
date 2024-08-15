@@ -9,12 +9,14 @@ from .builder import Node
 
 
 class IPPMPlotter(object):
-    def draw(self, 
-             graph: Dict[str, Node],
-             colors: Dict[str, str],
-             title: str,
-             figheight: int=5,
-             figwidth: int=10):
+    def draw(
+        self,
+        graph: Dict[str, Node],
+        colors: Dict[str, str],
+        title: str,
+        figheight: int = 5,
+        figwidth: int = 10,
+    ):
         """
         Generates an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
@@ -28,10 +30,12 @@ class IPPMPlotter(object):
             figwidth (int, optional): Width of the plot. Defaults to 10.
         """
         # first lets aggregate all of the information.
-        hexel_x = [_ for _ in range(len(graph.keys()))]                    # x coordinates for nodes e.g., (x, y) = (hexel_x[i], hexel_y[i])
-        hexel_y = [_ for _ in range(len(graph.keys()))]                    # y coordinates for nodes
-        node_colors = [_ for _ in range(len(graph.keys()))]                # color for nodes
-        node_sizes = [_ for _ in range(len(graph.keys()))]                 # size of nodes
+        hexel_x = [
+            _ for _ in range(len(graph.keys()))
+        ]  # x coordinates for nodes e.g., (x, y) = (hexel_x[i], hexel_y[i])
+        hexel_y = [_ for _ in range(len(graph.keys()))]  # y coordinates for nodes
+        node_colors = [_ for _ in range(len(graph.keys()))]  # color for nodes
+        node_sizes = [_ for _ in range(len(graph.keys()))]  # size of nodes
         edge_colors = []
         bsplines = []
         for i, node in enumerate(graph.keys()):
@@ -54,35 +58,47 @@ class IPPMPlotter(object):
                 edge_colors.append(node_colors[i])
 
             bsplines += self._make_bspline_paths(pairs)
-        
+
         fig, ax = plt.subplots()
-    
+
         for path, color in zip(bsplines, edge_colors):
-            ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
+            ax.plot(path[0], path[1], color=color, linewidth="3", zorder=-1)
 
         ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=1)
-        
+
         legend = []
         for f in colors.keys():
-            legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=colors[f], markersize=15))
+            legend.append(
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    label=f,
+                    markerfacecolor=colors[f],
+                    markersize=15,
+                )
+            )
 
-        plt.legend(handles=legend, loc='upper left')
+        plt.legend(handles=legend, loc="upper left")
         plt.title(title)
 
         ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
         ax.set_yticklabels([])
         ax.yaxis.set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Latency (ms)')
-        
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        ax.set_xlabel("Latency (ms)")
+
         fig.set_figheight(figheight)
         fig.set_figwidth(figwidth)
-        
-        #plt.show()
 
-    def _make_bspline_paths(self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
+        # plt.show()
+
+    def _make_bspline_paths(
+        self, hexel_coordinate_pairs: List[List[Tuple[float, float]]]
+    ) -> List[List[np.array]]:
         """
         Given a list of hexel positions pairs, return a list of
         b-splines. First, find the control points, and second
@@ -103,7 +119,7 @@ class IPPMPlotter(object):
             start_Y = pair[0][1]
             end_X = pair[1][0]
             end_Y = pair[1][1]
-        
+
             if start_X + 35 > end_X and start_Y == end_Y:
                 # the nodes are too close to use a bspline. Null edge.
                 # add 2d np array where the first element is xs and second is ys
@@ -116,7 +132,9 @@ class IPPMPlotter(object):
 
         return bspline_path_array
 
-    def _make_bspline_ctr_points(self, start_and_end_node_coordinates: List[Tuple[float, float]]) -> np.array:
+    def _make_bspline_ctr_points(
+        self, start_and_end_node_coordinates: List[Tuple[float, float]]
+    ) -> np.array:
         """
         Given the position of a start hexel and an end hexel, create
         a set of 6 control points needed for a b-spline.
@@ -137,14 +155,14 @@ class IPPMPlotter(object):
         start_Y = start_and_end_node_coordinates[0][1]
         end_X = start_and_end_node_coordinates[1][0]
         end_Y = start_and_end_node_coordinates[1][1]
-        
+
         if end_X < start_X:
             # reverse BSpline
             start_X, end_X = end_X, start_X
             start_Y, end_Y = end_Y, start_Y
 
         bspline_ctr_points = []
-        bspline_ctr_points.append((start_X,start_Y))
+        bspline_ctr_points.append((start_X, start_Y))
 
         # first 2
         bspline_ctr_points.append((start_X + 20, start_Y))

@@ -13,6 +13,7 @@ def test_is_derangement():
     for i in range(n):
         assert not derangement[i] == i, f"Element at index {i} is not a derangement"
 
+
 def test_larger_derangement():
     n = 1000
     derangement = generate_derangement(n)
@@ -26,4 +27,6 @@ def test_repeatability():
     derangement1 = generate_derangement(n)
     derangement2 = generate_derangement(n)
     assert len(derangement1) == len(derangement2)
-    assert not derangement1.tolist() == derangement2.tolist(), "Derangements should not be identical"
+    assert (
+        not derangement1.tolist() == derangement2.tolist()
+    ), "Derangements should not be identical"

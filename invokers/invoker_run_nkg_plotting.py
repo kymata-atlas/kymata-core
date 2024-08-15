@@ -7,47 +7,87 @@ from kymata.io.nkg import load_expression_set
 from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict
 
+
 def main():
-    function_family_type = 'standard' # 'standard' or 'ANN'
-    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core-data", "output")
+    function_family_type = "standard"  # 'standard' or 'ANN'
+    path_to_nkg_files = Path(
+        Path(path.abspath("")).parent, "kymata-core-data", "output"
+    )
 
     # template invoker for printing out expression set .nkgs
 
-    if function_family_type == 'standard':
+    if function_family_type == "standard":
+        expression_data = load_expression_set(
+            Path(path_to_nkg_files, "combined_TVL_gridsearch.nkg")
+        )
 
-        expression_data  = load_expression_set(Path( path_to_nkg_files, "combined_TVL_gridsearch.nkg"))
-
-        fig = expression_plot(expression_data, color = {
-                             'IL': '#b11e34',
-                             'IL1': '#a201e9',
-                             'IL2': '#a201e9',
-                             'IL3': '#a201e9',
-                             'IL4': '#a201e9',
-                             'IL5': '#a201e9',
-                             'IL6': '#a201e9',
-                             'IL7': '#a201e9',
-                             'IL8': '#a201e9',
-                             'IL9': '#a201e9',
-                             'STL': '#d388b5'
-                           },
-                        minimap=True,
-                        ylim=-200)
+        fig = expression_plot(
+            expression_data,
+            color={
+                "IL": "#b11e34",
+                "IL1": "#a201e9",
+                "IL2": "#a201e9",
+                "IL3": "#a201e9",
+                "IL4": "#a201e9",
+                "IL5": "#a201e9",
+                "IL6": "#a201e9",
+                "IL7": "#a201e9",
+                "IL8": "#a201e9",
+                "IL9": "#a201e9",
+                "STL": "#d388b5",
+            },
+            minimap=True,
+            ylim=-200,
+        )
 
         fig.show()
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
 
-    elif function_family_type == 'ANN':
+    elif function_family_type == "ANN":
+        path_to_nkg_files = Path(path_to_nkg_files, "whisper/encoder_all_der_5")
 
-        path_to_nkg_files = Path(path_to_nkg_files, 'whisper/encoder_all_der_5')
-
-        expression_data = load_expression_set(Path( path_to_nkg_files, "model.encoder.conv1_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.conv2_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.0.final_layer_norm_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.1.final_layer_norm_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.2.final_layer_norm_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.3.final_layer_norm_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.4.final_layer_norm_511_gridsearch.nkg"))
-        expression_data += load_expression_set(Path( path_to_nkg_files, "model.encoder.layers.5.final_layer_norm_511_gridsearch.nkg"))
+        expression_data = load_expression_set(
+            Path(path_to_nkg_files, "model.encoder.conv1_511_gridsearch.nkg")
+        )
+        expression_data += load_expression_set(
+            Path(path_to_nkg_files, "model.encoder.conv2_511_gridsearch.nkg")
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.0.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.1.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.2.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.3.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.4.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
+        expression_data += load_expression_set(
+            Path(
+                path_to_nkg_files,
+                "model.encoder.layers.5.final_layer_norm_511_gridsearch.nkg",
+            )
+        )
 
         conv1_list = []
         conv2_list = []
@@ -91,29 +131,36 @@ def main():
             encoder5 = f"model.encoder.layers.5.final_layer_norm_{i}"
             encoder5_list.append(encoder5)
 
-        expression_plot(expression_data,
-                        ylim=-400,
-                        xlims=(-200, 800),
-                        save_to=Path(Path(path.abspath("")).parent, "kymata-core/kymata-core-data", "output/encoder_all.jpg"),
-                        show_legend=True,
-                        color= constant_color_dict(conv1_list, color='red')
-                                | constant_color_dict(conv2_list, color='green')
-                                | constant_color_dict(encoder0_list, color='blue')
-                                | constant_color_dict(encoder1_list, color='cyan')
-                                | constant_color_dict(encoder2_list, color='magenta')
-                                | constant_color_dict(encoder3_list, color='yellow')
-                                | constant_color_dict(encoder4_list, color='orange')
-                                | constant_color_dict(encoder5_list, color='purple'),
-                        legend_display=legend_display_dict(conv1_list, 'Conv layer 1')
-                                       | legend_display_dict(conv1_list, 'Conv layer 1')
-                                       | legend_display_dict(conv2_list, 'Conv layer 2')
-                                       | legend_display_dict(encoder0_list, 'Encoder layer 1')
-                                       | legend_display_dict(encoder1_list, 'Encoder layer 2')
-                                       | legend_display_dict(encoder2_list, 'Encoder layer 3')
-                                       | legend_display_dict(encoder3_list, 'Encoder layer 4')
-                                       | legend_display_dict(encoder4_list, 'Encoder layer 5')
-                                       | legend_display_dict(encoder5_list, 'Encoder layer 6'))
+        expression_plot(
+            expression_data,
+            ylim=-400,
+            xlims=(-200, 800),
+            save_to=Path(
+                Path(path.abspath("")).parent,
+                "kymata-core/kymata-core-data",
+                "output/encoder_all.jpg",
+            ),
+            show_legend=True,
+            color=constant_color_dict(conv1_list, color="red")
+            | constant_color_dict(conv2_list, color="green")
+            | constant_color_dict(encoder0_list, color="blue")
+            | constant_color_dict(encoder1_list, color="cyan")
+            | constant_color_dict(encoder2_list, color="magenta")
+            | constant_color_dict(encoder3_list, color="yellow")
+            | constant_color_dict(encoder4_list, color="orange")
+            | constant_color_dict(encoder5_list, color="purple"),
+            legend_display=legend_display_dict(conv1_list, "Conv layer 1")
+            | legend_display_dict(conv1_list, "Conv layer 1")
+            | legend_display_dict(conv2_list, "Conv layer 2")
+            | legend_display_dict(encoder0_list, "Encoder layer 1")
+            | legend_display_dict(encoder1_list, "Encoder layer 2")
+            | legend_display_dict(encoder2_list, "Encoder layer 3")
+            | legend_display_dict(encoder3_list, "Encoder layer 4")
+            | legend_display_dict(encoder4_list, "Encoder layer 5")
+            | legend_display_dict(encoder5_list, "Encoder layer 6"),
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

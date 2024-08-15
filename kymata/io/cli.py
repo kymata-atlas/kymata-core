@@ -13,17 +13,20 @@ def input_with_color(message: str, fore_color, style=Style.BRIGHT) -> str:
     return input(f"{fore_color}{style}{message}{Style.RESET_ALL}")
 
 
-def print_progress(iteration: int, total: int,
-                   prefix: str = '',
-                   suffix: str = '',
-                   *,
-                   decimals: int = 1,
-                   bar_length: int = 100,
-                   update_downsample: int = 1,
-                   full_char='▒',
-                   empty_char='┄',
-                   terminal_char='║',
-                   clear_on_completion: bool = False):
+def print_progress(
+    iteration: int,
+    total: int,
+    prefix: str = "",
+    suffix: str = "",
+    *,
+    decimals: int = 1,
+    bar_length: int = 100,
+    update_downsample: int = 1,
+    full_char="▒",
+    empty_char="┄",
+    terminal_char="║",
+    clear_on_completion: bool = False,
+):
     """
     Call in a loop to create terminal progress bar.
     Based on https://github.com/emcoglab/ldm-core/blob/main/utils/log.py
@@ -49,7 +52,7 @@ def print_progress(iteration: int, total: int,
     filled_length = int(round(bar_length * portion_complete))
     bar = (full_char * filled_length) + (empty_char * (bar_length - filled_length))
 
-    stdout.write(f'\r{prefix}{terminal_char}{bar}{terminal_char} {percents}{suffix}'),
+    (stdout.write(f"\r{prefix}{terminal_char}{bar}{terminal_char} {percents}{suffix}"),)
 
     if iteration == total:
         stdout.write("\r" if clear_on_completion else "\n")

@@ -12,6 +12,7 @@ from kymata.io.nkg import save_expression_set, load_expression_set, _load_data
 
 def test_save_and_load_is_equal():
     from kymata.datasets.sample import TVLInsLoudnessOnlyDataset, delete_dataset
+
     sample_dataset = TVLInsLoudnessOnlyDataset(download=False)
     already_existed = sample_dataset.path.exists()
     sample_dataset.download()
@@ -31,6 +32,7 @@ def test_save_and_load_is_equal():
 
 def test_load_v0_1_nkg():
     from packaging import version
+
     v01_path = Path(Path(__file__).parent, "test-data", "version_0_1.nkg")
     v, _ = _load_data(v01_path)
     assert v == version.parse("0.1")
@@ -46,6 +48,7 @@ def test_load_v0_1_nkg():
 
 def test_load_v0_2_hexel_nkg():
     from packaging import version
+
     v02_path = Path(Path(__file__).parent, "test-data", "version_0_2_hexel.nkg")
     v, _ = _load_data(v02_path)
     assert v == version.parse("0.2")
@@ -60,7 +63,9 @@ def test_load_v0_2_hexel_nkg():
 
 
 def test_load_v0_2_sensor_nkg():
-    es = load_expression_set(Path(Path(__file__).parent, "test-data", "version_0_2_sensor.nkg"))
+    es = load_expression_set(
+        Path(Path(__file__).parent, "test-data", "version_0_2_sensor.nkg")
+    )
     assert isinstance(es, SensorExpressionSet)
     assert len(es.functions) == 1
     assert es.functions == ["test function"]
@@ -71,6 +76,7 @@ def test_load_v0_2_sensor_nkg():
 
 def test_load_v0_3_hexel_nkg():
     from packaging import version
+
     v03_path = Path(Path(__file__).parent, "test-data", "version_0_3_hexel.nkg")
     v, _ = _load_data(v03_path)
     assert v == version.parse("0.3")
@@ -86,6 +92,7 @@ def test_load_v0_3_hexel_nkg():
 
 def test_load_v0_3_sensor_nkg():
     from packaging import version
+
     v03_path = Path(Path(__file__).parent, "test-data", "version_0_3_sensor.nkg")
     v, _ = _load_data(v03_path)
     assert v == version.parse("0.3")
@@ -100,6 +107,7 @@ def test_load_v0_3_sensor_nkg():
 
 def test_load_v0_4_hexel_nkg():
     from packaging import version
+
     v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_hexel.nkg")
     v, _ = _load_data(v04_path)
     assert v == version.parse("0.4")
@@ -115,6 +123,7 @@ def test_load_v0_4_hexel_nkg():
 
 def test_load_v0_4_sensor_nkg():
     from packaging import version
+
     v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor.nkg")
     v, _ = _load_data(v04_path)
     assert v == version.parse("0.4")
@@ -129,7 +138,9 @@ def test_load_v0_4_sensor_nkg():
 
 def test_load_multiple_files():
     v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor.nkg")
-    v04_renamed_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor_renamed_function.nkg")
+    v04_renamed_path = Path(
+        Path(__file__).parent, "test-data", "version_0_4_sensor_renamed_function.nkg"
+    )
     separate = load_expression_set(v04_path) + load_expression_set(v04_renamed_path)
     together = load_expression_set([v04_path, v04_renamed_path])
     assert len(separate.functions) == 2

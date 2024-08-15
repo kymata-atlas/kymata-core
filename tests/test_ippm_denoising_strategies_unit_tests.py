@@ -24,7 +24,7 @@ test_data_func1 = [
     [199, 1e-90],
     [200, 1e-50],
     [210, 1e-44],
-    [211, 1e-55]
+    [211, 1e-55],
 ]
 significant_test_data_func1 = [
     [-100, 1e-50],
@@ -38,15 +38,11 @@ significant_test_data_func1 = [
     [199, 1e-90],
     [200, 1e-50],
     [210, 1e-44],
-    [211, 1e-55]
+    [211, 1e-55],
 ]
 significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
 test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=["Latency", "Mag"])
-denoised_func1 = [
-    (-75, 1e-75),
-    (30, 1e-100),
-    (199, 1e-90)
-]
+denoised_func1 = [(-75, 1e-75), (30, 1e-100), (199, 1e-90)]
 
 test_empty_df = pd.DataFrame([], columns=["Latency", "Mag"])
 
@@ -59,7 +55,7 @@ test_data_func2 = [
     [131, 1e-23],
     [131, 1e-76],
     [131, 1e-4],
-    [200, 1e-2]
+    [200, 1e-2],
 ]
 significant_test_data_func2 = [
     [23, 1e-44],
@@ -70,22 +66,13 @@ significant_test_data_func2 = [
     [131, 1e-76],
 ]
 test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
-denoised_func2 = [
-    (30, 1e-99),
-    (130, 1e-81)
-]
+denoised_func2 = [(30, 1e-99), (130, 1e-81)]
 
-noisy_test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2")
-}
+noisy_test_hexels = {"func1": IPPMHexel("func1"), "func2": IPPMHexel("func2")}
 noisy_test_hexels["func1"].right_best_pairings = test_data_func1
 noisy_test_hexels["func2"].right_best_pairings = test_data_func2
 
-denoised_test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2")
-}
+denoised_test_hexels = {"func1": IPPMHexel("func1"), "func2": IPPMHexel("func2")}
 denoised_test_hexels["func1"].right_best_pairings = denoised_func1
 denoised_test_hexels["func2"].right_best_pairings = denoised_func2
 
@@ -101,11 +88,8 @@ def test_DenoisingStrategy_EstimateThresholdForSignificance_Successfully():
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._get_denoised_time_series")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._postprocess")
 def test_DenoisingStrategy_Denoise_Successfully(
-        mock_postprocess,
-        mock_get_denoised,
-        mock_preprocess,
-        mock_map_hexels
-    ):
+    mock_postprocess, mock_get_denoised, mock_preprocess, mock_map_hexels
+):
     expected_hexels = deepcopy(noisy_test_hexels)
     func1_hexel = deepcopy(expected_hexels["func1"])  # return value from _postprocess
     func2_hexel = deepcopy(expected_hexels["func2"])  # return value from _postprocess
@@ -115,7 +99,9 @@ def test_DenoisingStrategy_Denoise_Successfully(
     expected_hexels["func2"].right_best_pairings = denoised_func2
 
     # To mock a generator, you have to return an iterable.
-    mock_map_hexels.return_value = iter([("func1", test_df_func1), ("func2", test_df_func2)])
+    mock_map_hexels.return_value = iter(
+        [("func1", test_df_func1), ("func2", test_df_func2)]
+    )
     mock_preprocess.side_effect = [test_df_func1, test_df_func2]
     clusterer = MagicMock()
     clusterer.fit.return_value = clusterer
@@ -126,11 +112,19 @@ def test_DenoisingStrategy_Denoise_Successfully(
     strategy._clusterer = clusterer
     actual_hexels = strategy.denoise(noisy_test_hexels)
 
-    assert actual_hexels["func1"].right_best_pairings == expected_hexels["func1"].right_best_pairings
-    assert actual_hexels["func2"].right_best_pairings == expected_hexels["func2"].right_best_pairings
+    assert (
+        actual_hexels["func1"].right_best_pairings
+        == expected_hexels["func1"].right_best_pairings
+    )
+    assert (
+        actual_hexels["func2"].right_best_pairings
+        == expected_hexels["func2"].right_best_pairings
+    )
 
 
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes")
+@patch(
+    "kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes"
+)
 def test_DenoisingStrategy_MapHexelsToDF_Successfully(mock_filter):
     mock_filter.side_effect = [significant_test_data_func1, significant_test_data_func2]
     strategy = DenoisingStrategy("rightHemisphere")
@@ -161,12 +155,18 @@ def test_DenoisingStrategy_UpdatePairings_Successfully():
 def test_DenoisingStrategy_Preprocess_Successfully():
     df = deepcopy(test_df_func2)
     latencies_only_test_data_2 = map(lambda x: x[0], significant_test_data_func2)
-    sqrt_sum_squared_latencies = math.sqrt(sum(map(lambda x: x**2, latencies_only_test_data_2)))
-    normed_latencies = list(map(lambda x: x[0] / sqrt_sum_squared_latencies, significant_test_data_func2))
+    sqrt_sum_squared_latencies = math.sqrt(
+        sum(map(lambda x: x**2, latencies_only_test_data_2))
+    )
+    normed_latencies = list(
+        map(lambda x: x[0] / sqrt_sum_squared_latencies, significant_test_data_func2)
+    )
     expected_df = pd.DataFrame(normed_latencies, columns=["Latency"])
     expected_df["Mag"] = df["Mag"]
 
-    strategy = DenoisingStrategy("rightHemisphere", should_normalise=True, should_cluster_only_latency=True)
+    strategy = DenoisingStrategy(
+        "rightHemisphere", should_normalise=True, should_cluster_only_latency=True
+    )
     preprocessed_df = strategy._preprocess(df)
 
     assert_frame_equal(expected_df, preprocessed_df)
@@ -184,7 +184,9 @@ def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
 
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._perform_max_pooling")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._update_pairings")
-def test_DenoisingStrategy_Postprocess_Successfully(mock_update_pairings, mock_perform_max):
+def test_DenoisingStrategy_Postprocess_Successfully(
+    mock_update_pairings, mock_perform_max
+):
     mock_update_pairings.return_value = denoised_test_hexels["func1"]
 
     max_pooled_hexel = deepcopy(denoised_test_hexels["func1"])

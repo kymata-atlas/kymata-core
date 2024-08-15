@@ -29,18 +29,18 @@ test_colors = {
     "func2": "#0ff7c00",
     "func3": "#1ac938",
     "func4": "#e8000b",
-    "input": "#a201e9"
+    "input": "#a201e9",
 }
+
 
 @patch("kymata.ippm.ippm_plotter.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
-    expected_b_spline_paths = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
+    expected_b_spline_paths = [
+        np.array(range(65, 100, 10)),
+        np.array(np.linspace(0.8, 1, 10)),
+    ]
     mock_splev.return_value = expected_b_spline_paths
-    ctr_points = np.array([[65, 0.8],
-                           [85, 0.8],
-                           [90, 0.8],
-                           [95, 1],
-                           [100, 1]])
+    ctr_points = np.array([[65, 0.8], [85, 0.8], [90, 0.8], [95, 1], [100, 1]])
     plotter = IPPMPlotter()
     actual_bspline_paths = plotter._make_b_spline_path(ctr_points)
     assert actual_bspline_paths == expected_b_spline_paths
@@ -59,13 +59,23 @@ def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
 
 @patch("kymata.ippm.ippm_plotter.splev")
 def test_IPPMPlotter_MakeBSplinePath_Successfully(mock_splev):
-    mock_splev.return_value = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
+    mock_splev.return_value = [
+        np.array(range(65, 100, 10)),
+        np.array(np.linspace(0.8, 1, 10)),
+    ]
     pairs = [[(65, 0.8), (70, 1)]]
     plotter = IPPMPlotter()
     actual_b_splines = plotter._make_b_spline_paths(pairs)
-    expected_b_spline_paths = [np.array(range(65, 100, 10)), np.array(np.linspace(0.8, 1, 10))]
+    expected_b_spline_paths = [
+        np.array(range(65, 100, 10)),
+        np.array(np.linspace(0.8, 1, 10)),
+    ]
 
-    for actual_path_x_coord, expected_path_x_coord in zip(actual_b_splines[0][0], expected_b_spline_paths[0]):
+    for actual_path_x_coord, expected_path_x_coord in zip(
+        actual_b_splines[0][0], expected_b_spline_paths[0]
+    ):
         assert actual_path_x_coord == expected_path_x_coord
-    for actual_path_y_coord, expected_path_y_coord in zip(actual_b_splines[0][1], expected_b_spline_paths[1]):
+    for actual_path_y_coord, expected_path_y_coord in zip(
+        actual_b_splines[0][1], expected_b_spline_paths[1]
+    ):
         assert actual_path_y_coord == expected_path_y_coord

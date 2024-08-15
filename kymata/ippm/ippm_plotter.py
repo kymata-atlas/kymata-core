@@ -10,10 +10,16 @@ from kymata.ippm.data_tools import Node
 
 class IPPMPlotter:
     def plot(self, graph: Dict[str, Node], func_colors: Dict[str, str]):
-        x_coords, y_coords, colors, sizes, edge_colors, b_splines = self._extract_data_info_from_dict(graph, func_colors)
-        self._draw(x_coords, y_coords, colors, sizes, edge_colors, b_splines, func_colors)
+        x_coords, y_coords, colors, sizes, edge_colors, b_splines = (
+            self._extract_data_info_from_dict(graph, func_colors)
+        )
+        self._draw(
+            x_coords, y_coords, colors, sizes, edge_colors, b_splines, func_colors
+        )
 
-    def _extract_data_info_from_dict(self, graph: Dict[str, Node], func_colors: Dict[str, str]):
+    def _extract_data_info_from_dict(
+        self, graph: Dict[str, Node], func_colors: Dict[str, str]
+    ):
         number_of_nodes = len(graph.keys())
         x_coords = [_ for _ in range(number_of_nodes)]
         y_coords = [_ for _ in range(number_of_nodes)]
@@ -25,7 +31,9 @@ class IPPMPlotter:
         for idx, node_infos in enumerate(graph.items()):
             node_name, node_info = node_infos
 
-            function_name = node_name[:node_name.index('-')] if '-' in node_name else node_name
+            function_name = (
+                node_name[: node_name.index("-")] if "-" in node_name else node_name
+            )
             colors[idx] = func_colors[function_name]
 
             sizes[idx] = node_info.magnitude
@@ -76,7 +84,9 @@ class IPPMPlotter:
 
         return bspline_path_array
 
-    def _make_b_spline_ctr_points(self, start_and_end_node_coordinates: List[Tuple[float, float]]) -> np.array:
+    def _make_b_spline_ctr_points(
+        self, start_and_end_node_coordinates: List[Tuple[float, float]]
+    ) -> np.array:
         """
         Given the position of a start hexel and an end hexel, create
         a set of 6 control points needed for a b-spline.
@@ -104,7 +114,7 @@ class IPPMPlotter:
             start_Y, end_Y = end_Y, start_Y
 
         bspline_ctr_points = []
-        bspline_ctr_points.append((start_X,start_Y))
+        bspline_ctr_points.append((start_X, start_Y))
 
         # first 2
         bspline_ctr_points.append((start_X + 20, start_Y))
@@ -147,36 +157,45 @@ class IPPMPlotter:
         return bspline_path
 
     def _draw(
-            self,
-            x_coords: List[float],
-            y_coords: List[float],
-            colors: List[str],
-            sizes: List[float],
-            edge_colors: List[str],
-            b_splines: np.array,
-            func_colors: Dict[str, str]
+        self,
+        x_coords: List[float],
+        y_coords: List[float],
+        colors: List[str],
+        sizes: List[float],
+        edge_colors: List[str],
+        b_splines: np.array,
+        func_colors: Dict[str, str],
     ):
         fig, ax = plt.subplots()
         for path, color in zip(b_splines, edge_colors):
-            ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
+            ax.plot(path[0], path[1], color=color, linewidth="3", zorder=-1)
 
         ax.scatter(x=x_coords, y=y_coords, c=colors, s=sizes, zorder=1)
         legend = []
         for f in func_colors.keys():
-            legend.append(Line2D([0], [0], marker='o', color='w', label=f, markerfacecolor=func_colors[f], markersize=15))
+            legend.append(
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    label=f,
+                    markerfacecolor=func_colors[f],
+                    markersize=15,
+                )
+            )
 
-        plt.legend(handles=legend, loc='upper left')
+        plt.legend(handles=legend, loc="upper left")
 
         ax.set_ylim(min(y_coords) - 0.1, max(y_coords) + 0.1)
         ax.set_yticklabels([])
         ax.yaxis.set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.set_xlabel('Latency (ms)')
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        ax.set_xlabel("Latency (ms)")
 
         fig.set_figheight(5)
         fig.set_figwidth(10)
-
 
         plt.show()
