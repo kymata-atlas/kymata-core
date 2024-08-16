@@ -24,7 +24,7 @@ class CustomClusterer:
         return self
 
 
-class MaxPooler(CustomClusterer):
+class MaxPoolClusterer(CustomClusterer):
     def __init__(self, label_significance_threshold: int = 15, label_size: int = 25):
         super().__init__()
         self._label_significance_threshold = label_significance_threshold
@@ -60,7 +60,7 @@ class MaxPooler(CustomClusterer):
         return list(map(lambda x: new_label if x == old_label else x, self.labels_))
 
 
-class AdaptiveMaxPooler(MaxPooler):
+class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
     def __init__(
         self, label_significance_threshold: int = 5, base_label_size: int = 10
     ):
@@ -137,7 +137,7 @@ class AdaptiveMaxPooler(MaxPooler):
         return self.labels_
 
 
-class CustomGMM(CustomClusterer):
+class GMMClusterer(CustomClusterer):
     def __init__(
         self,
         number_of_clusters_upper_bound: int = 5,

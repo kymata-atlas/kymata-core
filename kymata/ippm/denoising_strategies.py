@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN, MeanShift
 from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
-from .custom_clusterers import MaxPooler, AdaptiveMaxPooler, CustomGMM
+from .cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 from .data_tools import IPPMHexel
 
 
@@ -271,7 +271,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_max_pool,
             normal_dist_threshold,
         )
-        self._clusterer = MaxPooler(bin_significance_threshold, bin_size)
+        self._clusterer = MaxPoolClusterer(bin_significance_threshold, bin_size)
 
 
 class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
@@ -292,7 +292,7 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             should_max_pool,
             normal_dist_threshold,
         )
-        self._clusterer = AdaptiveMaxPooler(bin_significance_threshold, base_bin_size)
+        self._clusterer = AdaptiveMaxPoolClusterer(bin_significance_threshold, base_bin_size)
 
 
 class GMMStrategy(DenoisingStrategy):
@@ -318,7 +318,7 @@ class GMMStrategy(DenoisingStrategy):
             should_max_pool,
             normal_dist_threshold,
         )
-        self._clusterer = CustomGMM(
+        self._clusterer = GMMClusterer(
             number_of_clusters_upper_bound,
             covariance_type,
             max_iter,
