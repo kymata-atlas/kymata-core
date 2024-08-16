@@ -1,9 +1,9 @@
 ## Hyperparameter Selection and Denoising Experiments for Denoising Strategies
 
 TODO:
-    - Push scaler changes
-    - Test hyperparameter settings for each system
-    - Build automated/manual hyperparameter selector
+- [ ] Push scaler changes
+- [ ] Test hyperparameter settings for each system
+- [ ] Build automated/manual hyperparameter selector
 
 ### Introduction
 
@@ -15,15 +15,15 @@ To evaluate the denoising strategies, we need to identify prototypical clusterin
 
 #### Prototypical Sparse Cluster: TVL loudness (short-term)
 
-![TVL loudness (short-term)](../../docs/assets/images/tvl_l_short.png)
+![TVL loudness (short-term)](assets/images-ippm/tvl_l_short.png)
 
 #### Prototypical Multiple Peaks Cluster: TVL loudness chan 2 (instantaneous)
 
-![TVL loudness chan 2 (instantaneous)](../../docs/assets/images/tvl_l_chan2_instant.png)
+![TVL loudness chan 2 (instantaneous)](assets/images-ippm/tvl_l_chan2_instant.png)
 
 #### Prototypical Blurred Cluster: Heeger horizontal ME GP2
 
-![Heeger horizontal ME GP2](../../docs/assets/images/heeger_hori_me_gp2.png)
+![Heeger horizontal ME GP2](assets/images-ippm/heeger_hori_me_gp2.png)
 
 ### Max Pooling
 
