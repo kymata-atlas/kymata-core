@@ -25,7 +25,7 @@ test_df = pd.DataFrame(test_data, columns=["Latency", "Mag"])
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 
 
-def test_MaxPooler_MapLabelToNewLabel_Successfully():
+def test_MaxPoolClusterer_MapLabelToNewLabel_Successfully():
     test_labels = [1, 1, 2, 3, 4, 5, 6, 6, 6, 7, 9]
     expected_labels = [1, 1, 2, 3, 4, 5, -1, -1, -1, 7, 9]
     mp = MaxPoolClusterer(label_significance_threshold=2)
@@ -35,8 +35,8 @@ def test_MaxPooler_MapLabelToNewLabel_Successfully():
     assert expected_labels == actual_labels
 
 
-@patch("kymata.ippm.custom_clusterers.MaxPooler._map_label_to_new_label")
-def test_MaxPooler_TagLabelsBelowSignificanceThresholdAsAnomalies_Successfully(
+@patch("kymata.ippm.cluster.MaxPoolClusterer._map_label_to_new_label")
+def test_MaxPoolClusterer_TagLabelsBelowSignificanceThresholdAsAnomalies_Successfully(
     mocked_func,
 ):
     final_labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
@@ -52,7 +52,7 @@ def test_MaxPooler_TagLabelsBelowSignificanceThresholdAsAnomalies_Successfully(
     assert assigned_labels == final_labels
 
 
-def test_MaxPooler_AssignPointsToLabels_Successfully():
+def test_MaxPoolClusterer_AssignPointsToLabels_Successfully():
     mp = MaxPoolClusterer(label_significance_threshold=2)
     assigned_labels = mp._assign_points_to_labels(test_df)
     expected_labels = [4, 4, 4, 5, 5, 8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
@@ -60,11 +60,11 @@ def test_MaxPooler_AssignPointsToLabels_Successfully():
     assert assigned_labels == expected_labels
 
 
-@patch("kymata.ippm.custom_clusterers.MaxPooler._assign_points_to_labels")
+@patch("kymata.ippm.cluster.MaxPoolClusterer._assign_points_to_labels")
 @patch(
-    "kymata.ippm.custom_clusterers.MaxPooler._tag_labels_below_label_significance_threshold_as_anomalies"
+    "kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies"
 )
-def test_MaxPooler_Fit_Successfully(mock_tag_labels, mock_assign_points):
+def test_MaxPoolClusterer_Fit_Successfully(mock_tag_labels, mock_assign_points):
     mock_assign_points.return_value = [
         4,
         4,
@@ -92,8 +92,8 @@ def test_MaxPooler_Fit_Successfully(mock_tag_labels, mock_assign_points):
     assert cluster_labels == expected_labels
 
 
-@patch("kymata.ippm.custom_clusterers.AdaptiveMaxPooler._merge_labels")
-def test_AdaptiveMaxPooler_MergeSignificantLabels_Successfully(mock_merge_labels):
+@patch("kymata.ippm.cluster.AdaptiveMaxPoolClusterer._merge_labels")
+def test_AdaptiveMaxPoolClusterer_MergeSignificantLabels_Successfully(mock_merge_labels):
     mock_merge_labels.side_effect = [
         [0, 0, 0, 0, 0, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16],
         [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 15, 15, 16, 16, 16],
@@ -107,12 +107,12 @@ def test_AdaptiveMaxPooler_MergeSignificantLabels_Successfully(mock_merge_labels
     assert actual_labels == expected_labels
 
 
-@patch("kymata.ippm.custom_clusterers.MaxPooler._assign_points_to_labels")
+@patch("kymata.ippm.cluster.MaxPoolClusterer._assign_points_to_labels")
 @patch(
-    "kymata.ippm.custom_clusterers.MaxPooler._tag_labels_below_label_significance_threshold_as_anomalies"
+    "kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies"
 )
-@patch("kymata.ippm.custom_clusterers.AdaptiveMaxPooler._merge_significant_labels")
-def test_Should_AdaptiveMaxPooler_Fit_Successfully(
+@patch("kymata.ippm.cluster.AdaptiveMaxPoolClusterer._merge_significant_labels")
+def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
     mock_merge_significant, mock_tag_labels, mock_assign_points
 ):
     mock_assign_points.return_value = [
@@ -159,8 +159,8 @@ def test_Should_AdaptiveMaxPooler_Fit_Successfully(
     assert cluster_labels == expected_labels
 
 
-@patch("kymata.ippm.custom_clusterers.GaussianMixture")
-def test_Should_CustomGMM_GridSearchForOptimalNumberOfClusters_Successfully(mock_gmm):
+@patch("kymata.ippm.cluster.GMMClusterer")
+def test_Should_GMMClusterer_GridSearchForOptimalNumberOfClusters_Successfully(mock_gmm):
     first_gmm_mock = MagicMock(name="first_gmm")
     first_gmm_mock.bic.return_value = 100
     second_gmm_mock = MagicMock(name="second_gmm")
@@ -178,7 +178,7 @@ def test_Should_CustomGMM_GridSearchForOptimalNumberOfClusters_Successfully(mock
     assert optimal_model == mocked_best_fit_gmm_instance
 
 
-def test_Should_CustomGMM_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
+def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
     mocked_gmm_instance = MagicMock()
     mocked_gmm_instance.score_samples.return_value = [-100, -5, -50]
 
@@ -192,12 +192,12 @@ def test_Should_CustomGMM_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
 
 
 @patch(
-    "kymata.ippm.custom_clusterers.CustomGMM._tag_low_loglikelihood_points_as_anomalous"
+    "kymata.ippm.cluster.GMMClusterer._tag_low_loglikelihood_points_as_anomalous"
 )
 @patch(
-    "kymata.ippm.custom_clusterers.CustomGMM._grid_search_for_optimal_number_of_clusters"
+    "kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters"
 )
-def test_Should_CustomGMM_Fit_Successfully(mock_grid_search, mock_tag_low):
+def test_Should_GMMClusterer_Fit_Successfully(mock_grid_search, mock_tag_low):
     mocked_optimal_model = MagicMock()
     mocked_optimal_model.predict.return_value = [
         0,
