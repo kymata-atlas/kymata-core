@@ -1,18 +1,19 @@
 import json
+import math
 from itertools import cycle
 from statistics import NormalDist
 from typing import Tuple, Dict, List, NamedTuple
 
-import matplotlib.colors
-import matplotlib.pyplot as plt
+import requests
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import euclidean_distances
-import requests
-import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.colors
 from matplotlib.lines import Line2D
-import math
+import seaborn as sns
+
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
 
@@ -296,11 +297,23 @@ def causality_violation_score(denoised_hexels: Dict[str, IPPMHexel], hierarchy: 
         causality_violations,
         total_arrows)
 
-def function_recall(noisy_hexels: Dict[str, IPPMHexel], funcs: List[str], ippm_dict: Dict[str, IPPMNode], hemi: str) -> Tuple[float]:
+
+def transform_recall(noisy_hexels: Dict[str, IPPMHexel],
+                     funcs: List[str],
+                     ippm_dict: Dict[str, IPPMNode],
+                     hemi: str,
+                     ) -> Tuple[float, float, float]:
     """
-        This is the second scoring metric: function recall. It illustrates what proportion out of functions in the noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses. 
+        This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
+        noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
+        along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses.
         
-        One thing to note is that the recall depends upon the nature of the dataset. If certain functions have no significant spikes, there is an inherent bias present in the dataset. We can never get the function recall to be perfect no matter what algorithm we employ. Therefore, the function recall is based on what we can actually do with a dataset. E.g., 9 functions in the hierarchy but in the noisy hexels we find only 7 of the 9 functions. Moreover, after denoising we find that there are only 6 functions in the hierarchy. The recall will be 6/7 rather than 6/9 since there were only 7 to be found to begin with.
+        One thing to note is that the recall depends upon the nature of the dataset. If certain functions have no
+        significant spikes, there is an inherent bias present in the dataset. We can never get the function recall to be
+        perfect no matter what algorithm we employ. Therefore, the function recall is based on what we can actually do
+        with a dataset. E.g., 9 functions in the hierarchy but in the noisy hexels we find only 7 of the 9 functions.
+        Moreover, after denoising we find that there are only 6 functions in the hierarchy. The recall will be 6/7
+        rather than 6/9 since there were only 7 to be found to begin with.
 
         Params
         ------

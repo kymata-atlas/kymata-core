@@ -1,4 +1,4 @@
-from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, function_recall
+from kymata.ippm.data_tools import IPPMHexel, build_hexel_dict_from_api_response, causality_violation_score, transform_recall
 from collections import namedtuple
 import kymata.ippm.data_tools as data_tools
 import pytest
@@ -92,7 +92,7 @@ def test_functionRecall_With_NoFuncs_Should_Return0():
     test_hexels['f2'].left_best_pairings = [(10, 1e-1)] # should be > alpha, so not significant
     test_ippm = {}
     funcs = ['f1', 'f2']
-    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 0)
     assert(numer == 0)
@@ -108,7 +108,7 @@ def test_functionRecall_With_AllFuncsFound_Should_Return1():
         'f2-0': Node(1e-50, 25, ['f1-1'])
     }
     funcs = ['f1', 'f2']
-    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 1)
     assert(numer == 2)
@@ -116,7 +116,7 @@ def test_functionRecall_With_AllFuncsFound_Should_Return1():
 
 def test_functionRecall_With_InvalidHemiInput_Should_RaiseException():
     with pytest.raises(AssertionError):
-        function_recall({}, [], {}, 'invalidHemisphere')
+        transform_recall({}, [], {}, 'invalidHemisphere')
 
 def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
     test_hexels = {'f1': IPPMHexel('f1'), 'f2': IPPMHexel('f2')}
@@ -127,7 +127,7 @@ def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
         'f1-1': Node(1e-35, 15, ['f1-0'])
     }
     funcs = ['f1', 'f2']
-    ratio, numer, denom = function_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
+    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, 'leftHemisphere')
 
     assert(ratio == 1/2)
     assert(numer == 1)
