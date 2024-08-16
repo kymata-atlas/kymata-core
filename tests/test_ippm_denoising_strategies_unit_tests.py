@@ -131,7 +131,7 @@ def test_DenoisingStrategy_MapHexelsToDF_Successfully(mock_filter):
     mock_filter.side_effect = [significant_test_data_func1, significant_test_data_func2]
     strategy = DenoisingStrategy(HEMI_RIGHT)
     actual_dfs = []
-    for func, df in strategy._map_hexels_to_df(noisy_test_hexels):
+    for func, df in strategy._map_spikes_to_df(noisy_test_hexels):
         actual_dfs.append((func, df))
 
     assert actual_dfs[0][0] == "func1"

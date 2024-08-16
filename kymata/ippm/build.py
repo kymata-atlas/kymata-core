@@ -14,19 +14,19 @@ from kymata.ippm.data_tools import IPPMSpike, IPPMNode
 class IPPMBuilder:
     def __init__(
         self,
-        hexels: Dict[str, IPPMSpike],
+        spikes: Dict[str, IPPMSpike],
         inputs: List[str],
         hierarchy: Dict[str, List[str]],
         hemisphere: str,
     ):
-        self._hexels = deepcopy(hexels)
+        self._spikes = deepcopy(spikes)
         self._inputs = inputs
         self._hierarchy = deepcopy(hierarchy)
         self._hemisphere = hemisphere
         self._graph = {}  # Chosen structure is Dict[str, Node] since that enables quick look up for node position
 
     def build_graph_dict(self) -> Dict[str, IPPMNode]:
-        self._hexels = self._sort_hexel_spikes_by_latency_asc()
+        self._spikes = self._sort_spikes_by_latency_asc()
 
         y_axis_partition_size = (
             1 / len(self._hierarchy.keys()) if len(self._hierarchy.keys()) > 0 else 1
@@ -42,13 +42,13 @@ class IPPMBuilder:
 
         return self._graph
 
-    def _sort_hexel_spikes_by_latency_asc(self) -> Dict[str, IPPMSpike]:
-        for function in self._hexels.keys():
+    def _sort_spikes_by_latency_asc(self) -> Dict[str, IPPMSpike]:
+        for function in self._spikes.keys():
             if self._hemisphere == HEMI_RIGHT:
-                self._hexels[function].right_best_pairings.sort(key=lambda x: x[0])
+                self._spikes[function].right_best_pairings.sort(key=lambda x: x[0])
             else:
-                self._hexels[function].left_best_pairings.sort(key=lambda x: x[0])
-        return self._hexels
+                self._spikes[function].left_best_pairings.sort(key=lambda x: x[0])
+        return self._spikes
 
     def _get_childless_functions(self):
         def __unpack_dict_values_into_list(dict_to_unpack):
@@ -87,11 +87,11 @@ class IPPMBuilder:
     def _get_best_pairings_from_hemisphere(
         self, func: str
     ) -> List[Tuple[float, float]]:
-        if func in self._hexels.keys():
+        if func in self._spikes.keys():
             return (
-                self._hexels[func].right_best_pairings
+                self._spikes[func].right_best_pairings
                 if self._hemisphere == HEMI_RIGHT
-                else self._hexels[func].left_best_pairings
+                else self._spikes[func].left_best_pairings
             )
         return []
 
@@ -120,7 +120,7 @@ class IPPMBuilder:
         parents: List[str],
         function_name: str,
     ) -> Dict[str, IPPMNode]:
-        if function_name in self._hexels.keys():
+        if function_name in self._spikes.keys():
             for parent in parents:
                 if parent in self._inputs:
                     self._graph[function_name + "-0"].inc_edges.append(parent)

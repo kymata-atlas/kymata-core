@@ -13,7 +13,7 @@ def plot_ippm(
     graph: Dict[str, IPPMNode],
     colors: Dict[str, str],
     title: Optional[str] = None,
-    scaled_hexels: bool = False,
+    scale_spikes: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
 ):
@@ -21,17 +21,17 @@ def plot_ippm(
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
     Args:
-        graph (Dict[str, IPPMNode]): Dictionary with keys as node names and values as Hexel objects.
-            Contains nodes as keys and magnitude, position, and incoming edges in the Hexel object.
+        graph (Dict[str, IPPMNode]): Dictionary with keys as node names and values as IPPMNode objects.
+            Contains nodes as keys and magnitude, position, and incoming edges in the IPPMNode object.
         colors (Dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each function. The nodes and edges are colored accordingly.
         title (str): Title of the plot.
-        scaled_hexels (bool, optional): scales the node by the significance. Default is False
+        scale_spikes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
     """
     # first lets aggregate all the information.
-    node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (hexel_x[i], hexel_y[i])
+    node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = list(range(len(graph.keys())))  # y coordinates for nodes
     node_colors = list(range(len(graph.keys())))  # color for nodes
     node_sizes  = list(range(len(graph.keys())))  # size of nodes
@@ -58,7 +58,7 @@ def plot_ippm(
         bsplines += _make_bspline_paths(pairs)
 
     # override node size
-    if not scaled_hexels:
+    if not scale_spikes:
         node_sizes = [150] * len(graph.keys())
 
     fig, ax = plt.subplots()
@@ -98,15 +98,15 @@ def plot_ippm(
 
 
 def _make_bspline_paths(
-    hexel_coordinate_pairs: List[List[Tuple[float, float]]],
+    spike_coordinate_pairs: List[List[Tuple[float, float]]],
 ) -> List[List[np.array]]:
     """
-    Given a list of hexel positions pairs, return a list of
+    Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
     create the b-splines from these control points.
 
     Args:
-        hexel_coordinate_pairs (List[List[Tuple[float, float]]]): Each list contains the x-axis values and y-axis values
+        spike_coordinate_pairs (List[List[Tuple[float, float]]]): Each list contains the x-axis values and y-axis values
             for the start and end of a BSpline, e.g., [(0, 1), (1, 0)].
 
     Returns:
@@ -115,7 +115,7 @@ def _make_bspline_paths(
             a list of BSplines.
     """
     bspline_path_array = []
-    for pair in hexel_coordinate_pairs:
+    for pair in spike_coordinate_pairs:
         start_X = pair[0][0]
         start_Y = pair[0][1]
         end_X = pair[1][0]
@@ -138,11 +138,11 @@ def _make_bspline_ctr_points(
     start_and_end_node_coordinates: List[Tuple[float, float]],
 ) -> np.array:
     """
-    Given the position of a start hexel and an end hexel, create
+    Given the position of a start spike and an end spike, create
     a set of 6 control points needed for a b-spline.
 
-    The first one and last one is the position of a start hexel
-    and an end hexel themselves, and the intermediate four are
+    The first one and last one is the position of a start spike
+    and an end spikes themselves, and the intermediate four are
     worked out using some simple rules.
 
     Args:

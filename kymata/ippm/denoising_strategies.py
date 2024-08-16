@@ -70,9 +70,9 @@ class DenoisingStrategy(object):
         )
         return threshold_for_significance
 
-    def denoise(self, hexels: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
+    def denoise(self, spikes: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
         """
-        For a set of functions, cluster their IPPMHexel and retain the most significant spikes per cluster.
+        For a set of functions, cluster their IPPMSpike and retain the most significant spikes per cluster.
 
         TODO: Isn't max pooling after clustering equivalent to max pooling before? Only difference is that
               anomalies are excluded. In that case, we could just MAX(all_spikes) to get optimal strategy.
@@ -92,20 +92,20 @@ class DenoisingStrategy(object):
                     - should_max_pool: Take the most significant point over all of the clusters. I.e., only 1
                                              spike per function.
 
-        :param hexels:
-            The key is the function name and the IPPMHexel contains information about the function. Specifically,
+        :param spikes:
+            The key is the function name and the IPPMSpike contains information about the function. Specifically,
             it contains a list of (Latency (ms), Magnitude (^10-x)) for each hemisphere. We cluster over one
             hemisphere.
-        :return: A dictionary of functions as keys and a IPPMHexel containing the clustered time-series.
+        :return: A dictionary of functions as keys and a IPPMSpike containing the clustered time-series.
         """
-        hexels = deepcopy(
-            hexels
+        spikes = deepcopy(
+            spikes
         )  # When we copy the input, it is because we don't want to modify the original structure.
         # These are called side effects, and they can introduce obscure bugs.
 
-        for func, df in self._map_hexels_to_df(hexels):
+        for func, df in self._map_spikes_to_df(spikes):
             if len(df) == 0:
-                hexels[func] = self._update_pairings(hexels[func], [])
+                spikes[func] = self._update_pairings(spikes[func], [])
                 continue
 
             preprocessed_df = self._preprocess(df)
@@ -115,22 +115,22 @@ class DenoisingStrategy(object):
             # we do not want to plot the preprocessed latencies and magnitudes.
             denoised_time_series = self._get_denoised_time_series(df)
 
-            hexels[func] = self._postprocess(hexels[func], denoised_time_series)
+            spikes[func] = self._postprocess(spikes[func], denoised_time_series)
 
-        return hexels
+        return spikes
 
-    def _map_hexels_to_df(self, hexels: Dict[str, IPPMSpike]) -> pd.DataFrame:
+    def _map_spikes_to_df(self, spikes: Dict[str, IPPMSpike]) -> pd.DataFrame:
         """
-        A generator used to transform each pair of key, IPPMHexel to a DataFrame containing significance spikes only.
+        A generator used to transform each pair of key, IPPMSpike to a DataFrame containing significance spikes only.
 
-        :param hexels: The dictionary we want to iterate over and transform into DataFrames.
+        :param spikes: The dictionary we want to iterate over and transform into DataFrames.
         :returns: a clean DataFrame with columns ['Latency', 'Mag'] for each function key.
         """
-        for func, hexel in hexels.items():
+        for func, spike in spikes.items():
             significant_spikes = self._filter_out_insignificant_spikes(
-                hexel.right_best_pairings
+                spike.right_best_pairings
                 if self._hemi == HEMI_RIGHT
-                else hexel.left_best_pairings,
+                else spike.left_best_pairings,
             )
             df = pd.DataFrame(significant_spikes, columns=["Latency", "Mag"])
             yield func, df
@@ -151,18 +151,18 @@ class DenoisingStrategy(object):
         return significant_datapoints
 
     def _update_pairings(
-        self, hexel: IPPMSpike, denoised: List[Tuple[float, float]]
+        self, spike: IPPMSpike, denoised: List[Tuple[float, float]]
     ) -> IPPMSpike:
         """
-        :param hexel: We want to update this hexel to store the denoised spikes, with max pooling if desired.
-        :param denoised: We want to save these spikes into hexel, overwriting the previous ones.
-        :returns: IPPM hexel with its state updated.
+        :param spike: We want to update this spike to store the denoised spikes, with max pooling if desired.
+        :param denoised: We want to save these spikes into spike, overwriting the previous ones.
+        :returns: IPPMSpike with its state updated.
         """
         if self._hemi == HEMI_RIGHT:
-            hexel.right_best_pairings = denoised
+            spike.right_best_pairings = denoised
         else:
-            hexel.left_best_pairings = denoised
-        return hexel
+            spike.left_best_pairings = denoised
+        return spike
 
     def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -220,38 +220,38 @@ class DenoisingStrategy(object):
         return __convert_df_to_list(most_significant_points)
 
     def _postprocess(
-        self, hexel: IPPMSpike, denoised_time_series: List[Tuple[float, float]]
+        self, spike: IPPMSpike, denoised_time_series: List[Tuple[float, float]]
     ) -> IPPMSpike:
         """
-        To postprocess, overwrite the hexel data with most significant points and perform any postprocessing steps,
+        To postprocess, overwrite the spike data with most significant points and perform any postprocessing steps,
         such as max pooling.
 
-        :param hexel: We will overwrite the data in this hexel with denoised data.
+        :param spike: We will overwrite the data in this spike with denoised data.
         :param denoised_time_series: most significant points per cluster excluding anomalies.
-        :return: hexel with denoised time-series saved and, optionally, max pooled.
+        :return: spike with denoised time-series saved and, optionally, max pooled.
         """
-        hexel = self._update_pairings(hexel, denoised_time_series)
+        spike = self._update_pairings(spike, denoised_time_series)
         if self._should_max_pool:
-            hexel = self._perform_max_pooling(hexel)
-        return hexel
+            spike = self._perform_max_pooling(spike)
+        return spike
 
-    def _perform_max_pooling(self, hexel: IPPMSpike) -> IPPMSpike:
+    def _perform_max_pooling(self, spike: IPPMSpike) -> IPPMSpike:
         """
         Enforce the constraint that there is only 1 spike for a specific function. It is basically max(all_spikes).
 
-        :param hexel: Contains the time-series we want to take the maximum over.
-        :returns: same hexel but with only one spike.
+        :param spike: Contains the time-series we want to take the maximum over.
+        :returns: same spike but with only one spike.
         """
         # we take minimum because smaller is more significant.
-        if hexel.left_best_pairings and self._hemi == HEMI_LEFT:
-            hexel.left_best_pairings = [
-                min(hexel.left_best_pairings, key=lambda x: x[1])
+        if spike.left_best_pairings and self._hemi == HEMI_LEFT:
+            spike.left_best_pairings = [
+                min(spike.left_best_pairings, key=lambda x: x[1])
             ]
-        elif hexel.right_best_pairings and self._hemi == HEMI_RIGHT:
-            hexel.right_best_pairings = [
-                min(hexel.right_best_pairings, key=lambda x: x[1])
+        elif spike.right_best_pairings and self._hemi == HEMI_RIGHT:
+            spike.right_best_pairings = [
+                min(spike.right_best_pairings, key=lambda x: x[1])
             ]
-        return hexel
+        return spike
 
 
 class MaxPoolingStrategy(DenoisingStrategy):

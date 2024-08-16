@@ -29,7 +29,7 @@ class IPPMNode(NamedTuple):
 
 class IPPMSpike(object):
     """
-    Container to hold data about a hexel spike.
+    Container to hold data about a spike.
 
     Attributes
     ----------
@@ -62,7 +62,7 @@ class IPPMSpike(object):
         Params
         ------
             hemi : left or right
-            pairing : Corresponds to the best match to a hexel spike of form (latency (ms), pvalue (log_10))
+            pairing : Corresponds to the best match to a spike spike of form (latency (ms), pvalue (log_10))
         """
         if hemi == HEMI_LEFT:
             self.left_best_pairings.append(pairing)
@@ -73,7 +73,7 @@ class IPPMSpike(object):
 def fetch_data(api: str) -> Dict[str, IPPMSpike]:
     """
     Fetches data from Kymata API and converts it into a dictionary of function names as keys
-    and hexel objects as values. Advantage of dict is O(1) look-up and hexel object is readable
+    and spike objects as values. Advantage of dict is O(1) look-up and spike object is readable
     access to attributes.
 
     Params
@@ -82,14 +82,14 @@ def fetch_data(api: str) -> Dict[str, IPPMSpike]:
 
     Returns
     -------
-        Dictionary containing data in the format [function name, hexel]
+        Dictionary containing data in the format [function name, spike]
     """
     response = requests.get(api)
     resp_dict = json.loads(response.text)
-    return build_hexel_dict_from_api_response(resp_dict)
+    return build_spike_dict_from_api_response(resp_dict)
 
 
-def build_hexel_dict_from_expression_set(
+def build_spike_dict_from_expression_set(
     expression_set: HexelExpressionSet,
 ) -> Dict[str, IPPMSpike]:
     """
@@ -102,10 +102,10 @@ def build_hexel_dict_from_expression_set(
 
     Returns
     -------
-        Dict of the format [function name, Hexel(func_name, id, left_pairings, right_pairings)]
+        Dict of the format [function name, spike(func_name, id, left_pairings, right_pairings)]
     """
     best_functions_left, best_functions_right = expression_set.best_functions()
-    hexels = {}
+    spikes = {}
     for hemi in [HEMI_LEFT, HEMI_RIGHT]:
         best_functions = (
             best_functions_left if hemi == HEMI_LEFT else best_functions_right
@@ -114,13 +114,13 @@ def build_hexel_dict_from_expression_set(
             func = row[DIM_FUNCTION]
             latency = row[DIM_LATENCY] * 1000  # convert to ms
             pval = row["value"]
-            if func not in hexels:
-                hexels[func] = IPPMSpike(func)
-            hexels[func].add_pairing(hemi, (latency, pval))
-    return hexels
+            if func not in spikes:
+                spikes[func] = IPPMSpike(func)
+            spikes[func].add_pairing(hemi, (latency, pval))
+    return spikes
 
 
-def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
+def build_spike_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
     """
     Builds the dictionary from response dictionary. Response dictionary has unneccesary
     keys and does not have function names as keys. This function builds a new dictionary
@@ -132,49 +132,49 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
 
     Returns
     -------
-        Dict of the format [function name, Hexel(func_name, id, left_pairings, right_pairings)]
+        Dict of the format [function name, spike(func_name, id, left_pairings, right_pairings)]
     """
-    hexels = {}
+    spikes = {}
     for hemi in [HEMI_LEFT, HEMI_RIGHT]:
         for _, latency, pval, func in dict_[hemi]:
             # we have id, latency (ms), pvalue (log_10), function name.
             # discard id as it conveys no useful information
-            if func not in hexels:
-                # first time seeing function, so create key and hexel object.
-                hexels[func] = IPPMSpike(func)
+            if func not in spikes:
+                # first time seeing function, so create key and spike object.
+                spikes[func] = IPPMSpike(func)
 
-            hexels[func].add_pairing(hemi, (latency, pow(10, pval)))
+            spikes[func].add_pairing(hemi, (latency, pow(10, pval)))
 
-    return hexels
+    return spikes
 
 
 def stem_plot(
-    hexels: Dict[str, IPPMSpike],
+    spikes: Dict[str, IPPMSpike],
     title: Optional[str] = None,
     timepoints: int = 201,
     y_limit: float = pow(10, -100),
-    number_of_hexels: int = 200000,
+    number_of_spikes: int = 200000,
     figheight: int = 7,
     figwidth: int = 12,
 ):
     """
-    Plots a stem plot using hexels.
+    Plots a stem plot using spikes.
 
     Params
     ------
-        hexels : Contains function spikes in the form of a Hexel object. All pairings are found there.
+        spikes : Contains function spikes in the form of a spike object. All pairings are found there.
         title : Title of plot.
     """
     # estimate significance parameter
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)  # 5-sigma
     bonferroni_corrected_alpha = 1 - (
-        pow((1 - alpha), (1 / (2 * timepoints * number_of_hexels)))
+        pow((1 - alpha), (1 / (2 * timepoints * number_of_spikes)))
     )
 
     # assign unique color to each function
-    cycol = cycle(sns.color_palette("hls", len(hexels.keys())))
-    for _, hexel in hexels.items():
-        hexel.color = matplotlib.colors.to_hex(next(cycol))
+    cycol = cycle(sns.color_palette("hls", len(spikes.keys())))
+    for _, spike in spikes.items():
+        spike.color = matplotlib.colors.to_hex(next(cycol))
 
     fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(
         nrows=2, ncols=1, figsize=(figwidth, figheight)
@@ -184,7 +184,7 @@ def stem_plot(
 
     custom_handles = []
     custom_labels = []
-    for key, my_function in hexels.items():
+    for key, my_function in spikes.items():
         color = my_function.color
         label = my_function.function
 
@@ -287,15 +287,15 @@ def stem_plot(
 
 
 def causality_violation_score(
-    denoised_hexels: Dict[str, IPPMSpike],
+    denoised_spikes: Dict[str, IPPMSpike],
     hierarchy: Dict[str, List[str]],
     hemi: str,
     inputs: List[str],
 ) -> Tuple[float, int, int]:
     """
-    Assumption: hexels are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy hexels.
+    Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy spikes.
 
-    A score calculated on denoised hexels that calculates the proportion of arrows in IPPM that are going backward in time.
+    A score calculated on denoised spikes that calculates the proportion of arrows in IPPM that are going backward in time.
     It assumes that the function hierarchy is correct, which may not always be correct, so you must use it with caution.
 
     Algorithm
@@ -303,9 +303,9 @@ def causality_violation_score(
     violations = 0
     total_arrows = 0
     for each func_name, parents_list in hierarchy:
-        child_lat = min(hexels[func])
+        child_lat = min(spikes[func])
         for parent in parents_list:
-            parent_lat = max(hexels[parent])
+            parent_lat = max(spikes[parent])
             if child_lat < parent_lat:
                 violations++
             total_arrows++
@@ -314,18 +314,18 @@ def causality_violation_score(
 
     assert hemi == HEMI_LEFT or hemi == HEMI_RIGHT
 
-    def get_latency(func_hexels: IPPMSpike, mini: bool):
+    def get_latency(func_spikes: IPPMSpike, mini: bool):
         return (
             (
-                min(func_hexels.left_best_pairings, key=lambda x: x[0])
+                min(func_spikes.left_best_pairings, key=lambda x: x[0])
                 if hemi == HEMI_LEFT
-                else min(func_hexels.right_best_pairings, key=lambda x: x[0])
+                else min(func_spikes.right_best_pairings, key=lambda x: x[0])
             )
             if mini
             else (
-                max(func_hexels.left_best_pairings, key=lambda x: x[0])
+                max(func_spikes.left_best_pairings, key=lambda x: x[0])
                 if hemi == HEMI_LEFT
-                else max(func_hexels.right_best_pairings, key=lambda x: x[0])
+                else max(func_spikes.right_best_pairings, key=lambda x: x[0])
             )
         )
 
@@ -339,13 +339,13 @@ def causality_violation_score(
             continue
 
         if hemi == HEMI_LEFT:
-            if len(denoised_hexels[func].left_best_pairings) == 0:
+            if len(denoised_spikes[func].left_best_pairings) == 0:
                 continue
         else:
-            if len(denoised_hexels[func].right_best_pairings) == 0:
+            if len(denoised_spikes[func].right_best_pairings) == 0:
                 continue
 
-        child_latency = get_latency(denoised_hexels[func], mini=True)[0]
+        child_latency = get_latency(denoised_spikes[func], mini=True)[0]
         for inc_edge in inc_edges:
             if inc_edge in inputs:
                 # input node, so parent latency is 0
@@ -357,13 +357,13 @@ def causality_violation_score(
 
             # We need to ensure the function has significant spikes
             if hemi == HEMI_LEFT:
-                if len(denoised_hexels[inc_edge].left_best_pairings) == 0:
+                if len(denoised_spikes[inc_edge].left_best_pairings) == 0:
                     continue
             else:
-                if len(denoised_hexels[inc_edge].right_best_pairings) == 0:
+                if len(denoised_spikes[inc_edge].right_best_pairings) == 0:
                     continue
 
-            parent_latency = get_latency(denoised_hexels[inc_edge], mini=False)[0]
+            parent_latency = get_latency(denoised_spikes[inc_edge], mini=False)[0]
             if child_latency < parent_latency:
                 causality_violations += 1
             total_arrows += 1
@@ -376,26 +376,26 @@ def causality_violation_score(
 
 
 def transform_recall(
-    noisy_hexels: Dict[str, IPPMSpike],
+    noisy_spikes: Dict[str, IPPMSpike],
     funcs: List[str],
     ippm_dict: Dict[str, IPPMNode],
     hemi: str,
 ) -> Tuple[float]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
-    noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
+    noisy spikes are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
     along with causality violation to evaluate IPPMs and analyse their strengths and weaknesses.
 
     One thing to note is that the recall depends upon the nature of the dataset. If certain functions have no
     significant spikes, there is an inherent bias present in the dataset. We can never get the function recall to be
     perfect no matter what algorithm we employ. Therefore, the function recall is based on what we can actually do
-    with a dataset. E.g., 9 functions in the hierarchy but in the noisy hexels we find only 7 of the 9 functions.
+    with a dataset. E.g., 9 functions in the hierarchy but in the noisy spikes we find only 7 of the 9 functions.
     Moreover, after denoising we find that there are only 6 functions in the hierarchy. The recall will be 6/7
     rather than 6/9 since there were only 7 to be found to begin with.
 
     Params
     ------
-    hexels: the noisy hexels that we denoise and feed into IPPMBuilder. It must be the same dataset.
+    spikes: the noisy spikes that we denoise and feed into IPPMBuilder. It must be the same dataset.
     funcs: list of functions that are in our hierarchy. Don't include the input function, e.g., input_cochlear.
     ippm_dict: the return value from IPPMBuilder. It contains node names as keys and Node objects as values.
     hemi: left or right
@@ -413,9 +413,9 @@ def transform_recall(
     detected_funcs = 0
     for func in funcs:
         pairings = (
-            noisy_hexels[func].right_best_pairings
+            noisy_spikes[func].right_best_pairings
             if hemi == HEMI_RIGHT
-            else noisy_hexels[func].left_best_pairings
+            else noisy_spikes[func].left_best_pairings
         )
         for latency, spike in pairings:
             # Step 2: Find a pairing that is significant
@@ -438,53 +438,53 @@ def transform_recall(
     )
 
 
-def convert_to_power10(hexels: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
+def convert_to_power10(spikes: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
     """
     Utility function to take data from the .nkg format and convert it to power of 10, so it can be used for IPPMs.
 
     Parameters
     ------------
-    hexels: dict function_name as key and hexel object as value. Hexels contain pairings for left/right.
+    spikes: dict function_name as key and spike object as value. Spikes contain pairings for left/right.
 
     Returns
     --------
     same dict but the pairings are all raised to power x. E.g., pairings = [(lat1, x), ..., (latn, xn)] -> [(lat1, 10^x), ..., (latn, 10^xn)]
     """
-    for func, hexel in hexels.items():
-        hexels[func].right_best_pairings = list(
-            map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].right_best_pairings)
+    for func in spikes.keys():
+        spikes[func].right_best_pairings = list(
+            map(lambda x: (x[0], math.pow(10, x[1])), spikes[func].right_best_pairings)
         )
-        hexels[func].left_best_pairings = list(
-            map(lambda x: (x[0], math.pow(10, x[1])), hexels[func].left_best_pairings)
+        spikes[func].left_best_pairings = list(
+            map(lambda x: (x[0], math.pow(10, x[1])), spikes[func].left_best_pairings)
         )
-    return hexels
+    return spikes
 
 
 def remove_excess_funcs(
-    to_retain: List[str], hexels: Dict[str, IPPMSpike]
+    to_retain: List[str], spikes: Dict[str, IPPMSpike]
 ) -> Dict[str, IPPMSpike]:
     """
-    Utility function to distill the hexels down to a subset of functions. Use this to visualise a subset of functions for time-series.
+    Utility function to distill the spikes down to a subset of functions. Use this to visualise a subset of functions for time-series.
     E.g., you want the time-series for one function, so just pass it wrapped in a list as to_retain
 
     Parameters
     ----------
-    to_retain: list of functions we want to retain in the hexels dict
-    hexels: hexels: dict function_name as key and hexel object as value. Hexels contain pairings for left/right.
+    to_retain: list of functions we want to retain in the spikes dict
+    spikes: dict function_name as key and spike object as value. Spikes contain pairings for left/right.
 
     Returns
     -------
-    hexels but all functions that aren't in to_retain are filtered.
+    spikes but all functions that aren't in to_retain are filtered.
     """
 
     funcs = list(
-        hexels.keys()
+        spikes.keys()
     )  # need this because we can't remove from the dict while also iterating over it.
     for func in funcs:
         if func not in to_retain:
             # delete
-            hexels.pop(func)
-    return hexels
+            spikes.pop(func)
+    return spikes
 
 
 def plot_k_dist_1D(
@@ -501,7 +501,7 @@ def plot_k_dist_1D(
 
     Parameters
     ----------
-    pairings: list of pairings extracted from a hexel. It contains the pairings for one function and one hemisphere
+    pairings: list of pairings extracted from a spikes. It contains the pairings for one function and one hemisphere
     k: the k we use to find the kth neighbour. Paper above advises to use k=4.
     normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
 
@@ -532,59 +532,59 @@ def plot_k_dist_1D(
 
 
 def copy_hemisphere(
-    hexels_to: Dict[str, IPPMSpike],
-    hexels_from: Dict[str, IPPMSpike],
+    spikes_to: Dict[str, IPPMSpike],
+    spikes_from: Dict[str, IPPMSpike],
     hemi_to: str,
     hemi_from: str,
     func: str = None,
 ):
     """
     Utility function to copy a hemisphere onto another one. The primary use-case is to plot the denoised hemisphere against the
-    noisy hemisphere using the same hexel object. I.e., copy right hemisphere to left; denoise on right; plot right vs left.
+    noisy hemisphere using the same spike object. I.e., copy right hemisphere to left; denoise on right; plot right vs left.
 
     Parameters
     ----------
-    hexels_to: Hexels we are writing into. Could be (de)noisy hexels.
-    hexels_from: Hexels we are copying from
-    hemi_to: the hemisphere we index into when we write into hexels_to. E.g., hexels_to[hemi_to] = hexels_from[hemi_from]
-    hemi_from: the hemisphere we index into when we copy the hexels from hexels_from.
+    spikes_to: Spikes we are writing into. Could be (de)noisy spikes.
+    spikes_from: Spikes we are copying from
+    hemi_to: the hemisphere we index into when we write into spikes_to. E.g., spikes_to[hemi_to] = spikes_from[hemi_from]
+    hemi_from: the hemisphere we index into when we copy the spikes from spikes_from.
     func: if func != None, we only copy one function. Otherwise, we copy all.
 
     Returns
     -------
-    Nothing, everything is done in-place. I.e., hexels_to is now updated.
+    Nothing, everything is done in-place. I.e., spikes_to is now updated.
     """
     if func:
         # copy only one function
         if hemi_to == HEMI_RIGHT and hemi_from == HEMI_RIGHT:
-            hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
+            spikes_to[func].right_best_pairings = spikes_from[func].right_best_pairings
         elif hemi_to == HEMI_RIGHT and hemi_from == HEMI_LEFT:
-            hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
+            spikes_to[func].right_best_pairings = spikes_from[func].left_best_pairings
         elif hemi_to == HEMI_LEFT and hemi_from == HEMI_RIGHT:
-            hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
+            spikes_to[func].left_best_pairings = spikes_from[func].right_best_pairings
         else:
-            hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
+            spikes_to[func].left_best_pairings = spikes_from[func].left_best_pairings
         return
 
-    for func, hexel in hexels_from.items():
+    for func in spikes_from.keys():
         if hemi_to == HEMI_RIGHT and hemi_from == HEMI_RIGHT:
-            hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
+            spikes_to[func].right_best_pairings = spikes_from[func].right_best_pairings
         elif hemi_to == HEMI_RIGHT and hemi_from == HEMI_LEFT:
-            hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
+            spikes_to[func].right_best_pairings = spikes_from[func].left_best_pairings
         elif hemi_to == HEMI_LEFT and hemi_from == HEMI_RIGHT:
-            hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
+            spikes_to[func].left_best_pairings = spikes_from[func].right_best_pairings
         else:
-            hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
+            spikes_to[func].left_best_pairings = spikes_from[func].left_best_pairings
 
 
-def plot_denoised_vs_noisy(hexels: Dict[str, IPPMSpike], clusterer, title: str):
+def plot_denoised_vs_noisy(spikes: Dict[str, IPPMSpike], clusterer, title: str):
     """
-    Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised hexels, which
+    Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised spikes, which
     are fed into a stem plot.
 
     Parameters
     ----------
-    hexels: hexels we want to denoise then plot
+    spikes: spikes we want to denoise then plot
     clusterer: A child class of DenoisingStrategy that implements .cluster
     title: title of plot
 
@@ -592,6 +592,6 @@ def plot_denoised_vs_noisy(hexels: Dict[str, IPPMSpike], clusterer, title: str):
     -------
     Nothing but plots a graph.
     """
-    denoised_hexels = clusterer.cluster(hexels, HEMI_RIGHT)
-    copy_hemisphere(denoised_hexels, hexels, HEMI_LEFT, HEMI_RIGHT)
-    stem_plot(denoised_hexels, title)
+    denoised_spikes = clusterer.cluster(spikes, HEMI_RIGHT)
+    copy_hemisphere(denoised_spikes, spikes, HEMI_LEFT, HEMI_RIGHT)
+    stem_plot(denoised_spikes, title)

@@ -177,8 +177,8 @@ def test_Should_copyHemisphere_When_validInput():
     hexels["f1"].right_best_pairings = [(20, 1e-20), (23, 1e-32), (35, 1e-44)]
     hexels["f1"].left_best_pairings = [(10, 1e-20), (21, 1e-55)]
     copy_hemisphere(
-        hexels_to=hexels,
-        hexels_from=hexels,
+        spikes_to=hexels,
+        spikes_from=hexels,
         hemi_to=HEMI_RIGHT,
         hemi_from=HEMI_LEFT,
         func="f1",
