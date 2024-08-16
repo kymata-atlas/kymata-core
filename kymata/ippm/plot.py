@@ -74,10 +74,10 @@ def plot_ippm(
             path_effects=[pe.withStroke(linewidth=4, foreground="white")],
         )
         ax.arrow(
-            x=path[0][-1] - 7, dx=1,
+            x=path[0][-1], dx=1,
             y=path[1][-1], dy=0,
-            shape="full", width=0, lw=0, head_width=.03, head_length=5, color=color,
-            length_includes_head=False, head_starts_at_zero=False,
+            shape="full", width=0, lw=0, head_width=.02, head_length=8, color=color,
+            length_includes_head=True, head_starts_at_zero=False,
         )
 
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
