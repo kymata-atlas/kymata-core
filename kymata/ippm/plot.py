@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import numpy as np
+from numpy.typing import NDArray
 from scipy.interpolate import splev
 
 from kymata.ippm.data_tools import IPPMNode
@@ -30,8 +31,8 @@ def plot_ippm(
         figwidth (int, optional): Width of the plot. Defaults to 10.
     """
     # first lets aggregate all the information.
-    node_x     = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (hexel_x[i], hexel_y[i])
-    node_y     = list(range(len(graph.keys())))  # y coordinates for nodes
+    node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (hexel_x[i], hexel_y[i])
+    node_y      = list(range(len(graph.keys())))  # y coordinates for nodes
     node_colors = list(range(len(graph.keys())))  # color for nodes
     node_sizes  = list(range(len(graph.keys())))  # size of nodes
     edge_colors = []
@@ -79,7 +80,7 @@ def plot_ippm(
             length_includes_head=False, head_starts_at_zero=False,
         )
 
-    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, zorder=2)
+    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     plt.title(title)
 
@@ -175,16 +176,16 @@ def _make_bspline_ctr_points(
     )
 
 
-def _make_bspline_path(ctr_points: np.array) -> List[np.array]:
+def _make_bspline_path(ctr_points: NDArray) -> List[NDArray]:
     """
     With an input of six control points, return an interpolated
     b-spline path which corresponds to a curved edge from one node to another.
 
     Args:
-        ctr_points (np.array): 2d np.array containing the coordinates of the center points.
+        ctr_points (NDArray): 2d NDArray containing the coordinates of the center points.
 
     Returns:
-        List[np.array]: A list of np.arrays that represent one BSpline path. The first list is a list of x-axis coordinates
+        List[NDArray]: A list of NDArrays that represent one BSpline path. The first list is a list of x-axis coordinates
             the second is a list of y-axis coordinates.
     """
     x = ctr_points[:, 0]
@@ -197,6 +198,6 @@ def _make_bspline_path(ctr_points: np.array) -> List[np.array]:
 
     tck = [t, [x, y], 3]
     u3 = np.linspace(0, 1, (max(length * 2, 70)), endpoint=True)
-    bspline_path = splev(u3, tck)
+    bspline_path: list[NDArray] = splev(u3, tck)
 
     return bspline_path
