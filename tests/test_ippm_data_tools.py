@@ -1,14 +1,14 @@
+"""
+Tests for kymata.ippm.data_tools
+"""
+
 from kymata.ippm.data_tools import (
-    IPPMHexel,
+    IPPMHexel, IPPMNode,
     build_hexel_dict_from_api_response,
     causality_violation_score,
-    transform_recall,
+    transform_recall, convert_to_power10, copy_hemisphere, remove_excess_funcs,
 )
-from collections import namedtuple
-import kymata.ippm.data_tools as data_tools
 import pytest
-
-Node = namedtuple("Node", "magnitude position inc_edges")
 
 
 def test_hexel():
@@ -122,9 +122,9 @@ def test_functionRecall_With_AllFuncsFound_Should_Return1():
     test_hexels["f1"].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
     test_hexels["f2"].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
     test_ippm = {
-        "f1-0": Node(1e-30, 10, []),
-        "f1-1": Node(1e-35, 15, ["f1-0"]),
-        "f2-0": Node(1e-50, 25, ["f1-1"]),
+        "f1-0": IPPMNode(1e-30, 10, []),
+        "f1-1": IPPMNode(1e-35, 15, ["f1-0"]),
+        "f2-0": IPPMNode(1e-50, 25, ["f1-1"]),
     }
     funcs = ["f1", "f2"]
     ratio, numer, denom = transform_recall(
@@ -138,18 +138,16 @@ def test_functionRecall_With_AllFuncsFound_Should_Return1():
 
 def test_functionRecall_With_InvalidHemiInput_Should_RaiseException():
     with pytest.raises(AssertionError):
-        transform_recall({}, [], {}, 'invalidHemisphere")
+        transform_recall({}, [], {}, "invalidHemisphere")
 
 
 def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
     test_hexels = {"f1": IPPMHexel("f1"), "f2": IPPMHexel("f2")}
     test_hexels["f1"].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
     test_hexels["f2"].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
-    test_ippm = {"f1-0": Node(1e-30, 10, []), "f1-1": Node(1e-35, 15, ["f1-0"])}
+    test_ippm = {"f1-0": IPPMNode(1e-30, 10, []), "f1-1": IPPMNode(1e-35, 15, ["f1-0"])}
     funcs = ["f1", "f2"]
-    ratio, numer, denom = function_recall(
-    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, 'leftHemisphere")
-    )
+    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, "leftHemisphere")
 
     assert ratio == 1 / 2
     assert numer == 1
@@ -159,7 +157,7 @@ def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
 def test_Should_convertToPower10_When_validInput():
     hexels = {"f1": IPPMHexel("f1")}
     hexels["f1"].right_best_pairings = [(10, -50), (20, -10), (30, -20), (40, -3)]
-    converted = data_tools.convert_to_power10(hexels)
+    converted = convert_to_power10(hexels)
     assert converted["f1"].right_best_pairings == [
         (10, 1e-50),
         (20, 1e-10),
@@ -171,7 +169,7 @@ def test_Should_convertToPower10_When_validInput():
 def test_Should_removeExcessFuncs_When_validInput():
     hexels = {"f1": IPPMHexel("f1"), "f2": IPPMHexel("f2"), "f3": IPPMHexel("f3")}
     to_retain = ["f2"]
-    filtered = data_tools.remove_excess_funcs(to_retain, hexels)
+    filtered = remove_excess_funcs(to_retain, hexels)
     assert list(filtered.keys()) == to_retain
 
 
@@ -179,7 +177,7 @@ def test_Should_copyHemisphere_When_validInput():
     hexels = {"f1": IPPMHexel("f1")}
     hexels["f1"].right_best_pairings = [(20, 1e-20), (23, 1e-32), (35, 1e-44)]
     hexels["f1"].left_best_pairings = [(10, 1e-20), (21, 1e-55)]
-    data_tools.copy_hemisphere(
+    copy_hemisphere(
         hexels_to=hexels,
         hexels_from=hexels,
         hemi_to="rightHemisphere",

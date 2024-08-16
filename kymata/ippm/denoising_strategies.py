@@ -141,7 +141,6 @@ class DenoisingStrategy(object):
         For a list of spikes, remove all that are not statistically significant and save them to a DataFrame.
 
         :param spikes: spikes we want to filter based on their statistical significance.
-        :param df: dataframe we will save the spikes to. Assumption: first column is Latency, second is Mag.
         :returns: DataFrame that is a subset of spikes with only significant spikes.
         """
         significant_datapoints = []

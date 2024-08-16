@@ -40,17 +40,17 @@ class IPPMHexel(object):
     """
 
     def __init__(
-                self,
-                function_name: str,
-                description: str = None,
-                github_commit: str = None,
-            ):
-            self.function = function_name
-            self.right_best_pairings = []
-            self.left_best_pairings = []
-            self.description = description
-            self.github_commit = github_commit
-            self.color = None
+        self,
+        function_name: str,
+        description: str = None,
+        github_commit: str = None,
+    ):
+        self.function = function_name
+        self.right_best_pairings = []
+        self.left_best_pairings = []
+        self.description = description
+        self.github_commit = github_commit
+        self.color = None
 
         self.input_stream = None
 

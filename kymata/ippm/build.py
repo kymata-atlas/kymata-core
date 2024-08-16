@@ -59,13 +59,12 @@ class IPPMBuilder:
         return current_functions.difference(functions_with_children)
 
     def _create_nodes_and_edges_for_function(
-			self,
-			function_name: str,
-            partition_size: float
+            self,
+            function_name: str,
+            partition_ptr: int,
+            partition_size: float,
     ) -> Dict[str, IPPMNode]:
         def __get_y_coordinate(curr_partition_number: int, partition_size: float) -> float:
-            curr_partition_number: int, partition_size: float
-        ) -> float:
             return 1 - partition_size * curr_partition_number
 
         func_parents = self._hierarchy[function_name]
