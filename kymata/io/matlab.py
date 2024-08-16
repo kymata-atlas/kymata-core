@@ -28,23 +28,28 @@ def load_mat_variable(path, variable_name: str):
 
 
 def load_matab_hexel_expression_files(
-        function_name: str,
-        lh_file: Path | str,
-        rh_file: Path | str,
-        flipped_lh_file: Optional[Path | str] = None,
-        flipped_rh_file: Optional[Path | str] = None,
+    function_name: str,
+    lh_file: Path | str,
+    rh_file: Path | str,
+    flipped_lh_file: Optional[Path | str] = None,
+    flipped_rh_file: Optional[Path | str] = None,
 ) -> HexelExpressionSet:
     """Load from a set of MATLAB files."""
 
     if flipped_lh_file is None or flipped_rh_file is None:
-        assert flipped_lh_file is None and flipped_rh_file is None, "Please supply 2 or 4 files."
+        assert (
+            flipped_lh_file is None and flipped_rh_file is None
+        ), "Please supply 2 or 4 files."
         return _load_matab_expression_files_combined_flipped(
             function_name=function_name, lh_file=lh_file, rh_file=rh_file
         )
     else:
         return _load_matab_expression_files_separate_flipped(
-            function_name=function_name, lh_file=lh_file, rh_file=rh_file,
-            flipped_lh_file=flipped_lh_file, flipped_rh_file=flipped_rh_file
+            function_name=function_name,
+            lh_file=lh_file,
+            rh_file=rh_file,
+            flipped_lh_file=flipped_lh_file,
+            flipped_rh_file=flipped_rh_file,
         )
 
 
@@ -58,27 +63,29 @@ def _load_matlab_validate(lh_mats: tuple[dict, ...], rh_mats: tuple[dict, ...]) 
     # All the same function
     assert all_equal([_base_function_name(mat["functionname"]) for mat in all_mats])
     # Timing information is the same
-    assert all_equal([mat["latency_step"]               for mat in all_mats])
-    assert all_equal([len(mat["latencies"])             for mat in all_mats])
-    assert all_equal([mat["nTimePoints"]                for mat in all_mats])
-    assert all_equal([mat["outputSTC"]["tmin"]          for mat in all_mats])
-    assert all_equal([mat["outputSTC"]["tstep"]         for mat in all_mats])
+    assert all_equal([mat["latency_step"] for mat in all_mats])
+    assert all_equal([len(mat["latencies"]) for mat in all_mats])
+    assert all_equal([mat["nTimePoints"] for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["tmin"] for mat in all_mats])
+    assert all_equal([mat["outputSTC"]["tstep"] for mat in all_mats])
     assert all_equal([mat["outputSTC"]["data"].shape[0] for mat in all_mats])
 
     assert all_mats[0]["outputSTC"]["data"].shape[0] == all_mats[0]["nTimePoints"]
     # Spatial information is the same
-    assert all_equal([mat["nVertices"]                       for mat in lh_mats])
-    assert all_equal([mat["nVertices"]                       for mat in rh_mats])
-    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in lh_mats])
-    assert all_equal([len(mat["outputSTC"]["vertices"])      for mat in rh_mats])
-    assert all_equal([mat["outputSTC"]["data"].shape[1]      for mat in all_mats])
+    assert all_equal([mat["nVertices"] for mat in lh_mats])
+    assert all_equal([mat["nVertices"] for mat in rh_mats])
+    assert all_equal([len(mat["outputSTC"]["vertices"]) for mat in lh_mats])
+    assert all_equal([len(mat["outputSTC"]["vertices"]) for mat in rh_mats])
+    assert all_equal([mat["outputSTC"]["data"].shape[1] for mat in all_mats])
     assert all_mats[0]["outputSTC"]["data"].shape[1] == all_mats[0]["nVertices"]
 
 
 def _load_matlab_downsample_ratio(lh_mat: dict) -> int:
     # If the data has been downsampled
-    if lh_mat["outputSTC"]["tstep"] != lh_mat["latency_step"]/1000:
-        downsample_ratio = (lh_mat["latency_step"] / 1000) / lh_mat["outputSTC"]["tstep"]
+    if lh_mat["outputSTC"]["tstep"] != lh_mat["latency_step"] / 1000:
+        downsample_ratio = (lh_mat["latency_step"] / 1000) / lh_mat["outputSTC"][
+            "tstep"
+        ]
         assert downsample_ratio == int(downsample_ratio)
         downsample_ratio = int(downsample_ratio)
     else:
@@ -93,17 +100,21 @@ def _prep_matlab_data(data, n_latencies, downsample_ratio):
         # we replace those with p=1.0 to ignore
         nan_to_num(
             nan=1.0,
-            x=_downsample_data(data, downsample_ratio)
-            # Trim excess
-            [:n_latencies, :],
+            x=_downsample_data(data, downsample_ratio)[
+                # Trim excess
+                :n_latencies, :
+            ],
         )
     )
 
 
 def _load_matab_expression_files_separate_flipped(
-        function_name: str,
-        lh_file: Path | str, flipped_lh_file: Path | str,
-        rh_file: Path | str, flipped_rh_file: Path | str) -> HexelExpressionSet:
+    function_name: str,
+    lh_file: Path | str,
+    flipped_lh_file: Path | str,
+    rh_file: Path | str,
+    flipped_rh_file: Path | str,
+) -> HexelExpressionSet:
     """
     For loading Matlab files where the flipped and non-flipped versions are separate
     (expects 4 files).
@@ -120,32 +131,56 @@ def _load_matab_expression_files_separate_flipped(
     # Check 4 files are compatible
     assert lh_mat["leftright"] == flipped_lh_mat["leftright"] == "lh"
     assert rh_mat["leftright"] == flipped_rh_mat["leftright"] == "rh"
-    _load_matlab_validate(lh_mats=(lh_mat, flipped_lh_mat), rh_mats=(rh_mat, flipped_rh_mat))
+    _load_matlab_validate(
+        lh_mats=(lh_mat, flipped_lh_mat), rh_mats=(rh_mat, flipped_rh_mat)
+    )
 
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
     # Combine flipped and non-flipped
     # Matlab data contains p-values
-    logp_matrix_lh = p_to_logp(minimum(
-        _prep_matlab_data(lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio),
-        _prep_matlab_data(flipped_lh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
-    ))
-    logp_matrix_rh = p_to_logp(minimum(
-        _prep_matlab_data(rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio),
-        _prep_matlab_data(flipped_rh_mat["outputSTC"]["data"], n_latencies=len(lh_mat["latencies"]), downsample_ratio=downsample_ratio)
-    ))
+    logp_matrix_lh = p_to_logp(
+        minimum(
+            _prep_matlab_data(
+                lh_mat["outputSTC"]["data"],
+                n_latencies=len(lh_mat["latencies"]),
+                downsample_ratio=downsample_ratio,
+            ),
+            _prep_matlab_data(
+                flipped_lh_mat["outputSTC"]["data"],
+                n_latencies=len(lh_mat["latencies"]),
+                downsample_ratio=downsample_ratio,
+            ),
+        )
+    )
+    logp_matrix_rh = p_to_logp(
+        minimum(
+            _prep_matlab_data(
+                rh_mat["outputSTC"]["data"],
+                n_latencies=len(lh_mat["latencies"]),
+                downsample_ratio=downsample_ratio,
+            ),
+            _prep_matlab_data(
+                flipped_rh_mat["outputSTC"]["data"],
+                n_latencies=len(lh_mat["latencies"]),
+                downsample_ratio=downsample_ratio,
+            ),
+        )
+    )
 
     return HexelExpressionSet(
         functions=function_name,
-        hexels_lh=lh_mat["outputSTC"]["vertices"], hexels_rh=rh_mat["outputSTC"]["vertices"],
+        hexels_lh=lh_mat["outputSTC"]["vertices"],
+        hexels_rh=rh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
-        data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
+        data_lh=array(logp_matrix_lh).T,
+        data_rh=array(logp_matrix_rh).T,
     )
 
 
 def _load_matab_expression_files_combined_flipped(
-        function_name: str,
-        lh_file: Path | str, rh_file: Path | str) -> HexelExpressionSet:
+    function_name: str, lh_file: Path | str, rh_file: Path | str
+) -> HexelExpressionSet:
     """
     For loading Matlab files where the flipped and non-flipped versions are already combined
     (expects 2 files).
@@ -165,18 +200,28 @@ def _load_matab_expression_files_combined_flipped(
 
     downsample_ratio = _load_matlab_downsample_ratio(lh_mat)
 
-    logp_matrix_lh = p_to_logp(_prep_matlab_data(lh_mat["outputSTC"]["data"],
-                                                 n_latencies=len(lh_mat["latencies"]),
-                                                 downsample_ratio=downsample_ratio))
-    logp_matrix_rh = p_to_logp(_prep_matlab_data(rh_mat["outputSTC"]["data"],
-                                                 n_latencies=len(lh_mat["latencies"]),
-                                                 downsample_ratio=downsample_ratio))
+    logp_matrix_lh = p_to_logp(
+        _prep_matlab_data(
+            lh_mat["outputSTC"]["data"],
+            n_latencies=len(lh_mat["latencies"]),
+            downsample_ratio=downsample_ratio,
+        )
+    )
+    logp_matrix_rh = p_to_logp(
+        _prep_matlab_data(
+            rh_mat["outputSTC"]["data"],
+            n_latencies=len(lh_mat["latencies"]),
+            downsample_ratio=downsample_ratio,
+        )
+    )
 
     return HexelExpressionSet(
         functions=function_name,
-        hexels_lh=lh_mat["outputSTC"]["vertices"], hexels_rh=rh_mat["outputSTC"]["vertices"],
+        hexels_lh=lh_mat["outputSTC"]["vertices"],
+        hexels_rh=rh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
-        data_lh=array(logp_matrix_lh).T, data_rh=array(logp_matrix_rh).T,
+        data_lh=array(logp_matrix_lh).T,
+        data_rh=array(logp_matrix_rh).T,
     )
 
 

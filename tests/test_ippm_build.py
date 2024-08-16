@@ -9,7 +9,7 @@ test_hexels = {
     "func1": IPPMHexel("func1"),
     "func2": IPPMHexel("func2"),
     "func3": IPPMHexel("func3"),
-    "func4": IPPMHexel("func4")
+    "func4": IPPMHexel("func4"),
 }
 test_hexels["func1"].right_best_pairings = [(10, 1e-28), (25, 1e-79)]
 test_hexels["func2"].right_best_pairings = [(50, 1e-61)]
@@ -20,7 +20,7 @@ test_hierarchy = {
     "func1": ["input"],
     "func2": ["input", "func1"],
     "func3": ["func2"],
-    "func4": ["func3"]
+    "func4": ["func3"],
 }
 test_inputs = ["input"]
 test_hemi = "rightHemisphere"
@@ -31,13 +31,17 @@ def map_mag_to_size(x):
 
 
 def test_IPPMBuilder_BuildGraph_Successfully():
-
     builder = IPPMBuilder(test_hexels, test_inputs, test_hierarchy, test_hemi)
     expected_graph = {
         "input": (100, "abc", (0, 0.2), []),
         "func1-0": (map_mag_to_size(1e-28), "#023eff", (10, 0.4), ["input"]),
         "func1-1": (map_mag_to_size(1e-79), "#023eff", (25, 0.4), ["func1-0"]),
-        "func2-0": (map_mag_to_size(1e-61), "#0ff7c00", (50, 0.6), ["input", "func1-1"]),
+        "func2-0": (
+            map_mag_to_size(1e-61),
+            "#0ff7c00",
+            (50, 0.6),
+            ["input", "func1-1"],
+        ),
         "func3-0": (map_mag_to_size(1e-92), "#1ac938", (60, 0.8), ["func2-0"]),
         "func3-1": (map_mag_to_size(1e-12), "#1ac938", (65, 0.8), ["func3-0"]),
         "func4-0": (map_mag_to_size(1e-42), "#e8000b", (70, 1), ["func3-1"]),

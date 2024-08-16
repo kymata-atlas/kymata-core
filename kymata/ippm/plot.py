@@ -8,12 +8,14 @@ from scipy.interpolate import splev
 from kymata.ippm.data_tools import IPPMNode
 
 
-def plot_ippm(graph: Dict[str, IPPMNode],
-              colors: Dict[str, str],
-              title: str,
-              scaled_hexels: bool = False,
-              figheight: int = 5,
-              figwidth: int = 10):
+def plot_ippm(
+    graph: Dict[str, IPPMNode],
+    colors: Dict[str, str],
+    title: str,
+    scaled_hexels: bool = False,
+    figheight: int = 5,
+    figwidth: int = 10,
+):
     """
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
@@ -62,13 +64,15 @@ def plot_ippm(graph: Dict[str, IPPMNode],
     fig, ax = plt.subplots()
 
     for path, color in zip(bsplines, edge_colors):
-        ax.plot(path[0], path[1], color=color, linewidth='3', zorder=-1)
-        ax.text(x=path[0][0] + 10,
-                y=path[1][0] - 0.006,
-                s="function_name()",
-                color=color,
-                zorder=1,
-                path_effects=[pe.withStroke(linewidth=4, foreground="white")])
+        ax.plot(path[0], path[1], color=color, linewidth="3", zorder=-1)
+        ax.text(
+            x=path[0][0] + 10,
+            y=path[1][0] - 0.006,
+            s="function_name()",
+            color=color,
+            zorder=1,
+            path_effects=[pe.withStroke(linewidth=4, foreground="white")],
+        )
 
     ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=2)
 
@@ -77,16 +81,18 @@ def plot_ippm(graph: Dict[str, IPPMNode],
     ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
     ax.set_yticklabels([])
     ax.yaxis.set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.set_xlabel('Latency (ms)')
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.set_xlabel("Latency (ms)")
 
     fig.set_figheight(figheight)
     fig.set_figwidth(figwidth)
 
 
-def _make_bspline_paths(hexel_coordinate_pairs: List[List[Tuple[float, float]]]) -> List[List[np.array]]:
+def _make_bspline_paths(
+    hexel_coordinate_pairs: List[List[Tuple[float, float]]],
+) -> List[List[np.array]]:
     """
     Given a list of hexel positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -121,7 +127,9 @@ def _make_bspline_paths(hexel_coordinate_pairs: List[List[Tuple[float, float]]])
     return bspline_path_array
 
 
-def _make_bspline_ctr_points(start_and_end_node_coordinates: List[Tuple[float, float]]) -> np.array:
+def _make_bspline_ctr_points(
+    start_and_end_node_coordinates: List[Tuple[float, float]],
+) -> np.array:
     """
     Given the position of a start hexel and an end hexel, create
     a set of 6 control points needed for a b-spline.
@@ -146,21 +154,20 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: List[Tuple[float, f
         start_X, end_X = end_X, start_X
         start_Y, end_Y = end_Y, start_Y
 
-    return np.array([
-        # start
-        (start_X, start_Y),
-
-        # first 2
-        (start_X + 5, start_Y),
-        (start_X + 15, start_Y),
-
-        # second 2
-        (start_X + 20, end_Y),
-        (start_X + 30, end_Y),
-
-        # end
-        (end_X, end_Y),
-    ])
+    return np.array(
+        [
+            # start
+            (start_X, start_Y),
+            # first 2
+            (start_X + 5, start_Y),
+            (start_X + 15, start_Y),
+            # second 2
+            (start_X + 20, end_Y),
+            (start_X + 30, end_Y),
+            # end
+            (end_X, end_Y),
+        ]
+    )
 
 
 def _make_bspline_path(ctr_points: np.array) -> List[np.array]:

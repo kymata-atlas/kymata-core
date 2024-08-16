@@ -6,11 +6,13 @@ from kymata.ippm.plot import plot_ippm
 
 
 class IPPM:
-    def __init__(self,
-                 hexels: Dict[str, IPPMHexel],
-                 inputs: List[str],
-                 hierarchy: Dict[str, List[str]],
-                 hemisphere: str):
+    def __init__(
+        self,
+        hexels: Dict[str, IPPMHexel],
+        inputs: List[str],
+        hierarchy: Dict[str, List[str]],
+        hemisphere: str,
+    ):
         self._builder = IPPMBuilder(hexels, inputs, hierarchy, hemisphere)
 
     def create_ippm(self, colors: Dict[str, str], title: str):

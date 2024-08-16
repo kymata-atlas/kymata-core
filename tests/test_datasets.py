@@ -5,10 +5,16 @@ import os
 from kymata.datasets.sample import delete_dataset
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
-@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test only when run locally - otherwise github will download 0.5GB each"
-                                              "time we push")
+
+
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Test only when run locally - otherwise github will download 0.5GB each"
+    "time we push",
+)
 def test_download_and_delete_q3_2023_data_files():
     from kymata.datasets.sample import KymataMirror2023Q3Dataset
+
     dataset = KymataMirror2023Q3Dataset(download=False)
     try:
         dataset.download()
@@ -22,6 +28,7 @@ def test_download_and_delete_q3_2023_data_files():
 
 def test_download_and_delete_gm_loudness3_data_files():
     from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
+
     dataset = TVLInsLoudnessOnlyDataset(download=False)
     try:
         dataset.download()
