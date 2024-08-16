@@ -30,8 +30,8 @@ def plot_ippm(
         figwidth (int, optional): Width of the plot. Defaults to 10.
     """
     # first lets aggregate all the information.
-    hexel_x     = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (hexel_x[i], hexel_y[i])
-    hexel_y     = list(range(len(graph.keys())))  # y coordinates for nodes
+    node_x     = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (hexel_x[i], hexel_y[i])
+    node_y     = list(range(len(graph.keys())))  # y coordinates for nodes
     node_colors = list(range(len(graph.keys())))  # color for nodes
     node_sizes  = list(range(len(graph.keys())))  # size of nodes
     edge_colors = []
@@ -44,8 +44,7 @@ def plot_ippm(
                 break
 
         node_sizes[i] = graph[node].magnitude
-        hexel_x[i] = graph[node].position[0]
-        hexel_y[i] = graph[node].position[1]
+        node_x[i], node_y[i] = graph[node].position
 
         pairs = []
         for inc_edge in graph[node].inc_edges:
@@ -73,12 +72,18 @@ def plot_ippm(
             zorder=1,
             path_effects=[pe.withStroke(linewidth=4, foreground="white")],
         )
+        ax.arrow(
+            x=path[0][-1] - 7, dx=1,
+            y=path[1][-1], dy=0,
+            shape="full", width=0, lw=0, head_width=.03, head_length=5, color=color,
+            length_includes_head=False, head_starts_at_zero=False,
+        )
 
-    ax.scatter(x=hexel_x, y=hexel_y, c=node_colors, s=node_sizes, zorder=2)
+    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, zorder=2)
 
     plt.title(title)
 
-    ax.set_ylim(min(hexel_y) - 0.1, max(hexel_y) + 0.1)
+    ax.set_ylim(min(node_y) - 0.1, max(node_y) + 0.1)
     ax.set_yticklabels([])
     ax.yaxis.set_visible(False)
     ax.spines["top"].set_visible(False)
