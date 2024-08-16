@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
-from .data_tools import IPPMHexel
+from .data_tools import IPPMSpike
 from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
@@ -70,7 +70,7 @@ class DenoisingStrategy(object):
         )
         return threshold_for_significance
 
-    def denoise(self, hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
+    def denoise(self, hexels: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
         """
         For a set of functions, cluster their IPPMHexel and retain the most significant spikes per cluster.
 
@@ -119,7 +119,7 @@ class DenoisingStrategy(object):
 
         return hexels
 
-    def _map_hexels_to_df(self, hexels: Dict[str, IPPMHexel]) -> pd.DataFrame:
+    def _map_hexels_to_df(self, hexels: Dict[str, IPPMSpike]) -> pd.DataFrame:
         """
         A generator used to transform each pair of key, IPPMHexel to a DataFrame containing significance spikes only.
 
@@ -151,8 +151,8 @@ class DenoisingStrategy(object):
         return significant_datapoints
 
     def _update_pairings(
-        self, hexel: IPPMHexel, denoised: List[Tuple[float, float]]
-    ) -> IPPMHexel:
+        self, hexel: IPPMSpike, denoised: List[Tuple[float, float]]
+    ) -> IPPMSpike:
         """
         :param hexel: We want to update this hexel to store the denoised spikes, with max pooling if desired.
         :param denoised: We want to save these spikes into hexel, overwriting the previous ones.
@@ -220,8 +220,8 @@ class DenoisingStrategy(object):
         return __convert_df_to_list(most_significant_points)
 
     def _postprocess(
-        self, hexel: IPPMHexel, denoised_time_series: List[Tuple[float, float]]
-    ) -> IPPMHexel:
+        self, hexel: IPPMSpike, denoised_time_series: List[Tuple[float, float]]
+    ) -> IPPMSpike:
         """
         To postprocess, overwrite the hexel data with most significant points and perform any postprocessing steps,
         such as max pooling.
@@ -235,7 +235,7 @@ class DenoisingStrategy(object):
             hexel = self._perform_max_pooling(hexel)
         return hexel
 
-    def _perform_max_pooling(self, hexel: IPPMHexel) -> IPPMHexel:
+    def _perform_max_pooling(self, hexel: IPPMSpike) -> IPPMSpike:
         """
         Enforce the constraint that there is only 1 spike for a specific function. It is basically max(all_spikes).
 

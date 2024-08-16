@@ -1,8 +1,8 @@
 from copy import deepcopy
 import pandas as pd
 
-from kymata.ippm.data_tools import IPPMHexel
 from kymata.entities.constants import HEMI_RIGHT
+from kymata.ippm.data_tools import IPPMSpike
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy,
     AdaptiveMaxPoolingStrategy,
@@ -66,7 +66,7 @@ significant_test_data_func2 = [
 ]
 test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
 
-noisy_test_hexels = {"func1": IPPMHexel("func1"), "func2": IPPMHexel("func2")}
+noisy_test_hexels = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
 noisy_test_hexels["func1"].right_best_pairings = test_data_func1
 noisy_test_hexels["func2"].right_best_pairings = test_data_func2
 

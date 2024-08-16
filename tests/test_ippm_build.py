@@ -4,13 +4,13 @@ import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.build import IPPMBuilder
-from kymata.ippm.data_tools import IPPMHexel
+from kymata.ippm.data_tools import IPPMSpike
 
 test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2"),
-    "func3": IPPMHexel("func3"),
-    "func4": IPPMHexel("func4"),
+    "func1": IPPMSpike("func1"),
+    "func2": IPPMSpike("func2"),
+    "func3": IPPMSpike("func3"),
+    "func4": IPPMSpike("func4"),
 }
 test_hexels["func1"].right_best_pairings = [(10, 1e-28), (25, 1e-79)]
 test_hexels["func2"].right_best_pairings = [(50, 1e-61)]

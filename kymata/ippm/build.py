@@ -7,14 +7,14 @@ from typing import List, Dict, Tuple
 
 import numpy as np
 
-from .data_tools import IPPMHexel, IPPMNode
 from kymata.entities.constants import HEMI_RIGHT
+from kymata.ippm.data_tools import IPPMSpike, IPPMNode
 
 
 class IPPMBuilder:
     def __init__(
         self,
-        hexels: Dict[str, IPPMHexel],
+        hexels: Dict[str, IPPMSpike],
         inputs: List[str],
         hierarchy: Dict[str, List[str]],
         hemisphere: str,
@@ -42,7 +42,7 @@ class IPPMBuilder:
 
         return self._graph
 
-    def _sort_hexel_spikes_by_latency_asc(self) -> Dict[str, IPPMHexel]:
+    def _sort_hexel_spikes_by_latency_asc(self) -> Dict[str, IPPMSpike]:
         for function in self._hexels.keys():
             if self._hemisphere == HEMI_RIGHT:
                 self._hexels[function].right_best_pairings.sort(key=lambda x: x[0])
@@ -60,12 +60,11 @@ class IPPMBuilder:
         return current_functions.difference(functions_with_children)
 
     def _create_nodes_and_edges_for_function(
-            self,
-            function_name: str,
-            partition_ptr: int,
-            partition_size: float,
+        self, function_name: str, partition_ptr: int, partition_size: float
     ) -> Dict[str, IPPMNode]:
-        def __get_y_coordinate(curr_partition_number: int, partition_size: float) -> float:
+        def __get_y_coordinate(
+            curr_partition_number: int, partition_size: float
+        ) -> float:
             return 1 - partition_size * curr_partition_number
 
         func_parents = self._hierarchy[function_name]

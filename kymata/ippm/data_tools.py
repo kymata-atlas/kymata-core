@@ -27,7 +27,7 @@ class IPPMNode(NamedTuple):
     inc_edges: list
 
 
-class IPPMHexel(object):
+class IPPMSpike(object):
     """
     Container to hold data about a hexel spike.
 
@@ -70,7 +70,7 @@ class IPPMHexel(object):
             self.right_best_pairings.append(pairing)
 
 
-def fetch_data(api: str) -> Dict[str, IPPMHexel]:
+def fetch_data(api: str) -> Dict[str, IPPMSpike]:
     """
     Fetches data from Kymata API and converts it into a dictionary of function names as keys
     and hexel objects as values. Advantage of dict is O(1) look-up and hexel object is readable
@@ -91,7 +91,7 @@ def fetch_data(api: str) -> Dict[str, IPPMHexel]:
 
 def build_hexel_dict_from_expression_set(
     expression_set: HexelExpressionSet,
-) -> Dict[str, IPPMHexel]:
+) -> Dict[str, IPPMSpike]:
     """
     Builds the dictionary from an ExpressionSet. This function builds a new dictionary
     which has function names (fast look-up) and only necessary data.
@@ -115,12 +115,12 @@ def build_hexel_dict_from_expression_set(
             latency = row[DIM_LATENCY] * 1000  # convert to ms
             pval = row["value"]
             if func not in hexels:
-                hexels[func] = IPPMHexel(func)
+                hexels[func] = IPPMSpike(func)
             hexels[func].add_pairing(hemi, (latency, pval))
     return hexels
 
 
-def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
+def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
     """
     Builds the dictionary from response dictionary. Response dictionary has unneccesary
     keys and does not have function names as keys. This function builds a new dictionary
@@ -141,7 +141,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
             # discard id as it conveys no useful information
             if func not in hexels:
                 # first time seeing function, so create key and hexel object.
-                hexels[func] = IPPMHexel(func)
+                hexels[func] = IPPMSpike(func)
 
             hexels[func].add_pairing(hemi, (latency, pow(10, pval)))
 
@@ -149,7 +149,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
 
 
 def stem_plot(
-    hexels: Dict[str, IPPMHexel],
+    hexels: Dict[str, IPPMSpike],
     title: str,
     timepoints: int = 201,
     y_limit: float = pow(10, -100),
@@ -286,7 +286,7 @@ def stem_plot(
 
 
 def causality_violation_score(
-    denoised_hexels: Dict[str, IPPMHexel],
+    denoised_hexels: Dict[str, IPPMSpike],
     hierarchy: Dict[str, List[str]],
     hemi: str,
     inputs: List[str],
@@ -313,7 +313,7 @@ def causality_violation_score(
 
     assert hemi == HEMI_LEFT or hemi == HEMI_RIGHT
 
-    def get_latency(func_hexels: IPPMHexel, mini: bool):
+    def get_latency(func_hexels: IPPMSpike, mini: bool):
         return (
             (
                 min(func_hexels.left_best_pairings, key=lambda x: x[0])
@@ -374,11 +374,12 @@ def causality_violation_score(
     )
 
 
-def transform_recall(noisy_hexels: Dict[str, IPPMHexel],
-                     funcs: List[str],
-                     ippm_dict: Dict[str, IPPMNode],
-                     hemi: str,
-                     ) -> Tuple[float, float, float]:
+def function_recall(
+    noisy_hexels: Dict[str, IPPMSpike],
+    funcs: List[str],
+    ippm_dict: Dict[str, IPPMNode],
+    hemi: str,
+) -> Tuple[float]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
     noisy hexels are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
@@ -436,7 +437,7 @@ def transform_recall(noisy_hexels: Dict[str, IPPMHexel],
     )
 
 
-def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
+def convert_to_power10(hexels: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
     """
     Utility function to take data from the .nkg format and convert it to power of 10, so it can be used for IPPMs.
 
@@ -459,8 +460,8 @@ def convert_to_power10(hexels: Dict[str, IPPMHexel]) -> Dict[str, IPPMHexel]:
 
 
 def remove_excess_funcs(
-    to_retain: List[str], hexels: Dict[str, IPPMHexel]
-) -> Dict[str, IPPMHexel]:
+    to_retain: List[str], hexels: Dict[str, IPPMSpike]
+) -> Dict[str, IPPMSpike]:
     """
     Utility function to distill the hexels down to a subset of functions. Use this to visualise a subset of functions for time-series.
     E.g., you want the time-series for one function, so just pass it wrapped in a list as to_retain
@@ -530,8 +531,8 @@ def plot_k_dist_1D(
 
 
 def copy_hemisphere(
-    hexels_to: Dict[str, IPPMHexel],
-    hexels_from: Dict[str, IPPMHexel],
+    hexels_to: Dict[str, IPPMSpike],
+    hexels_from: Dict[str, IPPMSpike],
     hemi_to: str,
     hemi_from: str,
     func: str = None,
@@ -575,7 +576,7 @@ def copy_hemisphere(
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
 
 
-def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer, title: str):
+def plot_denoised_vs_noisy(hexels: Dict[str, IPPMSpike], clusterer, title: str):
     """
     Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised hexels, which
     are fed into a stem plot.
