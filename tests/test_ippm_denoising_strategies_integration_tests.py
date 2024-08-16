@@ -2,6 +2,7 @@ from copy import deepcopy
 import pandas as pd
 
 from kymata.ippm.data_tools import IPPMHexel
+from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy,
     AdaptiveMaxPoolingStrategy,
@@ -82,7 +83,7 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
     strategy = MaxPoolingStrategy(
-        hemi="rightHemisphere",
+        hemi=HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
         should_max_pool=True,
@@ -111,7 +112,7 @@ def test_MaxPoolingStrategy_AllFalse_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
-    strategy = MaxPoolingStrategy("rightHemisphere", bin_significance_threshold=2)
+    strategy = MaxPoolingStrategy(HEMI_RIGHT, bin_significance_threshold=2)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
@@ -130,7 +131,7 @@ def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
     strategy = AdaptiveMaxPoolingStrategy(
-        hemi="rightHemisphere",
+        hemi=HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
         bin_significance_threshold=2,
@@ -157,7 +158,7 @@ def test_AdaptiveMaxPoolingStrategy_AllFalse_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = AdaptiveMaxPoolingStrategy(
-        "rightHemisphere", bin_significance_threshold=2, base_bin_size=25
+        HEMI_RIGHT, bin_significance_threshold=2, base_bin_size=25
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
@@ -182,7 +183,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(26, 1e-59), (130, 1e-81)]
 
     strategy = GMMStrategy(
-        "rightHemisphere",
+        HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
         random_state=random_seed,
@@ -215,7 +216,7 @@ def test_GMMStrategy_AllFalse_Fit_Successfully():
         (26, 1e-59),
     ]
 
-    strategy = GMMStrategy("rightHemisphere", random_state=random_seed)
+    strategy = GMMStrategy(HEMI_RIGHT, random_state=random_seed)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
@@ -238,7 +239,7 @@ def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = DBSCANStrategy(
-        "rightHemisphere",
+        HEMI_RIGHT,
         should_normalise=False,
         should_cluster_only_latency=True,
         eps=25,
@@ -265,7 +266,7 @@ def test_DBSCANStrategy_AllFalse_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
-    strategy = DBSCANStrategy("rightHemisphere")
+    strategy = DBSCANStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
@@ -288,7 +289,7 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
     strategy = MeanShiftStrategy(
-        "rightHemisphere", should_normalise=False, should_cluster_only_latency=True
+        HEMI_RIGHT, should_normalise=False, should_cluster_only_latency=True
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
@@ -311,7 +312,7 @@ def test_MeanShiftStrategy_AllFalse_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
-    strategy = MeanShiftStrategy("rightHemisphere")
+    strategy = MeanShiftStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (

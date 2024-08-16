@@ -14,6 +14,7 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 import seaborn as sns
 
+from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
 
 
@@ -60,10 +61,10 @@ class IPPMHexel(object):
 
         Params
         ------
-            hemi : leftHemisphere or rightHemisphere
+            hemi : left or right
             pairing : Corresponds to the best match to a hexel spike of form (latency (ms), pvalue (log_10))
         """
-        if hemi == "leftHemisphere":
+        if hemi == HEMI_LEFT:
             self.left_best_pairings.append(pairing)
         else:
             self.right_best_pairings.append(pairing)
@@ -105,9 +106,9 @@ def build_hexel_dict_from_expression_set(
     """
     best_functions_left, best_functions_right = expression_set.best_functions()
     hexels = {}
-    for hemi in ["leftHemisphere", "rightHemisphere"]:
+    for hemi in [HEMI_LEFT, HEMI_RIGHT]:
         best_functions = (
-            best_functions_left if hemi == "leftHemisphere" else best_functions_right
+            best_functions_left if hemi == HEMI_LEFT else best_functions_right
         )
         for _idx, row in best_functions.iterrows():
             func = row[DIM_FUNCTION]
@@ -134,7 +135,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMHexel]:
         Dict of the format [function name, Hexel(func_name, id, left_pairings, right_pairings)]
     """
     hexels = {}
-    for hemi in ["leftHemisphere", "rightHemisphere"]:
+    for hemi in [HEMI_LEFT, HEMI_RIGHT]:
         for _, latency, pval, func in dict_[hemi]:
             # we have id, latency (ms), pvalue (log_10), function name.
             # discard id as it conveys no useful information
@@ -310,19 +311,19 @@ def causality_violation_score(
     return violations / total_arrows if total_arrows > 0 else 0
     """
 
-    assert hemi == "rightHemisphere" or hemi == "leftHemisphere"
+    assert hemi == HEMI_LEFT or hemi == HEMI_RIGHT
 
     def get_latency(func_hexels: IPPMHexel, mini: bool):
         return (
             (
                 min(func_hexels.left_best_pairings, key=lambda x: x[0])
-                if hemi == "leftHemisphere"
+                if hemi == HEMI_LEFT
                 else min(func_hexels.right_best_pairings, key=lambda x: x[0])
             )
             if mini
             else (
                 max(func_hexels.left_best_pairings, key=lambda x: x[0])
-                if hemi == "leftHemisphere"
+                if hemi == HEMI_RIGHT
                 else max(func_hexels.right_best_pairings, key=lambda x: x[0])
             )
         )
@@ -336,7 +337,7 @@ def causality_violation_score(
         if func in inputs:
             continue
 
-        if hemi == "leftHemisphere":
+        if hemi == HEMI_LEFT:
             if len(denoised_hexels[func].left_best_pairings) == 0:
                 continue
         else:
@@ -354,7 +355,7 @@ def causality_violation_score(
                 continue
 
             # We need to ensure the function has significant spikes
-            if hemi == "leftHemisphere":
+            if hemi == HEMI_LEFT:
                 if len(denoised_hexels[inc_edge].left_best_pairings) == 0:
                     continue
             else:
@@ -395,13 +396,13 @@ def transform_recall(noisy_hexels: Dict[str, IPPMHexel],
     hexels: the noisy hexels that we denoise and feed into IPPMBuilder. It must be the same dataset.
     funcs: list of functions that are in our hierarchy. Don't include the input function, e.g., input_cochlear.
     ippm_dict: the return value from IPPMBuilder. It contains node names as keys and Node objects as values.
-    hemi: leftHemisphere or rightHemisphere
+    hemi: left or right
 
     Returns
     -------
     A ratio indicating how many channels were incorporated into the IPPM out of all relevant channels.
     """
-    assert hemi == "rightHemisphere" or hemi == "leftHemisphere"
+    assert hemi == HEMI_RIGHT or hemi == HEMI_LEFT
 
     # Step 1: Calculate significance level
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
@@ -411,7 +412,7 @@ def transform_recall(noisy_hexels: Dict[str, IPPMHexel],
     for func in funcs:
         pairings = (
             noisy_hexels[func].right_best_pairings
-            if hemi == "rightHemisphere"
+            if hemi == HEMI_RIGHT
             else noisy_hexels[func].left_best_pairings
         )
         for latency, spike in pairings:
@@ -553,22 +554,22 @@ def copy_hemisphere(
     """
     if func:
         # copy only one function
-        if hemi_to == "rightHemisphere" and hemi_from == "rightHemisphere":
+        if hemi_to == HEMI_RIGHT and hemi_from == HEMI_RIGHT:
             hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
-        elif hemi_to == "rightHemisphere" and hemi_from == "leftHemisphere":
+        elif hemi_to == HEMI_RIGHT and hemi_from == HEMI_LEFT:
             hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
-        elif hemi_to == "leftHemisphere" and hemi_from == "rightHemisphere":
+        elif hemi_to == HEMI_LEFT and hemi_from == HEMI_RIGHT:
             hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
         else:
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
         return
 
     for func, hexel in hexels_from.items():
-        if hemi_to == "rightHemisphere" and hemi_from == "rightHemisphere":
+        if hemi_to == HEMI_RIGHT and hemi_from == HEMI_RIGHT:
             hexels_to[func].right_best_pairings = hexels_from[func].right_best_pairings
-        elif hemi_to == "rightHemisphere" and hemi_from == "leftHemisphere":
+        elif hemi_to == HEMI_RIGHT and hemi_from == HEMI_LEFT:
             hexels_to[func].right_best_pairings = hexels_from[func].left_best_pairings
-        elif hemi_to == "leftHemisphere" and hemi_from == "rightHemisphere":
+        elif hemi_to == HEMI_LEFT and hemi_from == HEMI_RIGHT:
             hexels_to[func].left_best_pairings = hexels_from[func].right_best_pairings
         else:
             hexels_to[func].left_best_pairings = hexels_from[func].left_best_pairings
@@ -589,6 +590,6 @@ def plot_denoised_vs_noisy(hexels: Dict[str, IPPMHexel], clusterer, title: str):
     -------
     Nothing but plots a graph.
     """
-    denoised_hexels = clusterer.cluster(hexels, "rightHemisphere")
-    copy_hemisphere(denoised_hexels, hexels, "leftHemisphere", "rightHemisphere")
+    denoised_hexels = clusterer.cluster(hexels, HEMI_RIGHT)
+    copy_hemisphere(denoised_hexels, hexels, HEMI_LEFT, HEMI_RIGHT)
     stem_plot(denoised_hexels, title)

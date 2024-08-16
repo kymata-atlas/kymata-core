@@ -7,6 +7,7 @@ from pandas.testing import assert_frame_equal
 
 import math
 from kymata.ippm.data_tools import IPPMHexel
+from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.denoising_strategies import DenoisingStrategy
 
 test_data_func1 = [
@@ -108,7 +109,7 @@ def test_DenoisingStrategy_Denoise_Successfully(
     mock_get_denoised.side_effect = [denoised_func1, denoised_func2]
     mock_postprocess.side_effect = [func1_hexel, func2_hexel]
 
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     strategy._clusterer = clusterer
     actual_hexels = strategy.denoise(noisy_test_hexels)
 
@@ -127,7 +128,7 @@ def test_DenoisingStrategy_Denoise_Successfully(
 )
 def test_DenoisingStrategy_MapHexelsToDF_Successfully(mock_filter):
     mock_filter.side_effect = [significant_test_data_func1, significant_test_data_func2]
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     actual_dfs = []
     for func, df in strategy._map_hexels_to_df(noisy_test_hexels):
         actual_dfs.append((func, df))
@@ -139,7 +140,7 @@ def test_DenoisingStrategy_MapHexelsToDF_Successfully(mock_filter):
 
 
 def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     actual_datapoints = strategy._filter_out_insignificant_spikes(test_data_func1)
     expected_datapoints = significant_test_data_func1
     assert actual_datapoints == expected_datapoints
@@ -147,7 +148,7 @@ def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():
 
 def test_DenoisingStrategy_UpdatePairings_Successfully():
     actual_hexel = deepcopy(noisy_test_hexels["func1"])
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     actual_hexel = strategy._update_pairings(actual_hexel, denoised_func1)
     assert actual_hexel.right_best_pairings == denoised_func1
 
@@ -165,7 +166,7 @@ def test_DenoisingStrategy_Preprocess_Successfully():
     expected_df["Mag"] = df["Mag"]
 
     strategy = DenoisingStrategy(
-        "rightHemisphere", should_normalise=True, should_cluster_only_latency=True
+        HEMI_RIGHT, should_normalise=True, should_cluster_only_latency=True
     )
     preprocessed_df = strategy._preprocess(df)
 
@@ -175,7 +176,7 @@ def test_DenoisingStrategy_Preprocess_Successfully():
 def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
     mocked_clusterer = MagicMock()
     mocked_clusterer.labels_ = significant_test_data_func1_labels
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     strategy._clusterer = mocked_clusterer
     actual = strategy._get_denoised_time_series(test_df_func1)
 
@@ -193,7 +194,7 @@ def test_DenoisingStrategy_Postprocess_Successfully(
     max_pooled_hexel.right_best_pairings = [(30, 1e-100)]
     mock_perform_max.return_value = max_pooled_hexel
 
-    strategy = DenoisingStrategy("rightHemisphere", should_max_pool=True)
+    strategy = DenoisingStrategy(HEMI_RIGHT, should_max_pool=True)
     actual_hexel = strategy._postprocess(noisy_test_hexels["func1"], denoised_func1)
 
     assert actual_hexel == max_pooled_hexel
@@ -203,7 +204,7 @@ def test_DenoisingStrategy_PerformMaxPooling_Successfully():
     max_pooled_hexel = deepcopy(denoised_test_hexels["func1"])
     max_pooled_hexel.right_best_pairings = [(30, 1e-100)]
 
-    strategy = DenoisingStrategy("rightHemisphere")
+    strategy = DenoisingStrategy(HEMI_RIGHT)
     actual_max_pooled = strategy._perform_max_pooling(denoised_test_hexels["func1"])
 
     assert actual_max_pooled.right_best_pairings == max_pooled_hexel.right_best_pairings

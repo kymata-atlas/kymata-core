@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
+from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.build import IPPMBuilder
 from kymata.ippm.data_tools import IPPMHexel
 
@@ -23,7 +24,7 @@ test_hierarchy = {
     "func4": ["func3"],
 }
 test_inputs = ["input"]
-test_hemi = "rightHemisphere"
+test_hemi = HEMI_RIGHT
 
 
 def map_mag_to_size(x):

@@ -1,6 +1,7 @@
 import unittest
 import unittest.mock as mock
 
+from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.ippm import data_tools
 
 
@@ -10,8 +11,8 @@ class TestDataTools(unittest.TestCase):
     def test_fetch_data(self, mock_requests, mock_json):
         # set up mock
         test_dict = {
-            "leftHemisphere": [[2, 1, 0.012, "left1"], [2, 14, 0.213, "left1"]],
-            "rightHemisphere": [[3, 51, 0.1244, "left1"], [4, 345, 0.557, "right1"]],
+            HEMI_LEFT: [[2, 1, 0.012, "left1"], [2, 14, 0.213, "left1"]],
+            HEMI_RIGHT: [[3, 51, 0.1244, "left1"], [4, 345, 0.557, "right1"]],
         }
 
         mock_requests.get.return_value = mock_requests  # we dont care about return since we mock json and return test_dict by mocking the json

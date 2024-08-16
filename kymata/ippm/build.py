@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple
 import numpy as np
 
 from .data_tools import IPPMHexel, IPPMNode
+from kymata.entities.constants import HEMI_RIGHT
 
 
 class IPPMBuilder:
@@ -43,7 +44,7 @@ class IPPMBuilder:
 
     def _sort_hexel_spikes_by_latency_asc(self) -> Dict[str, IPPMHexel]:
         for function in self._hexels.keys():
-            if self._hemisphere == "rightHemisphere":
+            if self._hemisphere == HEMI_RIGHT:
                 self._hexels[function].right_best_pairings.sort(key=lambda x: x[0])
             else:
                 self._hexels[function].left_best_pairings.sort(key=lambda x: x[0])
@@ -90,7 +91,7 @@ class IPPMBuilder:
         if func in self._hexels.keys():
             return (
                 self._hexels[func].right_best_pairings
-                if self._hemisphere == "rightHemisphere"
+                if self._hemisphere == HEMI_RIGHT
                 else self._hexels[func].left_best_pairings
             )
         return []

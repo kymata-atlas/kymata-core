@@ -10,6 +10,7 @@ from sklearn.preprocessing import normalize
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 from .data_tools import IPPMHexel
+from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
 class DenoisingStrategy(object):
@@ -25,7 +26,7 @@ class DenoisingStrategy(object):
         **kwargs,
     ):
         """
-        :param hemi: Either "rightHemisphere" or "leftHemisphere". Indicates which hemisphere to cluster.
+        :param hemi: Either "right" or "left". Indicates which hemisphere to cluster.
         :param should_normalise:
                 Indicates whether the preprocessing step of scaling the data to be unit length should be done.
                 Unnormalised data places greater precedence on the latency dimension.
@@ -128,7 +129,7 @@ class DenoisingStrategy(object):
         for func, hexel in hexels.items():
             significant_spikes = self._filter_out_insignificant_spikes(
                 hexel.right_best_pairings
-                if self._hemi == "rightHemisphere"
+                if self._hemi == HEMI_RIGHT
                 else hexel.left_best_pairings,
             )
             df = pd.DataFrame(significant_spikes, columns=["Latency", "Mag"])
@@ -157,7 +158,7 @@ class DenoisingStrategy(object):
         :param denoised: We want to save these spikes into hexel, overwriting the previous ones.
         :returns: IPPM hexel with its state updated.
         """
-        if self._hemi == "rightHemisphere":
+        if self._hemi == HEMI_RIGHT:
             hexel.right_best_pairings = denoised
         else:
             hexel.left_best_pairings = denoised
@@ -242,11 +243,11 @@ class DenoisingStrategy(object):
         :returns: same hexel but with only one spike.
         """
         # we take minimum because smaller is more significant.
-        if hexel.left_best_pairings and self._hemi == "leftHemisphere":
+        if hexel.left_best_pairings and self._hemi == HEMI_LEFT:
             hexel.left_best_pairings = [
                 min(hexel.left_best_pairings, key=lambda x: x[1])
             ]
-        elif hexel.right_best_pairings and self._hemi == "rightHemisphere":
+        elif hexel.right_best_pairings and self._hemi == HEMI_RIGHT:
             hexel.right_best_pairings = [
                 min(hexel.right_best_pairings, key=lambda x: x[1])
             ]
