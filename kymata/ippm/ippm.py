@@ -17,4 +17,4 @@ class IPPM:
 
     def create_ippm(self, colors: Dict[str, str]):
         graph = self._builder.build_graph_dict()
-        plot_ippm(graph, colors, title="")
+        plot_ippm(graph, colors)

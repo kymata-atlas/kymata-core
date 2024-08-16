@@ -2,7 +2,7 @@ import json
 import math
 from itertools import cycle
 from statistics import NormalDist
-from typing import Tuple, Dict, List, NamedTuple
+from typing import Tuple, Dict, List, NamedTuple, Optional
 
 import requests
 import numpy as np
@@ -150,7 +150,7 @@ def build_hexel_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
 
 def stem_plot(
     hexels: Dict[str, IPPMSpike],
-    title: str,
+    title: Optional[str] = None,
     timepoints: int = 201,
     y_limit: float = pow(10, -100),
     number_of_hexels: int = 200000,
@@ -239,7 +239,8 @@ def stem_plot(
         )
         plot.set_yticks([1, pow(10, -50), pow(10, -100)])
 
-    left_hem_expression_plot.set_title(title)
+    if title is not None:
+        left_hem_expression_plot.set_title(title)
     left_hem_expression_plot.set_xticklabels([])
     right_hem_expression_plot.set_xlabel(
         "Latency (ms) relative to onset of the environment"

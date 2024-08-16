@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
@@ -12,7 +12,7 @@ from kymata.ippm.data_tools import IPPMNode
 def plot_ippm(
     graph: Dict[str, IPPMNode],
     colors: Dict[str, str],
-    title: str,
+    title: Optional[str] = None,
     scaled_hexels: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
@@ -82,7 +82,8 @@ def plot_ippm(
 
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
-    plt.title(title)
+    if title is not None:
+        plt.title(title)
 
     ax.set_ylim(min(node_y) - 0.1, max(node_y) + 0.1)
     ax.set_yticklabels([])
