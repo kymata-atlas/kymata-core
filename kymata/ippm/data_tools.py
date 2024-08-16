@@ -323,7 +323,7 @@ def causality_violation_score(
             if mini
             else (
                 max(func_hexels.left_best_pairings, key=lambda x: x[0])
-                if hemi == HEMI_RIGHT
+                if hemi == HEMI_LEFT
                 else max(func_hexels.right_best_pairings, key=lambda x: x[0])
             )
         )

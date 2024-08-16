@@ -58,9 +58,7 @@ def test_causalityViolation_With_RightHemi_Should_Succeed():
     test_hexels["f4"].right_best_pairings = [(100, 1e-19), (150, 1e-75)]
     test_hierarchy = {"f4": ["f3"], "f3": ["f1", "f2"], "f2": ["f1"], "f1": []}
 
-    assert causality_violation_score(
-        test_hexels, test_hierarchy, HEMI_RIGHT, ["f1"]
-    ) == (0.25, 1, 4)
+    assert causality_violation_score(test_hexels, test_hierarchy, HEMI_RIGHT, ["f1"]) == (0.25, 1, 4)
 
 
 def test_causalityViolation_With_LeftHemi_Should_Succeed():
