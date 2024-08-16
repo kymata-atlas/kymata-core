@@ -6,7 +6,7 @@ import pytest
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
 from kymata.ippm.data_tools import (
     IPPMSpike, IPPMNode,
-    build_hexel_dict_from_api_response,
+    build_spike_dict_from_api_response,
     causality_violation_score,
     transform_recall, convert_to_power10, copy_hemisphere, remove_excess_funcs,
 )
@@ -33,7 +33,7 @@ def test_build_hexel_dict():
         HEMI_RIGHT: [[3, 51, 0.1244, "left1"], [4, 345, 0.557, "right1"]],
     }
 
-    hexels = build_hexel_dict_from_api_response(test_dict)
+    hexels = build_spike_dict_from_api_response(test_dict)
 
     # check functions are saved correctly
     assert list(hexels.keys()) == ["left1", "right1"]
