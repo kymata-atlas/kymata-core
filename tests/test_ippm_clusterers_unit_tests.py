@@ -159,7 +159,7 @@ def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
     assert cluster_labels == expected_labels
 
 
-@patch("kymata.ippm.cluster.GMMClusterer")
+@patch("kymata.ippm.cluster.GaussianMixture")
 def test_Should_GMMClusterer_GridSearchForOptimalNumberOfClusters_Successfully(mock_gmm):
     first_gmm_mock = MagicMock(name="first_gmm")
     first_gmm_mock.bic.return_value = 100
