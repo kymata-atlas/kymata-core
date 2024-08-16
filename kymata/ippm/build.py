@@ -75,6 +75,10 @@ class IPPMBuilder:
             childless_func_pairings = self._get_best_pairings_from_hemisphere(
                 function_name
             )
+
+            if len(childless_func_pairings) == 0:
+                return self._graph
+
             self._graph = self._create_nodes_for_childless_function(
                 current_y_axis_coord, childless_func_pairings, function_name
             )
