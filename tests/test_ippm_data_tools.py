@@ -1,7 +1,6 @@
 """
 Tests for kymata.ippm.data_tools
 """
-from collections import namedtuple
 import pytest
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
@@ -11,7 +10,6 @@ from kymata.ippm.data_tools import (
     causality_violation_score,
     transform_recall, convert_to_power10, copy_hemisphere, remove_excess_funcs,
 )
-import kymata.ippm.data_tools as data_tools
 
 
 def test_hexel():

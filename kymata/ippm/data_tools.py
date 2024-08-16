@@ -374,7 +374,7 @@ def causality_violation_score(
     )
 
 
-def function_recall(
+def transform_recall(
     noisy_hexels: Dict[str, IPPMSpike],
     funcs: List[str],
     ippm_dict: Dict[str, IPPMNode],
