@@ -130,7 +130,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                                         place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                         k += 1
                                         # print('match')
-                            # import ipdb;ipdb.set_trace()
                             assert k == len(asr_text) - 1, 'end of asr text not reached'                            
 
                     else:    
@@ -205,7 +204,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                                     place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                     k += 1
                                     # print('match')
-                        # import ipdb;ipdb.set_trace()
                         # assert k == len(asr_text) - 1, 'end of asr text not reached'                            
 
                 else:    
@@ -221,7 +219,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                 func = place_holder[nn_neuron, :400_000]
             func_name += f'_{str(nn_neuron)}'
 
-            # import ipdb;ipdb.set_trace()
         elif 'salmonn' in str(function_path_without_suffix):
             for s in range(14):
                 if s == 0:
@@ -240,7 +237,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                 # The content is a string representation of a list, so we need to evaluate it
                 word_pieces = eval(content)
                 # Remove the '▁' from each word piece
-                asr_text += [word.replace('▁', '').lower() for word in word_pieces if word != '</s>']
+                asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces if word != '</s>']
 
             mfa_text = load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_text.txt'))
             mfa_time = np.array(load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
@@ -273,8 +270,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                 k += 1
                                 # print('match')
-                    assert k == len(asr_text) - 1, 'end of asr text not reached'       
-                    import ipdb;ipdb.set_trace()                     
+                    # assert k == len(asr_text) - 1, 'end of asr text not reached'                    
             else:
                 j = nn_neuron
                 k = 0       # k is the index for salmonn space, and i is the index for mfa space
@@ -302,7 +298,6 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                             place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                             k += 1
                             # print('match')
-                # import ipdb;ipdb.set_trace()
                 # assert k == len(asr_text) - 1, 'end of asr text not reached'                        
 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
