@@ -8,7 +8,7 @@ from kymata.ippm.denoising_strategies import (
     AdaptiveMaxPoolingStrategy,
     GMMStrategy,
     DBSCANStrategy,
-    MeanShiftStrategy,
+    MeanShiftStrategy, MAGNITUDE, LATENCY,
 )
 
 test_data_func1 = [
@@ -43,7 +43,7 @@ significant_test_data_func1 = [
     [211, 1e-55],
 ]
 significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
-test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=["Latency", "Mag"])
+test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=[LATENCY, MAGNITUDE])
 
 test_data_func2 = [
     [-30, 1e-2],
@@ -64,7 +64,7 @@ significant_test_data_func2 = [
     [131, 1e-23],
     [131, 1e-76],
 ]
-test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
+test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=[LATENCY, MAGNITUDE])
 
 noisy_test_hexels = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
 noisy_test_hexels["func1"].right_best_pairings = test_data_func1
