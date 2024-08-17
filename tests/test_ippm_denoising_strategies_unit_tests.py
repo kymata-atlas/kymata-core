@@ -9,7 +9,7 @@ import math
 
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.data_tools import IPPMSpike
-from kymata.ippm.denoising_strategies import DenoisingStrategy
+from kymata.ippm.denoising_strategies import DenoisingStrategy, LATENCY, MAGNITUDE
 
 test_data_func1 = [
     [-100, 1e-50],
@@ -43,10 +43,10 @@ significant_test_data_func1 = [
     [211, 1e-55],
 ]
 significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
-test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=["Latency", "Mag"])
+test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=[LATENCY, MAGNITUDE])
 denoised_func1 = [(-75, 1e-75), (30, 1e-100), (199, 1e-90)]
 
-test_empty_df = pd.DataFrame([], columns=["Latency", "Mag"])
+test_empty_df = pd.DataFrame([], columns=[LATENCY, MAGNITUDE])
 
 test_data_func2 = [
     [-30, 1e-2],
@@ -67,7 +67,7 @@ significant_test_data_func2 = [
     [131, 1e-23],
     [131, 1e-76],
 ]
-test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
+test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=[LATENCY, MAGNITUDE])
 denoised_func2 = [(30, 1e-99), (130, 1e-81)]
 
 noisy_test_spikes = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
@@ -163,8 +163,8 @@ def test_DenoisingStrategy_Preprocess_Successfully():
     normed_latencies = list(
         map(lambda x: x[0] / sqrt_sum_squared_latencies, significant_test_data_func2)
     )
-    expected_df = pd.DataFrame(normed_latencies, columns=["Latency"])
-    expected_df["Mag"] = df["Mag"]
+    expected_df = pd.DataFrame(normed_latencies, columns=[LATENCY])
+    expected_df[MAGNITUDE] = df[MAGNITUDE]
 
     strategy = DenoisingStrategy(
         HEMI_RIGHT, should_normalise=True, should_cluster_only_latency=True
