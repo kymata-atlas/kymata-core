@@ -1,7 +1,7 @@
 import json
 import math
 from statistics import NormalDist
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import requests
 import pandas as pd
@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY, COL_LOGP_VALUE
 from kymata.ippm.plot import stem_plot
+
+
+class Pairing(NamedTuple):
+    latency: float
+    pvalue: float
 
 
 class IPPMNode(NamedTuple):
@@ -42,16 +47,16 @@ class IPPMSpike(object):
         description: str = None,
         github_commit: str = None,
     ):
-        self.function = function_name
-        self.right_best_pairings = []
-        self.left_best_pairings = []
-        self.description = description
-        self.github_commit = github_commit
-        self.color = None
+        self.function: str = function_name
+        self.right_best_pairings: list[Pairing] = []
+        self.left_best_pairings: list[Pairing] = []
+        self.description: str = description
+        self.github_commit: str = github_commit
+        self.color: Optional[str] = None
 
-        self.input_stream = None
+        self.input_stream: Optional[str] = None
 
-    def add_pairing(self, hemi: str, pairing: tuple[float, float]):
+    def add_pairing(self, hemi: str, pairing: Pairing):
         """
         Use this to add new pairings. Pair = (latency (ms), pvalue (log_10))
 
@@ -119,7 +124,7 @@ def build_spike_dict_from_expression_set( expression_set: HexelExpressionSet) ->
             pval = row[COL_LOGP_VALUE]
             if func not in spikes:
                 spikes[func] = IPPMSpike(func)
-            spikes[func].add_pairing(hemi, (latency, pval))
+            spikes[func].add_pairing(hemi, Pairing(latency, pval))
     return spikes
 
 
@@ -146,7 +151,7 @@ def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
                 # first time seeing function, so create key and spike object.
                 spikes[func] = IPPMSpike(func)
 
-            spikes[func].add_pairing(hemi, (latency, pow(10, pval)))
+            spikes[func].add_pairing(hemi, Pairing(latency, pow(10, pval)))
 
     return spikes
 
@@ -245,7 +250,7 @@ def transform_recall(
     funcs: list[str],
     ippm_dict: IPPMGraph,
     hemi: str,
-) -> tuple[float]:
+) -> tuple[float, int, int]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
     noisy spikes are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
@@ -351,7 +356,7 @@ def remove_excess_funcs(to_retain: list[str], spikes: SpikeDict) -> SpikeDict:
 
 
 def plot_k_dist_1D(
-    pairings: list[tuple[float, float]], k: int = 4, normalise: bool = False
+    pairings: list[Pairing], k: int = 4, normalise: bool = False
 ):
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.

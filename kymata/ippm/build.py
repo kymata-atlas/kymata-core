@@ -7,7 +7,7 @@ from copy import deepcopy
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMNode, SpikeDict, IPPMGraph, TransformHierarchy
+from kymata.ippm.data_tools import IPPMNode, SpikeDict, IPPMGraph, TransformHierarchy, Pairing
 
 
 class IPPMBuilder:
@@ -89,7 +89,7 @@ class IPPMBuilder:
 
     def _get_best_pairings_from_hemisphere(
         self, func: str
-    ) -> list[tuple[float, float]]:
+    ) -> list[Pairing]:
         if func in self._spikes.keys():
             return (
                 self._spikes[func].right_best_pairings
@@ -101,7 +101,7 @@ class IPPMBuilder:
     def _create_nodes_for_childless_function(
         self,
         current_y_axis_coord: float,
-        childless_func_pairings: list[tuple[float, float]],
+        childless_func_pairings: list[Pairing],
         function_name: str,
     ):
         def __map_magnitude_to_node_size(magnitude: float) -> float:
