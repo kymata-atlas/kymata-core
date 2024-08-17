@@ -22,10 +22,11 @@ class IPPMBuilder:
         self._inputs = inputs
         self._hierarchy = deepcopy(hierarchy)
         self._hemisphere: str = hemisphere
+
         self.graph: IPPMGraph = self._build_graph_dict()
 
     def _build_graph_dict(self) -> IPPMGraph:
-        self._spikes = self._sort_spikes_by_latency_asc()
+        self._sort_spikes_by_latency_asc()
 
         y_axis_partition_size = (
             1 / len(self._hierarchy.keys()) if len(self._hierarchy.keys()) > 0 else 1
@@ -41,15 +42,14 @@ class IPPMBuilder:
 
         return self._graph
 
-    def _sort_spikes_by_latency_asc(self) -> SpikeDict:
+    def _sort_spikes_by_latency_asc(self) -> None:
         for function in self._spikes.keys():
             if self._hemisphere == HEMI_RIGHT:
                 self._spikes[function].right_best_pairings.sort(key=lambda x: x[0])
             else:
                 self._spikes[function].left_best_pairings.sort(key=lambda x: x[0])
-        return self._spikes
 
-    def _get_childless_functions(self):
+    def _get_childless_functions(self) -> set[str]:
         def __unpack_dict_values_into_list(dict_to_unpack):
             return [value for values in dict_to_unpack.values() for value in values]
 
