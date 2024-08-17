@@ -22,9 +22,9 @@ class IPPMBuilder:
         self._inputs = inputs
         self._hierarchy = deepcopy(hierarchy)
         self._hemisphere: str = hemisphere
-        self._graph: IPPMGraph = dict()
+        self.graph: IPPMGraph = self._build_graph_dict()
 
-    def build_graph_dict(self) -> IPPMGraph:
+    def _build_graph_dict(self) -> IPPMGraph:
         self._spikes = self._sort_spikes_by_latency_asc()
 
         y_axis_partition_size = (
