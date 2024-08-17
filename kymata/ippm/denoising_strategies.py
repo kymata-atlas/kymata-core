@@ -1,3 +1,4 @@
+from abc import ABC
 from copy import deepcopy
 from statistics import NormalDist
 from typing import Dict, List, Tuple, Optional
@@ -18,8 +19,11 @@ LATENCY = "Latency"
 MAGNITUDE = "Magnitude"
 
 
-class DenoisingStrategy(object):
-    """Superclass for unsupervised clustering algorithms. Strategies should conform to this interface."""
+class DenoisingStrategy(ABC):
+    """
+    Superclass for unsupervised clustering algorithms.
+    Strategies should conform to this interface.
+    """
 
     def __init__(
         self,
@@ -58,7 +62,7 @@ class DenoisingStrategy(object):
     @staticmethod
     def _estimate_threshold_for_significance(x: float) -> float:
         """
-        bonferroni corrected = probability / number_of_trials.
+        Bonferroni corrected = probability / number_of_trials.
 
         :param x: indicates the probability of P(X < x) for NormalDist(0, 1)
         :returns: a float indicating that threshold for significance.
