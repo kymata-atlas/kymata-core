@@ -8,7 +8,7 @@ from kymata.entities.expression import (
     HexelExpressionSet,
     DIM_FUNCTION,
     DIM_LATENCY,
-    combine,
+    combine, COL_LOGP_VALUE, DIM_SENSOR,
 )
 from kymata.math.p_values import p_to_logp, logp_to_p
 
@@ -260,10 +260,10 @@ def test_ses_best_function():
     best_function_df: DataFrame = es.best_functions()
     correct: DataFrame = DataFrame.from_dict(
         {
-            "sensor": ["0", "1", "2", "3"],
+            DIM_SENSOR: ["0", "1", "2", "3"],
             DIM_FUNCTION: ["a", "b", "a", "b"],
             DIM_LATENCY: [1, 1, 0, 2],
-            "value": p_to_logp([0.1, 0.1, 0.1, 0.1]),
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1, 0.1]),
         }
     )
     assert DataFrame(best_function_df == correct).values.all()
@@ -309,10 +309,10 @@ def test_ses_best_function_with_one_channel_all_1s():
     best_function_df: DataFrame = es.best_functions()
     correct: DataFrame = DataFrame.from_dict(
         {
-            "sensor": ["1", "2", "3"],
+            DIM_SENSOR: ["1", "2", "3"],
             DIM_FUNCTION: ["b", "a", "b"],
             DIM_LATENCY: [1, 0, 2],
-            "value": p_to_logp([0.1, 0.1, 0.1]),
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
         }
     )
     assert DataFrame(best_function_df == correct).values.all()
@@ -358,10 +358,10 @@ def test_ses_best_function_with_one_channel_all_nans():
     best_function_df: DataFrame = es.best_functions()
     correct: DataFrame = DataFrame.from_dict(
         {
-            "sensor": ["1", "2", "3"],
+            DIM_SENSOR: ["1", "2", "3"],
             DIM_FUNCTION: ["b", "a", "b"],
             DIM_LATENCY: [1, 0, 2],
-            "value": p_to_logp([0.1, 0.1, 0.1]),
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
         }
     )
     assert DataFrame(best_function_df == correct).values.all()

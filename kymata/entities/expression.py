@@ -46,6 +46,9 @@ BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
+# Column names
+COL_LOGP_VALUE = "log-p-value"
+
 
 class ExpressionSet(ABC):
     """
@@ -309,7 +312,7 @@ class ExpressionSet(ABC):
                 self.channel_coord_name: self._channels[block_name][idxs],
                 DIM_FUNCTION: best_functions[idxs],
                 DIM_LATENCY: best_latencies[idxs],
-                "value": logp_vals[idxs],
+                COL_LOGP_VALUE: logp_vals[idxs],
             }
         )
 

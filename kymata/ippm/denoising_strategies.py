@@ -13,6 +13,11 @@ from .data_tools import IPPMSpike
 from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
+# Column names
+LATENCY = "Latency"
+MAGNITUDE = "Magnitude"
+
+
 class DenoisingStrategy(object):
     """Superclass for unsupervised clustering algorithms. Strategies should conform to this interface."""
 
@@ -132,7 +137,7 @@ class DenoisingStrategy(object):
                 if self._hemi == HEMI_RIGHT
                 else spike.left_best_pairings,
             )
-            df = pd.DataFrame(significant_spikes, columns=["Latency", "Mag"])
+            df = pd.DataFrame(significant_spikes, columns=[LATENCY, MAGNITUDE])
             yield func, df
 
     def _filter_out_insignificant_spikes(
@@ -173,9 +178,9 @@ class DenoisingStrategy(object):
         """
 
         def __extract_and_wrap_latency_dim(df_with_latency_col):
-            return np.reshape(df_with_latency_col["Latency"], (-1, 1))
+            return np.reshape(df_with_latency_col[LATENCY], (-1, 1))
 
-        mags = list(df["Mag"])
+        mags = list(df[MAGNITUDE])
         if self._should_cluster_only_latency:
             df = __extract_and_wrap_latency_dim(df)
         if self._should_normalise:
@@ -185,7 +190,7 @@ class DenoisingStrategy(object):
                 https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
             """
             normed_latency_and_mag = np.c_[normalize(df, axis=0), mags]
-            df = pd.DataFrame(normed_latency_and_mag, columns=["Latency", "Mag"])
+            df = pd.DataFrame(normed_latency_and_mag, columns=[LATENCY, MAGNITUDE])
         return df
 
     def _get_denoised_time_series(self, df: pd.DataFrame) -> List[Tuple[float, float]]:
@@ -200,7 +205,7 @@ class DenoisingStrategy(object):
         """
 
         def __keep_most_significant_per_label(labelled_df):
-            return labelled_df.loc[labelled_df.groupby("Label")["Mag"].idxmin()]
+            return labelled_df.loc[labelled_df.groupby("Label")[MAGNITUDE].idxmin()]
 
         def __filter_out_anomalies(labelled_df):
             return labelled_df[labelled_df["Label"] != -1]
@@ -208,8 +213,8 @@ class DenoisingStrategy(object):
         def __convert_df_to_list(most_significant_points_df):
             return list(
                 zip(
-                    most_significant_points_df["Latency"],
-                    most_significant_points_df["Mag"],
+                    most_significant_points_df[LATENCY],
+                    most_significant_points_df[MAGNITUDE],
                 )
             )
 

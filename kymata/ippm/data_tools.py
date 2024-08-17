@@ -15,7 +15,7 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY, COL_LOGP_VALUE
 
 
 class IPPMNode(NamedTuple):
@@ -62,7 +62,7 @@ class IPPMSpike(object):
         Params
         ------
             hemi : left or right
-            pairing : Corresponds to the best match to a spike spike of form (latency (ms), pvalue (log_10))
+            pairing : Corresponds to the best match to a spike of form (latency (ms), pvalue (log_10))
         """
         if hemi == HEMI_LEFT:
             self.left_best_pairings.append(pairing)
@@ -113,7 +113,7 @@ def build_spike_dict_from_expression_set(
         for _idx, row in best_functions.iterrows():
             func = row[DIM_FUNCTION]
             latency = row[DIM_LATENCY] * 1000  # convert to ms
-            pval = row["value"]
+            pval = row[COL_LOGP_VALUE]
             if func not in spikes:
                 spikes[func] = IPPMSpike(func)
             spikes[func].add_pairing(hemi, (latency, pval))

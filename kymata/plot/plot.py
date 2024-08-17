@@ -23,7 +23,7 @@ from kymata.entities.expression import (
     HexelExpressionSet,
     SensorExpressionSet,
     ExpressionSet,
-    DIM_FUNCTION,
+    DIM_FUNCTION, COL_LOGP_VALUE, DIM_LATENCY,
 )
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
@@ -164,9 +164,9 @@ def _hexel_minimap_data(
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
     best_functions_left, best_functions_right = expression_set.best_functions()
-    best_functions_left = best_functions_left[best_functions_left["value"] < alpha_logp]
+    best_functions_left = best_functions_left[best_functions_left[COL_LOGP_VALUE] < alpha_logp]
     best_functions_right = best_functions_right[
-        best_functions_right["value"] < alpha_logp
+        best_functions_right[COL_LOGP_VALUE] < alpha_logp
     ]
     for function_i, function in enumerate(
         expression_set.functions,
@@ -208,8 +208,8 @@ def _plot_function_expression_on_axes(
             Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
                   (so they can be added to min() and max() without altering the result).
     """
-    x = function_data["latency"].values * 1000  # Convert to milliseconds
-    y = function_data["value"].values
+    x = function_data[DIM_LATENCY].values * 1000  # Convert to milliseconds
+    y = function_data[COL_LOGP_VALUE].values
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, facecolors=c if filled else "none", s=20, edgecolors=c)
