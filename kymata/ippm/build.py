@@ -8,13 +8,13 @@ from typing import List, Dict, Tuple
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMSpike, IPPMNode
+from kymata.ippm.data_tools import IPPMSpike, IPPMNode, SpikeDict
 
 
 class IPPMBuilder:
     def __init__(
         self,
-        spikes: Dict[str, IPPMSpike],
+        spikes: SpikeDict,
         inputs: List[str],
         hierarchy: Dict[str, List[str]],
         hemisphere: str,
@@ -42,7 +42,7 @@ class IPPMBuilder:
 
         return self._graph
 
-    def _sort_spikes_by_latency_asc(self) -> Dict[str, IPPMSpike]:
+    def _sort_spikes_by_latency_asc(self) -> SpikeDict:
         for function in self._spikes.keys():
             if self._hemisphere == HEMI_RIGHT:
                 self._spikes[function].right_best_pairings.sort(key=lambda x: x[0])

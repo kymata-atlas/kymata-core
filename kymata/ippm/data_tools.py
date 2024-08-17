@@ -1,21 +1,17 @@
 import json
 import math
-from itertools import cycle
 from statistics import NormalDist
-from typing import Tuple, Dict, List, NamedTuple, Optional
+from typing import Tuple, Dict, List, NamedTuple
 
 import requests
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
-import matplotlib.colors
-from matplotlib.lines import Line2D
-import seaborn as sns
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY, COL_LOGP_VALUE
+from kymata.ippm.plot import stem_plot
 
 
 class IPPMNode(NamedTuple):
@@ -70,7 +66,10 @@ class IPPMSpike(object):
             self.right_best_pairings.append(pairing)
 
 
-def fetch_data(api: str) -> Dict[str, IPPMSpike]:
+SpikeDict = dict[str, IPPMSpike]
+
+
+def fetch_data(api: str) -> SpikeDict:
     """
     Fetches data from Kymata API and converts it into a dictionary of function names as keys
     and spike objects as values. Advantage of dict is O(1) look-up and spike object is readable
@@ -89,9 +88,7 @@ def fetch_data(api: str) -> Dict[str, IPPMSpike]:
     return build_spike_dict_from_api_response(resp_dict)
 
 
-def build_spike_dict_from_expression_set(
-    expression_set: HexelExpressionSet,
-) -> Dict[str, IPPMSpike]:
+def build_spike_dict_from_expression_set( expression_set: HexelExpressionSet) -> SpikeDict:
     """
     Builds the dictionary from an ExpressionSet. This function builds a new dictionary
     which has function names (fast look-up) and only necessary data.
@@ -120,7 +117,7 @@ def build_spike_dict_from_expression_set(
     return spikes
 
 
-def build_spike_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
+def build_spike_dict_from_api_response(dict_: Dict) -> SpikeDict:
     """
     Builds the dictionary from response dictionary. Response dictionary has unneccesary
     keys and does not have function names as keys. This function builds a new dictionary
@@ -148,146 +145,8 @@ def build_spike_dict_from_api_response(dict_: Dict) -> Dict[str, IPPMSpike]:
     return spikes
 
 
-def stem_plot(
-    spikes: Dict[str, IPPMSpike],
-    title: Optional[str] = None,
-    timepoints: int = 201,
-    y_limit: float = pow(10, -100),
-    number_of_spikes: int = 200000,
-    figheight: int = 7,
-    figwidth: int = 12,
-):
-    """
-    Plots a stem plot using spikes.
-
-    Params
-    ------
-        spikes : Contains function spikes in the form of a spike object. All pairings are found there.
-        title : Title of plot.
-    """
-    # estimate significance parameter
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)  # 5-sigma
-    bonferroni_corrected_alpha = 1 - (
-        pow((1 - alpha), (1 / (2 * timepoints * number_of_spikes)))
-    )
-
-    # assign unique color to each function
-    cycol = cycle(sns.color_palette("hls", len(spikes.keys())))
-    for _, spike in spikes.items():
-        spike.color = matplotlib.colors.to_hex(next(cycol))
-
-    fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(
-        nrows=2, ncols=1, figsize=(figwidth, figheight)
-    )
-    fig.subplots_adjust(hspace=0)
-    fig.subplots_adjust(right=0.84, left=0.08)
-
-    custom_handles = []
-    custom_labels = []
-    for key, my_function in spikes.items():
-        color = my_function.color
-        label = my_function.function
-
-        custom_handles.extend(
-            [Line2D([], [], marker=".", color=color, linestyle="None")]
-        )
-        custom_labels.append(label)
-
-        # left
-        left = list(zip(*(my_function.left_best_pairings)))
-        if len(left) != 0:
-            x_left, y_left = left[0], left[1]
-            left_color = np.where(
-                np.array(y_left) <= bonferroni_corrected_alpha, color, "black"
-            )  # set all insignificant spikes to black
-            left_hem_expression_plot.vlines(
-                x=x_left, ymin=1, ymax=y_left, color=left_color
-            )
-            left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
-
-        # right
-        right = list(zip(*(my_function.right_best_pairings)))
-        if len(right) != 0:
-            x_right, y_right = right[0], right[1]
-            right_color = np.where(
-                np.array(y_right) <= bonferroni_corrected_alpha, color, "black"
-            )  # set all insignificant spikes to black
-            right_hem_expression_plot.vlines(
-                x=x_right, ymin=1, ymax=y_right, color=right_color
-            )
-            right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
-
-    for plot in [right_hem_expression_plot, left_hem_expression_plot]:
-        plot.set_yscale("log")
-        plot.set_xlim(-200, 800)
-        plot.set_ylim(1, y_limit)
-        plot.axvline(x=0, color="k", linestyle="dotted")
-        plot.axhline(y=bonferroni_corrected_alpha, color="k", linestyle="dotted")
-        plot.text(
-            -100,
-            bonferroni_corrected_alpha,
-            "α*",
-            bbox={"facecolor": "white", "edgecolor": "none"},
-            verticalalignment="center",
-        )
-        plot.text(
-            600,
-            bonferroni_corrected_alpha,
-            "α*",
-            bbox={"facecolor": "white", "edgecolor": "none"},
-            verticalalignment="center",
-        )
-        plot.set_yticks([1, pow(10, -50), pow(10, -100)])
-
-    if title is not None:
-        left_hem_expression_plot.set_title(title)
-    left_hem_expression_plot.set_xticklabels([])
-    right_hem_expression_plot.set_xlabel(
-        "Latency (ms) relative to onset of the environment"
-    )
-    right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
-    right_hem_expression_plot.invert_yaxis()
-    left_hem_expression_plot.text(
-        -180,
-        y_limit * 10000000,
-        "left hemisphere",
-        style="italic",
-        verticalalignment="center",
-    )
-    right_hem_expression_plot.text(
-        -180,
-        y_limit * 10000000,
-        "right hemisphere",
-        style="italic",
-        verticalalignment="center",
-    )
-    y_axis_label = "p-value (with α at 5-sigma, Bonferroni corrected)"
-    left_hem_expression_plot.text(
-        -275, 1, y_axis_label, verticalalignment="center", rotation="vertical"
-    )
-    right_hem_expression_plot.text(
-        0,
-        1,
-        "   onset of environment   ",
-        color="white",
-        fontsize="x-small",
-        bbox={"facecolor": "grey", "edgecolor": "none"},
-        verticalalignment="center",
-        horizontalalignment="center",
-        rotation="vertical",
-    )
-    left_hem_expression_plot.legend(
-        handles=custom_handles,
-        labels=custom_labels,
-        fontsize="x-small",
-        bbox_to_anchor=(1.2, 1),
-    )
-
-    plt.show()
-
-
 def causality_violation_score(
-    denoised_spikes: Dict[str, IPPMSpike],
+    denoised_spikes: SpikeDict,
     hierarchy: Dict[str, List[str]],
     hemi: str,
     inputs: List[str],
@@ -376,7 +235,7 @@ def causality_violation_score(
 
 
 def transform_recall(
-    noisy_spikes: Dict[str, IPPMSpike],
+    noisy_spikes: SpikeDict,
     funcs: List[str],
     ippm_dict: Dict[str, IPPMNode],
     hemi: str,
@@ -438,7 +297,7 @@ def transform_recall(
     )
 
 
-def convert_to_power10(spikes: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
+def convert_to_power10(spikes: SpikeDict) -> SpikeDict:
     """
     Utility function to take data from the .nkg format and convert it to power of 10, so it can be used for IPPMs.
 
@@ -460,9 +319,7 @@ def convert_to_power10(spikes: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
     return spikes
 
 
-def remove_excess_funcs(
-    to_retain: List[str], spikes: Dict[str, IPPMSpike]
-) -> Dict[str, IPPMSpike]:
+def remove_excess_funcs(to_retain: List[str], spikes: SpikeDict) -> SpikeDict:
     """
     Utility function to distill the spikes down to a subset of functions. Use this to visualise a subset of functions for time-series.
     E.g., you want the time-series for one function, so just pass it wrapped in a list as to_retain
@@ -532,8 +389,8 @@ def plot_k_dist_1D(
 
 
 def copy_hemisphere(
-    spikes_to: Dict[str, IPPMSpike],
-    spikes_from: Dict[str, IPPMSpike],
+    spikes_to: SpikeDict,
+    spikes_from: SpikeDict,
     hemi_to: str,
     hemi_from: str,
     func: str = None,
@@ -577,7 +434,7 @@ def copy_hemisphere(
             spikes_to[func].left_best_pairings = spikes_from[func].left_best_pairings
 
 
-def plot_denoised_vs_noisy(spikes: Dict[str, IPPMSpike], clusterer, title: str):
+def plot_denoised_vs_noisy(spikes: SpikeDict, clusterer, title: str):
     """
     Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised spikes, which
     are fed into a stem plot.

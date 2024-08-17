@@ -1,7 +1,7 @@
 from abc import ABC
 from copy import deepcopy
 from statistics import NormalDist
-from typing import Dict, List, Tuple, Optional
+from typing import List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
-from .data_tools import IPPMSpike
+from .data_tools import IPPMSpike, SpikeDict
 from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
@@ -79,7 +79,7 @@ class DenoisingStrategy(ABC):
         )
         return threshold_for_significance
 
-    def denoise(self, spikes: Dict[str, IPPMSpike]) -> Dict[str, IPPMSpike]:
+    def denoise(self, spikes: SpikeDict) -> SpikeDict:
         """
         For a set of functions, cluster their IPPMSpike and retain the most significant spikes per cluster.
 
@@ -128,7 +128,7 @@ class DenoisingStrategy(ABC):
 
         return spikes
 
-    def _map_spikes_to_df(self, spikes: Dict[str, IPPMSpike]) -> pd.DataFrame:
+    def _map_spikes_to_df(self, spikes: SpikeDict) -> pd.DataFrame:
         """
         A generator used to transform each pair of key, IPPMSpike to a DataFrame containing significance spikes only.
 
