@@ -1,7 +1,7 @@
 import json
 import math
 from statistics import NormalDist
-from typing import Tuple, Dict, List, NamedTuple
+from typing import NamedTuple
 
 import requests
 import pandas as pd
@@ -51,7 +51,7 @@ class IPPMSpike(object):
 
         self.input_stream = None
 
-    def add_pairing(self, hemi: str, pairing: Tuple[float, float]):
+    def add_pairing(self, hemi: str, pairing: tuple[float, float]):
         """
         Use this to add new pairings. Pair = (latency (ms), pvalue (log_10))
 
@@ -67,7 +67,12 @@ class IPPMSpike(object):
 
 
 SpikeDict = dict[str, IPPMSpike]
-NodeDict = dict[str, IPPMNode]
+
+# Maps function names to lists of parent functions
+TransformHierarchy = dict[str, list[str]]
+
+# Maps function names to nodes
+IPPMGraph = dict[str, IPPMNode]
 
 
 def fetch_data(api: str) -> SpikeDict:
@@ -118,7 +123,7 @@ def build_spike_dict_from_expression_set( expression_set: HexelExpressionSet) ->
     return spikes
 
 
-def build_spike_dict_from_api_response(dict_: Dict) -> SpikeDict:
+def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
     """
     Builds the dictionary from response dictionary. Response dictionary has unneccesary
     keys and does not have function names as keys. This function builds a new dictionary
@@ -148,10 +153,10 @@ def build_spike_dict_from_api_response(dict_: Dict) -> SpikeDict:
 
 def causality_violation_score(
     denoised_spikes: SpikeDict,
-    hierarchy: Dict[str, List[str]],
+    hierarchy: TransformHierarchy,
     hemi: str,
-    inputs: List[str],
-) -> Tuple[float, int, int]:
+    inputs: list[str],
+) -> tuple[float, int, int]:
     """
     Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy spikes.
 
@@ -237,10 +242,10 @@ def causality_violation_score(
 
 def transform_recall(
     noisy_spikes: SpikeDict,
-    funcs: List[str],
-    ippm_dict: NodeDict,
+    funcs: list[str],
+    ippm_dict: IPPMGraph,
     hemi: str,
-) -> Tuple[float]:
+) -> tuple[float]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
     noisy spikes are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
@@ -320,7 +325,7 @@ def convert_to_power10(spikes: SpikeDict) -> SpikeDict:
     return spikes
 
 
-def remove_excess_funcs(to_retain: List[str], spikes: SpikeDict) -> SpikeDict:
+def remove_excess_funcs(to_retain: list[str], spikes: SpikeDict) -> SpikeDict:
     """
     Utility function to distill the spikes down to a subset of functions. Use this to visualise a subset of functions for time-series.
     E.g., you want the time-series for one function, so just pass it wrapped in a list as to_retain
@@ -346,7 +351,7 @@ def remove_excess_funcs(to_retain: List[str], spikes: SpikeDict) -> SpikeDict:
 
 
 def plot_k_dist_1D(
-    pairings: List[Tuple[float, float]], k: int = 4, normalise: bool = False
+    pairings: list[tuple[float, float]], k: int = 4, normalise: bool = False
 ):
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.

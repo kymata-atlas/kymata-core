@@ -1,6 +1,6 @@
 from itertools import cycle
 from statistics import NormalDist
-from typing import List, Tuple, Optional
+from typing import Optional
 
 import matplotlib.colors
 import matplotlib.patheffects as pe
@@ -11,11 +11,11 @@ from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.ippm.data_tools import SpikeDict, NodeDict
+from kymata.ippm.data_tools import SpikeDict, IPPMGraph
 
 
 def plot_ippm(
-    graph: NodeDict,
+    graph: IPPMGraph,
     colors: dict[str, str],
     title: Optional[str] = None,
     scale_spikes: bool = False,
@@ -103,8 +103,8 @@ def plot_ippm(
 
 
 def _make_bspline_paths(
-    spike_coordinate_pairs: List[List[Tuple[float, float]]],
-) -> List[List[np.array]]:
+    spike_coordinate_pairs: list[list[tuple[float, float]]],
+) -> list[list[np.array]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -140,7 +140,7 @@ def _make_bspline_paths(
 
 
 def _make_bspline_ctr_points(
-    start_and_end_node_coordinates: List[Tuple[float, float]],
+    start_and_end_node_coordinates: list[tuple[float, float]],
 ) -> np.array:
     """
     Given the position of a start spike and an end spike, create
@@ -182,7 +182,7 @@ def _make_bspline_ctr_points(
     )
 
 
-def _make_bspline_path(ctr_points: NDArray) -> List[NDArray]:
+def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
     """
     With an input of six control points, return an interpolated
     b-spline path which corresponds to a curved edge from one node to another.

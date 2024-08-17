@@ -1,7 +1,7 @@
 from abc import ABC
 from copy import deepcopy
 from statistics import NormalDist
-from typing import List, Tuple, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -145,8 +145,8 @@ class DenoisingStrategy(ABC):
             yield func, df
 
     def _filter_out_insignificant_spikes(
-        self, spikes: List[Tuple[float, float]]
-    ) -> List[List[float]]:
+        self, spikes: list[tuple[float, float]]
+    ) -> list[list[float]]:
         """
         For a list of spikes, remove all that are not statistically significant and save them to a DataFrame.
 
@@ -160,7 +160,7 @@ class DenoisingStrategy(ABC):
         return significant_datapoints
 
     def _update_pairings(
-        self, spike: IPPMSpike, denoised: List[Tuple[float, float]]
+        self, spike: IPPMSpike, denoised: list[tuple[float, float]]
     ) -> IPPMSpike:
         """
         :param spike: We want to update this spike to store the denoised spikes, with max pooling if desired.
@@ -197,7 +197,7 @@ class DenoisingStrategy(ABC):
             df = pd.DataFrame(normed_latency_and_mag, columns=[LATENCY, MAGNITUDE])
         return df
 
-    def _get_denoised_time_series(self, df: pd.DataFrame) -> List[Tuple[float, float]]:
+    def _get_denoised_time_series(self, df: pd.DataFrame) -> list[tuple[float, float]]:
         """
         For a given dataframe, extract out the most significant spike for each cluster along with its associated latency
         and ignore anomalies (label == -1.)
@@ -229,7 +229,7 @@ class DenoisingStrategy(ABC):
         return __convert_df_to_list(most_significant_points)
 
     def _postprocess(
-        self, spike: IPPMSpike, denoised_time_series: List[Tuple[float, float]]
+        self, spike: IPPMSpike, denoised_time_series: list[tuple[float, float]]
     ) -> IPPMSpike:
         """
         To postprocess, overwrite the spike data with most significant points and perform any postprocessing steps,

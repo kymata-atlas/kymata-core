@@ -3,29 +3,28 @@ A graphing functions used to construct a dictionary that contains the nodes and 
 information to construct a dict containing node names as keys and Node objects (see namedtuple) as values.
 """
 from copy import deepcopy
-from typing import List, Dict, Tuple
 
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMNode, SpikeDict, NodeDict
+from kymata.ippm.data_tools import IPPMNode, SpikeDict, IPPMGraph, TransformHierarchy
 
 
 class IPPMBuilder:
     def __init__(
         self,
         spikes: SpikeDict,
-        inputs: List[str],
-        hierarchy: Dict[str, List[str]],
+        inputs: list[str],
+        hierarchy: TransformHierarchy,
         hemisphere: str,
     ):
         self._spikes = deepcopy(spikes)
         self._inputs = inputs
         self._hierarchy = deepcopy(hierarchy)
-        self._hemisphere = hemisphere
-        self._graph = {}  # Chosen structure is Dict[str, Node] since that enables quick look up for node position
+        self._hemisphere: str = hemisphere
+        self._graph: IPPMGraph = dict()
 
-    def build_graph_dict(self) -> NodeDict:
+    def build_graph_dict(self) -> IPPMGraph:
         self._spikes = self._sort_spikes_by_latency_asc()
 
         y_axis_partition_size = (
@@ -61,7 +60,7 @@ class IPPMBuilder:
 
     def _create_nodes_and_edges_for_function(
         self, function_name: str, partition_ptr: int, partition_size: float
-    ) -> NodeDict:
+    ) -> IPPMGraph:
         def __get_y_coordinate(
             curr_partition_number: int, partition_size: float
         ) -> float:
@@ -90,7 +89,7 @@ class IPPMBuilder:
 
     def _get_best_pairings_from_hemisphere(
         self, func: str
-    ) -> List[Tuple[float, float]]:
+    ) -> list[tuple[float, float]]:
         if func in self._spikes.keys():
             return (
                 self._spikes[func].right_best_pairings
@@ -102,7 +101,7 @@ class IPPMBuilder:
     def _create_nodes_for_childless_function(
         self,
         current_y_axis_coord: float,
-        childless_func_pairings: List[Tuple[float, float]],
+        childless_func_pairings: list[tuple[float, float]],
         function_name: str,
     ):
         def __map_magnitude_to_node_size(magnitude: float) -> float:
@@ -121,9 +120,9 @@ class IPPMBuilder:
 
     def _create_edges_between_parents_and_childless_function(
         self,
-        parents: List[str],
+        parents: list[str],
         function_name: str,
-    ) -> NodeDict:
+    ) -> IPPMGraph:
         if function_name in self._spikes.keys():
             for parent in parents:
                 if parent in self._inputs:
