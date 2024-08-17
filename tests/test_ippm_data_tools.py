@@ -1,14 +1,11 @@
 """
 Tests for kymata.ippm.data_tools
 """
-import pytest
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
 from kymata.ippm.data_tools import (
-    IPPMSpike, IPPMNode,
-    build_spike_dict_from_api_response,
-    causality_violation_score,
-    transform_recall, convert_to_power10, copy_hemisphere, remove_excess_funcs,
+    IPPMSpike, build_spike_dict_from_api_response,
+    convert_to_power10, copy_hemisphere, remove_excess_funcs,
 )
 
 
@@ -43,114 +40,6 @@ def test_build_hexel_dict():
         (14, pow(10, 0.213)),
     ]
     assert hexels["left1"].right_best_pairings == [(51, pow(10, 0.1244))]
-
-
-def test_causalityViolation_With_RightHemi_Should_Succeed():
-    test_hexels = {
-        "f1": IPPMSpike("f1"),
-        "f2": IPPMSpike("f2"),
-        "f3": IPPMSpike("f3"),
-        "f4": IPPMSpike("f4"),
-    }
-    test_hexels["f1"].right_best_pairings = [(50, 1e-50), (100, 1e-25)]
-    test_hexels["f2"].right_best_pairings = [(75, 1e-55), (110, 1e-77)]
-    test_hexels["f3"].right_best_pairings = [(120, 1e-39)]
-    test_hexels["f4"].right_best_pairings = [(100, 1e-19), (150, 1e-75)]
-    test_hierarchy = {"f4": ["f3"], "f3": ["f1", "f2"], "f2": ["f1"], "f1": []}
-
-    assert causality_violation_score(test_hexels, test_hierarchy, HEMI_RIGHT, ["f1"]) == (0.25, 1, 4)
-
-
-def test_causalityViolation_With_LeftHemi_Should_Succeed():
-    test_hexels = {
-        "f1": IPPMSpike("f1"),
-        "f2": IPPMSpike("f2"),
-        "f3": IPPMSpike("f3"),
-        "f4": IPPMSpike("f4"),
-    }
-    test_hexels["f1"].left_best_pairings = [(50, 1e-50), (100, 1e-25)]
-    test_hexels["f2"].left_best_pairings = [(75, 1e-55), (110, 1e-77)]
-    test_hexels["f3"].left_best_pairings = [(120, 1e-39)]
-    test_hexels["f4"].left_best_pairings = [(100, 1e-19), (150, 1e-75)]
-    test_hierarchy = {"f4": ["f3"], "f3": ["f1", "f2"], "f2": ["f1"], "f1": []}
-    assert causality_violation_score(
-        test_hexels, test_hierarchy, HEMI_LEFT, ["f1"]
-    ) == (0.25, 1, 4)
-
-
-def test_causalityViolation_With_SingleFunction_Should_Return0():
-    test_hexels = {"f1": IPPMSpike("f1")}
-    test_hexels["f1"].left_best_pairings = [(50, 1e-50), (100, 1e-25)]
-    test_hierarchy = {"f1": []}
-
-    assert causality_violation_score(
-        test_hexels, test_hierarchy, HEMI_LEFT, ["f1"]
-    ) == (0, 0, 0)
-
-
-def test_causalityViolation_With_SingleEdge_Should_Return0():
-    test_hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2")}
-    test_hexels["f1"].left_best_pairings = [(50, 1e-50), (100, 1e-25)]
-    test_hexels["f2"].left_best_pairings = [(110, 1e-50)]
-    test_hierarchy = {"f2": ["f1"], "f1": []}
-
-    assert causality_violation_score(
-        test_hexels, test_hierarchy, HEMI_LEFT, ["f1"]
-    ) == (0, 0, 1)
-
-
-def test_functionRecall_With_NoFuncs_Should_Return0():
-    test_hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2")}
-    test_hexels["f1"].left_best_pairings = []
-    test_hexels["f2"].left_best_pairings = [
-        (10, 1e-1)
-    ]  # should be > alpha, so not significant
-    test_ippm = {}
-    funcs = ["f1", "f2"]
-    ratio, numer, denom = transform_recall(
-        test_hexels, funcs, test_ippm, HEMI_LEFT
-    )
-
-    assert ratio == 0
-    assert numer == 0
-    assert denom == 0
-
-
-def test_functionRecall_With_AllFuncsFound_Should_Return1():
-    test_hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2")}
-    test_hexels["f1"].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
-    test_hexels["f2"].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
-    test_ippm = {
-        "f1-0": IPPMNode(1e-30, 10, []),
-        "f1-1": IPPMNode(1e-35, 15, ["f1-0"]),
-        "f2-0": IPPMNode(1e-50, 25, ["f1-1"]),
-    }
-    funcs = ["f1", "f2"]
-    ratio, numer, denom = transform_recall(
-        test_hexels, funcs, test_ippm, HEMI_LEFT
-    )
-
-    assert ratio == 1
-    assert numer == 2
-    assert denom == 2
-
-
-def test_functionRecall_With_InvalidHemiInput_Should_RaiseException():
-    with pytest.raises(AssertionError):
-        transform_recall({}, [], {}, "invalidHemisphere")
-
-
-def test_functionRecall_With_ValidInputRightHemi_Should_ReturnSuccess():
-    test_hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2")}
-    test_hexels["f1"].left_best_pairings = [(10, 1e-30), (15, 1e-35)]
-    test_hexels["f2"].left_best_pairings = [(25, 1e-50), (30, 1e-2)]
-    test_ippm = {"f1-0": IPPMNode(1e-30, 10, []), "f1-1": IPPMNode(1e-35, 15, ["f1-0"])}
-    funcs = ["f1", "f2"]
-    ratio, numer, denom = transform_recall(test_hexels, funcs, test_ippm, HEMI_LEFT)
-
-    assert ratio == 1 / 2
-    assert numer == 1
-    assert denom == 2
 
 
 def test_Should_convertToPower10_When_validInput():

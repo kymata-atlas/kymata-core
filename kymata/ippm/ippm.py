@@ -16,5 +16,4 @@ class IPPM:
         self._builder = IPPMBuilder(spikes, inputs, hierarchy, hemisphere)
 
     def create_ippm(self, colors: Dict[str, str]):
-        graph = self._builder.graph
-        plot_ippm(graph, colors)
+        plot_ippm(self._builder.graph, colors)
