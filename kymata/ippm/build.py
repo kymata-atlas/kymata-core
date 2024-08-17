@@ -8,7 +8,7 @@ from typing import List, Dict, Tuple
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMSpike, IPPMNode, SpikeDict
+from kymata.ippm.data_tools import IPPMNode, SpikeDict, NodeDict
 
 
 class IPPMBuilder:
@@ -25,7 +25,7 @@ class IPPMBuilder:
         self._hemisphere = hemisphere
         self._graph = {}  # Chosen structure is Dict[str, Node] since that enables quick look up for node position
 
-    def build_graph_dict(self) -> Dict[str, IPPMNode]:
+    def build_graph_dict(self) -> NodeDict:
         self._spikes = self._sort_spikes_by_latency_asc()
 
         y_axis_partition_size = (
@@ -61,7 +61,7 @@ class IPPMBuilder:
 
     def _create_nodes_and_edges_for_function(
         self, function_name: str, partition_ptr: int, partition_size: float
-    ) -> Dict[str, IPPMNode]:
+    ) -> NodeDict:
         def __get_y_coordinate(
             curr_partition_number: int, partition_size: float
         ) -> float:
@@ -123,7 +123,7 @@ class IPPMBuilder:
         self,
         parents: List[str],
         function_name: str,
-    ) -> Dict[str, IPPMNode]:
+    ) -> NodeDict:
         if function_name in self._spikes.keys():
             for parent in parents:
                 if parent in self._inputs:

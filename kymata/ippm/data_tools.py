@@ -16,7 +16,7 @@ from kymata.ippm.plot import stem_plot
 
 class IPPMNode(NamedTuple):
     """
-    Convenient tuple/class to hold information about nodes
+    A node to be drawn in an IPPM graph.
     """
     magnitude: float
     position: tuple[float, float]
@@ -67,6 +67,7 @@ class IPPMSpike(object):
 
 
 SpikeDict = dict[str, IPPMSpike]
+NodeDict = dict[str, IPPMNode]
 
 
 def fetch_data(api: str) -> SpikeDict:
@@ -237,7 +238,7 @@ def causality_violation_score(
 def transform_recall(
     noisy_spikes: SpikeDict,
     funcs: List[str],
-    ippm_dict: Dict[str, IPPMNode],
+    ippm_dict: NodeDict,
     hemi: str,
 ) -> Tuple[float]:
     """

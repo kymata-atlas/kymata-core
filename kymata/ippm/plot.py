@@ -11,11 +11,11 @@ from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.ippm.data_tools import IPPMNode, SpikeDict
+from kymata.ippm.data_tools import SpikeDict, NodeDict
 
 
 def plot_ippm(
-    graph: dict[str, IPPMNode],
+    graph: NodeDict,
     colors: dict[str, str],
     title: Optional[str] = None,
     scale_spikes: bool = False,
@@ -26,7 +26,7 @@ def plot_ippm(
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
 
     Args:
-        graph (dict[str, IPPMNode]): Dictionary with keys as node names and values as IPPMNode objects.
+        graph (NodeDict): Dictionary with keys as node names and values as IPPMNode objects.
             Contains nodes as keys and magnitude, position, and incoming edges in the IPPMNode object.
         colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each function. The nodes and edges are colored accordingly.
