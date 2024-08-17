@@ -5,13 +5,17 @@ from typing import Optional
 import matplotlib.colors
 import matplotlib.patheffects as pe
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from scipy.interpolate import splev
+from sklearn.metrics import euclidean_distances
+from sklearn.preprocessing import normalize
 
-from kymata.ippm.data_tools import SpikeDict, IPPMGraph
+from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
+from kymata.ippm.data_tools import SpikeDict, IPPMGraph, Pairing, copy_hemisphere
 
 
 def plot_ippm(
@@ -345,3 +349,67 @@ def stem_plot(
     )
 
     plt.show()
+
+
+def plot_k_dist_1D(
+    pairings: list[Pairing], k: int = 4, normalise: bool = False
+):
+    """
+    This could be optimised further but since we aren't using it, we can leave it as it is.
+
+    A utility function to plot the k-dist graph for a set of pairings. Essentially, the k dist graph plots the distance
+    to the kth neighbour for each point. By inspecting the gradient of the graph, we can gain some intuition behind the density of
+    points within the dataset, which can feed into selecting the optimal DBSCAN hyperparameters.
+
+    For more details refer to section 4.2 in https://www.dbs.ifi.lmu.de/Publikationen/Papers/KDD-96.final.frame.pdf
+
+    Parameters
+    ----------
+    pairings: list of pairings extracted from a spikes. It contains the pairings for one function and one hemisphere
+    k: the k we use to find the kth neighbour. Paper above advises to use k=4.
+    normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
+
+    Returns
+    -------
+    Nothing but plots a graph.
+    """
+
+    alpha = 3.55e-15
+    X = pd.DataFrame(columns=["Latency"])
+    for latency, spike in pairings:
+        if spike <= alpha:
+            X.loc[len(X)] = [latency]
+
+    if normalise:
+        X = normalize(X)
+
+    distance_M = euclidean_distances(
+        X
+    )  # rows are points, columns are other points same order with values as distances
+    k_dists = []
+    for r in range(len(distance_M)):
+        sorted_dists = sorted(distance_M[r], reverse=True)  # descending order
+        k_dists.append(sorted_dists[k])  # store k-dist
+    sorted_k_dists = sorted(k_dists, reverse=True)
+    plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
+    plt.show()
+
+
+def plot_denoised_vs_noisy(spikes: SpikeDict, clusterer, title: str):
+    """
+    Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised spikes, which
+    are fed into a stem plot.
+
+    Parameters
+    ----------
+    spikes: spikes we want to denoise then plot
+    clusterer: A child class of DenoisingStrategy that implements .cluster
+    title: title of plot
+
+    Returns
+    -------
+    Nothing but plots a graph.
+    """
+    denoised_spikes = clusterer.cluster(spikes, HEMI_RIGHT)
+    copy_hemisphere(denoised_spikes, spikes, HEMI_LEFT, HEMI_RIGHT)
+    stem_plot(denoised_spikes, title)
