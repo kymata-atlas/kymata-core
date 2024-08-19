@@ -30,7 +30,7 @@ T_max = 401 #seconds
 func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
 # func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
-size = 'large-v2'
+size = 'medium'
 
 func_name = f'whisper_{size}_teacher'
 
