@@ -237,12 +237,14 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                 # The content is a string representation of a list, so we need to evaluate it
                 word_pieces = eval(content)
                 # Remove the '▁' from each word piece
-                asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces if word != '</s>']
+                # asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces if word != '</s>']
+                asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces]
 
             mfa_text = load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_text.txt'))
             mfa_time = np.array(load_txt(Path(function_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
             mfa_time_samples = (mfa_time * 1000).astype(int)
             mfa_time_samples = np.append(mfa_time_samples, 402_000)
+            special_tokens = ['</s>']
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 for j in range(place_holder.shape[0]):
                     k = 0       # k is the index for salmonn space, and i is the index for mfa space
@@ -250,6 +252,8 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                         start_idx = mfa_time_samples[i]
                         end_idx = mfa_time_samples[i + 1]
                         if start_idx < s_num:
+                            while asr_text[k] in special_tokens:
+                                k += 1
                             if mfa_text[i] != asr_text[k]:
                                 if mfa_text[i] == '<sp>':
                                     # if asr_text[k] == '.' or asr_text[k] == ',':
@@ -278,6 +282,8 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                     start_idx = mfa_time_samples[i]
                     end_idx = mfa_time_samples[i + 1]
                     if start_idx < s_num:
+                        while asr_text[k] in special_tokens:
+                            k += 1
                         if mfa_text[i] != asr_text[k]:
                             if mfa_text[i] == '<sp>':
                                 # if asr_text[k] == '.' or asr_text[k] == ',':
