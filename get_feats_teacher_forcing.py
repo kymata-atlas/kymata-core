@@ -22,15 +22,15 @@ w2v_outs, wavlm_outs, d2v_outs, hubert_outs = False, False, False, False
 whisper_outs = True
 save_outs = True
 
-data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
-# data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
+# data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
+data_path = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
 T_max = 401 #seconds
 
-func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
-# func_dir = '/imaging/woolgar/projects/Tianyi/data'
+# func_dir = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
+func_dir = '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives'
 
-size = 'medium'
+size = 'large'
 
 func_name = f'whisper_{size}_teacher'
 
@@ -139,8 +139,10 @@ if whisper_outs:
   reference_word_piece = []
 
   for i in range(14):
-    audio_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.wav')
-    transcription_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.txt')
+    # audio_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.wav')
+    # transcription_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/tianyi_whisper', f'segment_{i}.txt')
+    audio_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/russian', f'segment_{i}.wav')
+    transcription_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/russian', f'segment_{i}.txt')
 
     # Load audio segment
     audio_data, sr = librosa.load(audio_path, sr=16_000)
@@ -150,7 +152,8 @@ if whisper_outs:
         reference_text = file.read()
 
     # reference_text = '<|startoftranscript|><|en|><|transcribe|><|notimestamps|> ' + reference_text + '<|endoftext|>'
-    reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text
+    # reference_text = '<|startoftranscript|><|en|><|transcribe|> ' + reference_text
+    reference_text = '<|startoftranscript|><|ru|><|transcribe|> ' + reference_text
 
     # Evaluate
     reference_word_piece += evaluate_whisper(audio_data, reference_text)
