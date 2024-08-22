@@ -2,7 +2,7 @@
 
 ###
 # To run gridsearch on the queue at the CBU, run the following command in command line:
-#   sbatch submit_gridsearch_large_ru_new.sh
+#   sbatch submit_gridsearch_large_ru.sh
 ###
 
 
@@ -32,19 +32,19 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/woolgar/projects/Tianyi/kymata-core/ ; \
+    " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ; \
       export VENV_PATH=~/poetry/ ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
       \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \
         --config dataset4.yaml \
         --input-stream auditory \
         --plot-top-channels \
-        --function-path '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/temp/ru/whisper_fc2_and_final_layer_norm/whisper_large_teacher' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/whisper_fc2_and_final_layer_norm' \
         --num-neurons 1280 \
         --function-name '${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --n-derangements 5 \
         --asr-option 'all' \
         --mfa True \
-        --save-plot-location '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/paper/ru/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/paper/ru/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
   "
