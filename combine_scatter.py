@@ -6,17 +6,17 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 8 # 66 64 34
+    layer = 64 # 66 64 34
 
-    neuron = 384
+    neuron = 1280
 
     thres = 20 # 15
 
     x_upper = 800
 
-    size = 'tiny'
+    size = 'large-v2'
 
-    neuron_selection = 'layer'
+    neuron_selection = False
 
     exclude_tvl = False
     
@@ -24,7 +24,7 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tiny/fc2/log/'
+    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/log/'
 
     log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/tvl/log/'
 
@@ -113,7 +113,7 @@ def asr_models_loop_full():
     # import ipdb;ipdb.set_trace()
 
     # Neuron selection
-    if neuron_selection is not None:
+    if neuron_selection not in [None, False]:
         col_2 = lat_sig[:, :, 2]
         col_3 = lat_sig[:, :, 3]
         unique_values = np.unique(col_2)
@@ -187,7 +187,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tiny/fc2/layer_select', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/no_select', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
