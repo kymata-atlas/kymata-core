@@ -12,15 +12,15 @@ from tqdm import tqdm
 
 def main():
 
-    function_family_type = 'ANN' # 'standard' or 'ANN' or 'simple'
-    # path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
-    path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
+    function_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
+    path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
+    # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
     # template invoker for printing out expression set .nkgs
 
     if function_family_type == 'simple':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, 'individual_tvl/eng/participant_01_gridsearch.nkg'))
+        expression_data  = load_expression_set(Path(path_to_nkg_files, 'model.decoder.layers.31.nkg'))
 
         fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=False)
 

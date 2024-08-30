@@ -22,7 +22,7 @@ save_outs = True
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives'
 
-dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/stimulus.wav', sr=16_000)
+dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/audio/stimulus.wav', sr=16_000)
 
 T_max = 401 #seconds
 
@@ -31,7 +31,7 @@ func_dir = '/imaging/woolgar/projects/Tianyi/data'
 
 # func_name = 'whisper_all_no_reshape'
 # func_name = 'whisper_all_no_reshape_small_multi_timestamp'
-func_name = 'whisper_all_no_reshape_large'
+func_name = 'whisper_large'
 
 features = {}
 timestamps = []

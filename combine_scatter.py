@@ -14,9 +14,9 @@ def asr_models_loop_full():
 
     x_upper = 800
 
-    size = 'large-v2'
+    size = 'ru_en'
 
-    neuron_selection = False
+    neuron_selection = 'layer'
 
     exclude_tvl = False
     
@@ -93,7 +93,7 @@ def asr_models_loop_full():
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
             for ia in range(len(a)):
-                if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
+                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
                         lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
@@ -113,7 +113,7 @@ def asr_models_loop_full():
     # import ipdb;ipdb.set_trace()
 
     # Neuron selection
-    if neuron_selection not in [None, False]:
+    if neuron_selection != 'no':
         col_2 = lat_sig[:, :, 2]
         col_3 = lat_sig[:, :, 3]
         unique_values = np.unique(col_2)
@@ -187,7 +187,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/no_select', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/{neuron_selection}_select', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
