@@ -31,6 +31,7 @@ def main():
   func_dir = '/imaging/woolgar/projects/Tianyi/data'
   # func_name = 'tiny'
   func_name = args.size
+  print(func_name)
 
   features = {}
   timestamps = []
@@ -85,3 +86,6 @@ def main():
       text = "\n".join(text)
       with open(f"/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{func_name}/whisper_transcription.txt", "w") as file:
         file.write(text)
+
+if __name__ == '__main__':
+    main()
