@@ -176,9 +176,10 @@ class GMMClusterer(CustomClusterer):
         if optimal_model is not None:
             # None if no data.
             self.labels_ = optimal_model.predict(df)
-            self.labels_ = self._tag_low_loglikelihood_points_as_anomalous(
-                df, optimal_model
-            )
+            # do not remove anomalies for now
+            #self.labels_ = self._tag_low_loglikelihood_points_as_anomalous(
+            #    df, optimal_model
+            #)
         return self
 
     def _grid_search_for_optimal_number_of_clusters(
@@ -220,7 +221,12 @@ class GMMClusterer(CustomClusterer):
                 random_state=self._random_state,
             )
 
-            model.fit(copy_of_df)
+            max_retries = 3
+            for _ in range(max_retries):
+                model.fit(copy_of_df)
+                covar_matrices = model.covariances_
+                if self._all_matrices_invertible(covar_matrices):
+                    break
 
             penalised_loglikelihood = __evaluate_fit(copy_of_df, model)
             if penalised_loglikelihood < optimal_penalised_loglikelihood:
@@ -228,6 +234,20 @@ class GMMClusterer(CustomClusterer):
                 optimal_model = model
 
         return optimal_model
+    
+    @staticmethod
+    def _all_matrices_invertible(covar_matrices: np.array) -> bool:
+        def __is_not_invertible(num_rows: int, num_cols: int, matrix: np.array) -> bool:
+            return (
+                num_rows != num_cols or
+                num_rows != np.linalg.matrix_rank(matrix)
+            )
+        for component_covar_matrix in covar_matrices:
+            num_rows = component_covar_matrix.shape[0]
+            num_cols = component_covar_matrix.shape[1]
+            if __is_not_invertible(num_rows, num_cols, component_covar_matrix):
+                return False
+        return True
 
     def _tag_low_loglikelihood_points_as_anomalous(
         self,

@@ -180,7 +180,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
         (199, 1e-90),
         (-75, 1e-75),
     ]
-    expected_denoised["func2"].right_best_pairings = [(26, 1e-59), (130, 1e-81)]
+    expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = GMMStrategy(
         HEMI_RIGHT,
@@ -211,7 +211,7 @@ def test_GMMStrategy_AllFalse_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [
         (30, 1e-99),
-        (131, 1e-76),
+        (130, 1e-81),
         (23, 1e-44),
         (26, 1e-59),
     ]

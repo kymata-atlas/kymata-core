@@ -172,16 +172,16 @@ def test_CustomGMM_Fit_Successfully_When_StartInsignificant():
     random_seed = 40
     gmm = GMMClusterer(random_state=random_seed)
     gmm = gmm.fit(test_case_start_insignif_df)
-    expected_labels = [2, 0, 0, 0, -1, 3, 1, 1]
-    assert gmm.labels_ == expected_labels
+    expected_labels = [2, 0, 0, 0, 0, 3, 1, 1]
+    assert list(gmm.labels_) == expected_labels
 
 
 def test_CustomGMM_Fit_Successfully_When_EndInsignificant():
     random_seed = 40
     gmm = GMMClusterer(random_state=random_seed)
     gmm = gmm.fit(test_case_end_insignif_df)
-    expected_labels = [0, 0, 3, 2, 2, 1, 1, -1]
-    assert gmm.labels_ == expected_labels
+    expected_labels = [0, 0, 3, 2, 2, 1, 1, 1]
+    assert list(gmm.labels_) == expected_labels
 
 
 def test_CustomGMM_Fit_Successfully_When_AllInsignificant():
@@ -189,20 +189,20 @@ def test_CustomGMM_Fit_Successfully_When_AllInsignificant():
     gmm = GMMClusterer(random_state=random_seed)
     gmm = gmm.fit(test_case_all_insignif_df)
     expected_labels = [3, 0, 2, 1]
-    assert gmm.labels_ == expected_labels
+    assert list(gmm.labels_) == expected_labels
 
 
 def test_CustomGMM_Fit_Successfully_When_StartEndSignificant():
     random_seed = 40
     gmm = GMMClusterer(random_state=random_seed)
     gmm = gmm.fit(test_case_start_end_signif_df)
-    expected_labels = [0, 0, 0, 0, 0, -1, 2, 2, 2, 1, 1]
-    assert gmm.labels_ == expected_labels
+    expected_labels = [0, 0, 0, 0, 0, 0, 2, 2, 2, 1, 1]
+    assert list(gmm.labels_) == expected_labels
 
 
 def test_CustomGMM_Fit_Successfully_When_AllSignificant():
     random_seed = 40
     gmm = GMMClusterer(random_state=random_seed)
     gmm = gmm.fit(test_case_all_signif_df)
-    expected_labels = [0, 0, 0, 0, 0, 0, -1, 2, 2, 1, 1]
-    assert gmm.labels_ == expected_labels
+    expected_labels = [0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 1]
+    assert list(gmm.labels_) == expected_labels
