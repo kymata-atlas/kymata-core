@@ -2,7 +2,6 @@ from copy import deepcopy
 from math import isclose
 from unittest.mock import patch, MagicMock
 
-import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
