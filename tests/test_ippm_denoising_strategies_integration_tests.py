@@ -92,12 +92,12 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -116,12 +116,12 @@ def test_MaxPoolingStrategy_AllFalse_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -139,12 +139,12 @@ def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -163,12 +163,12 @@ def test_AdaptiveMaxPoolingStrategy_AllFalse_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -191,12 +191,12 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -220,12 +220,12 @@ def test_GMMStrategy_AllFalse_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -247,12 +247,12 @@ def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -270,12 +270,12 @@ def test_DBSCANStrategy_AllFalse_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -294,12 +294,12 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )
 
 
@@ -316,10 +316,10 @@ def test_MeanShiftStrategy_AllFalse_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        actual_denoised["func1"].right_best_pairings
-        == expected_denoised["func1"].right_best_pairings
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
     )
     assert (
-        actual_denoised["func2"].right_best_pairings
-        == expected_denoised["func2"].right_best_pairings
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
     )

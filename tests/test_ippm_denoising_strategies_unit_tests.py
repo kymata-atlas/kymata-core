@@ -2,6 +2,7 @@ from copy import deepcopy
 from math import isclose
 from unittest.mock import patch, MagicMock
 
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -136,8 +137,13 @@ def test_DenoisingStrategy_MapSpikesToDF_Successfully(mock_filter):
 
     assert actual_dfs[0][0] == "func1"
     assert actual_dfs[1][0] == "func2"
-    assert_frame_equal(actual_dfs[0][1], test_df_func1)
-    assert_frame_equal(actual_dfs[1][1], test_df_func2)
+    assert_unordered_frame_equal(actual_dfs[0][1], test_df_func1)
+    assert_unordered_frame_equal(actual_dfs[1][1], test_df_func2)
+
+
+def assert_unordered_frame_equal(df1: pd.DataFrame, df2: pd.DataFrame):
+    assert set(df1["Latency"]) == set(df2["Latency"])
+    assert set(df1["Magnitude"]) == set(df2["Magnitude"])
 
 
 def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():

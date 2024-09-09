@@ -15,6 +15,7 @@ class CustomClusterer:
     """
     You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
     in df to a cluster. Set anomalies to ANOMALOUS_TAG.
+    self.labels_ is a list of cluster labels. It has the same size as the dataset.
     """
 
     def __init__(self):
@@ -61,6 +62,11 @@ class MaxPoolClusterer(CustomClusterer):
 
 
 class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
+    """
+
+        NOTE: AMP assumes a sorted time-series, so shuffling is not ideal.
+
+    """
     def __init__(
         self, label_significance_threshold: int = 5, base_label_size: int = 10
     ):
