@@ -255,7 +255,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                             while asr_text[k] in special_tokens:
                                 k += 1
                             if mfa_text[i] != asr_text[k]:
-                                if mfa_text[i] == '<sp>':
+                                if mfa_text[i] == '<sp>' and 'phone' not in str(function_path_without_suffix):
                                     # if asr_text[k] == '.' or asr_text[k] == ',':
                                     place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                     # print('<sp> in mfa encountered')
@@ -285,7 +285,7 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                         while asr_text[k] in special_tokens:
                             k += 1
                         if mfa_text[i] != asr_text[k]:
-                            if mfa_text[i] == '<sp>':
+                            if mfa_text[i] == '<sp>' and 'phone' not in str(function_path_without_suffix):
                                 # if asr_text[k] == '.' or asr_text[k] == ',':
                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                 # print('<sp> in mfa encountered')
@@ -386,4 +386,4 @@ def load_function_pre(function_path_without_suffix: PathType, func_name: str):
 def load_txt(filepath):
     with open(filepath, 'r') as file:
         lines = file.readlines()
-        return [x.strip() for x in lines]    
+        return [x.strip().lower() for x in lines]    

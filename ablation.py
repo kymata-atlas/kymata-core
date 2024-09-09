@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import whisper
 import time
 import os
+from statistics import NormalDist
+import random
 
 # import ipdb;ipdb.set_trace()
 
@@ -16,7 +18,7 @@ start_time = time.time()
 
 whisper_outs = True
 save_outs = True
-size = 'tiny'
+size = 'large'
 
 data_path = '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives'
 
@@ -24,9 +26,32 @@ dataset, sampling_rate = librosa.load(f'{data_path}/stimuli/audio/stimulus.wav',
 
 T_max = 401 #seconds
 
-ablation_param = ['decoder', '2', 'test_1']
+ablation_param = ['encoder', 'sig_rand', 'test_10']
 func_name = f'whisper_{size}_ablation_{ablation_param[0]}_{ablation_param[1]}_{str(ablation_param[2])}'
-neurons_to_ablate = {f'model.{ablation_param[0]}.layers.{ablation_param[1]}.fc2': {range(0,300)}}
+
+log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/fc2/log'
+
+significant_index = {}
+
+for i, filename in enumerate(os.listdir(log_dir)):
+  if filename.endswith('.txt'):  # Process only .txt files
+    input_file = os.path.join(log_dir, filename)
+    with open(input_file, 'r') as file:
+      lines = file.readlines()
+    data_lines = [line for line in lines if 'layer' in line and 'Functions to be tested' not in line]
+    if ablation_param[0] != 'all':
+      if ablation_param[0] not in data_lines[0]:
+        continue
+    all_lines_p = [float(line.split(':')[-1].strip().split()[-1]) for line in data_lines]
+    fun_num = len(all_lines_p)
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*370*fun_num)))))
+    significant_index[data_lines[0].split('_')[0]] = [j for j,p in enumerate(all_lines_p) if p > thres]
+
+neurons_to_ablate = {key: [random.randint(0, 1279) for _ in range(len(value))] for key, value in significant_index.items()}
+
+# import ipdb;ipdb.set_trace()
+
 text = []
 
 def ablation(name, neuron):
