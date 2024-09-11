@@ -118,9 +118,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                     print("...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
                 else:
-                    print(
-                        "...assuming you want to continue without looking at the raw data."
-                    )
+                    print("...assuming you want to continue without looking at the raw data.")
 
                 # Write back selected bad channels back to participant's config .yaml file
                 modify_param_config(
@@ -131,79 +129,49 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 # Get the head positions
                 chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
-                chpi_locs = mne.chpi.compute_chpi_locs(
-                    raw_fif_data.info, chpi_amplitudes
-                )
-                head_pos_data = mne.chpi.compute_head_pos(
-                    raw_fif_data.info, chpi_locs, verbose=True
-                )
+                chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
+                head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
 
                 print_with_color("   Removing CHPI ...", Fore.GREEN)
 
                 # Remove hpi & line
                 raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
 
-                print_with_color(
-                    "   Removing mains component (50Hz and harmonics) from MEG & EEG...",
-                    Fore.GREEN,
-                )
+                print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
 
                 raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
 
                 # note that EEG and MEG do not have the same frequencies, so we remove them seperately
                 meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
                 meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(
-                    freqs=meg_freqs, picks=meg_picks
-                )
+                raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
                 eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
                 eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(
-                    freqs=eeg_freqs, picks=eeg_picks
-                )
+                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
-                fig = raw_fif_data.compute_psd(
-                    tmax=1000000, fmax=500, average="mean"
-                ).plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
                 psd_checks_dir.mkdir(exist_ok=True)
-                fig.savefig(
-                    Path(
-                        psd_checks_dir,
-                        f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png",
-                    )
-                )
+                fig.savefig(Path(psd_checks_dir,f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
-                    raw_fif_data = apply_automatic_bad_channel_detection(
-                        raw_fif_data, emeg_machine_used_to_record_data
-                    )
+                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, emeg_machine_used_to_record_data)
 
                 # Apply SSS and movement compensation
-                print_with_color(
-                    "   Applying SSS and movement compensation...", Fore.GREEN
-                )
+                print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = str(
-                    Path(
-                        Path(__file__).parent.parent.parent,
+                fine_cal_file = str(Path(Path(__file__).parent.parent.parent,
                         "kymata-core-data",
                         "cbu_specific_files/SSS/sss_cal_"
                         + emeg_machine_used_to_record_data
-                        + ".dat",
-                    )
-                )
-                crosstalk_file = str(
-                    Path(
-                        Path(__file__).parent.parent.parent,
+                        + ".dat",))
+                crosstalk_file = str(Path(Path(__file__).parent.parent.parent,
                         "kymata-core-data",
                         "cbu_specific_files/SSS/ct_sparse_"
                         + emeg_machine_used_to_record_data
-                        + ".fif",
-                    )
-                )
+                        + ".fif"))
 
                 if not supress_excessive_plots_and_prompts:
                     mne.viz.plot_head_positions(
@@ -226,15 +194,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                     verbose=True,
                 )
 
-                fig = raw_fif_data_sss_movecomp_tr.compute_psd(
-                    tmax=1000000, fmax=500, average="mean"
-                ).plot()
-                fig.savefig(
-                    Path(
-                        psd_checks_dir,
-                        f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png",
-                    )
-                )
+                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
                 raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt="short")
 
