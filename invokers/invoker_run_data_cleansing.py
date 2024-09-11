@@ -11,9 +11,7 @@ from kymata.preproc.data_cleansing import (
 
 # noinspection DuplicatedCode
 def main(config_filename: str):
-    config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
-    )
+    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
 
     data_root_dir = get_root_dir(config)
 
@@ -23,15 +21,9 @@ def main(config_filename: str):
         dataset_directory_name=config["dataset_directory_name"],
         n_runs=config["number_of_runs"],
         emeg_machine_used_to_record_data=config["emeg_machine_used_to_record_data"],
-        skip_maxfilter_if_previous_runs_exist=config[
-            "skip_maxfilter_if_previous_runs_exist"
-        ],
-        automatic_bad_channel_detection_requested=config[
-            "automatic_bad_channel_detection_requested"
-        ],
-        supress_excessive_plots_and_prompts=config[
-            "supress_excessive_plots_and_prompts"
-        ],
+        skip_maxfilter_if_previous_runs_exist=config["skip_maxfilter_if_previous_runs_exist"],
+        automatic_bad_channel_detection_requested=config["automatic_bad_channel_detection_requested"],
+        supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
     )
 
     run_second_pass_cleansing_and_eog_removal(
@@ -42,9 +34,7 @@ def main(config_filename: str):
         remove_ecg=config["remove_ECG"],
         remove_veoh_and_heog=config["remove_VEOH_and_HEOG"],
         skip_ica_if_previous_runs_exist=config["skip_ica_if_previous_runs_exist"],
-        supress_excessive_plots_and_prompts=config[
-            "supress_excessive_plots_and_prompts"
-        ],
+        supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
     )
 
 
