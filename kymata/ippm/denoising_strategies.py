@@ -290,6 +290,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
         normal_dist_threshold: float = 5,
         should_merge_hemis: bool = False,
         should_exclude_insignificant: bool = True,
+        should_shuffle: bool = True,
         bin_significance_threshold: int = 15,
         bin_size: int = 25,
     ):
@@ -301,6 +302,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
             normal_dist_threshold,
             should_merge_hemis,
             should_exclude_insignificant,
+            should_shuffle
         )
         self._clusterer = MaxPoolClusterer(bin_significance_threshold, bin_size)
 
@@ -341,6 +343,7 @@ class GMMStrategy(DenoisingStrategy):
         normal_dist_threshold: float = 5,
         should_merge_hemis: bool = False,
         should_exclude_insignificant: bool = True,
+        should_shuffle: bool = True,
         number_of_clusters_upper_bound: int = 5,
         covariance_type: str = "full",
         max_iter: int = 1000,
@@ -357,6 +360,7 @@ class GMMStrategy(DenoisingStrategy):
             normal_dist_threshold,
             should_merge_hemis,
             should_exclude_insignificant,
+            should_shuffle
         )
         self._clusterer = GMMClusterer(
             number_of_clusters_upper_bound,
@@ -379,6 +383,7 @@ class DBSCANStrategy(DenoisingStrategy):
         normal_dist_threshold: float = 5,
         should_merge_hemis: bool = False,
         should_exclude_insignificant: bool = True,
+        should_shuffle: bool = True,
         eps: int = 10,
         min_samples: int = 2,
         metric: str = "euclidean",
@@ -395,6 +400,7 @@ class DBSCANStrategy(DenoisingStrategy):
             normal_dist_threshold,
             should_merge_hemis,
             should_exclude_insignificant,
+            should_shuffle
         )
         self._clusterer = DBSCANClusterer(
             eps=eps,
@@ -417,6 +423,7 @@ class MeanShiftStrategy(DenoisingStrategy):
         normal_dist_threshold: float = 5,
         should_merge_hemis: bool = False,
         should_exclude_insignificant: bool = True,
+        should_shuffle: bool = True,
         cluster_all: bool = False,
         bandwidth: float = 30,
         seeds: Optional[int] = None,
@@ -431,6 +438,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             normal_dist_threshold,
             should_merge_hemis,
             should_exclude_insignificant,
+            should_shuffle
         )
         self._clusterer = MeanShiftClusterer(
             bandwidth=bandwidth,
