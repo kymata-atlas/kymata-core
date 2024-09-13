@@ -14,6 +14,7 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
+from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
     HexelDType,
     SensorDType,
@@ -41,9 +42,12 @@ DIM_LATENCY = "latency"
 DIM_FUNCTION = "function"
 
 # Block (e.g. hemisphere)
-BLOCK_LEFT = "left"
-BLOCK_RIGHT = "right"
+BLOCK_LEFT = HEMI_LEFT
+BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
+
+# Column names
+COL_LOGP_VALUE = "log-p-value"
 
 
 class ExpressionSet(ABC):
@@ -308,7 +312,7 @@ class ExpressionSet(ABC):
                 self.channel_coord_name: self._channels[block_name][idxs],
                 DIM_FUNCTION: best_functions[idxs],
                 DIM_LATENCY: best_latencies[idxs],
-                "value": logp_vals[idxs],
+                COL_LOGP_VALUE: logp_vals[idxs],
             }
         )
 
