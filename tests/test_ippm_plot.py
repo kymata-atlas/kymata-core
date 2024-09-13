@@ -40,9 +40,9 @@ def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
 
 
 def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
-    coords = [(65, 0.8), (70, 1)]
+    coords = [(50, 0.8), (90, 1)]
     actual_ctr_points = _make_bspline_ctr_points(coords)
-    expected_ctr_points = [(65, 0.8), (70, 0.8), (80, 0.8), (85, 1), (95, 1), (70, 1)]
+    expected_ctr_points = [(50, 0.8), (55, 0.8), (60, 0.8), (70, 1), (80, 1), (90, 1)]
 
     for expected_point, actual_point in zip(expected_ctr_points, actual_ctr_points):
         assert expected_point[0] == actual_point[0]
