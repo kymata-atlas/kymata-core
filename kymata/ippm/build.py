@@ -53,7 +53,8 @@ class IPPMBuilder:
             1 / len(hierarchy.keys()) if len(hierarchy.keys()) > 0 else 1
         )
         partition_ptr = 0
-        while childless_functions := self._get_childless_functions():
+        graph = dict()
+        while childless_functions := self._get_childless_functions(hierarchy):
             for childless_func in childless_functions:
                 graph = self._create_nodes_and_edges_for_function(
                     childless_func, partition_ptr, y_axis_partition_size
@@ -70,12 +71,13 @@ class IPPMBuilder:
             else:
                 self._spikes[function].left_best_pairings.sort(key=lambda x: x[0])
 
-    def _get_childless_functions(self) -> set[str]:
+    @classmethod
+    def _get_childless_functions(cls, hierarchy: TransformHierarchy) -> set[str]:
         def __unpack_dict_values_into_list(dict_to_unpack):
             return [value for values in dict_to_unpack.values() for value in values]
 
-        current_functions = set(self._hierarchy.keys())
-        functions_with_children = set(__unpack_dict_values_into_list(self._hierarchy))
+        current_functions = set(hierarchy.keys())
+        functions_with_children = set(__unpack_dict_values_into_list(hierarchy))
         # When no functions left, it returns empty set.
         return current_functions.difference(functions_with_children)
 

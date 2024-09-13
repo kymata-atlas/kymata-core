@@ -25,7 +25,7 @@ class CustomClusterer(ABC):
 
     @abstractmethod
     def fit(self, df: pd.DataFrame) -> Self:
-        return self
+        raise NotImplementedError()
 
 
 class MaxPoolClusterer(CustomClusterer):
@@ -35,7 +35,8 @@ class MaxPoolClusterer(CustomClusterer):
         self._label_size = label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
-        count_of_data_per_label = dict(Counter(self._assign_points_to_labels(df)))
+        self.labels_ = self._assign_points_to_labels(df)
+        count_of_data_per_label = dict(Counter(self.labels_))
         self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         return self
 
@@ -298,7 +299,8 @@ class DBSCANClusterer(CustomClusterer):
         )
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self._dbscan = self._dbscan.fit(df)
+        self._dbscan.fit(df)
+        self.labels_ = self._dbscan.labels_
         return self
 
 
@@ -321,5 +323,6 @@ class MeanShiftClusterer(CustomClusterer):
         )
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self._meanshift = self._meanshift.fit(df)
+        self._meanshift.fit(df)
+        self.labels_ = self._meanshift.labels_
         return self
