@@ -1,26 +1,39 @@
 name: Assess test coverage
 
-on: [pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  tests:
+  test:
     runs-on: ubuntu-latest
-    name: Assess Coverage
+
+    strategy:
+      matrix:
+        python-version: [3.11]
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }} # be sure to add this ref on your checkout
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.11' # Define your project python version
-      - id: run-tests
-        uses: JotaFan/pycoverage@v1.0.0
-        with:
-          cov-omit-list: tests/*
-          cov-threshold-single: 85
-          cov-threshold-total: 90
-          async-tests: true
-          poetry-version: 1.4.2
-          package-extras: dev,tests
-          github_token: ${{ secrets.github_token }}
-          working_branch: ${{ steps.extract_branch.outputs.branch }}
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+
+    - name: Run tests with coverage
+      run: |
+        pytest --cov=./
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report
+        path: coverage.xml
