@@ -40,6 +40,15 @@ def plot_ippm(
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
     """
+    def __get_label(inc_edge: str) -> str:
+        try:
+            # assumes inc edge is named as transform-x.
+            label = inc_edge[:inc_edge.index("-")]
+            return label
+        except ValueError:
+            # "-" not found in inc_edge. Therefore, it must be input transform.
+            return inc_edge
+        
     # first lets aggregate all the information.
     node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = list(range(len(graph.keys())))  # y coordinates for nodes
@@ -47,6 +56,7 @@ def plot_ippm(
     node_sizes  = list(range(len(graph.keys())))  # size of nodes
     edge_colors = []
     bsplines = []
+    edge_labels = []
     for i, node in enumerate(graph.keys()):
         for function, color in colors.items():
             # search for function color.
@@ -64,7 +74,9 @@ def plot_ippm(
             end = graph[node].position
             pairs.append([(start[0], start[1]), (end[0], end[1])])
             edge_colors.append(node_colors[i])
-
+            label = __get_label(inc_edge)
+            edge_labels.append(label)
+            
         bsplines += _make_bspline_paths(pairs)
 
     # override node size
@@ -73,12 +85,12 @@ def plot_ippm(
 
     fig, ax = plt.subplots()
 
-    for path, color in zip(bsplines, edge_colors):
+    for path, color, label in zip(bsplines, edge_colors, edge_labels):
         ax.plot(path[0], path[1], color=color, linewidth="3", zorder=-1)
         ax.text(
             x=path[0][0] + 10,
             y=path[1][0] - 0.006,
-            s="function_name()",
+            s=f"{label}()",
             color=color,
             zorder=1,
             path_effects=[pe.withStroke(linewidth=4, foreground="white")],
