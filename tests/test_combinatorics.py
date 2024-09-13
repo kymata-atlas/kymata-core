@@ -14,7 +14,7 @@ def test_is_derangement():
         assert not derangement[i] == i, f"Element at index {i} is not a derangement"
 
 
-        def test_larger_derangement():
+def test_larger_derangement():
     n = 1000
     derangement = generate_derangement(n)
     assert len(derangement) == n
