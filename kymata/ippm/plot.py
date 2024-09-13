@@ -75,16 +75,16 @@ def plot_ippm(
 
     fig, ax = plt.subplots()
 
-    text_offset = (-10, -0.006)
+    text_offset_x = -10
     for path, color in zip(bsplines, edge_colors):
         ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         ax.text(
-            x=path[0][-1] + text_offset[0],
-            y=path[1][-1] + text_offset[1],
+            x=path[0][-1] + text_offset_x,
+            y=path[1][-1],
             s="function_name()",
             color=color,
             zorder=1,
-            horizontalalignment="right",
+            horizontalalignment="right", verticalalignment='center',
             path_effects=[pe.withStroke(linewidth=4, foreground="white")],
         )
         ax.arrow(
