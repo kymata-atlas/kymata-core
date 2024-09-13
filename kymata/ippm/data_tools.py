@@ -1,25 +1,18 @@
-import json
 import math
 from typing import NamedTuple, Optional
 
-import requests
-
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY, COL_LOGP_VALUE
+from kymata.io.atlas import fetch_data_dict
+from kymata.math.p_values import logp_to_p
 
 
-class Pairing(NamedTuple):
-    latency: float
-    pvalue: float
-
-
-class IPPMNode(NamedTuple):
+class ExpressionPairing(NamedTuple):
     """
-    A node to be drawn in an IPPM graph.
+    A temporal location representing evidence of expression with an associated p-value.
     """
-    magnitude: float
-    position: tuple[float, float]
-    inc_edges: list
+    latency_ms: float
+    logp_value: float
 
 
 class IPPMSpike(object):
@@ -29,8 +22,8 @@ class IPPMSpike(object):
     Attributes
     ----------
         function : the name of the function who caused the spike
-        right_best_pairings : right hemisphere best pairings. pvalues are taken to the base 10 by default. latency is in milliseconds
-        left_best_pairings : right hemisphere best pairings. same info as right for (latency, pvalue)
+        right_best_pairings : right hemisphere's best timings for this function
+        left_best_pairings : right hemisphere's best timings for this function
         description : optional written description
         github_commit : github commit of the function
     """
@@ -42,27 +35,27 @@ class IPPMSpike(object):
         github_commit: str = None,
     ):
         self.function: str = function_name
-        self.right_best_pairings: list[Pairing] = []
-        self.left_best_pairings: list[Pairing] = []
-        self.description: str = description
+        self.right_best_pairings: list[ExpressionPairing] = []
+        self.left_best_pairings: list[ExpressionPairing] = []
+        self.description: Optional[str] = description
         self.github_commit: str = github_commit
         self.color: Optional[str] = None
 
         self.input_stream: Optional[str] = None
 
-    def add_pairing(self, hemi: str, pairing: Pairing):
+    def add_pairing(self, hemi: str, expr_timing: ExpressionPairing):
         """
-        Use this to add new pairings. Pair = (latency (ms), pvalue (log_10))
+        Use this to add new timings.
 
         Params
         ------
             hemi : left or right
-            pairing : Corresponds to the best match to a spike of form (latency (ms), pvalue (log_10))
+            timing : Corresponds to the best match to a spike
         """
         if hemi == HEMI_LEFT:
-            self.left_best_pairings.append(pairing)
+            self.left_best_pairings.append(expr_timing)
         else:
-            self.right_best_pairings.append(pairing)
+            self.right_best_pairings.append(expr_timing)
 
 
 SpikeDict = dict[str, IPPMSpike]
@@ -70,11 +63,8 @@ SpikeDict = dict[str, IPPMSpike]
 # Maps function names to lists of parent functions
 TransformHierarchy = dict[str, list[str]]
 
-# Maps function names to nodes
-IPPMGraph = dict[str, IPPMNode]
 
-
-def fetch_data(api: str) -> SpikeDict:
+def fetch_spike_dict(api: str) -> SpikeDict:
     """
     Fetches data from Kymata API and converts it into a dictionary of function names as keys
     and spike objects as values. Advantage of dict is O(1) look-up and spike object is readable
@@ -88,9 +78,7 @@ def fetch_data(api: str) -> SpikeDict:
     -------
         Dictionary containing data in the format [function name, spike]
     """
-    response = requests.get(api)
-    resp_dict = json.loads(response.text)
-    return build_spike_dict_from_api_response(resp_dict)
+    return build_spike_dict_from_api_response(fetch_data_dict(api))
 
 
 def build_spike_dict_from_expression_set(expression_set: HexelExpressionSet) -> SpikeDict:
@@ -104,21 +92,17 @@ def build_spike_dict_from_expression_set(expression_set: HexelExpressionSet) -> 
 
     Returns
     -------
-        Dict of the format [function name, spike(func_name, id, left_pairings, right_pairings)]
+        Dict of the format [function name, spike(func_name, id, left_pairings, right_timings)]
     """
-    best_functions_left, best_functions_right = expression_set.best_functions()
     spikes = {}
-    for hemi in [HEMI_LEFT, HEMI_RIGHT]:
-        best_functions = (
-            best_functions_left if hemi == HEMI_LEFT else best_functions_right
-        )
+    for hemi, best_functions in zip([HEMI_LEFT, HEMI_RIGHT], expression_set.best_functions()):
         for _idx, row in best_functions.iterrows():
             func = row[DIM_FUNCTION]
             latency = row[DIM_LATENCY] * 1000  # convert to ms
-            pval = row[COL_LOGP_VALUE]
+            logp = row[COL_LOGP_VALUE]
             if func not in spikes:
                 spikes[func] = IPPMSpike(func)
-            spikes[func].add_pairing(hemi, Pairing(latency, pval))
+            spikes[func].add_pairing(hemi, ExpressionPairing(latency, logp_to_p(logp)))
     return spikes
 
 
@@ -134,7 +118,7 @@ def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
 
     Returns
     -------
-        Dict of the format [function name, spike(func_name, id, left_pairings, right_pairings)]
+        Dict of the format [function name, spike(func_name, id, left_timings, right_timings)]
     """
     spikes = {}
     for hemi in [HEMI_LEFT, HEMI_RIGHT]:
@@ -145,7 +129,7 @@ def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
                 # first time seeing function, so create key and spike object.
                 spikes[func] = IPPMSpike(func)
 
-            spikes[func].add_pairing(hemi, Pairing(latency, pow(10, pval)))
+            spikes[func].add_pairing(hemi, ExpressionPairing(latency, pow(10, pval)))
 
     return spikes
 
@@ -156,11 +140,11 @@ def convert_to_power10(spikes: SpikeDict) -> SpikeDict:
 
     Parameters
     ------------
-    spikes: dict function_name as key and spike object as value. Spikes contain pairings for left/right.
+    spikes: dict function_name as key and spike object as value. Spikes contain timings for left/right.
 
     Returns
     --------
-    same dict but the pairings are all raised to power x. E.g., pairings = [(lat1, x), ..., (latn, xn)] -> [(lat1, 10^x), ..., (latn, 10^xn)]
+    same dict but the timings are all raised to power x. E.g., timings = [(lat1, x), ..., (latn, xn)] -> [(lat1, 10^x), ..., (latn, 10^xn)]
     """
     for func in spikes.keys():
         spikes[func].right_best_pairings = list(
@@ -180,7 +164,7 @@ def remove_excess_funcs(to_retain: list[str], spikes: SpikeDict) -> SpikeDict:
     Parameters
     ----------
     to_retain: list of functions we want to retain in the spikes dict
-    spikes: dict function_name as key and spike object as value. Spikes contain pairings for left/right.
+    spikes: dict function_name as key and spike object as value. Spikes contain timings for left/right.
 
     Returns
     -------

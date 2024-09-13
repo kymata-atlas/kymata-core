@@ -24,7 +24,7 @@ def test_hexel():
     assert hexel.right_best_pairings == [(20, 10e-3), (50, 0.000012), (611, 0.00053)]
 
 
-def test_build_hexel_dict():
+def test_build_spike_dict():
     test_dict = {
         HEMI_LEFT: [[2, 1, 0.012, "left1"], [2, 14, 0.213, "left1"]],
         HEMI_RIGHT: [[3, 51, 0.1244, "left1"], [4, 345, 0.557, "right1"]],

@@ -4,7 +4,8 @@ Metrics for evaluating IPPMs
 from statistics import NormalDist
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.ippm.data_tools import SpikeDict, TransformHierarchy, IPPMSpike, IPPMGraph
+from kymata.ippm.data_tools import SpikeDict, TransformHierarchy, IPPMSpike
+from kymata.ippm.build import IPPMGraph
 
 
 def causality_violation_score(

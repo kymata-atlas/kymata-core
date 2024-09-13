@@ -19,7 +19,7 @@ class TestDataTools(unittest.TestCase):
         mock_requests.text.return_value = "testing"
         mock_json.loads.return_value = test_dict
 
-        hexels = data_tools.fetch_data("testing")
+        hexels = data_tools.fetch_spike_dict("testing")
         self.assertEqual(
             list(hexels.keys()), ["left1", "right1"]
         )  # check functions are saved correctly

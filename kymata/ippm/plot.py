@@ -15,7 +15,8 @@ from sklearn.metrics import euclidean_distances
 from sklearn.preprocessing import normalize
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
-from kymata.ippm.data_tools import SpikeDict, IPPMGraph, Pairing, copy_hemisphere
+from kymata.ippm.build import IPPMGraph
+from kymata.ippm.data_tools import SpikeDict, copy_hemisphere, ExpressionPairing
 
 
 def plot_ippm(
@@ -227,7 +228,7 @@ def stem_plot(
 
     Params
     ------
-        spikes : Contains function spikes in the form of a spike object. All pairings are found there.
+        spikes : Contains function spikes in the form of a spike object. All timings are found there.
         title : Title of plot.
     """
     # estimate significance parameter
@@ -352,12 +353,12 @@ def stem_plot(
 
 
 def plot_k_dist_1D(
-    pairings: list[Pairing], k: int = 4, normalise: bool = False
+    timings: list[ExpressionPairing], k: int = 4, normalise: bool = False
 ):
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.
 
-    A utility function to plot the k-dist graph for a set of pairings. Essentially, the k dist graph plots the distance
+    A utility function to plot the k-dist graph for a set of timings. Essentially, the k dist graph plots the distance
     to the kth neighbour for each point. By inspecting the gradient of the graph, we can gain some intuition behind the density of
     points within the dataset, which can feed into selecting the optimal DBSCAN hyperparameters.
 
@@ -365,7 +366,7 @@ def plot_k_dist_1D(
 
     Parameters
     ----------
-    pairings: list of pairings extracted from a spikes. It contains the pairings for one function and one hemisphere
+    timings: list of timings extracted from a spikes. It contains the timings for one function and one hemisphere
     k: the k we use to find the kth neighbour. Paper above advises to use k=4.
     normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
 
@@ -376,7 +377,7 @@ def plot_k_dist_1D(
 
     alpha = 3.55e-15
     X = pd.DataFrame(columns=["Latency"])
-    for latency, spike in pairings:
+    for latency, spike in timings:
         if spike <= alpha:
             X.loc[len(X)] = [latency]
 

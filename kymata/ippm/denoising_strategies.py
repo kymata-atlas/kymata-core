@@ -5,12 +5,12 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.cluster import DBSCAN, MeanShift
 from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
-from .cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
-from .data_tools import IPPMSpike, SpikeDict
+from .cluster import (
+    MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer)
+from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
 from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
@@ -56,7 +56,7 @@ class DenoisingStrategy(ABC):
                 Indicates whether we want to exclude insignificant spikes before clustering.
         """
 
-        self._clusterer = None
+        self._clusterer: CustomClusterer = None
         self._hemi = hemi
         self._should_normalise = should_normalise
         self._should_cluster_only_latency = should_cluster_only_latency
@@ -158,7 +158,7 @@ class DenoisingStrategy(ABC):
             yield func, df
 
     def _filter_out_insignificant_spikes(
-        self, spikes: list[tuple[float, float]]
+        self, spikes: list[ExpressionPairing]
     ) -> list[list[float]]:
         """
         For a list of spikes, remove all that are not statistically significant and save them to a DataFrame.
@@ -396,7 +396,7 @@ class DBSCANStrategy(DenoisingStrategy):
             should_merge_hemis,
             should_exclude_insignificant,
         )
-        self._clusterer = DBSCAN(
+        self._clusterer = DBSCANClusterer(
             eps=eps,
             min_samples=min_samples,
             metric=metric,
@@ -432,7 +432,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             should_merge_hemis,
             should_exclude_insignificant,
         )
-        self._clusterer = MeanShift(
+        self._clusterer = MeanShiftClusterer(
             bandwidth=bandwidth,
             seeds=seeds,
             min_bin_freq=min_bin_freq,

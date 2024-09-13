@@ -4,7 +4,8 @@ Tests for kymata.ippm.evaluation
 import pytest
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
-from kymata.ippm.data_tools import IPPMSpike, IPPMNode
+from kymata.ippm.data_tools import IPPMSpike
+from kymata.ippm.build import IPPMNode
 from kymata.ippm.evaluation import causality_violation_score, transform_recall
 
 

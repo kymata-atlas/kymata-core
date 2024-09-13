@@ -2,12 +2,32 @@
 A graphing functions used to construct a dictionary that contains the nodes and all relevant
 information to construct a dict containing node names as keys and Node objects (see namedtuple) as values.
 """
+
 from copy import deepcopy
+from typing import NamedTuple
 
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMNode, SpikeDict, IPPMGraph, TransformHierarchy, Pairing
+from kymata.ippm.data_tools import SpikeDict, TransformHierarchy, ExpressionPairing
+
+
+class NodePosition(NamedTuple):
+    x: float
+    y: float
+
+
+class IPPMNode(NamedTuple):
+    """
+    A node to be drawn in an IPPM graph.
+    """
+    magnitude: float
+    position: NodePosition
+    inc_edges: list
+
+
+# Maps function names to nodes
+IPPMGraph = dict[str, IPPMNode]
 
 
 class IPPMBuilder:
@@ -19,29 +39,29 @@ class IPPMBuilder:
         hemisphere: str,
     ):
         self._spikes = deepcopy(spikes)
+        self._sort_spikes_by_latency_asc()
+
         self._inputs = inputs
-        self._hierarchy = deepcopy(hierarchy)
+        self._hierarchy = hierarchy
         self._hemisphere: str = hemisphere
 
         self.graph: IPPMGraph = dict()
-        self.graph = self._build_graph_dict()
+        self.graph = self._build_graph_dict(deepcopy(self._hierarchy))
 
-    def _build_graph_dict(self) -> IPPMGraph:
-        self._sort_spikes_by_latency_asc()
-
+    def _build_graph_dict(self, hierarchy: TransformHierarchy) -> IPPMGraph:
         y_axis_partition_size = (
-            1 / len(self._hierarchy.keys()) if len(self._hierarchy.keys()) > 0 else 1
+            1 / len(hierarchy.keys()) if len(hierarchy.keys()) > 0 else 1
         )
         partition_ptr = 0
         while childless_functions := self._get_childless_functions():
             for childless_func in childless_functions:
-                self.graph = self._create_nodes_and_edges_for_function(
+                graph = self._create_nodes_and_edges_for_function(
                     childless_func, partition_ptr, y_axis_partition_size
                 )
-                self._hierarchy.pop(childless_func)
+                hierarchy.pop(childless_func)
                 partition_ptr += 1
 
-        return self.graph
+        return graph
 
     def _sort_spikes_by_latency_asc(self) -> None:
         for function in self._spikes.keys():
@@ -59,9 +79,7 @@ class IPPMBuilder:
         # When no functions left, it returns empty set.
         return current_functions.difference(functions_with_children)
 
-    def _create_nodes_and_edges_for_function(
-        self, function_name: str, partition_ptr: int, partition_size: float
-    ) -> IPPMGraph:
+    def _create_nodes_and_edges_for_function(self, function_name: str, partition_ptr: int, partition_size: float) -> IPPMGraph:
         def __get_y_coordinate(
             curr_partition_number: int, partition_size: float
         ) -> float:
@@ -70,7 +88,7 @@ class IPPMBuilder:
         func_parents = self._hierarchy[function_name]
         current_y_axis_coord = __get_y_coordinate(partition_ptr, partition_size)
         if function_name in self._inputs:
-            self.graph[function_name] = IPPMNode(100, (0, current_y_axis_coord), [])
+            self.graph[function_name] = IPPMNode(100, NodePosition(0, current_y_axis_coord), [])
         else:
             childless_func_pairings = self._get_best_pairings_from_hemisphere(
                 function_name
@@ -88,9 +106,7 @@ class IPPMBuilder:
 
         return self.graph
 
-    def _get_best_pairings_from_hemisphere(
-        self, func: str
-    ) -> list[Pairing]:
+    def _get_best_pairings_from_hemisphere(self, func: str) -> list[ExpressionPairing]:
         if func in self._spikes.keys():
             return (
                 self._spikes[func].right_best_pairings
@@ -102,7 +118,7 @@ class IPPMBuilder:
     def _create_nodes_for_childless_function(
         self,
         current_y_axis_coord: float,
-        childless_func_pairings: list[Pairing],
+        childless_func_pairings: list[ExpressionPairing],
         function_name: str,
     ):
         def __map_magnitude_to_node_size(magnitude: float) -> float:
@@ -113,7 +129,7 @@ class IPPMBuilder:
             parent_function = [function_name + "-" + str(idx - 1)] if idx != 0 else []
             self.graph[function_name + "-" + str(idx)] = IPPMNode(
                 __map_magnitude_to_node_size(magnitude),
-                (latency, current_y_axis_coord),
+                NodePosition(latency, current_y_axis_coord),
                 parent_function,
             )
 

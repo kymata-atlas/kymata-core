@@ -1,9 +1,11 @@
+from abc import ABC, abstractmethod
 from collections import Counter
 from copy import deepcopy
 from math import floor
 from typing import List, Dict, Self, Optional
 
 from sklearn.mixture import GaussianMixture
+from sklearn.cluster import DBSCAN, MeanShift
 
 import pandas as pd
 import numpy as np
@@ -11,7 +13,7 @@ import numpy as np
 from kymata.ippm.constants import LATENCY_OFFSET, ANOMALOUS_TAG
 
 
-class CustomClusterer:
+class CustomClusterer(ABC):
     """
     You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
     in df to a cluster. Set anomalies to ANOMALOUS_TAG.
@@ -21,6 +23,7 @@ class CustomClusterer:
     def __init__(self):
         self.labels_ = []
 
+    @abstractmethod
     def fit(self, df: pd.DataFrame) -> Self:
         return self
 
@@ -32,16 +35,11 @@ class MaxPoolClusterer(CustomClusterer):
         self._label_size = label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self.labels_ = self._assign_points_to_labels(df)
-        count_of_data_per_label = dict(Counter(self.labels_))
-        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(
-            count_of_data_per_label
-        )
+        count_of_data_per_label = dict(Counter(self._assign_points_to_labels(df)))
+        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         return self
 
-    def _assign_points_to_labels(
-        self, df_with_latency: pd.DataFrame, latency_col_index: int = 0
-    ) -> List[int]:
+    def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
         def __get_bin_index(latency: float) -> int:
             return floor(
                 (latency + LATENCY_OFFSET) / self._label_size
@@ -52,10 +50,11 @@ class MaxPoolClusterer(CustomClusterer):
     def _tag_labels_below_label_significance_threshold_as_anomalies(
         self, count_of_data_per_bin: Dict[int, int]
     ) -> List[int]:
+        labels = self.labels_
         for label, count in count_of_data_per_bin.items():
             if count < self._label_significance_threshold:
-                self.labels_ = self._map_label_to_new_label(label, ANOMALOUS_TAG)
-        return self.labels_
+                labels = self._map_label_to_new_label(label, ANOMALOUS_TAG)
+        return labels
 
     def _map_label_to_new_label(self, old_label: int, new_label: int) -> List[int]:
         return list(map(lambda x: new_label if x == old_label else x, self.labels_))
@@ -188,9 +187,7 @@ class GMMClusterer(CustomClusterer):
             #)
         return self
 
-    def _grid_search_for_optimal_number_of_clusters(
-        self, df: pd.DataFrame
-    ) -> GaussianMixture:
+    def _grid_search_for_optimal_number_of_clusters(self, df: pd.DataFrame) -> GaussianMixture:
         """
         Quick 101 to model evaluation:
             - Likelihood for a datapoint represents the probability that the datapoint came from the estimated distribution.
@@ -274,3 +271,55 @@ class GMMClusterer(CustomClusterer):
         threshold = np.percentile(log_likelihood, anomaly_percentile_threshold)
         self.labels_ = __update_labels_to_anomalous_label(log_likelihood, threshold)
         return self.labels_
+
+
+class DBSCANClusterer(CustomClusterer):
+    def __init__(
+        self,
+        eps: int = 10,
+        min_samples: int = 2,
+        metric: str = "euclidean",
+        algorithm: str = "auto",
+        leaf_size: int = 30,
+        n_jobs: int = -1,
+        metric_params: Optional[dict] = None):
+
+        super().__init__()
+
+        # A thin wrapper around DBSCAN
+        self._dbscan: DBSCAN = DBSCAN(
+            eps=eps,
+            min_samples=min_samples,
+            metric=metric,
+            metric_params=metric_params,
+            algorithm=algorithm,
+            leaf_size=leaf_size,
+            n_jobs=n_jobs,
+        )
+
+    def fit(self, df: pd.DataFrame) -> Self:
+        self._dbscan = self._dbscan.fit(df)
+        return self
+
+
+class MeanShiftClusterer(CustomClusterer):
+    def __init__(self,
+                 cluster_all: bool = False,
+                 bandwidth: float = 30,
+                 seeds: Optional[int] = None,
+                 min_bin_freq: int = 2,
+                 n_jobs: int = -1,):
+
+        super().__init__()
+
+        self._meanshift = MeanShift(
+            bandwidth=bandwidth,
+            seeds=seeds,
+            min_bin_freq=min_bin_freq,
+            cluster_all=cluster_all,
+            n_jobs=n_jobs,
+        )
+
+    def fit(self, df: pd.DataFrame) -> Self:
+        self._meanshift = self._meanshift.fit(df)
+        return self
