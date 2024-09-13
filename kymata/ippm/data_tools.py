@@ -1,4 +1,3 @@
-import math
 from typing import NamedTuple, Optional
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
@@ -131,28 +130,6 @@ def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
 
             spikes[func].add_pairing(hemi, ExpressionPairing(latency, pow(10, pval)))
 
-    return spikes
-
-
-def convert_to_power10(spikes: SpikeDict) -> SpikeDict:
-    """
-    Utility function to take data from the .nkg format and convert it to power of 10, so it can be used for IPPMs.
-
-    Parameters
-    ------------
-    spikes: dict function_name as key and spike object as value. Spikes contain timings for left/right.
-
-    Returns
-    --------
-    same dict but the timings are all raised to power x. E.g., timings = [(lat1, x), ..., (latn, xn)] -> [(lat1, 10^x), ..., (latn, 10^xn)]
-    """
-    for func in spikes.keys():
-        spikes[func].right_best_pairings = list(
-            map(lambda x: (x[0], math.pow(10, x[1])), spikes[func].right_best_pairings)
-        )
-        spikes[func].left_best_pairings = list(
-            map(lambda x: (x[0], math.pow(10, x[1])), spikes[func].left_best_pairings)
-        )
     return spikes
 
 

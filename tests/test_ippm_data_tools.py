@@ -5,7 +5,7 @@ Tests for kymata.ippm.data_tools
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
 from kymata.ippm.data_tools import (
     IPPMSpike, build_spike_dict_from_api_response,
-    convert_to_power10, copy_hemisphere, remove_excess_funcs,
+    copy_hemisphere, remove_excess_funcs,
 )
 
 
@@ -40,18 +40,6 @@ def test_build_spike_dict():
         (14, pow(10, 0.213)),
     ]
     assert hexels["left1"].right_best_pairings == [(51, pow(10, 0.1244))]
-
-
-def test_Should_convertToPower10_When_validInput():
-    hexels = {"f1": IPPMSpike("f1")}
-    hexels["f1"].right_best_pairings = [(10, -50), (20, -10), (30, -20), (40, -3)]
-    converted = convert_to_power10(hexels)
-    assert converted["f1"].right_best_pairings == [
-        (10, 1e-50),
-        (20, 1e-10),
-        (30, 1e-20),
-        (40, 1e-3),
-    ]
 
 
 def test_Should_removeExcessFuncs_When_validInput():
