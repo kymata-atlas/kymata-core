@@ -26,6 +26,8 @@ def plot_ippm(
     scale_spikes: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
+    arrowhead_dims: tuple[float, float] = (.02, 8),
+    linewidth: float = 3,
 ):
     """
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
@@ -73,20 +75,22 @@ def plot_ippm(
 
     fig, ax = plt.subplots()
 
+    text_offset = (-10, -0.006)
     for path, color in zip(bsplines, edge_colors):
-        ax.plot(path[0], path[1], color=color, linewidth="3", zorder=-1)
+        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         ax.text(
-            x=path[0][0] + 10,
-            y=path[1][0] - 0.006,
+            x=path[0][-1] + text_offset[0],
+            y=path[1][-1] + text_offset[1],
             s="function_name()",
             color=color,
             zorder=1,
+            horizontalalignment="right",
             path_effects=[pe.withStroke(linewidth=4, foreground="white")],
         )
         ax.arrow(
             x=path[0][-1], dx=1,
             y=path[1][-1], dy=0,
-            shape="full", width=0, lw=0, head_width=.02, head_length=8, color=color,
+            shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
 
@@ -171,20 +175,31 @@ def _make_bspline_ctr_points(
         start_X, end_X = end_X, start_X
         start_Y, end_Y = end_Y, start_Y
 
-    return np.array(
+    # Offset points: chosen for aesthetics, but with a squish down to evenly-spaced when nodes are too small
+    x_diff = end_X - start_X
+    offsets = [
+        min(5,  1 * x_diff / 5),
+        min(10, 2 * x_diff / 5),
+        min(20, 3 * x_diff / 5),
+        min(30, 4 * x_diff / 5),
+    ]
+
+    ctr_points = np.array(
         [
             # start
             (start_X, start_Y),
             # first 2
-            (start_X + 5, start_Y),
-            (start_X + 15, start_Y),
+            (start_X + offsets[0], start_Y),
+            (start_X + offsets[1], start_Y),
             # second 2
-            (start_X + 20, end_Y),
-            (start_X + 30, end_Y),
+            (start_X + offsets[2], end_Y),
+            (start_X + offsets[3], end_Y),
             # end
             (end_X, end_Y),
         ]
     )
+
+    return ctr_points
 
 
 def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
