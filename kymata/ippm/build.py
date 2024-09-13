@@ -38,12 +38,12 @@ class IPPMBuilder:
         hierarchy: TransformHierarchy,
         hemisphere: str,
     ):
-        self._spikes = deepcopy(spikes)
-        self._sort_spikes_by_latency_asc()
-
-        self._inputs = inputs
-        self._hierarchy = hierarchy
+        self._spikes: SpikeDict = deepcopy(spikes)
+        self._inputs: list[str] = inputs
+        self._hierarchy: TransformHierarchy = hierarchy
         self._hemisphere: str = hemisphere
+
+        self._sort_spikes_by_latency_asc()
 
         self.graph: IPPMGraph = dict()
         self.graph = self._build_graph_dict(deepcopy(self._hierarchy))
