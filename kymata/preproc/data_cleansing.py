@@ -286,11 +286,7 @@ def run_second_pass_cleansing_and_eog_removal(
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                raw_fif_data_sss_movecomp_tr = (
-                    raw_fif_data_sss_movecomp_tr.set_eeg_reference(
-                        ref_channels="average"
-                    )
-                )
+                raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
