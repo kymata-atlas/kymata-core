@@ -2,7 +2,9 @@ from matplotlib.colors import to_rgb, to_hex
 from numpy import linspace
 
 
-def gradient_color_dict(functions: list[str], start_color, stop_color) -> dict[str, str]:
+def gradient_color_dict(
+    functions: list[str], start_color, stop_color
+) -> dict[str, str]:
     """
     Generates a dictionary mapping function names to colors forming a linear gradient.
 
@@ -29,11 +31,13 @@ def gradient_color_dict(functions: list[str], start_color, stop_color) -> dict[s
     stop_rgb = to_rgb(stop_color)
 
     return {
-        function: to_hex((
-            linspace(start_rgb[0], stop_rgb[0], len(functions))[i],  # R
-            linspace(start_rgb[1], stop_rgb[1], len(functions))[i],  # G
-            linspace(start_rgb[2], stop_rgb[2], len(functions))[i],  # B
-        ))
+        function: to_hex(
+            (
+                linspace(start_rgb[0], stop_rgb[0], len(functions))[i],  # R
+                linspace(start_rgb[1], stop_rgb[1], len(functions))[i],  # G
+                linspace(start_rgb[2], stop_rgb[2], len(functions))[i],  # B
+            )
+        )
         for i, function in enumerate(functions)
     }
 

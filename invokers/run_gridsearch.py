@@ -24,62 +24,169 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     try:
         return config[config_key]
     except KeyError:
-        _logger.error(f"Config did not contain any value for \"{config_key}\", falling back to default value {fallback}")
+        _logger.error(
+            f'Config did not contain any value for "{config_key}", falling back to default value {fallback}'
+        )
         return fallback
 
 
 def main():
-
     _default_output_dir.mkdir(exist_ok=True, parents=False)
 
-    parser = argparse.ArgumentParser(description='Gridsearch Params')
+    parser = argparse.ArgumentParser(description="Gridsearch Params")
 
     # Dataset specific
-    parser.add_argument('--config', type=str, required=True)
+    parser.add_argument("--config", type=str, required=True)
 
-    parser.add_argument('--emeg-dir', type=str, default='interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/', help='emeg directory, relative to base dir')
+    parser.add_argument(
+        "--emeg-dir",
+        type=str,
+        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
+        help="emeg directory, relative to base dir",
+    )
 
     # Analysis specific
-    parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Silently overwrite existing files."
+    )
 
     # Participants
-    parser.add_argument('--single-participant-override', type=str, default=None, required=False, help='Supply to run only on one participant')
-    parser.add_argument('--ave-mode',                    type=str, default="ave", choices=["ave", "concatenate"], help='`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.')
+    parser.add_argument(
+        "--single-participant-override",
+        type=str,
+        default=None,
+        required=False,
+        help="Supply to run only on one participant",
+    )
+    parser.add_argument(
+        "--ave-mode",
+        type=str,
+        default="ave",
+        choices=["ave", "concatenate"],
+        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.",
+    )
 
     # Functions
-    parser.add_argument('--input-stream', type=str, required=True, choices=["auditory", "visual", "tactile"], help="The input stream for the functions being tested.")
-    parser.add_argument('--function-name', type=str, nargs="+", help='function names in stimulisig')
-    parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
-    parser.add_argument('--replace-nans', type=str, required=False, choices=["zero", "mean"], default=None, help="If the function contour contains NaN values, this will replace them with the specified values.")
+    parser.add_argument(
+        "--input-stream",
+        type=str,
+        required=True,
+        choices=["auditory", "visual", "tactile"],
+        help="The input stream for the functions being tested.",
+    )
+    parser.add_argument(
+        "--function-name", type=str, nargs="+", help="function names in stimulisig"
+    )
+    parser.add_argument(
+        "--function-path",
+        type=str,
+        default="predicted_function_contours/GMSloudness/stimulisig",
+        help="location of function stimulisig",
+    )
+    parser.add_argument(
+        "--replace-nans",
+        type=str,
+        required=False,
+        choices=["zero", "mean"],
+        default=None,
+        help="If the function contour contains NaN values, this will replace them with the specified values.",
+    )
 
     # For source space
-    parser.add_argument('--use-inverse-operator',    action="store_true", help="Use inverse operator to conduct gridsearch in source space.")
-    parser.add_argument('--morph',                   action="store_true", help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.")
-    parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif", help='inverse solution suffix')
+    parser.add_argument(
+        "--use-inverse-operator",
+        action="store_true",
+        help="Use inverse operator to conduct gridsearch in source space.",
+    )
+    parser.add_argument(
+        "--morph",
+        action="store_true",
+        help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.",
+    )
+    parser.add_argument(
+        "--inverse-operator-suffix",
+        type=str,
+        default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+        help="inverse solution suffix",
+    )
 
-    parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
-    parser.add_argument('--downsample-rate', type=int,   default=5, help='downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz')
+    parser.add_argument("--snr", type=float, default=3, help="inverse solution snr")
+    parser.add_argument(
+        "--downsample-rate",
+        type=int,
+        default=5,
+        help="downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz",
+    )
 
-    parser.add_argument('--seconds-per-split', type=float, default=1, help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits',          type=int, default=400, help='number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)')
-    parser.add_argument('--n-derangements',    type=int, default=5, help='number of deragements for the null distribution')
-    parser.add_argument('--start-latency',     type=float, default=-200, help='earliest latency to check in cross correlation')
-    parser.add_argument('--emeg-t-start',      type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
+    parser.add_argument(
+        "--seconds-per-split",
+        type=float,
+        default=1,
+        help="seconds in each split of the recording, also maximum range of latencies being checked",
+    )
+    parser.add_argument(
+        "--n-splits",
+        type=int,
+        default=400,
+        help="number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)",
+    )
+    parser.add_argument(
+        "--n-derangements",
+        type=int,
+        default=5,
+        help="number of deragements for the null distribution",
+    )
+    parser.add_argument(
+        "--start-latency",
+        type=float,
+        default=-200,
+        help="earliest latency to check in cross correlation",
+    )
+    parser.add_argument(
+        "--emeg-t-start",
+        type=float,
+        default=-200,
+        help="start of the emeg evoked files relative to the start of the function",
+    )
 
     # Output paths
-    parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
-    parser.add_argument('--save-expression-set-location', type=Path, default=Path(_default_output_dir), help="Save the results of the gridsearch into an ExpressionSet .nkg file")
-    parser.add_argument('--save-plot-location', type=Path, default=Path(_default_output_dir), help="Save an expression plots, and other plots, in this location")
-    parser.add_argument('--plot-top-channels', action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
+    parser.add_argument(
+        "--save-name",
+        type=str,
+        required=False,
+        help="Specify the name of the saved .nkg file.",
+    )
+    parser.add_argument(
+        "--save-expression-set-location",
+        type=Path,
+        default=Path(_default_output_dir),
+        help="Save the results of the gridsearch into an ExpressionSet .nkg file",
+    )
+    parser.add_argument(
+        "--save-plot-location",
+        type=Path,
+        default=Path(_default_output_dir),
+        help="Save an expression plots, and other plots, in this location",
+    )
+    parser.add_argument(
+        "--plot-top-channels",
+        action="store_true",
+        help="Plots the p-values and correlations of the top channels in the gridsearch.",
+    )
 
     args = parser.parse_args()
 
-    dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", args.config)))
+    dataset_config = load_config(
+        str(Path(Path(__file__).parent.parent, "dataset_config", args.config))
+    )
 
     # Config defaults
-    participants = dataset_config.get('participants')
-    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english-narratives'))
-    inverse_operator_dir = dataset_config.get('inverse_operator')
+    participants = dataset_config.get("participants")
+    base_dir = Path(
+        "/imaging/projects/cbu/kymata/data/",
+        dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
+    )
+    inverse_operator_dir = dataset_config.get("inverse_operator")
 
     input_stream = args.input_stream
     if input_stream == "auditory":
@@ -94,33 +201,45 @@ def main():
     else:
         raise NotImplementedError()
 
-    reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
+    reps = [f"_rep{i}" for i in range(8)] + [
+        "-ave"
+    ]  # most of the time we will only use the -ave, not the individual reps
     if args.single_participant_override is not None:
-        if args.ave_mode == 'ave':
+        if args.ave_mode == "ave":
             emeg_filenames = [args.single_participant_override + "-ave"]
-        elif args.ave_mode == 'concatenate':
-            print('Concatenating repetitions together')
-            emeg_filenames = [
-                args.single_participant_override + r
-                for r in reps[:-1]
-            ]
+        elif args.ave_mode == "concatenate":
+            print("Concatenating repetitions together")
+            emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
     else:
-        emeg_filenames = [
-            p + '-ave'
-            for p in participants
-        ]
+        emeg_filenames = [p + "-ave" for p in participants]
 
     start = time.time()
 
-    if (len(emeg_filenames) > 1) and (not args.morph) and (args.ave_mode == "ave") and args.use_inverse_operator:
+    if (
+        (len(emeg_filenames) > 1)
+        and (not args.morph)
+        and (args.ave_mode == "ave")
+        and args.use_inverse_operator
+    ):
         raise ValueError(
-            "Averaging source-space results without morphing to a common space. " +
-            "If you are averaging over multiple participants you must morph to a common space.")
+            "Averaging source-space results without morphing to a common space. "
+            + "If you are averaging over multiple participants you must morph to a common space."
+        )
 
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
-    morph_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "morph_maps")
-    invsol_npy_dir = Path(base_dir, "interim_preprocessing_files", "4_hexel_current_reconstruction", "npy_invsol")
+    morph_dir = Path(
+        base_dir,
+        "interim_preprocessing_files",
+        "4_hexel_current_reconstruction",
+        "morph_maps",
+    )
+    invsol_npy_dir = Path(
+        base_dir,
+        "interim_preprocessing_files",
+        "4_hexel_current_reconstruction",
+        "npy_invsol",
+    )
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
@@ -136,36 +255,37 @@ def main():
 
     t0 = time.time()
 
-    emeg_values, ch_names, n_reps = load_emeg_pack(emeg_filenames,
-                                                   emeg_dir=emeg_path,
-                                                   morph_dir=morph_dir
-                                                             if args.morph
-                                                             else None,
-                                                   need_names=True,
-                                                   ave_mode=args.ave_mode,
-                                                   inverse_operator_dir=inverse_operator_dir
-                                                                        if args.use_inverse_operator
-                                                                        else None,
-                                                   inverse_operator_suffix=args.inverse_operator_suffix,
-                                                   snr=args.snr,
-                                                   old_morph=False,
-                                                   invsol_npy_dir=invsol_npy_dir,
-                                                   ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
-                                                   )
+    emeg_values, ch_names, n_reps = load_emeg_pack(
+        emeg_filenames,
+        emeg_dir=emeg_path,
+        morph_dir=morph_dir if args.morph else None,
+        need_names=True,
+        ave_mode=args.ave_mode,
+        inverse_operator_dir=inverse_operator_dir
+        if args.use_inverse_operator
+        else None,
+        inverse_operator_suffix=args.inverse_operator_suffix,
+        snr=args.snr,
+        old_morph=False,
+        invsol_npy_dir=invsol_npy_dir,
+        ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+    )
 
     time_to_load = time.time() - t0
-    print(f'Time to load emeg: {time_to_load:.4f}')
+    print(f"Time to load emeg: {time_to_load:.4f}")
     stdout.flush()  # make sure the above print statement shows up as soon as print is called
-    _logger.info(f'Time to load emeg: {time_to_load:.4f}')
+    _logger.info(f"Time to load emeg: {time_to_load:.4f}")
 
     combined_expression_set = None
 
     for function_name in args.function_name:
         _logger.info(f"Running gridsearch on {function_name}")
-        function_values = load_function(Path(base_dir, args.function_path),
-                                        func_name=function_name,
-                                        replace_nans=args.replace_nans,
-                                        bruce_neurons=(5, 10))
+        function_values = load_function(
+            Path(base_dir, args.function_path),
+            func_name=function_name,
+            replace_nans=args.replace_nans,
+            bruce_neurons=(5, 10),
+        )
         function_values = function_values.downsampled(args.downsample_rate)
 
         es = do_gridsearch(
@@ -202,21 +322,39 @@ def main():
         combined_names = "_+_".join(args.function_name) + "_gridsearch"
 
     if args.save_expression_set_location is not None:
-        es_save_path = Path(args.save_expression_set_location, combined_names).with_suffix(".nkg")
+        es_save_path = Path(
+            args.save_expression_set_location, combined_names
+        ).with_suffix(".nkg")
         _logger.info(f"Saving expression set to {es_save_path!s}")
-        save_expression_set(combined_expression_set, to_path_or_file=es_save_path, overwrite=args.overwrite)
+        save_expression_set(
+            combined_expression_set,
+            to_path_or_file=es_save_path,
+            overwrite=args.overwrite,
+        )
 
     if args.single_participant_override is not None:
-        fig_save_path = Path(args.save_plot_location, combined_names + f'_{args.single_participant_override}').with_suffix(".png")
+        fig_save_path = Path(
+            args.save_plot_location,
+            combined_names + f"_{args.single_participant_override}",
+        ).with_suffix(".png")
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(
+            ".png"
+        )
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
-    expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite)
+    expression_plot(
+        combined_expression_set,
+        paired_axes=channel_space == "source",
+        save_to=fig_save_path,
+        overwrite=args.overwrite,
+    )
 
     total_time_in_seconds = time.time() - start
-    _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)')
+    _logger.info(
+        f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)'
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

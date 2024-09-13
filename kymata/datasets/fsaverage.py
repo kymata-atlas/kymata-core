@@ -8,10 +8,11 @@ from kymata.io.file import PathType
 
 
 class FSAverageDataset(SampleDataset):
-    def __init__(self,
-                 data_root: Optional[PathType] = None,
-                 download: bool = True,
-                 ):
+    def __init__(
+        self,
+        data_root: Optional[PathType] = None,
+        download: bool = True,
+    ):
         from mne.datasets._fsaverage.base import FSAVERAGE_MANIFEST_PATH
 
         # Filenames are handled by mne:
@@ -29,7 +30,7 @@ class FSAverageDataset(SampleDataset):
             remote_root=None,  # Remote paths are handled by mne
             download=download,
             filenames=filenames,
-            )
+        )
 
     def download(self):
         print(f"Downloading dataset: {self.name}")

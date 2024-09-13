@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple
+from typing import Sequence, Union, get_args, Tuple, TypeVar
 from warnings import warn
 
 from numpy import array, array_equal, ndarray
@@ -14,12 +14,25 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
-from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, \
-    Latency
+from kymata.entities.datatypes import (
+    HexelDType,
+    SensorDType,
+    LatencyDType,
+    FunctionNameDType,
+    Hexel,
+    Sensor,
+    Latency,
+)
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
+from kymata.entities.sparse_data import (
+    expand_dims,
+    densify_data_block,
+    sparsify_log_pmatrix,
+)
 
-_InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
+_InputDataArray = Union[
+    ndarray, SparseArray
+]  # Type alias for data which can be accepted
 
 # Data dimension labels
 DIM_HEXEL = "hexel"
@@ -28,7 +41,7 @@ DIM_LATENCY = "latency"
 DIM_FUNCTION = "function"
 
 # Block (e.g. hemisphere)
-BLOCK_LEFT  = "left"
+BLOCK_LEFT = "left"
 BLOCK_RIGHT = "right"
 BLOCK_SCALP = "scalp"
 
@@ -39,23 +52,26 @@ class ExpressionSet(ABC):
     Data is log10 p-values
     """
 
-    def __init__(self,
-                 functions: str | Sequence[str],
-                 # Metadata
-                 latencies: Sequence[Latency],
-                 # In general, we will combine flipped and non-flipped versions
-                 # data_blocks contains a dict mapping block names to data arrays
-                 # e.g., in the case there are three functions:
-                 #             "left" → [array(), array(), array()],
-                 #        and "right" → [array(), array(), array()]
-                 #   or:      "scalp" → [array(), array(), array()]
-                 # All should be the same size.
-                 data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
-                 # Supply channels already as an array, i.e.
-                 channel_coord_name: str,
-                 channel_coord_dtype,
-                 channel_coord_values: dict[str, Sequence],
-                 ):
+    def __init__(
+        self,
+        functions: str | Sequence[str],
+        # Metadata
+        latencies: Sequence[Latency],
+        # In general, we will combine flipped and non-flipped versions
+        # data_blocks contains a dict mapping block names to data arrays
+        # e.g., in the case there are three functions:
+        #             "left" → [array(), array(), array()],
+        #        and "right" → [array(), array(), array()]
+        #   or:      "scalp" → [array(), array(), array()]
+        # All should be the same size.
+        data_blocks: dict[
+            str, _InputDataArray | Sequence[_InputDataArray]
+        ],  # log p-values
+        # Supply channels already as an array, i.e.
+        channel_coord_name: str,
+        channel_coord_dtype,
+        channel_coord_values: dict[str, Sequence],
+    ):
         """
         data_blocks' values should store log10 p-values
         """
@@ -67,14 +83,20 @@ class ExpressionSet(ABC):
         self.channel_coord_name = channel_coord_name
 
         # Validate arguments
-        assert set(self._block_names) == set(channel_coord_values.keys()), "Ensure data block names match channel block names"
-        _length_mismatch_message = ("Argument length mismatch, please supply one function name and accompanying data, "
-                                    "or equal-length sequences of the same.")
+        assert set(self._block_names) == set(
+            channel_coord_values.keys()
+        ), "Ensure data block names match channel block names"
+        _length_mismatch_message = (
+            "Argument length mismatch, please supply one function name and accompanying data, "
+            "or equal-length sequences of the same."
+        )
         if isinstance(functions, str):
             # If only one function
             for data in data_blocks.values():
                 # Data should not be a sequence
-                assert isinstance(data, get_args(_InputDataArray)), _length_mismatch_message
+                assert isinstance(
+                    data, get_args(_InputDataArray)
+                ), _length_mismatch_message
             # Wrap into sequences
             functions = [functions]
             for bn in self._block_names:
@@ -84,7 +106,9 @@ class ExpressionSet(ABC):
 
         for data in data_blocks.values():
             assert len(functions) == len(data), _length_mismatch_message
-        assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
+        assert all_equal(
+            [arr.shape[1] for arrs in data_blocks.values() for arr in arrs]
+        ), "Not all input data blocks have the same"
 
         # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
         # But latencies and functions do not
@@ -103,21 +127,27 @@ class ExpressionSet(ABC):
         nan_warning_sent = False
         for block_name, data_for_functions in data_blocks.items():
             for function_name, data in zip(functions, data_for_functions):
-                assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
-                assert len(latencies) == data.shape[1], f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
+                assert (
+                    len(channels[block_name]) == data.shape[0]
+                ), f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
+                assert (
+                    len(latencies) == data.shape[1]
+                ), f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
             data_array: DataArray = concat(
                 (
-                    DataArray(self._init_prep_data(d),
-                              coords={
-                                  channel_coord_name: channels[block_name],
-                                  DIM_LATENCY: latencies,
-                                  DIM_FUNCTION: [function]
-                              })
+                    DataArray(
+                        self._init_prep_data(d),
+                        coords={
+                            channel_coord_name: channels[block_name],
+                            DIM_LATENCY: latencies,
+                            DIM_FUNCTION: [function],
+                        },
+                    )
                     for function, d in zip(functions, data_for_functions)
                 ),
                 dim=DIM_FUNCTION,
                 data_vars="all",  # Required by concat of DataArrays
-                )
+            )
 
             # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
             # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
@@ -125,7 +155,9 @@ class ExpressionSet(ABC):
             if data_array.isnull().any():
                 data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
                 if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
-                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                    warn(
+                        "Supplied data contained nans. These will be replaced by p = 1 values."
+                    )
                     nan_warning_sent = True
 
             assert data_array.dims == self._dims
@@ -176,8 +208,7 @@ class ExpressionSet(ABC):
     def latencies(self) -> NDArray[LatencyDType]:
         """Latencies, in seconds."""
         latencies = {
-            bn: data.coords[DIM_LATENCY].values
-            for bn, data in self._data.items()
+            bn: data.coords[DIM_LATENCY].values for bn, data in self._data.items()
         }
         # Validate that latencies are the same for all data blocks
         assert all_equal(list(latencies.values()))
@@ -195,6 +226,24 @@ class ExpressionSet(ABC):
     @abstractmethod
     def __add__(self, other) -> ExpressionSet:
         pass
+
+    def _add_compatibility_check(self, other) -> None:
+        """
+        Checks whether the `other` ExpressionSet is compatible with this one, for purposes of adding them.
+        Should return silently if all is well.
+        """
+        # Type is the same
+        if type(self) is not type(other):
+            raise ValueError("Can only add ExpressionSets of the same type")
+        # Channels are the same
+        for bn in self._block_names:
+            if not array_equal(self._channels[bn], other._channels[bn]):
+                raise ValueError(
+                    f"Can only add ExpressionSets with matching {self.channel_coord_name}s"
+                )
+        # Latencies are the same
+        if not array_equal(self.latencies, other.latencies):
+            raise ValueError("Can only add ExpressionSets with matching latencies")
 
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
@@ -242,35 +291,55 @@ class ExpressionSet(ABC):
         # (channel) -> best function name (at the best latency)
         best_functions = best_function.data
         # (channel) -> latency of the best function
-        best_latencies = best_latency.sel({
-            # e.g. hexels          -> array([0, ..., 10241])
-            self.channel_coord_name: self._channels[block_name],
-            #          -> DataArray((hexel) -> function)
-            DIM_FUNCTION: best_function
-        }).data
+        best_latencies = best_latency.sel(
+            {
+                # e.g. hexels          -> array([0, ..., 10241])
+                self.channel_coord_name: self._channels[block_name],
+                #          -> DataArray((hexel) -> function)
+                DIM_FUNCTION: best_function,
+            }
+        ).data
 
         # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
         idxs = logp_vals < 0
 
-        return DataFrame.from_dict({
-            self.channel_coord_name: self._channels[block_name][idxs],
-            DIM_FUNCTION: best_functions[idxs],
-            DIM_LATENCY: best_latencies[idxs],
-            "value": logp_vals[idxs],
-        })
+        return DataFrame.from_dict(
+            {
+                self.channel_coord_name: self._channels[block_name][idxs],
+                DIM_FUNCTION: best_functions[idxs],
+                DIM_LATENCY: best_latencies[idxs],
+                "value": logp_vals[idxs],
+            }
+        )
 
-    def rename(self, functions: dict[str, str]) -> None:
+    def rename(self, functions: dict[str, str] = None, channels: dict = None) -> None:
         """
-        Renames the functions within an ExpressionSet.
+        Renames the functions and channels within an ExpressionSet.
 
-        Supply a dictionary mapping old function names to new function names.
+        Supply a dictionary mapping old values to new values.
 
         Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
         """
+        # Default values
+        if functions is None:
+            functions = dict()
+        if channels is None:
+            channels = dict()
+
+        # Validate
         for old, new in functions.items():
             if old not in self.functions:
                 raise KeyError(f"{old} is not a function in this expression set")
+        for old, new in channels.items():
+            for bn in self._block_names:
+                if old not in self._channels[bn]:
+                    raise KeyError(
+                        f"{old} is not a {bn} {self.channel_coord_name} in this expression set"
+                    )
+
+        # Replace
         for bn, data in self._data.items():
+            # Functions
             new_names = []
             for old_name in self._data[bn][DIM_FUNCTION].values:
                 if old_name in functions:
@@ -278,6 +347,15 @@ class ExpressionSet(ABC):
                 else:
                     new_names.append(old_name)
             self._data[bn][DIM_FUNCTION] = new_names
+
+            # Channels
+            new_channels = []
+            for old_channel in self._data[bn][self.channel_coord_name].values:
+                if old_channel in channels:
+                    new_channels.append(channels[old_channel])
+                else:
+                    new_channels.append(old_channel)
+            self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
     def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
@@ -294,18 +372,18 @@ class HexelExpressionSet(ExpressionSet):
     Data is log10 p-values
     """
 
-    def __init__(self,
-                 functions: str | Sequence[str],
-                 # Metadata
-                 hexels_lh: Sequence[Hexel],
-                 hexels_rh: Sequence[Hexel],
-                 latencies: Sequence[Latency],
-                 # log p-values
-                 # In general, we will combine flipped and non-flipped versions
-                 data_lh: _InputDataArray | Sequence[_InputDataArray],
-                 data_rh: _InputDataArray | Sequence[_InputDataArray],
-                 ):
-
+    def __init__(
+        self,
+        functions: str | Sequence[str],
+        # Metadata
+        hexels_lh: Sequence[Hexel],
+        hexels_rh: Sequence[Hexel],
+        latencies: Sequence[Latency],
+        # log p-values
+        # In general, we will combine flipped and non-flipped versions
+        data_lh: _InputDataArray | Sequence[_InputDataArray],
+        data_rh: _InputDataArray | Sequence[_InputDataArray],
+    ):
         super().__init__(
             functions=functions,
             latencies=latencies,
@@ -315,10 +393,7 @@ class HexelExpressionSet(ExpressionSet):
             },
             channel_coord_name=DIM_HEXEL,
             channel_coord_dtype=HexelDType,
-            channel_coord_values={
-                BLOCK_LEFT: hexels_lh,
-                BLOCK_RIGHT: hexels_rh
-            },
+            channel_coord_values={BLOCK_LEFT: hexels_lh, BLOCK_RIGHT: hexels_rh},
         )
 
     @property
@@ -357,23 +432,37 @@ class HexelExpressionSet(ExpressionSet):
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=[self._data[BLOCK_LEFT].sel({DIM_FUNCTION: function}).data for function in functions],
-            data_rh=[self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
+            data_lh=[
+                self._data[BLOCK_LEFT].sel({DIM_FUNCTION: function}).data
+                for function in functions
+            ],
+            data_rh=[
+                self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data
+                for function in functions
+            ],
         )
 
     def __copy__(self):
+        data_left: NDArray = self._data[BLOCK_LEFT].data.todense()
+        data_right: NDArray = self._data[BLOCK_RIGHT].data.todense()
         return HexelExpressionSet(
             functions=self.functions.copy(),
             hexels_lh=self.hexels_left.copy(),
             hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            data_lh=self._data[BLOCK_LEFT].values.copy(),
-            data_rh=self._data[BLOCK_RIGHT].values.copy(),
+            # Slice by function
+            data_lh=[data_left[:, :, i].copy() for i in range(data_left.shape[2])],
+            data_rh=[data_right[:, :, i].copy() for i in range(data_right.shape[2])],
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
-        assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
-        assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
+        self._add_compatibility_check(other)
+        assert array_equal(
+            self.hexels_left, other.hexels_left
+        ), "Hexels mismatch (left)"
+        assert array_equal(
+            self.hexels_right, other.hexels_right
+        ), "Hexels mismatch (right)"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
         functions = []
@@ -386,9 +475,11 @@ class HexelExpressionSet(ExpressionSet):
                 data_rh.append(expr_set._data[BLOCK_RIGHT].data[:, :, i])
         return HexelExpressionSet(
             functions=functions,
-            hexels_lh=self.hexels_left, hexels_rh=self.hexels_right,
+            hexels_lh=self.hexels_left,
+            hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=data_lh, data_rh=data_rh,
+            data_lh=data_lh,
+            data_rh=data_rh,
         )
 
     def __eq__(self, other: HexelExpressionSet) -> bool:
@@ -420,15 +511,16 @@ class SensorExpressionSet(ExpressionSet):
     Data is represented as log10 p-values.
     """
 
-    def __init__(self,
-                 functions: str | Sequence[str],
-                 # Metadata
-                 sensors: Sequence[Sensor],
-                 latencies: Sequence[Latency],
-                 # log p-values
-                 # In general, we will combine flipped and non-flipped versions
-                 data: _InputDataArray | Sequence[_InputDataArray],
-                 ):
+    def __init__(
+        self,
+        functions: str | Sequence[str],
+        # Metadata
+        sensors: Sequence[Sensor],
+        latencies: Sequence[Latency],
+        # log p-values
+        # In general, we will combine flipped and non-flipped versions
+        data: _InputDataArray | Sequence[_InputDataArray],
+    ):
         """
         Initialize the SensorExpressionSet with function names, sensor metadata, latency information, and log p-value data.
 
@@ -441,9 +533,7 @@ class SensorExpressionSet(ExpressionSet):
         super().__init__(
             functions=functions,
             latencies=latencies,
-            data_blocks={
-                BLOCK_SCALP: data
-            },
+            data_blocks={BLOCK_SCALP: data},
             channel_coord_name=DIM_SENSOR,
             channel_coord_dtype=SensorDType,
             channel_coord_values={BLOCK_SCALP: sensors},
@@ -474,14 +564,17 @@ class SensorExpressionSet(ExpressionSet):
         return True
 
     def __copy__(self):
+        data: NDArray = self._data[BLOCK_SCALP].data.todense()
         return SensorExpressionSet(
             functions=self.functions.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
-            data=self._data[BLOCK_SCALP].values.copy(),
+            # Slice by function
+            data=[data[:, :, i].copy() for i in range(data.shape[2])],
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
+        self._add_compatibility_check(other)
         assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         # constructor expects a sequence of function names and sequences of 2d matrices
@@ -493,7 +586,8 @@ class SensorExpressionSet(ExpressionSet):
                 data.append(expr_set._data[BLOCK_SCALP].data[:, :, i])
         return SensorExpressionSet(
             functions=functions,
-            sensors=self.sensors, latencies=self.latencies,
+            sensors=self.sensors,
+            latencies=self.latencies,
             data=data,
         )
 
@@ -512,7 +606,10 @@ class SensorExpressionSet(ExpressionSet):
             functions=functions,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[BLOCK_SCALP].sel({DIM_FUNCTION: function}).data for function in functions],
+            data=[
+                self._data[BLOCK_SCALP].sel({DIM_FUNCTION: function}).data
+                for function in functions
+            ],
         )
 
     def best_functions(self) -> DataFrame:
@@ -523,3 +620,20 @@ class SensorExpressionSet(ExpressionSet):
         Note that channels for which the best p-value is 1 will be omitted.
         """
         return super()._best_functions_for_block(BLOCK_SCALP)
+
+
+T_ExpressionSetSubclass = TypeVar("T_ExpressionSetSubclass", bound=ExpressionSet)
+
+
+def combine(
+    expression_sets: Sequence[T_ExpressionSetSubclass],
+) -> T_ExpressionSetSubclass:
+    """
+    Combines a sequence of `ExpressionSet`s into a single `ExpressionSet`.
+    All must be suitable for combination, e.g. same type, same channels, etc.
+    """
+    if len(expression_sets) == 0:
+        raise ValueError("Cannot combine empty collection of ExpressionSets")
+    if len(expression_sets) == 1:
+        return expression_sets[0]
+    return expression_sets[0] + combine(expression_sets[1:])
