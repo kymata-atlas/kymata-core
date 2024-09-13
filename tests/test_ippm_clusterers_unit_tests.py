@@ -30,7 +30,7 @@ def test_MaxPoolClusterer_MapLabelToNewLabel_Successfully():
     expected_labels = [1, 1, 2, 3, 4, 5, -1, -1, -1, 7, 9]
     mp = MaxPoolClusterer(label_significance_threshold=2)
     mp.labels_ = test_labels
-    actual_labels = mp._map_label_to_new_label(6, -1)
+    actual_labels = mp._map_label_to_new_label(6, -1, mp.labels_)
 
     assert expected_labels == actual_labels
 
@@ -61,28 +61,10 @@ def test_MaxPoolClusterer_AssignPointsToLabels_Successfully():
 
 
 @patch("kymata.ippm.cluster.MaxPoolClusterer._assign_points_to_labels")
-@patch(
-    "kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies"
-)
+@patch("kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies")
 def test_MaxPoolClusterer_Fit_Successfully(mock_tag_labels, mock_assign_points):
-    mock_assign_points.return_value = [
-        4,
-        4,
-        4,
-        5,
-        5,
-        8,
-        9,
-        9,
-        9,
-        10,
-        15,
-        15,
-        16,
-        16,
-        16,
-    ]
-    mock_tag_labels.return_value = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
+    mock_assign_points.return_value = [4, 4, 4, 5, 5,  8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
+    mock_tag_labels.return_value    = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
 
     mp = MaxPoolClusterer(label_significance_threshold=2)
     mp = mp.fit(test_df)
@@ -101,38 +83,21 @@ def test_AdaptiveMaxPoolClusterer_MergeSignificantLabels_Successfully(mock_merge
     ]
     amp = AdaptiveMaxPoolClusterer(base_label_size=25)
     amp.labels_ = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    actual_labels = amp._merge_significant_labels(test_df)
+    amp._merge_significant_labels(test_df)
+    actual_labels = amp.labels_
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
     assert actual_labels == expected_labels
 
 
 @patch("kymata.ippm.cluster.MaxPoolClusterer._assign_points_to_labels")
-@patch(
-    "kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies"
-)
+@patch("kymata.ippm.cluster.MaxPoolClusterer._tag_labels_below_label_significance_threshold_as_anomalies")
 @patch("kymata.ippm.cluster.AdaptiveMaxPoolClusterer._merge_significant_labels")
 def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
     mock_merge_significant, mock_tag_labels, mock_assign_points
 ):
-    mock_assign_points.return_value = [
-        4,
-        4,
-        4,
-        5,
-        5,
-        8,
-        9,
-        9,
-        9,
-        10,
-        15,
-        15,
-        16,
-        16,
-        16,
-    ]
-    mock_tag_labels.return_value = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
+    mock_assign_points.return_value = [4, 4, 4, 5, 5,  8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
+    mock_tag_labels.return_value    = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
     mock_merge_significant.return_value = [
         0,
         0,

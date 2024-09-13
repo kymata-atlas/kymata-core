@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import Counter
-from copy import deepcopy
+from copy import copy, deepcopy
 from math import floor
 from typing import List, Dict, Self, Optional
 
@@ -40,7 +40,9 @@ class MaxPoolClusterer(CustomClusterer):
         self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         return self
 
-    def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
+    def _assign_points_to_labels(
+        self, df_with_latency: pd.DataFrame, latency_col_index: int = 0
+    ) -> List[int]:
         def __get_bin_index(latency: float) -> int:
             return floor(
                 (latency + LATENCY_OFFSET) / self._label_size
@@ -48,17 +50,16 @@ class MaxPoolClusterer(CustomClusterer):
 
         return list(map(__get_bin_index, df_with_latency.iloc[:, latency_col_index]))
 
-    def _tag_labels_below_label_significance_threshold_as_anomalies(
-        self, count_of_data_per_bin: Dict[int, int]
-    ) -> List[int]:
-        labels = self.labels_
+    def _tag_labels_below_label_significance_threshold_as_anomalies(self, count_of_data_per_bin: Dict[int, int]):
+        labels = copy(self.labels_)
         for label, count in count_of_data_per_bin.items():
             if count < self._label_significance_threshold:
-                labels = self._map_label_to_new_label(label, ANOMALOUS_TAG)
+                labels = self._map_label_to_new_label(label, ANOMALOUS_TAG, labels)
         return labels
 
-    def _map_label_to_new_label(self, old_label: int, new_label: int) -> List[int]:
-        return list(map(lambda x: new_label if x == old_label else x, self.labels_))
+    @staticmethod
+    def _map_label_to_new_label(old_label: int, new_label: int, labels) -> List[int]:
+        return list(map(lambda x: new_label if x == old_label else x, labels))
 
 
 class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
@@ -75,13 +76,9 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
         self._base_label_size = base_label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self.labels_ = super()._assign_points_to_labels(df)
+        self.labels_ = self._assign_points_to_labels(df)
         count_of_data_per_label = dict(Counter(self.labels_))
-        self.labels_ = (
-            super()._tag_labels_below_label_significance_threshold_as_anomalies(
-                count_of_data_per_label
-            )
-        )
+        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
         self.labels_ = self._merge_significant_labels(df)
         return self
 
@@ -188,7 +185,9 @@ class GMMClusterer(CustomClusterer):
             #)
         return self
 
-    def _grid_search_for_optimal_number_of_clusters(self, df: pd.DataFrame) -> GaussianMixture:
+    def _grid_search_for_optimal_number_of_clusters(
+        self, df: pd.DataFrame
+    ) -> GaussianMixture:
         """
         Quick 101 to model evaluation:
             - Likelihood for a datapoint represents the probability that the datapoint came from the estimated distribution.
