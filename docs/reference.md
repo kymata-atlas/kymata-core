@@ -10,8 +10,8 @@
 
 ::: kymata.io.config
 
-::: kymata.ippm.plotter
+::: kymata.ippm.plot
 
-::: kymata.ippm.builder
+::: kymata.ippm.build
 
 ::: kymata.entities.expression
