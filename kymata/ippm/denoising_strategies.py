@@ -210,7 +210,10 @@ class DenoisingStrategy(ABC):
                 Short text on normalisation for future reference.
                 https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
             """
-            normed_latency_and_mag = np.c_[normalize(df, axis=0), mags]
+            if self._should_cluster_only_latency:
+                normed_latency_and_mag = np.c_[normalize(df, axis=0), mags]
+            else:
+                normed_latency_and_mag = normalize(df, axis=0)
             df = pd.DataFrame(normed_latency_and_mag, columns=[LATENCY, MAGNITUDE])
         return df
 
