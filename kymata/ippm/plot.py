@@ -76,7 +76,7 @@ def plot_ippm(
             end = graph[node].position
             pairs.append([(start[0], start[1]), (end[0], end[1])])
             edge_colors.append(node_colors[i])
-            label = __get_label(inc_edge)
+            label = __get_label(node)
             edge_labels.append(label)
             
         bsplines += _make_bspline_paths(pairs)
