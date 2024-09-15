@@ -6,6 +6,8 @@ from typing import List, Dict, Self, Optional
 
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import DBSCAN, MeanShift
+from sklearn.utils._testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 
 import pandas as pd
 import numpy as np
@@ -185,6 +187,7 @@ class GMMClusterer(CustomClusterer):
             #)
         return self
 
+    @ignore_warnings(category=ConvergenceWarning)
     def _grid_search_for_optimal_number_of_clusters(
         self, df: pd.DataFrame
     ) -> GaussianMixture:
@@ -210,7 +213,8 @@ class GMMClusterer(CustomClusterer):
         optimal_penalised_loglikelihood = np.inf
         optimal_model = None
         for number_of_clusters in range(1, self._number_of_clusters_upper_bound):
-            if number_of_clusters > len(df):
+            if number_of_clusters > len(df) or len(df) == 1:
+                self.labels_ = [0 for _ in range(len(df))] # default label == 0.
                 break
 
             copy_of_df = deepcopy(df)

@@ -5,7 +5,6 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-import math
 
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.data_tools import IPPMSpike
@@ -161,15 +160,10 @@ def test_DenoisingStrategy_UpdatePairings_Successfully():
 
 def test_DenoisingStrategy_Preprocess_Successfully():
     df = deepcopy(test_df_func2)
-    latencies_only_test_data_2 = map(lambda x: x[0], significant_test_data_func2)
-    sqrt_sum_squared_latencies = math.sqrt(
-        sum(map(lambda x: x**2, latencies_only_test_data_2))
-    )
-    normed_latencies = list(
-        map(lambda x: x[0] / sqrt_sum_squared_latencies, significant_test_data_func2)
-    )
+    latencies_only_test_data_2 = list(map(lambda x: x[0], significant_test_data_func2))
+    sum_latency = sum(latencies_only_test_data_2)
+    normed_latencies = [latency / sum_latency for latency in list(latencies_only_test_data_2)]
     expected_df = pd.DataFrame(normed_latencies, columns=[LATENCY])
-    expected_df[MAGNITUDE] = df[MAGNITUDE]
 
     strategy = DenoisingStrategy(
         HEMI_RIGHT, should_normalise=True, should_cluster_only_latency=True

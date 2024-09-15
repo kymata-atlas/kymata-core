@@ -5,7 +5,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import normalize
 
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import (
@@ -132,6 +131,8 @@ class DenoisingStrategy(ABC):
 
             spikes[func] = self._postprocess(spikes[func], denoised_time_series)
 
+            self._clusterer.labels_ = []  # reset clusterer labels between runs
+
         return spikes
 
     def _map_spikes_to_df(self, spikes: SpikeDict) -> pd.DataFrame:
@@ -199,9 +200,10 @@ class DenoisingStrategy(ABC):
         """
 
         def __extract_and_wrap_latency_dim(df_with_latency_col):
-            return np.reshape(df_with_latency_col[LATENCY], (-1, 1))
+            np_arr = np.reshape(df_with_latency_col[LATENCY], (-1, 1))
+            return pd.DataFrame(np_arr, columns=[LATENCY])
 
-        mags = list(df[MAGNITUDE])
+        df = deepcopy(df)
         if self._should_cluster_only_latency:
             df = __extract_and_wrap_latency_dim(df)
         if self._should_normalise:
@@ -210,8 +212,16 @@ class DenoisingStrategy(ABC):
                 Short text on normalisation for future reference.
                 https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
             """
-            normed_latency_and_mag = np.c_[normalize(df, axis=0), mags]
-            df = pd.DataFrame(normed_latency_and_mag, columns=[LATENCY, MAGNITUDE])
+            if self._should_cluster_only_latency:
+                df = self._normalize(df, [LATENCY])
+            else:
+                df = self._normalize(df, [LATENCY, MAGNITUDE])
+        return df
+    
+    @staticmethod
+    def _normalize(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+        for col in cols:
+            df[col] = df[col] / df[col].sum()
         return df
 
     def _get_denoised_time_series(self, df: pd.DataFrame) -> list[tuple[float, float]]:
