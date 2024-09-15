@@ -176,6 +176,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
+        (176, 1e-50),
         (30, 1e-100),
         (199, 1e-90),
         (-75, 1e-75),
