@@ -33,15 +33,18 @@ apptainer exec \
         --config dataset4.yaml \
         --input-stream auditory \
         --function-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --use-inverse-operator \
-        --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
         --function-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
         --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output' \
         --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output' \
-        --save-name 'test_chao' \
+        --save-name 'all_tvl' \
         --overwrite \
-        --morph \
+        
   "
+
+  #  --use-inverse-operator \
+  #  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+  #  --morph \
+
   #  --snr $ARG # >> result3.txt
         # --single-participant-override 'participant_01' \
         # --inverse-operator-dir '/imaging/projects/cbu/kymata/data/dataset_4-english-narratives/intrim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators/' \

@@ -321,6 +321,11 @@ def load_function(function_path_without_suffix: PathType, func_name: str, replac
                 func = func[nn_neuron, :400_000]
             func_name += f'_{str(nn_neuron)}'
 
+    elif 'linguistics' in str(function_path_without_suffix):
+        func = np.load(function_path_without_suffix.with_suffix(".npy"))
+        func_name += f'_{nn_neuron}'
+        func = func[:400_000, nn_neuron]
+
     else:
         if not function_path_without_suffix.with_suffix(".npz").exists():
             if function_path_without_suffix.with_suffix(".mat").exists():

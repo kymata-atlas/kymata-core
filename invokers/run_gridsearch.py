@@ -204,7 +204,7 @@ def main():
         stimulus_shift_correction = 0
         stimulus_delivery_latency = 0        
 
-    if args.asr_option == 'all' and 'asr' in args.function_path:
+    if (args.asr_option == 'all' and 'asr' in args.function_path) or 'linguistics' in args.function_path:
 
         for nn_i in range(0, args.num_neurons):
             # func = load_function(Path(args.base_dir, args.function_path),
