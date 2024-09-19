@@ -20,11 +20,18 @@ def main():
 
     if function_family_type == 'simple':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, 'model.decoder.layers.31.nkg'))
+        # expression_data  = load_expression_set(Path(path_to_nkg_files, 'model.decoder.layers.31.nkg'))
 
-        fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=False)
+        expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/expression_set/phone_56_gridsearch.nkg')
 
-        fig.savefig("expression_plot.png")
+        for func in expression_data.functions:
+            fig = expression_plot(expression_data, show_only=func, paired_axes=False, minimap=False, show_legend=True,)
+            fig.savefig(f"/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/plot/{func}.png")
+
+        # fig = expression_plot(expression_data, show_only=expression_data.functions[18:], paired_axes=False, minimap=False, show_legend=True,)
+                            #   color=gradient_color_dict(expression_data.functions[:18], start_color = 'blue', stop_color="red"))
+
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/plot/id_2.png")
 
     elif function_family_type == 'standard':
 

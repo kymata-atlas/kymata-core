@@ -6,17 +6,17 @@ from matplotlib.colors import PowerNorm
 
 def asr_models_loop_full():
 
-    layer = 64 # 66 64 34
+    layer = 33 # 66 64 34
 
-    neuron = 1280
+    neuron = 4096
 
     thres = 20 # 15
 
     x_upper = 800
 
-    size = 'ru_en'
+    size = 'salmonn_7b'
 
-    neuron_selection = 'layer'
+    neuron_selection = 'all'
 
     exclude_tvl = False
     
@@ -24,7 +24,9 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/log/'
+    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/fc2/log/'
+
+    # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/log/'
 
     log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/tvl/log/'
 
@@ -187,7 +189,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/fc2/{neuron_selection}_select', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
