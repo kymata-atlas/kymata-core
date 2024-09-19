@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--config', type=str, required=True)
     parser.add_argument('--emeg-dir', type=str, default='interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/', help='emeg directory, relative to base dir')
     parser.add_argument('--low-level-function', action="store_true", help='Use TVL functions to replace the EMEG data to do gridsearch')
+    parser.add_argument('--phonetics', action="store_true", help='Use phonetic functions to replace the EMEG data to do gridsearch')
 
     # Analysis specific
     parser.add_argument('--overwrite', action="store_true", help="Silently overwrite existing files.")
@@ -99,7 +100,49 @@ def main():
     
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
-    if not args.low_level_function:
+    if args.phonetics:
+
+        start = time.time()
+        _logger.info("Starting Kymata Gridsearch")
+        _logger.info(f"Doing Gridsearch on phonetic functions instead of EMEG data")
+        _logger.info(f"Functions to be tested: {args.function_name}")
+
+        _logger.info(f"Loading phonetic functions to replace the EMEG data")
+
+        emeg_values = np.zeros((57, 1, 403001))
+        phone_data = np.load('/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/phone.npy')
+        emeg_values[:, 0, :401000] = phone_data.reshape(57, 401000)
+
+        n_reps = 1
+        args.emeg_t_start = 0
+        stimulus_shift_correction = 0
+        stimulus_delivery_latency = 0
+
+    elif args.low_level_function:
+
+        start = time.time()
+        _logger.info("Starting Kymata Gridsearch")
+        _logger.info(f"Doing Gridsearch on TVL instead of EMEG data")
+        _logger.info(f"Functions to be tested: {args.function_name}")
+
+        ch_names = ['IL', 'STL', 'IL1', 'IL2', 'IL3', 'IL4', 'IL5', 'IL6', 'IL7', 'IL8', 'IL9']
+
+        emeg_values = np.zeros((len(ch_names), 1, 403001))
+        _logger.info(f"Loading TVL functions to replace the EMEG data")
+        for i, function_name in enumerate(ch_names):
+            func = load_function(Path(base_dir, 'predicted_function_contours/GMSloudness/stimulisig'),
+                                            func_name=function_name,
+                                            replace_nans=args.replace_nans,
+                                            bruce_neurons=(5, 10),
+                                            mfa=args.mfa,)
+            emeg_values[i, 0, :400000] = func.values  # (400000,)
+
+        n_reps = 1
+        args.emeg_t_start = 0
+        stimulus_shift_correction = 0
+        stimulus_delivery_latency = 0  
+
+    else:
 
         if input_stream == "auditory":
             stimulus_shift_correction = dataset_config["audio_delivery_drift_correction"]
@@ -180,29 +223,7 @@ def main():
         stdout.flush()  # make sure the above print statement shows up as soon as print is called
         _logger.info(f'Time to load emeg: {time_to_load:.4f}')
 
-    else:
 
-        start = time.time()
-        _logger.info("Starting Kymata Gridsearch")
-        _logger.info(f"Doing Gridsearch on TVL instead of EMEG data")
-        _logger.info(f"Functions to be tested: {args.function_name}")
-
-        ch_names = ['IL', 'STL', 'IL1', 'IL2', 'IL3', 'IL4', 'IL5', 'IL6', 'IL7', 'IL8', 'IL9']
-
-        emeg_values = np.zeros((len(ch_names), 1, 403001))
-        _logger.info(f"Loading TVL functions to replace the EMEG data")
-        for i, function_name in enumerate(ch_names):
-            func = load_function(Path(base_dir, 'predicted_function_contours/GMSloudness/stimulisig'),
-                                            func_name=function_name,
-                                            replace_nans=args.replace_nans,
-                                            bruce_neurons=(5, 10),
-                                            mfa=args.mfa,)
-            emeg_values[i, 0, :400000] = func.values  # (400000,)
-
-        n_reps = 1
-        args.emeg_t_start = 0
-        stimulus_shift_correction = 0
-        stimulus_delivery_latency = 0        
 
     if (args.asr_option == 'all' and 'asr' in args.function_path) or 'linguistics' in args.function_path:
 
