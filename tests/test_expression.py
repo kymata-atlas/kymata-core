@@ -371,7 +371,7 @@ def test_ses_best_function_with_one_channel_all_nans():
 
 
 def test_ses_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         SensorExpressionSet(
             functions=["first", "second"],
             sensors=list("abcde"),
@@ -390,7 +390,7 @@ def test_ses_validation_input_lengths_two_functions_two_datasets():
 
 
 def test_ses_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         SensorExpressionSet(
             functions=["first", "second"],
             sensors=list("abcde"),
@@ -400,7 +400,7 @@ def test_ses_validation_input_lengths_two_functions_three_datasets():
 
 
 def test_hes_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -423,7 +423,7 @@ def test_hes_validation_input_lengths_two_functions_two_datasets():
 
 
 def test_hes_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -467,7 +467,7 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_function
 
 
 def test_hes_validation_input_mismatched_blocks_discordent_channels():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions="function",
             hexels_lh=range(5),
@@ -479,7 +479,7 @@ def test_hes_validation_input_mismatched_blocks_discordent_channels():
 
 
 def test_hes_validation_mixmatched_latencies_between_functions():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -491,7 +491,7 @@ def test_hes_validation_mixmatched_latencies_between_functions():
 
 
 def test_hes_validation_mixmatched_hexels_between_functions():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
