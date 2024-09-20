@@ -291,7 +291,7 @@ class ExpressionSet(ABC):
         elif not isinstance(data, SparseArray):
             raise NotImplementedError()
 
-        if data.ndim <= 2:
+        if data.ndim < 3:
             data = expand_dims(data, axis=2)
         return data
 
