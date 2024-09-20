@@ -371,7 +371,7 @@ def test_ses_best_function_with_one_channel_all_nans():
 
 
 def test_ses_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         SensorExpressionSet(
             functions=["first", "second"],
             sensors=list("abcde"),
@@ -380,7 +380,7 @@ def test_ses_validation_input_lengths_two_functions_one_dataset():
         )
 
 
-def test_ses_validation_input_lengths_two_functions_two_datasets():
+def test_ses_validation_input_lengths_two_functions_two_datasets_sequence():
     SensorExpressionSet(
         functions=["first", "second"],
         sensors=list("abcde"),
@@ -389,8 +389,27 @@ def test_ses_validation_input_lengths_two_functions_two_datasets():
     )
 
 
-def test_ses_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
+def test_ses_validation_input_lengths_two_functions_two_datasets_contiguous():
+    SensorExpressionSet(
+        functions=["first", "second"],
+        sensors=list("abcde"),
+        latencies=range(10),
+        data=np.random.randn(5, 10, 2),
+    )
+
+
+def test_ses_validation_input_lengths_one_function_two_datasets_contiguous():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            functions=["first"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10, 2),
+        )
+
+
+def test_ses_validation_input_lengths_two_functions_three_datasets_sequence():
+    with pytest.raises(ValueError):
         SensorExpressionSet(
             functions=["first", "second"],
             sensors=list("abcde"),
@@ -399,8 +418,18 @@ def test_ses_validation_input_lengths_two_functions_three_datasets():
         )
 
 
+def test_ses_validation_input_lengths_two_functions_three_datasets_contiguous():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            functions=["first", "second"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10, 3),
+        )
+
+
 def test_hes_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -411,7 +440,7 @@ def test_hes_validation_input_lengths_two_functions_one_dataset():
         )
 
 
-def test_hes_validation_input_lengths_two_functions_two_datasets():
+def test_hes_validation_input_lengths_two_functions_two_datasets_sequence():
     HexelExpressionSet(
         functions=["first", "second"],
         hexels_lh=range(5),
@@ -422,8 +451,19 @@ def test_hes_validation_input_lengths_two_functions_two_datasets():
     )
 
 
-def test_hes_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
+def test_hes_validation_input_lengths_two_functions_two_datasets_contiguous():
+    HexelExpressionSet(
+        functions=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10, 2),
+        data_rh=np.random.randn(5, 10, 2),
+    )
+
+
+def test_hes_validation_input_lengths_two_functions_three_datasets_sequence():
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -431,6 +471,18 @@ def test_hes_validation_input_lengths_two_functions_three_datasets():
             latencies=range(10),
             data_lh=[np.random.randn(5, 10) for _ in range(3)],
             data_rh=[np.random.randn(5, 10) for _ in range(3)],
+        )
+
+
+def test_hes_validation_input_lengths_two_functions_three_datasets_contiguous():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            functions=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(5),
+            latencies=range(10),
+            data_lh=np.random.randn(5, 10, 3),
+            data_rh=np.random.randn(5, 10, 3),
         )
 
 
@@ -455,7 +507,7 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels():
     )
 
 
-def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions():
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions_sequence():
     HexelExpressionSet(
         functions=["first", "second"],
         hexels_lh=range(5),
@@ -466,8 +518,19 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_function
     )
 
 
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions_contiguous():
+    HexelExpressionSet(
+        functions=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(6),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10, 2),
+        data_rh=np.random.randn(6, 10, 2),
+    )
+
+
 def test_hes_validation_input_mismatched_blocks_discordent_channels():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions="function",
             hexels_lh=range(5),
@@ -479,7 +542,7 @@ def test_hes_validation_input_mismatched_blocks_discordent_channels():
 
 
 def test_hes_validation_mixmatched_latencies_between_functions():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
@@ -491,7 +554,7 @@ def test_hes_validation_mixmatched_latencies_between_functions():
 
 
 def test_hes_validation_mixmatched_hexels_between_functions():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         HexelExpressionSet(
             functions=["first", "second"],
             hexels_lh=range(5),
