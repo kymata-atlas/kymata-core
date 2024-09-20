@@ -398,6 +398,16 @@ def test_ses_validation_input_lengths_two_functions_two_datasets_contiguous():
     )
 
 
+def test_ses_validation_input_lengths_one_function_two_datasets_contiguous():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            functions=["first"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10, 2),
+        )
+
+
 def test_ses_validation_input_lengths_two_functions_three_datasets_sequence():
     with pytest.raises(ValueError):
         SensorExpressionSet(
