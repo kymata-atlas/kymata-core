@@ -205,7 +205,7 @@ class ExpressionSet(ABC):
                 data_array: DataArray = concat(
                     (
                         DataArray(
-                            self._init_prep_data(function_data, data_supplied_as_sequence),
+                            self._init_prep_data(function_data),
                             coords={
                                 channel_coord_name: channels[block_name],
                                 DIM_LATENCY: latencies,
@@ -220,7 +220,7 @@ class ExpressionSet(ABC):
             else:
                 # Build DataArray in one go
                 data_array: DataArray = DataArray(
-                    self._init_prep_data(block_data, data_supplied_as_sequence),
+                    self._init_prep_data(block_data),
                     coords={
                         channel_coord_name: channels[block_name],
                         DIM_LATENCY: latencies,
@@ -269,13 +269,14 @@ class ExpressionSet(ABC):
             raise ValueError(f"Duplicated functions in input, e.g. {f}")
 
     @classmethod
-    def _init_prep_data(cls, data: _InputDataArray, data_supplied_as_sequence: bool) -> COO:
+    def _init_prep_data(cls, data: _InputDataArray) -> COO:
+        # Convert to sparse matrix
         if isinstance(data, ndarray):
             data = sparsify_log_pmatrix(data)
         elif not isinstance(data, SparseArray):
             raise NotImplementedError()
-        if data_supplied_as_sequence:
-            # Expect data to be exactly 2-dimensional, and expand it to 3-dimensional along the functions axis
+
+        if data.ndim <= 2:
             data = expand_dims(data, axis=2)
         return data
 
@@ -714,9 +715,7 @@ class SensorExpressionSet(ExpressionSet):
 T_ExpressionSetSubclass = TypeVar("T_ExpressionSetSubclass", bound=ExpressionSet)
 
 
-def combine(
-    expression_sets: Sequence[T_ExpressionSetSubclass],
-) -> T_ExpressionSetSubclass:
+def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionSetSubclass:
     """
     Combines a sequence of `ExpressionSet`s into a single `ExpressionSet`.
     All must be suitable for combination, e.g. same type, same channels, etc.
