@@ -153,12 +153,13 @@ class ExpressionSet(ABC):
                         data_vars="all",  # Required by concat of DataArrays
                         )
 
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
-                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
-                    # warn the user about it.
+                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on
+                    # the medial wall. We can ignore these nans by setting the values to p=1, but because it's not
+                    # typically expected we warn the user about it.
                     if data_array.isnull().any():
                         data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
+                        # Only want to send the warning once, even if there are multiple data blocks with nans.
+                        if not nan_warning_sent:
                             warn("Supplied data contained nans. These will be replaced by p = 1 values.")
                             nan_warning_sent = True
 
@@ -192,12 +193,13 @@ class ExpressionSet(ABC):
                             data_vars="all",  # Required by concat of DataArrays
                             )
 
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
-                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
-                    # warn the user about it.
+                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on
+                    # the medial wall. We can ignore these nans by setting the values to p=1, but because it's not
+                    # typically expected we warn the user about it.
                     if data_array.isnull().any():
                         data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
+                        # Only want to send the warning once, even if there are multiple data blocks with nans.
+                        if not nan_warning_sent:
                             warn("Supplied data contained nans. These will be replaced by p = 1 values.")
                             nan_warning_sent = True
 

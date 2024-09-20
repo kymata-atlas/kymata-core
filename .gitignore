@@ -31,3 +31,6 @@ docs/_build/
 
 #.vscode settings
 .vscode
+
+# Stratch file
+scratch.py
