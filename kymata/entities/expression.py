@@ -163,6 +163,14 @@ class ExpressionSet(ABC):
                         raise ValueError(f"Latencies mismatch for {function_name}: "
                                          f"{len(latencies)} latencies versus data shape {data.shape} "
                                          f"({block_name})")
+                    if len(data.shape) > 3:
+                        raise ValueError(f"Too many dimensions in data for {function_name}: "
+                                         f"shape={data.shape} "
+                                         f"({block_name})")
+                    if len(data.shape) == 3 and data.shape[2] != 1:
+                        raise ValueError(f"Too many dimensions in data for {function_name}: "
+                                         f"shape={data.shape} "
+                                         f"({block_name})")
             else:
                 if len(channels[block_name]) != block_data.shape[0]:
                     raise ValueError(f"{channel_coord_name} mismatch: "
@@ -172,7 +180,11 @@ class ExpressionSet(ABC):
                     raise ValueError(f"Latencies mismatch: "
                                      f"{len(latencies)} latencies versus data shape {block_data.shape} "
                                      f"({block_name})")
-                if len(functions) != block_data.shape[2]:
+                if len(block_data.shape) > 3:
+                    raise ValueError(f"Too many dimensions in data: "
+                                     f"shape={block_data.shape} "
+                                     f"({block_name})")
+                if len(block_data.shape) == 3 and len(functions) != block_data.shape[2]:
                     raise ValueError(f"Functions mismatch: "
                                      f"{len(functions)} functions verus data shape {block_data.shape} "
                                      f"({block_name})")
