@@ -540,29 +540,24 @@ class HexelExpressionSet(ExpressionSet):
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
         self._add_compatibility_check(other)
-        assert array_equal(
-            self.hexels_left, other.hexels_left
-        ), "Hexels mismatch (left)"
-        assert array_equal(
-            self.hexels_right, other.hexels_right
-        ), "Hexels mismatch (right)"
+        if not array_equal(self.hexels_left, other.hexels_left):
+            raise ValueError("Hexels mismatch (left)")
+        if not array_equal(self.hexels_right, other.hexels_right):
+            raise ValueError("Hexels mismatch (right)")
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
-        # constructor expects a sequence of function names and sequences of 2d matrices
-        functions = []
-        data_lh = []
-        data_rh = []
-        for expr_set in [self, other]:
-            for i, function in enumerate(expr_set.functions):
-                functions.append(function)
-                data_lh.append(expr_set._data[BLOCK_LEFT].data[:, :, i])
-                data_rh.append(expr_set._data[BLOCK_RIGHT].data[:, :, i])
         return HexelExpressionSet(
-            functions=functions,
+            functions=self.functions + other.functions,
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=data_lh,
-            data_rh=data_rh,
+            data_lh=concat([self.left, other.left],
+                           dim=DIM_FUNCTION,
+                           data_vars="all",  # Required by concat of DataArrays
+                           ).data,
+            data_rh=concat([self.right, other.right],
+                           dim=DIM_FUNCTION,
+                           data_vars="all",  # Required by concat of DataArrays
+                           ).data,
         )
 
     def __eq__(self, other: HexelExpressionSet) -> bool:
@@ -658,14 +653,19 @@ class SensorExpressionSet(ExpressionSet):
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
         self._add_compatibility_check(other)
-        assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
-        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
+        if not array_equal(self.sensors, other.sensors):
+            raise ValueError("Sensors mismatch")
+        if not array_equal(self.latencies, other.latencies):
+            raise ValueError("Latencies mismatch")
         # constructor expects a sequence of function names and sequences of 2d matrices
         return SensorExpressionSet(
-            functions=[self.functions, other.functions],
-            sensors=self.sensors, 
+            functions=self.functions + other.functions,
+            sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[BLOCK_SCALP].data, other._data[BLOCK_SCALP].data],
+            data=concat([self.scalp, other.scalp],
+                        dim=DIM_FUNCTION,
+                        data_vars="all",  # Required by concat of DataArrays
+                        ).data,
         )
 
     def __getitem__(self, functions: str | Sequence[str]) -> SensorExpressionSet:
