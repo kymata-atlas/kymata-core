@@ -130,14 +130,8 @@ def load_expression_set(
             hexels_lh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_LEFT]],
             hexels_rh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_RIGHT]],
             latencies=data_dict[_Keys.latencies],
-            data_lh=[
-                data_dict[_Keys.data][BLOCK_LEFT][:, :, i]
-                for i in range(len(data_dict[_Keys.functions]))
-            ],
-            data_rh=[
-                data_dict[_Keys.data][BLOCK_RIGHT][:, :, i]
-                for i in range(len(data_dict[_Keys.functions]))
-            ],
+            data_lh=data_dict[_Keys.data][BLOCK_LEFT],
+            data_rh=data_dict[_Keys.data][BLOCK_RIGHT],
         )
     elif type_identifier == _ExpressionSetTypeIdentifier.sensor:
         return SensorExpressionSet(
