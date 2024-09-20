@@ -8,34 +8,24 @@ from abc import ABC, abstractmethod
 from typing import Sequence, Union, get_args, Tuple, TypeVar
 from warnings import warn
 
-import numpy as np
-from numpy import array, array_equal, ndarray
+from numpy import (
+    # Can't use NDArray for isinstance checks
+    ndarray,
+    array, array_equal)
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-
 from kymata.entities.datatypes import (
-    HexelDType,
-    SensorDType,
-    LatencyDType,
-    FunctionNameDType,
-    Hexel,
-    Sensor,
-    Latency,
-)
+    HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, Latency)
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import (
-    expand_dims,
-    densify_data_block,
-    sparsify_log_pmatrix,
-)
+    expand_dims, densify_data_block, sparsify_log_pmatrix)
 
-_InputDataArray = Union[
-    ndarray, SparseArray
-]  # Type alias for data which can be accepted
+
+_InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
 # Data dimension labels
 DIM_HEXEL = "hexel"
@@ -55,31 +45,55 @@ COL_LOGP_VALUE = "log-p-value"
 class ExpressionSet(ABC):
     """
     Brain data associated with expression of a single function.
-    Data is log10 p-values
+    Data is log10 p-values.
     """
 
     def __init__(
-        self,
-        functions: str | Sequence[str] | Sequence[Sequence[str]],
-        # Metadata
-        latencies: Sequence[Latency],
-        # In general, we will combine flipped and non-flipped versions
-        # data_blocks contains a dict mapping block names to data arrays
-        # e.g., in the case there are three functions:
-        #             "left" → [array(), array(), array()],
-        #        and "right" → [array(), array(), array()]
-        #   or:      "scalp" → [array(), array(), array()]
-        # All should be the same size.
-        data_blocks: dict[
-            str, _InputDataArray | Sequence[_InputDataArray]
-        ],  # log p-values
-        # Supply channels already as an array, i.e.
-        channel_coord_name: str,
-        channel_coord_dtype,
-        channel_coord_values: dict[str, Sequence],
+            self,
+            functions: str | Sequence[str],
+            # Metadata
+            latencies: Sequence[Latency],
+            # In general, we will combine flipped and non-flipped versions.
+            data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],
+            channel_coord_name: str,
+            channel_coord_dtype,
+            channel_coord_values: dict[str, Sequence],
     ):
         """
-        data_blocks' values should store log10 p-values
+        Initializes the ExpressionSet with the provided data.
+
+        Args:
+            functions (str | Sequence[str]): Function name, or sequence of names.
+            latencies (Sequence[Latency]): Latency values.
+            data_blocks (dict[str, _InputDataArray | Sequence[_InputDataArray]]):
+                Mapping of block names to data arrays (log10 p-values).
+
+                In general there are two possible formats for this argument.
+
+                In the first (safer, more explicit and flexible) format, `data_blocks` contains a dict mapping block
+                names to data arrays. E.g., in the case there are three functions in a hexel setting:
+                ```
+                    {
+                        "left":  [array(...), array(...), array(...)],
+                        "right": [array(...), array(...), array(...)],
+                    }
+                ```
+                or in a sensor setting:
+                ```
+                    {
+                        "scalp": [array(), array(), array()],
+                    }
+                ```
+                In this format, all data arrays should be the same size.
+
+                In the second (more performant) format, `data_blocks` contains a single data array whose `function`
+                dimensions can be concatenated to achieve the desired resultant data block.
+            channel_coord_name (str): Name of the channel coordinate.
+            channel_coord_dtype: Data type of the channel coordinate.
+            channel_coord_values (dict[str, Sequence]): Dictionary mapping block names to channel coordinate values.
+
+        Raises:
+            ValueError: when arguments are invalid
         """
 
         # Canonical order of dimensions
@@ -88,32 +102,46 @@ class ExpressionSet(ABC):
         self._block_names: list[str] = list(data_blocks.keys())
         self.channel_coord_name = channel_coord_name
 
-        # Validate arguments
-        assert set(self._block_names) == set(
-            channel_coord_values.keys()
-        ), "Ensure data block names match channel block names"
-        _length_mismatch_message = (
-            "Argument length mismatch, please supply one function name and accompanying data, "
-            "or equal-length sequences of the same."
-        )
+        #########################################
+        # region Validate and normalise arguments
+        #########################################
+
+        if set(self._block_names) != set(channel_coord_values.keys()):
+            raise ValueError("Ensure data block names match channel block names")
+
+        data_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
+
+        # If only one function supplied, ensure that the other arguments are appropriately specified
         if isinstance(functions, str):
-            # If only one function
-            for data in data_blocks.values():
-                # Data should not be a sequence
-                assert isinstance(
-                    data, get_args(_InputDataArray)
-                ), _length_mismatch_message
-            # Wrap into sequences
+            if data_supplied_as_sequence:
+                raise ValueError("Single function name provided but data came as a sequence")
+            # Only one function, so no matter what format the data is in, we don't expect a sequence
+            # Wrap function names and data blocks to ensure we have sequences from now on
             functions = [functions]
-            for bn in self._block_names:
-                data_blocks[bn] = [data_blocks[bn]]
 
-        if isinstance(functions[0], str):
-            self._validate_functions_no_duplicates(functions)
+        self._validate_functions_no_duplicates(functions)
+
+        # If data was specified as sequence, ensure all arrays in the sequence have the same shape
+        if data_supplied_as_sequence:
+            if not all_equal([
+                # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
+                # is only one function per item in the sequence
+                block_data_array.shape[1]
+                for block_data in data_blocks.values()
+                for block_data_array in block_data  # data format sequence
+            ]):
+                raise ValueError("Not all input data blocks have the same shape.")
+        # Otherwise ensure all blocks have the same size
         else:
-            self._validate_functions_no_duplicates(sum(functions, []))
+            if not all_equal([
+                # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
+                # is only one function per item in the sequence
+                block_data_array.shape[1]
+                for block_data_array in data_blocks.values()
+            ]):
+                raise ValueError("Not all input data blocks have the same shape")
 
-        assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
+        # Additional validity checks may happen during construction
 
         # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
         # But latencies and functions do not
@@ -122,10 +150,36 @@ class ExpressionSet(ABC):
             for bn in self._block_names
         }
         latencies = array(latencies, dtype=LatencyDType)
-        if isinstance(functions[0], str):
-            functions = array(functions, dtype=FunctionNameDType)
-        else:
-            functions = [array(function_block, dtype=FunctionNameDType) for function_block in functions]
+        functions = array(functions, dtype=FunctionNameDType)
+
+        for block_name, block_data in data_blocks.items():
+            if data_supplied_as_sequence:
+                for function_name, data in zip(functions, block_data):
+                    if len(channels[block_name]) != data.shape[0]:
+                        raise ValueError(f"{channel_coord_name} mismatch for {function_name}: "
+                                         f"{len(channels)} {channel_coord_name} versus data shape {data.shape} "
+                                         f"({block_name})")
+                    if len(latencies) != data.shape[1]:
+                        raise ValueError(f"Latencies mismatch for {function_name}: "
+                                         f"{len(latencies)} latencies versus data shape {data.shape} "
+                                         f"({block_name})")
+            else:
+                if len(channels[block_name]) != block_data.shape[0]:
+                    raise ValueError(f"{channel_coord_name} mismatch: "
+                                     f"{len(channels)} {channel_coord_name} versus data shape {block_data.shape} "
+                                     f"({block_name})")
+                if len(latencies) != block_data.shape[1]:
+                    raise ValueError(f"Latencies mismatch: "
+                                     f"{len(latencies)} latencies versus data shape {block_data.shape} "
+                                     f"({block_name})")
+                if len(functions) != block_data.shape[2]:
+                    raise ValueError(f"Functions mismatch: "
+                                     f"{len(functions)} functions verus data shape {block_data.shape} "
+                                     f"({block_name})")
+
+        ############################################
+        # endregion Validate and normalise arguments
+        ############################################
 
         # Input value `data_blocks` has type something like dict[str, list[array]].
         #  i.e. a dict mapping block names to a list of 2d data volumes, one for each function
@@ -133,86 +187,67 @@ class ExpressionSet(ABC):
         # i.e. a dict mapping block names to a DataArray containing data for all functions
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
-        for data in data_blocks.values():
-            if isinstance(data, list) and data[0].ndim == 2:
-                for block_name, data_for_functions in data_blocks.items():
-                    for function_name, data in zip(functions, data_for_functions):
-                        assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {function_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
-                        assert len(latencies) == data.shape[1], f"Latencies mismatch for {function_name}: {len(latencies)} latencies versus data shape {data.shape}"
-                    data_array: DataArray = concat(
-                        (
-                            DataArray(self._init_prep_data(d),
-                                    coords={
-                                        channel_coord_name: channels[block_name],
-                                        DIM_LATENCY: latencies,
-                                        DIM_FUNCTION: [function]
-                                    })
-                            for function, d in zip(functions, data_for_functions)
-                        ),
-                        dim=DIM_FUNCTION,
-                        data_vars="all",  # Required by concat of DataArrays
+        for block_name, block_data in data_blocks.items():
+            if data_supplied_as_sequence:
+                # Build DataArray by concatenating sequence
+                data_array: DataArray = concat(
+                    (
+                        DataArray(
+                            self._init_prep_data(function_data, data_supplied_as_sequence),
+                            coords={
+                                channel_coord_name: channels[block_name],
+                                DIM_LATENCY: latencies,
+                                DIM_FUNCTION: [function],
+                            },
                         )
-
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on
-                    # the medial wall. We can ignore these nans by setting the values to p=1, but because it's not
-                    # typically expected we warn the user about it.
-                    if data_array.isnull().any():
-                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        # Only want to send the warning once, even if there are multiple data blocks with nans.
-                        if not nan_warning_sent:
-                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
-                            nan_warning_sent = True
-
-                    assert data_array.dims == self._dims
-                    assert set(data_array.coords.keys()) == set(self._dims)
-                    assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
-
-                    self._data[block_name] = data_array
-
+                        for function, function_data in zip(functions, block_data)
+                    ),
+                    dim=DIM_FUNCTION,
+                    data_vars="all",  # Required by concat of DataArrays
+                )
             else:
-                for block_name, data_for_functions in data_blocks.items():
-                    if not isinstance(data_for_functions, list):
-                        data_array = DataArray(data_for_functions,
-                                               coords={
-                                                   channel_coord_name: channels[block_name],
-                                                   DIM_LATENCY: latencies,
-                                                   DIM_FUNCTION: functions
-                                               })
-                    else:
-                        data_array: DataArray = concat(
-                            (
-                                DataArray(d,
-                                          coords={
-                                              channel_coord_name: channels[block_name],
-                                              DIM_LATENCY: latencies,
-                                              DIM_FUNCTION: function
-                                          })
-                                for function, d in zip(functions, data_for_functions)
-                            ),
-                            dim=DIM_FUNCTION,
-                            data_vars="all",  # Required by concat of DataArrays
-                            )
+                # Build DataArray in one go
+                data_array: DataArray = DataArray(
+                    self._init_prep_data(block_data, data_supplied_as_sequence),
+                    coords={
+                        channel_coord_name: channels[block_name],
+                        DIM_LATENCY: latencies,
+                        DIM_FUNCTION: functions,
+                    }
+                )
 
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on
-                    # the medial wall. We can ignore these nans by setting the values to p=1, but because it's not
-                    # typically expected we warn the user about it.
-                    if data_array.isnull().any():
-                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        # Only want to send the warning once, even if there are multiple data blocks with nans.
-                        if not nan_warning_sent:
-                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
-                            nan_warning_sent = True
+            # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
+            # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
+            # warn the user about it.
+            if data_array.isnull().any():
+                data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
+                # Only want to send the warning once, even if there are multiple data blocks with nans
+                # (it's likely that if one has them, they all will)
+                if not nan_warning_sent:
+                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                    nan_warning_sent = True
+            if data_array.dims != self._dims:
+                raise ValueError("DataArray had wrong dimensions")
+            if set(data_array.coords.keys()) != set(self._dims):
+                raise ValueError("DataArray had wrong coordinates")
+            if not array_equal(data_array.coords[DIM_FUNCTION].values, functions):
+                raise ValueError("DataArray had wrong functions")
 
-                    assert data_array.dims == self._dims
-                    assert set(data_array.coords.keys()) == set(self._dims)
-                    if isinstance(functions, list):
-                        assert array_equal(data_array.coords[DIM_FUNCTION].values, np.concatenate(functions))
-                    else:
-                        assert array_equal(data_array.coords[DIM_FUNCTION].values, functions)
+            self._data[block_name] = data_array
 
-                    self._data[block_name] = data_array
+    def _validate_data_supplied_as_sequence(self, data_blocks) -> bool:
+        # Determine if data is supplied as sequence or contiguous, and that it's the same for each block
+        data_supplied_as_sequence = {
+            block_name: not isinstance(block_data, get_args(_InputDataArray))
+            for block_name, block_data in data_blocks.items()
+        }
+        if not all_equal(data_supplied_as_sequence.values()):
+            ValueError("Not all input data blocks have the same format (sequence or contiguous)")
+        # Now we can just use the first one
+        return data_supplied_as_sequence[self._block_names[0]]
 
-    def _validate_functions_no_duplicates(self, functions):
+    # noinspection PyMethodMayBeStatic
+    def _validate_functions_no_duplicates(self, functions: Sequence[str]) -> None:
         if not len(functions) == len(set(functions)):
             checked = []
             for f in functions:
@@ -222,12 +257,14 @@ class ExpressionSet(ABC):
             raise ValueError(f"Duplicated functions in input, e.g. {f}")
 
     @classmethod
-    def _init_prep_data(cls, data: _InputDataArray) -> COO:
+    def _init_prep_data(cls, data: _InputDataArray, data_supplied_as_sequence: bool) -> COO:
         if isinstance(data, ndarray):
             data = sparsify_log_pmatrix(data)
         elif not isinstance(data, SparseArray):
             raise NotImplementedError()
-        data = expand_dims(data, 2)
+        if data_supplied_as_sequence:
+            # Expect data to be exactly 2-dimensional, and expand it to 3-dimensional along the functions axis
+            data = expand_dims(data, axis=2)
         return data
 
     @property
@@ -420,7 +457,7 @@ class HexelExpressionSet(ExpressionSet):
 
     def __init__(
         self,
-        functions: str | Sequence[str] | Sequence[Sequence[str]],
+        functions: str | Sequence[str],
         # Metadata
         hexels_lh: Sequence[Hexel],
         hexels_rh: Sequence[Hexel],
@@ -559,7 +596,7 @@ class SensorExpressionSet(ExpressionSet):
 
     def __init__(
         self,
-        functions: str | Sequence[str] | Sequence[Sequence[str]],
+        functions: str | Sequence[str],
         # Metadata
         sensors: Sequence[Sensor],
         latencies: Sequence[Latency],
