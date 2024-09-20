@@ -3,13 +3,13 @@ Functions for dealing with iterables.
 """
 
 from itertools import groupby
-from typing import Sequence
+from typing import Collection
 
 from numpy import ndarray
 from numpy.typing import NDArray
 
 
-def all_equal(sequence: Sequence) -> bool:
+def all_equal(sequence: Collection) -> bool:
     """
     Check if all elements in the sequence are the same.
 
@@ -18,7 +18,7 @@ def all_equal(sequence: Sequence) -> bool:
     with equality checks.
 
     Args:
-        sequence (Sequence): A sequence of elements to be checked for equality. This can be any iterable
+        sequence (Collection): A sequence of elements to be checked for equality. This can be any iterable
                              including lists, tuples, or numpy arrays.
 
     Returns:
@@ -31,6 +31,7 @@ def all_equal(sequence: Sequence) -> bool:
         - For numpy arrays, the function ensures element-wise comparison using the `.all()` method to handle
           array equality correctly.
     """
+    sequence = list(sequence)
 
     if len(sequence) == 0:
         # universal quantification over empty set is always true
