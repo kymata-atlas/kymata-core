@@ -144,10 +144,7 @@ def load_expression_set(
             functions=data_dict[_Keys.functions],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels][BLOCK_SCALP]],
             latencies=data_dict[_Keys.latencies],
-            data=[
-                data_dict[_Keys.data][BLOCK_SCALP][:, :, i]
-                for i in range(len(data_dict[_Keys.functions]))
-            ],
+            data=data_dict[_Keys.data][BLOCK_SCALP],
         )
 
 
