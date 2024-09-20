@@ -217,7 +217,7 @@ class ExpressionSet(ABC):
         for block_name, block_data in data_blocks.items():
             if data_supplied_as_sequence:
                 # Build DataArray by concatenating sequence
-                data_array: DataArray = concat_dataarrays(
+                data_array: DataArray = _concat_dataarrays(
                     [
                         DataArray(
                             self._init_prep_data(function_data),
@@ -575,8 +575,8 @@ class HexelExpressionSet(ExpressionSet):
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=concat_dataarrays([self.left, other.left]).data,
-            data_rh=concat_dataarrays([self.right, other.right]).data,
+            data_lh=_concat_dataarrays([self.left, other.left]).data,
+            data_rh=_concat_dataarrays([self.right, other.right]).data,
         )
 
     def __eq__(self, other: HexelExpressionSet) -> bool:
@@ -681,7 +681,7 @@ class SensorExpressionSet(ExpressionSet):
             functions=self.functions + other.functions,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=concat_dataarrays([self.scalp, other.scalp]).data,
+            data=_concat_dataarrays([self.scalp, other.scalp]).data,
         )
 
     def __getitem__(self, functions: str | Sequence[str]) -> SensorExpressionSet:
@@ -730,7 +730,7 @@ def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionS
     return expression_sets[0] + combine(expression_sets[1:])
 
 
-def concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
+def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
     return concat(
         arrays,
         dim=DIM_FUNCTION,
