@@ -74,6 +74,9 @@ class ExpressionSet(ABC):
                 names to data arrays. E.g., in the case there are three functions in a hexel setting:
                 ```
                     {
+                                  # each array is (channel, latency)-shaped
+                                  # and there's one for each function
+                                  # ↓
                         "left":  [array(...), array(...), array(...)],
                         "right": [array(...), array(...), array(...)],
                     }
@@ -81,13 +84,22 @@ class ExpressionSet(ABC):
                 or in a sensor setting:
                 ```
                     {
-                        "scalp": [array(), array(), array()],
+                        "scalp": [array(...), array(...), array(...)],
                     }
                 ```
+                (and where `array(...)` can be a numpy array or a sparse array).
                 In this format, all data arrays should be the same size.
 
                 In the second (more performant) format, `data_blocks` contains a single data array whose `function`
-                dimensions can be concatenated to achieve the desired resultant data block.
+                dimensions can be concatenated to achieve the desired resultant data block. E.g.
+                ```
+                    {
+                                  # each array is (channel, latency, function)-shaped
+                                  # ↓
+                        "left":  array(...),
+                        "right": array(...),
+                    }
+                ```
             channel_coord_name (str): Name of the channel coordinate.
             channel_coord_dtype: Data type of the channel coordinate.
             channel_coord_values (dict[str, Sequence]): Dictionary mapping block names to channel coordinate values.
