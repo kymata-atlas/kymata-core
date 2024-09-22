@@ -532,22 +532,20 @@ class HexelExpressionSet(ExpressionSet):
         # Allow indexing by a single function
         if isinstance(functions, str):
             functions = [functions]
+        # Get indices of sliced functions within total function list
+        function_idxs = []
         for f in functions:
-            if f not in self.functions:
+            try:
+                function_idxs.append(self.functions.index(f))
+            except ValueError:
                 raise KeyError(f)
         return HexelExpressionSet(
             functions=functions,
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=[
-                self._data[BLOCK_LEFT].sel({DIM_FUNCTION: function}).data
-                for function in functions
-            ],
-            data_rh=[
-                self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data
-                for function in functions
-            ],
+            data_lh=self._data[BLOCK_LEFT].data[:, :, function_idxs],
+            data_rh=self._data[BLOCK_RIGHT].data[:, :, function_idxs],
         )
 
     def __copy__(self):
@@ -688,17 +686,19 @@ class SensorExpressionSet(ExpressionSet):
         # Allow indexing by a single function
         if isinstance(functions, str):
             functions = [functions]
+        # Get indices of sliced functions within total function list
+        function_idxs = []
         for f in functions:
-            if f not in self.functions:
+            try:
+                function_idxs.append(self.functions.index(f))
+            except ValueError:
                 raise KeyError(f)
         return SensorExpressionSet(
             functions=functions,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=[
-                self._data[BLOCK_SCALP].sel({DIM_FUNCTION: function}).data
-                for function in functions
-            ],
+            # Slice data by requested functions
+            data=self._data[BLOCK_SCALP].data[:, :, function_idxs],
         )
 
     def best_functions(self) -> DataFrame:
