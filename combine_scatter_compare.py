@@ -15,11 +15,11 @@ def asr_models_loop_full():
 
     x_upper = 800
 
-    size = '7b_syntax'
+    size = '7b_semantics'
 
     neuron_selection = 'no'
 
-    x_data = 'neuron'
+    x_data = 'latency'
 
     margin = 0.1
     

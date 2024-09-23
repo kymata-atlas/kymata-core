@@ -105,13 +105,21 @@ def main():
         start = time.time()
         _logger.info("Starting Kymata Gridsearch")
         _logger.info(f"Doing Gridsearch on phonetic functions instead of EMEG data")
+        _logger.info(f"Use with caution!")
         _logger.info(f"Functions to be tested: {args.function_name}")
+
+        phone_num = 6
+
+        # ch_names = [f'phone_{i}' for i in range(57)]
+        ch_names = [f'phone_{i}' for i in range(phone_num)]
 
         _logger.info(f"Loading phonetic functions to replace the EMEG data")
 
-        emeg_values = np.zeros((57, 1, 403001))
+        # emeg_values = np.zeros((57, 1, 403001))
+        emeg_values = np.zeros((phone_num, 1, 403001))
         phone_data = np.load('/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/phone.npy')
-        emeg_values[:, 0, :401000] = phone_data.reshape(57, 401000)
+        # emeg_values[:, 0, :401000] = phone_data.reshape(57, 401000)
+        emeg_values[:, 0, :401000] = phone_data.reshape(57, 401000)[:phone_num, :]
 
         n_reps = 1
         args.emeg_t_start = 0
