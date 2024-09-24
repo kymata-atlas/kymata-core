@@ -3,22 +3,23 @@ import os
 import matplotlib.pyplot as plt
 import re
 from matplotlib.colors import PowerNorm
+from statistics import NormalDist
 
 def asr_models_loop_full():
 
-    layer = 33 # 66 64 34
+    layer = 64 # 41 # 66 64 34 33
 
-    neuron = 4096
+    neuron = 1280 # 4096 5120
 
     thres = 20 # 15
 
     x_upper = 800
 
-    size = 'salmonn_7b'
+    size = 'large'
 
-    neuron_selection = 'all'
+    neuron_selection = 'layer'
 
-    exclude_tvl = False
+    exclude_tvl = True
     
     n = 1
     
@@ -28,7 +29,11 @@ def asr_models_loop_full():
 
     # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/log/'
 
-    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/large/tvl/log/'
+    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/tvl/log/'
+
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
+    thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*11*neuron*layer)))))
 
     # for i in range(layer):
     #     file_name = f'slurm_log_{i}.txt'
@@ -158,7 +163,7 @@ def asr_models_loop_full():
             with open(log_tvl_dir + file_name, 'r') as f:
                 a = f.readlines()
                 for ia in range(len(a)):
-                    if 'model' in a[ia] and 'Functions to be tested' not in a[ia]:
+                    if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
                         for k in range(neuron):
                             _a = [j for j in a[ia].split()]
                             try:
@@ -168,12 +173,14 @@ def asr_models_loop_full():
                             ia += 1
                         break        
         lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
-        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+
         mask = np.array([i for i in range(_lats.shape[0]) if np.any(np.all(_lats[i, 4:] == _lats_tvl[:, 4:], axis=1))])
+        mask_non_tvl = np.array([i for i in range(_lats.shape[0]) if not np.any(np.all(_lats[i, 4:] == _lats_tvl[:, 4:], axis=1))])
         # import ipdb;ipdb.set_trace()
 
     if exclude_tvl:
-        scatter = ax.scatter(_lats[~mask, 0], _lats[~mask, 4], c= _lats[~mask, 4], cmap='brg', marker='.', s=15)
+        scatter = ax.scatter(_lats[mask_non_tvl, 0], _lats[mask_non_tvl, 4], c= _lats[mask_non_tvl, 4], cmap='brg', marker='.', s=15)
         scatter = ax.scatter(_lats[mask, 0], _lats[mask, 4], c='black', marker='.', s=4, alpha=0.6)
     else:
         scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15)
@@ -189,7 +196,7 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select_excl_tvl', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
