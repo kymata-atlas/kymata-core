@@ -38,7 +38,7 @@ def asr_models_loop_full():
 
     x_upper = 800
 
-    neuron_selection = 'all_comb'
+    neuron_selection = 'layer_sep'
 
     x_data = 'latency'
 
@@ -50,7 +50,7 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/log/'
+    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
 
     compare_log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/salmonn_7b/fc2/log/'
     
@@ -133,9 +133,9 @@ def asr_models_loop_full():
         if 'sep' in neuron_selection: 
 
             if x_data == 'latency':
-                scatter = ax.scatter(enhanced[:, 0], enhanced[:, 4], c='green', marker='.', s=15, label = 'Phone')
+                # scatter = ax.scatter(enhanced[:, 0], enhanced[:, 4], c='green', marker='.', s=15, label = 'Phone')
                 scatter = ax.scatter(reduced[:, 0], reduced[:, 4], c='red', marker='.', s=15, label = 'Word')
-                scatter = ax.scatter(emerge[:, 0], emerge[:, 4], c='green', marker='.', s=15)
+                # scatter = ax.scatter(emerge[:, 0], emerge[:, 4], c='green', marker='.', s=15)
                 scatter = ax.scatter(demolish[:, 0], demolish[:, 4], c='red', marker='.', s=15)
                 plt.xlabel('Latencies (ms)')
             else:
@@ -166,7 +166,7 @@ def asr_models_loop_full():
         plt.ylabel('Layer number')
         plt.title(f'Threshold -log(p-value): {thres}')
         plt.xlim(-200, x_upper)
-        plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_{neuron_selection}_select', dpi=600)
+        plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_{neuron_selection}_select_word_only', dpi=600)
 
     else:
 
