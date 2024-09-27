@@ -522,6 +522,9 @@ def expression_plot(
 
     fig.subplots_adjust(**mosaic.subplots_adjust_kwargs)
 
+    # Turn off autoscaling to make plotting faster, and since we manually set the axes scale later
+    pyplot.autoscale(False)
+
     custom_handles = []
     custom_labels = []
     data_x_min, data_x_max = np.Inf, -np.Inf
