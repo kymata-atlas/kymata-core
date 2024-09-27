@@ -50,7 +50,7 @@ class IPPMBuilder:
         inputs: list[str],
         hierarchy: TransformHierarchy,
         hemisphere: str,
-        y_ordinate_method: str = YOrdinateStyle.progressive,
+        y_ordinate: str = YOrdinateStyle.progressive,
         serial_sequence: list[list[str]] = None,
         avoid_collinearity: bool = True,
     ):
@@ -68,7 +68,7 @@ class IPPMBuilder:
 
         self.graph: IPPMGraph = dict()
         self.graph = self._build_graph_dict(deepcopy(self._hierarchy),
-                                            y_ordinate_method, serial_sequence, avoid_collinearity)
+                                            y_ordinate, serial_sequence, avoid_collinearity)
 
     def _build_graph_dict(self,
                           hierarchy: TransformHierarchy,
