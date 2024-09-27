@@ -26,7 +26,7 @@ def plot_ippm(
     scale_spikes: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
-    arrowhead_dims: tuple[float, float] = (.02, 8),
+    arrowhead_dims: tuple[float, float] = None,
     linewidth: float = 3,
 ):
     """
@@ -42,6 +42,14 @@ def plot_ippm(
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
     """
+
+    if arrowhead_dims is None:
+        # Scale arrowheads by size of graph
+        arrowhead_dims = (
+            max(node.position.y for node in graph.values()) / 30,  # width
+            max(node.position.x for node in graph.values()) / 30,  # length
+        )
+
     def __get_label(inc_edge: str) -> str:
         try:
             # assumes inc edge is named as transform-x.
