@@ -34,3 +34,4 @@ apptainer exec \
         --overwrite
   "
   #  --snr $ARG # >> result3.txt
+  # testing
