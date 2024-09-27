@@ -35,3 +35,4 @@ apptainer exec \
   "
   #  --snr $ARG # >> result3.txt
   # testing
+  # hello
