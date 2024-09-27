@@ -22,7 +22,7 @@ def read_log_file_asr(n, log_dir, layer, neuron):
                         ia += 1
                     break
 
-    lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
+    lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3]) # (1, points, 6)
 
     return lat_sig
 
@@ -78,11 +78,16 @@ def asr_models_loop_full():
     tvl_compare_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/salmonn_7b/tvl/log/'
 
     tvl_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/tvl/log/'
+
+    encoder_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large-v2/fc2/log/'
+
+    encoder_tvl_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large-v2/tvl/log/'
     
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
     thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*11*neuron*layer)))))
     thres_tvl_true = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*11*370)))))
+    thres_encoder = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*1280*32)))))
 
     plt.figure(3)
     fig, ax = plt.subplots()
@@ -133,16 +138,22 @@ def asr_models_loop_full():
                     _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
                     lat_sig = read_log_file_asr(n, tvl_compare_log_dir, layer, neuron)
                     _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+                    lat_sig = read_log_file_asr(n, encoder_log_dir, 32, 1280)
+                    _lats_encoder = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_encoder)])
+                    lat_sig = read_log_file_asr(n, encoder_tvl_log_dir, 32, 1280)
+                    _lats_encoder_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_encoder)])
 
                     mask_phone_enhanced = np.array([i for i in range(enhanced.shape[0]) if not np.any(np.all(enhanced[i, 4:] == _lats_tvl[:, 4:], axis=1))])
                     mask_phone_emerge = np.array([i for i in range(emerge.shape[0]) if not np.any(np.all(emerge[i, 4:] == _lats_tvl[:, 4:], axis=1))])
                     mask_phone_reduced = np.array([i for i in range(reduced.shape[0]) if not np.any(np.all(reduced[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
                     mask_phone_demolish = np.array([i for i in range(demolish.shape[0]) if not np.any(np.all(demolish[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
+                    mask_encoder = np.array([i for i in range(_lats_encoder.shape[0]) if not np.any(np.all(_lats_encoder[i, 4:] == _lats_encoder_tvl[:, 4:], axis=1))])
 
-                    scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4] + 1, c='green', marker='.', s=15, label = 'Phone')
-                    scatter = ax.scatter(reduced[mask_phone_reduced, 0], reduced[mask_phone_reduced, 4] + 1, c='red', marker='.', s=15, label = 'Word')
-                    scatter = ax.scatter(emerge[mask_phone_emerge, 0], emerge[mask_phone_emerge, 4] + 1, c='green', marker='.', s=15)
-                    scatter = ax.scatter(demolish[mask_phone_demolish, 0], demolish[mask_phone_demolish, 4] + 1, c='red', marker='.', s=15)
+                    scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4] + 33, c='green', marker='.', s=15, label = 'Phone')
+                    scatter = ax.scatter(reduced[mask_phone_reduced, 0], reduced[mask_phone_reduced, 4] + 33, c='red', marker='.', s=15, label = 'Word')
+                    scatter = ax.scatter(emerge[mask_phone_emerge, 0], emerge[mask_phone_emerge, 4] + 33, c='green', marker='.', s=15)
+                    scatter = ax.scatter(demolish[mask_phone_demolish, 0], demolish[mask_phone_demolish, 4] + 33, c='red', marker='.', s=15)
+                    scatter = ax.scatter(_lats_encoder[mask_encoder, 0], _lats_encoder[mask_encoder, 4] + 1, c='blue', marker='.', s=15, label = 'Encoder')
 
                     file_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
                     expression_data = load_expression_set(file_path)
@@ -172,7 +183,7 @@ def asr_models_loop_full():
 
                     tvl_list = np.array(tvl_list)
                     scatter = ax.scatter(tvl_list[:, 0], np.zeros((tvl_list.shape[0],)), c='purple', marker='.', s=15, label = 'TVL')
-                    layer += 1
+                    layer += 33
 
                 else:
                     scatter = ax.scatter(enhanced[:, 0], enhanced[:, 4], c='green', marker='.', s=15, label = 'Phone')
@@ -210,7 +221,7 @@ def asr_models_loop_full():
         plt.ylabel('Layer number')
         plt.title(f'Threshold -log(p-value): {thres}')
         plt.xlim(-200, x_upper)
-        plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_{neuron_selection}_excl_tvl', dpi=600)
+        plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_{neuron_selection}_excl_tvl_incl_enc', dpi=600)
 
     else:
 

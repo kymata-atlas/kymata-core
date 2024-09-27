@@ -22,11 +22,11 @@ def main():
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'model.decoder.layers.31.nkg'))
 
-        expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/expression_set/phone_56_gridsearch.nkg')
+        # expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/expression_set/phone_56_gridsearch.nkg')
 
-        phonetic_func = expression_data.functions
+        # phonetic_func = expression_data.functions
 
-        expression_data += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/all_tvl_gridsearch.nkg')
+        expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
 
         # for func in expression_data.functions:
         #     fig = expression_plot(expression_data, show_only=func, paired_axes=False, minimap=False, show_legend=True,)
@@ -38,10 +38,10 @@ def main():
         fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=True, 
                               color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
                               | constant_color_dict(['IL'], 'red')
-                              | constant_color_dict(['STL'], 'pink')
-                              | constant_color_dict(phonetic_func, 'green'))
+                              | constant_color_dict(['STL'], 'pink'))
+                            #   | constant_color_dict(phonetic_func, 'green'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/plot/with_tvl.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_recolour.png")
 
     elif function_family_type == 'standard':
 
