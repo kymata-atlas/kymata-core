@@ -31,9 +31,16 @@ class IPPMNode(NamedTuple):
 IPPMGraph = dict[str, IPPMNode]
 
 
-class _YOrdinateMethods(StrEnum):
+class YOrdinateStyle(StrEnum):
+    """
+    Enumeration for Y-ordinate plotting styles.
+
+    Attributes:
+        progressive: Points are plotted with increasing y ordinates.
+        centered: Points are vertically centered.
+    """
     progressive = "progressive"
-    centred     = "centred"
+    centered    = "centered"
 
 
 class IPPMBuilder:
@@ -43,7 +50,7 @@ class IPPMBuilder:
         inputs: list[str],
         hierarchy: TransformHierarchy,
         hemisphere: str,
-        y_ordinate_method: str = _YOrdinateMethods.progressive,
+        y_ordinate_method: str = YOrdinateStyle.progressive,
         levels: dict[str, int] = None
     ):
         self._spikes: SpikeDict = deepcopy(spikes)
@@ -67,36 +74,38 @@ class IPPMBuilder:
                              hierarchy
         levels: maps node names in the hierarchy to level-idxs of vertically centred nodes
         """
-        if y_ordinate_method == _YOrdinateMethods.progressive:
+        graph = dict()
+        if y_ordinate_method == YOrdinateStyle.progressive:
             y_axis_partition_size = (
                 1 / len(hierarchy.keys()) if len(hierarchy.keys()) > 0 else 1
             )
             partition_ptr = 0
-            graph = dict()
             while childless_functions := self._get_childless_functions(hierarchy):
                 for childless_func in childless_functions:
-                    graph = self._create_nodes_and_edges_for_function_progressive(
-                        childless_func, partition_ptr, y_axis_partition_size
-                    )
+                    graph = self._create_nodes_and_edges_for_function(
+                        childless_func,
+                        y_ord=self.__get_y_coordinate_progressive(
+                            partition_number=partition_ptr,
+                            partition_size=y_axis_partition_size))
                     hierarchy.pop(childless_func)
                     partition_ptr += 1
 
-        elif y_ordinate_method == _YOrdinateMethods.centred:
+        elif y_ordinate_method == YOrdinateStyle.centered:
             if levels is None:
-                raise ValueError(f"Supply `levels` when using {_YOrdinateMethods.centred} option")
+                raise ValueError(f"Supply `levels` when using {YOrdinateStyle.centered} option")
             totals_within_level = Counter(levels.values())
             idxs_within_level = defaultdict(int)
-            graph = dict()
-            while childless_functions := self._get_childless_functions(hierarchy):
+            while childless_functions := sorted(self._get_childless_functions(hierarchy)):
                 for childless_func in childless_functions:
-                    graph = self._create_nodes_and_edges_for_function_centred(
+                    graph = self._create_nodes_and_edges_for_function(
                         childless_func,
-                        idxs_within_level[childless_func],
-                        totals_within_level[levels[childless_func]],
-                        max(totals_within_level.values()),
+                        y_ord=self.__get_y_coordinate_centered(
+                            function_idx_within_level=idxs_within_level[levels[childless_func]],
+                            function_total_within_level=totals_within_level[levels[childless_func]],
+                            max_function_total_within_level=max(totals_within_level.values()))
                     )
                     hierarchy.pop(childless_func)
-                    idxs_within_level[childless_func] += 1
+                    idxs_within_level[levels[childless_func]] += 1
 
         else:
             raise NotImplementedError()
@@ -120,44 +129,35 @@ class IPPMBuilder:
         # When no functions left, it returns empty set.
         return current_functions.difference(functions_with_children)
 
-    def _create_nodes_and_edges_for_function_centred(self,
-                                                     function_name: str,
-                                                     function_idx_within_level: int,
-                                                     function_total_within_level: int,
-                                                     max_function_total_within_level: int,
-                                                     ) -> IPPMGraph:
-        """
-        x_batch_size: how many nodes in a vertically-centred batch.
-        x_batch_idx: which node this is in the batch
-        """
+    @staticmethod
+    def __get_y_coordinate_progressive(
+            partition_number: int,
+            partition_size: float) -> float:
+        return 1 - partition_size * partition_number
 
+    @staticmethod
+    def __get_y_coordinate_centered(
+            function_idx_within_level: int,
+            function_total_within_level: int,
+            max_function_total_within_level: int,
+            spacing: float = 1) -> float:
+        total_height = (max_function_total_within_level - 1) * spacing
+        this_height = (function_total_within_level - 1) * spacing
+        baseline = (total_height - this_height) / 2
+        return baseline + function_idx_within_level * spacing
 
-    def _create_nodes_and_edges_for_function_progressive(self,
-                                                         function_name: str,
-                                                         partition_ptr: int,
-                                                         partition_size: float,
-                                                         ) -> IPPMGraph:
-        def __get_y_coordinate(curr_partition_number: int, partition_size: float) -> float:
-            return 1 - partition_size * curr_partition_number
-
+    def _create_nodes_and_edges_for_function(self, function_name: str, y_ord: float) -> IPPMGraph:
         func_parents = self._hierarchy[function_name]
-        current_y_axis_coord = __get_y_coordinate(partition_ptr, partition_size)
         if function_name in self._inputs:
-            self.graph[function_name] = IPPMNode(100, NodePosition(0, current_y_axis_coord), [])
+            self.graph[function_name] = IPPMNode(100, NodePosition(0, y_ord), [])
         else:
-            childless_func_pairings = self._get_best_pairings_from_hemisphere(
-                function_name
-            )
+            childless_func_pairings = self._get_best_pairings_from_hemisphere(function_name)
 
             if len(childless_func_pairings) == 0:
                 return self.graph
 
-            self.graph = self._create_nodes_for_childless_function(
-                current_y_axis_coord, childless_func_pairings, function_name
-            )
-            self.graph = self._create_edges_between_parents_and_childless_function(
-                func_parents, function_name
-            )
+            self.graph = self._create_nodes_for_childless_function(y_ord, childless_func_pairings, function_name)
+            self.graph = self._create_edges_between_parents_and_childless_function(func_parents, function_name)
 
         return self.graph
 
@@ -172,7 +172,7 @@ class IPPMBuilder:
 
     def _create_nodes_for_childless_function(
         self,
-        current_y_axis_coord: float,
+        y_ord: float,
         childless_func_pairings: list[ExpressionPairing],
         function_name: str,
     ):
@@ -184,7 +184,7 @@ class IPPMBuilder:
             parent_function = [function_name + "-" + str(idx - 1)] if idx != 0 else []
             self.graph[function_name + "-" + str(idx)] = IPPMNode(
                 __map_magnitude_to_node_size(magnitude),
-                NodePosition(latency, current_y_axis_coord),
+                NodePosition(latency, y_ord),
                 parent_function,
             )
 
