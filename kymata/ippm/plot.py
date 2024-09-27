@@ -53,11 +53,19 @@ def plot_ippm(
     def __get_label(inc_edge: str) -> str:
         try:
             # assumes inc edge is named as transform-x.
-            label = inc_edge[:inc_edge.index("-")]
+            label = inc_edge[:inc_edge.rindex("-")]
             return label
         except ValueError:
             # "-" not found in inc_edge. Therefore, it must be input transform.
             return inc_edge
+
+    non_terminal = set()
+    for node in graph.values():
+        non_terminal.update(node.inc_edges)
+
+    def __is_terminal_node(inc_edge: str) -> bool:
+        """Returns whether the named node is a terminal node in the graph"""
+        return inc_edge not in non_terminal
         
     # first lets aggregate all the information.
     node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
@@ -115,6 +123,15 @@ def plot_ippm(
         )
 
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+
+    # Show lines trailing off into the future from terminal nodes
+    future_width = 20  # ms
+    for node in graph.keys():
+        if __is_terminal_node(node):
+            step_1 = max(node_x) + future_width / 2
+            step_2 = max(node_x) + future_width
+            ax.plot([graph[node].position.x, step_1], [graph[node].position.y, graph[node].position.y], color=colors[__get_label(node)], linewidth=linewidth, linestyle="solid")
+            ax.plot([step_1, step_2], [graph[node].position.y, graph[node].position.y], color=colors[__get_label(node)], linewidth=linewidth, linestyle="dotted")
 
     if title is not None:
         plt.title(title)
