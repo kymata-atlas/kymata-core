@@ -51,11 +51,13 @@ class IPPMBuilder:
         hierarchy: TransformHierarchy,
         hemisphere: str,
         y_ordinate_method: str = YOrdinateStyle.progressive,
-        serial_sequence: list[list[str]] = None
+        serial_sequence: list[list[str]] = None,
+        avoid_collinearity: bool = True,
     ):
         """
         serial_sequence: list of serial sequence of parallel steps of functions. e.g. first entry is list of all inputs,
                          second entry is list of all functions immediately downstream of inputs, etc.
+        avoid_collinearity: if True, vertically nudges each successive serial step to prevent steps from overlapping
         """
         self._spikes: SpikeDict = deepcopy(spikes)
         self._inputs: list[str] = inputs
@@ -65,12 +67,14 @@ class IPPMBuilder:
         self._sort_spikes_by_latency_asc()
 
         self.graph: IPPMGraph = dict()
-        self.graph = self._build_graph_dict(deepcopy(self._hierarchy), y_ordinate_method, serial_sequence)
+        self.graph = self._build_graph_dict(deepcopy(self._hierarchy),
+                                            y_ordinate_method, serial_sequence, avoid_collinearity)
 
     def _build_graph_dict(self,
                           hierarchy: TransformHierarchy,
                           y_ordinate_method: str,
                           serial_sequence: list[list[str]],
+                          avoid_collinearity: bool,
                           ) -> IPPMGraph:
         """
         y_ordinate_method == "progressive" for y ordinates to be selected progressively from the input
@@ -98,23 +102,28 @@ class IPPMBuilder:
             if serial_sequence is None:
                 raise ValueError(f"Supply `levels` when using {YOrdinateStyle.centered} option")
             # Build dictionary mapping function names to sequence steps
-            serial_sequence_dict = dict()
+            step_idxs = dict()
             for step_i, step in enumerate(serial_sequence):
                 for function in step:
-                    serial_sequence_dict[function] = step_i
-            totals_within_serial_step = Counter(serial_sequence_dict.values())
+                    step_idxs[function] = step_i
+            totals_within_serial_step = Counter(step_idxs.values())
             idxs_within_level = defaultdict(int)
             while childless_functions := sorted(self._get_childless_functions(hierarchy)):
                 for childless_func in childless_functions:
                     graph = self._create_nodes_and_edges_for_function(
                         childless_func,
                         y_ord=self.__get_y_coordinate_centered(
-                            function_idx_within_level=idxs_within_level[serial_sequence_dict[childless_func]],
-                            function_total_within_level=totals_within_serial_step[serial_sequence_dict[childless_func]],
-                            max_function_total_within_level=max(totals_within_serial_step.values()))
+                            function_idx_within_level=idxs_within_level[step_idxs[childless_func]],
+                            function_total_within_level=totals_within_serial_step[step_idxs[childless_func]],
+                            max_function_total_within_level=max(totals_within_serial_step.values()),
+                            # Nudge each step up progressively more to avoid collinearity
+                            positive_nudge_frac=(step_idxs[childless_func] / len(serial_sequence)
+                                                 if avoid_collinearity
+                                                 else 0),
+                        )
                     )
                     hierarchy.pop(childless_func)
-                    idxs_within_level[serial_sequence_dict[childless_func]] += 1
+                    idxs_within_level[step_idxs[childless_func]] += 1
 
         else:
             raise NotImplementedError()
@@ -149,11 +158,16 @@ class IPPMBuilder:
             function_idx_within_level: int,
             function_total_within_level: int,
             max_function_total_within_level: int,
+            positive_nudge_frac: float,
             spacing: float = 1) -> float:
         total_height = (max_function_total_within_level - 1) * spacing
         this_height = (function_total_within_level - 1) * spacing
         baseline = (total_height - this_height) / 2
-        return baseline + function_idx_within_level * spacing
+        y_ord = baseline + function_idx_within_level * spacing
+        # / 2 because sometimes there's a 1/2-spacing offset between consecutive steps depending on parity, which can
+        # inadvertently cause collinearity again, which we're trying to avoid
+        y_ord += positive_nudge_frac * spacing / 2
+        return y_ord
 
     def _create_nodes_and_edges_for_function(self, function_name: str, y_ord: float) -> IPPMGraph:
         func_parents = self._hierarchy[function_name]
