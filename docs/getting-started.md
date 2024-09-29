@@ -148,7 +148,7 @@ You see `ModuleNotFoundError: No module named 'kymata'`
   # Allow the CBU poetry to communicate with pip
   export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
   
-  $VENV_PATH/bin/poetry install
+  $VENV_PATH/bin/poetry install 
   ```
 
 - Now (within the Apptainer) you can run it using `poetry`, e.g.:
