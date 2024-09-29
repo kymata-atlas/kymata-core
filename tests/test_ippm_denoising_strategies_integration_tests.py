@@ -101,18 +101,15 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     )
 
 
-def test_MaxPoolingStrategy_AllFalse_Fit_Successfully():
+def test_MaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
-        (-100, 1e-50),
         (-75, 1e-75),
         (30, 1e-100),
-        (199, 1e-90),
-        (211, 1e-55),
     ]
-    expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
-    strategy = MaxPoolingStrategy(HEMI_RIGHT, bin_significance_threshold=2)
+    strategy = MaxPoolingStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
@@ -148,7 +145,7 @@ def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     )
 
 
-def test_AdaptiveMaxPoolingStrategy_AllFalse_Fit_Successfully():
+def test_AdaptiveMaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
         (-75, 1e-75),
@@ -158,7 +155,7 @@ def test_AdaptiveMaxPoolingStrategy_AllFalse_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = AdaptiveMaxPoolingStrategy(
-        HEMI_RIGHT, bin_significance_threshold=2, base_bin_size=25
+        HEMI_RIGHT, bin_significance_threshold=2, base_bin_size=0.025
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
@@ -187,6 +184,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
         HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
+        number_of_clusters_upper_bound=5,
         random_state=random_seed,
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
@@ -201,7 +199,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     )
 
 
-def test_GMMStrategy_AllFalse_Fit_Successfully():
+def test_GMMStrategy_AllDefault_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
@@ -213,11 +211,9 @@ def test_GMMStrategy_AllFalse_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [
         (30, 1e-99),
         (130, 1e-81),
-        (23, 1e-44),
-        (26, 1e-59),
     ]
 
-    strategy = GMMStrategy(HEMI_RIGHT, random_state=random_seed)
+    strategy = GMMStrategy(HEMI_RIGHT, number_of_clusters_upper_bound=5, random_state=random_seed, should_evaluate_using_AIC=False)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
@@ -257,7 +253,7 @@ def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     )
 
 
-def test_DBSCANStrategy_AllFalse_Fit_Successfully():
+def test_DBSCANStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
         (-100, 1e-50),
@@ -290,7 +286,7 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
     strategy = MeanShiftStrategy(
-        HEMI_RIGHT, should_normalise=False, should_cluster_only_latency=True
+        HEMI_RIGHT, bandwidth=0.03, min_bin_freq=2
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
@@ -304,7 +300,7 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     )
 
 
-def test_MeanShiftStrategy_AllFalse_Fit_Successfully():
+def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["func1"].right_best_pairings = [
         (199, 1e-90),
@@ -313,7 +309,7 @@ def test_MeanShiftStrategy_AllFalse_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
-    strategy = MeanShiftStrategy(HEMI_RIGHT)
+    strategy = MeanShiftStrategy(HEMI_RIGHT, bandwidth=0.03, min_bin_freq=2)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
