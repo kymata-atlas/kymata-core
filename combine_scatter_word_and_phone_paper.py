@@ -57,7 +57,7 @@ def asr_models_loop_full():
     x_upper = 800
     x_data = 'latency'
     neuron_selection = 'layer_sep'
-    margin = 0.1
+    margin = 0 # 0.1
     n = 1
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -66,9 +66,9 @@ def asr_models_loop_full():
     tvl_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/tvl/log/'
 
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
-    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
-    thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*11*neuron*layer)))))
-    thres_tvl_true = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*11*370)))))
+    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
+    thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*neuron*layer)))))
+    thres_tvl_true = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*370)))))
 
     plt.figure(3)
     fig, ax = plt.subplots()
@@ -112,7 +112,7 @@ def asr_models_loop_full():
         mask_phone_demolish = np.array([i for i in range(demolish.shape[0]) if not np.any(np.all(demolish[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
 
         scatter = ax.scatter(reduced[mask_phone_reduced, 0], reduced[mask_phone_reduced, 4] + 1, c='red', marker='.', s=15, label = 'Salmonn neurons (word-related)')
-        scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4] + 1, c='green', marker='.', s=15, label = 'Salmonn neurons (phone-related)')
+        scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4] + 1, c='green', marker='.', s=15, label = 'Salmonn neurons (phoneme-related)')
         scatter = ax.scatter(emerge[mask_phone_emerge, 0], emerge[mask_phone_emerge, 4] + 1, c='green', marker='.', s=15)
         scatter = ax.scatter(demolish[mask_phone_demolish, 0], demolish[mask_phone_demolish, 4] + 1, c='red', marker='.', s=15)
 
@@ -239,7 +239,7 @@ def asr_models_loop_full():
     else:
 
         x_upper = neuron + 200
-        scatter = ax.scatter(enhanced[:, 5], enhanced[:, 4], c='green', marker='.', s=15, label = 'Salmonn neurons (phone-related)')
+        scatter = ax.scatter(enhanced[:, 5], enhanced[:, 4], c='green', marker='.', s=15, label = 'Salmonn neurons (phoneme-related)')
         scatter = ax.scatter(reduced[:, 5], reduced[:, 4], c='red', marker='.', s=15, label = 'Salmonn neurons (word-related)')
         scatter = ax.scatter(emerge[:, 5], emerge[:, 4], c='green', marker='.', s=15)
         scatter = ax.scatter(demolish[:, 5], demolish[:, 4], c='red', marker='.', s=15)
@@ -262,7 +262,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_v4', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_v6', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':
