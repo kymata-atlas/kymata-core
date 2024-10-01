@@ -111,10 +111,20 @@ def asr_models_loop_full():
         mask_phone_reduced = np.array([i for i in range(reduced.shape[0]) if not np.any(np.all(reduced[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
         mask_phone_demolish = np.array([i for i in range(demolish.shape[0]) if not np.any(np.all(demolish[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
 
+        mask_phone_enhanced_tvl = np.array([i for i in range(enhanced.shape[0]) if np.any(np.all(enhanced[i, 4:] == _lats_tvl[:, 4:], axis=1))])
+        mask_phone_emerge_tvl = np.array([i for i in range(emerge.shape[0]) if np.any(np.all(emerge[i, 4:] == _lats_tvl[:, 4:], axis=1))])
+        mask_phone_reduced_tvl = np.array([i for i in range(reduced.shape[0]) if np.any(np.all(reduced[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
+        mask_phone_demolish_tvl = np.array([i for i in range(demolish.shape[0]) if np.any(np.all(demolish[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
+
         scatter = ax.scatter(reduced[mask_phone_reduced, 0], reduced[mask_phone_reduced, 4] + 1, c='red', marker='.', s=15, label = 'Salmonn neurons (word-related)')
         scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4] + 1, c='green', marker='.', s=15, label = 'Salmonn neurons (phoneme-related)')
         scatter = ax.scatter(emerge[mask_phone_emerge, 0], emerge[mask_phone_emerge, 4] + 1, c='green', marker='.', s=15)
         scatter = ax.scatter(demolish[mask_phone_demolish, 0], demolish[mask_phone_demolish, 4] + 1, c='red', marker='.', s=15)
+
+        scatter = ax.scatter(enhanced[mask_phone_enhanced_tvl, 0], enhanced[mask_phone_enhanced_tvl, 4] + 1, c='black', marker='.', s=8, alpha=0.1, label = 'Salmonn neurons (loudness-related)')
+        scatter = ax.scatter(emerge[mask_phone_emerge_tvl, 0], emerge[mask_phone_emerge_tvl, 4] + 1, c='black', marker='.', s=8, alpha=0.1)
+        scatter = ax.scatter(reduced[mask_phone_reduced_tvl, 0], reduced[mask_phone_reduced_tvl, 4] + 1, c='black', marker='.', s=8, alpha=0.1)
+        scatter = ax.scatter(demolish[mask_phone_demolish_tvl, 0], demolish[mask_phone_demolish_tvl, 4] + 1, c='black', marker='.', s=8, alpha=0.1)
 
         file_path = os.path.join('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
         expression_data = load_expression_set(file_path)
@@ -262,7 +272,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_v6', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_v7', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':

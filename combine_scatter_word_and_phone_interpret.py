@@ -6,6 +6,87 @@ from matplotlib.colors import PowerNorm
 from statistics import NormalDist
 from kymata.io.nkg import load_expression_set
 
+phone_dict = {0: 'Consonantal',
+              1: 'Sonorant',
+              2: 'Voiced',
+              3: 'Nasal',
+              4: 'Plosive',
+              5: 'Fricative',
+              6: 'Approximant',
+              7: 'Labial',
+              8: 'Coronal',
+              9: 'Dorsal',
+              10: 'High',
+              11: 'Mid',
+              12: 'Low',
+              13: 'Front',
+              14: 'Central',
+              15: 'Back',
+              16: 'Round',
+              17: 'Tense',
+              18: 'AA',
+              19: 'AE',
+              20: 'AH',
+              21: 'AO',
+              22: 'AW',
+              23: 'AY',
+              24: 'B',
+              25: 'CH',
+              26: 'D',
+              27: 'DH',
+              28: 'EH',
+              29: 'ER',
+              30: 'EY',
+              31: 'F',
+              32: 'G',
+              33: 'HH',
+              34: 'IH',
+              35: 'IY',
+              36: 'JH',
+              37: 'K',
+              38: 'L',
+              39: 'M',
+              40: 'N',
+              41: 'NG',
+              42: 'OW',
+              43: 'OY',
+              44: 'P',
+              45: 'R',
+              46: 'S',
+              47: 'SH',
+              48: 'T',
+              49: 'TH',
+              50: 'UH',
+              51: 'UW',
+              52: 'V',
+              53: 'W',
+              54: 'Y',
+              55: 'Z',
+              56: 'ZH'}
+
+word_dict = {0: 'Log Frequency',
+             1: 'Number of Phonological Neighbours',
+             2: 'Frequency of Phonological Neighbours',
+             3: 'Correctness Rating',
+             4: 'Semantic Neighborhood Density',
+             5: 'Semantic Diversity',
+             6: 'Age Of Acquisition',
+             7: 'Body Object Interaction',
+             8: 'Emotional Valence',
+             9: 'Emotional Arousal',
+             10: 'Emotional Dominance',
+             11: 'Mean Reaction Time (Lexical Decision)',
+             12: 'Mean Reaction Time (Naming)'
+             }
+
+def generate_green_variations(n):
+    green_shades = [(0, i, 0) for i in np.linspace(0, 1, n)]  # varying the green channel
+    return green_shades
+
+def generate_red_variations(n):
+    red_shades = [(i, 0, 0) for i in np.linspace(0, 1, n)]
+    return red_shades
+
 def read_log_file_asr(n, log_dir, layer, neuron):
 
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
@@ -59,7 +140,7 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'phone'
+    figure_opt = 'word'
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
     compare_log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/salmonn_7b/fc2/log/'
@@ -113,43 +194,88 @@ def asr_models_loop_full():
         mask_phone_reduced = np.array([i for i in range(reduced.shape[0]) if not np.any(np.all(reduced[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
         mask_phone_demolish = np.array([i for i in range(demolish.shape[0]) if not np.any(np.all(demolish[i, 4:] == _lats_tvl_base[:, 4:], axis=1))])
 
-        # scatter = ax.scatter(reduced[mask_phone_reduced, 0], reduced[mask_phone_reduced, 4], c='red', marker='.', s=15, label = 'Salmonn neurons (word-related)')
-        scatter = ax.scatter(enhanced[mask_phone_enhanced, 0], enhanced[mask_phone_enhanced, 4], c='green', marker='.', s=15, label = 'Salmonn neurons (phone-related)')
-        scatter = ax.scatter(emerge[mask_phone_emerge, 0], emerge[mask_phone_emerge, 4], c='green', marker='.', s=15)
-        # scatter = ax.scatter(demolish[mask_phone_demolish, 0], demolish[mask_phone_demolish, 4], c='red', marker='.', s=15)
-
+ 
         if figure_opt == 'phone':
             feats_path = '/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/corr/salmonn_7B_phone_pvalue.npy'
             feats = np.load(feats_path)
-            # import ipdb;ipdb.set_trace()
             counter = 0
+            counter_vector = np.zeros((57,))
+            mask_feats_1 = []
+            mask_feats_2 = []
             for i in range(mask_phone_enhanced.shape[0]):
                 dim = int(enhanced[mask_phone_enhanced[i], 5])
-                layer = int(enhanced[mask_phone_enhanced[i], 4])
-                if np.min(feats[:, dim, layer]) < thres_feats:
-                    print(f'The Salmonn neuron {dim} at layer {layer} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, layer])} with a p-value of {np.min(feats[:, dim, layer])}')
+                lay = int(enhanced[mask_phone_enhanced[i], 4])
+                if np.min(feats[:, dim, lay]) < thres_feats:
+                    print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
                     counter += 1
+                    counter_vector[np.argmin(feats[:, dim, lay])] += 1
+                    mask_feats_1.append([mask_phone_enhanced[i], np.argmin(feats[:, dim, lay])])
             for i in range(mask_phone_emerge.shape[0]):
                 dim = int(emerge[mask_phone_emerge[i], 5])
-                layer = int(emerge[mask_phone_emerge[i], 4])
-                if np.min(feats[:, dim, layer]) < thres_feats:
-                    print(f'The Salmonn neuron {dim} at layer {layer} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, layer])} with a p-value of {np.min(feats[:, dim, layer])}')
+                lay = int(emerge[mask_phone_emerge[i], 4])
+                if np.min(feats[:, dim, lay]) < thres_feats:
+                    print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
                     counter += 1
+                    counter_vector[np.argmin(feats[:, dim, lay])] += 1
+                    mask_feats_2.append([mask_phone_emerge[i], np.argmin(feats[:, dim, lay])])
             print(f'Proportion of significant neurons: {counter/(mask_phone_enhanced.shape[0]+mask_phone_emerge.shape[0])}')
+            print(counter_vector)
+            mask_feats_1 = np.array(mask_feats_1)
+            mask_feats_2 = np.array(mask_feats_2)
+            feats_to_disp = [i for i, occur in enumerate(counter_vector) if occur > 0]
+            green_colour = generate_green_variations(len(feats_to_disp))
+            for i, ind in enumerate(feats_to_disp):
+                new_mask = [k for j, k in enumerate(mask_feats_1[:, 0]) if mask_feats_1[j, 1] == ind]
+                scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 4], c=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
+            for i, ind in enumerate(feats_to_disp):
+                new_mask = [k for j, k in enumerate(mask_feats_2[:, 0]) if mask_feats_2[j, 1] == ind]
+                scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 4], c=green_colour[i], marker='.', s=15)
+
+            scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], c='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
+            scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], c='green', marker='.', s=5, alpha= 0.15)
+
+
         else:
             feats_path = '/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/corr/salmonn_7B_word_pvalue.npy'
             feats = np.load(feats_path)
-            feats[7:11, :, :] = np.ones((4, dim, layer))
+            feats[7:11, :, :] = np.ones((4, neuron, layer))
+
+            counter = 0
+            counter_vector = np.zeros((14,))
+            mask_feats_1 = []
+            mask_feats_2 = []
             for i in range(mask_phone_reduced.shape[0]):
                 dim = int(reduced[mask_phone_reduced[i], 5])
-                layer = int(reduced[mask_phone_reduced[i], 4])
-                if np.min(feats[:, dim, layer]) < thres_feats:
-                    print(f'The Salmonn neuron {dim} at layer {layer} has the most significant correlation with word feature {np.argmin(feats[:, dim, layer])} with a p-value of {np.min(feats[:, dim, layer])}')
+                lay = int(reduced[mask_phone_reduced[i], 4])
+                if np.min(feats[:, dim, lay]) < thres_feats:
+                    print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                    counter += 1
+                    counter_vector[np.argmin(feats[:, dim, lay])] += 1
+                    mask_feats_1.append([mask_phone_reduced[i], np.argmin(feats[:, dim, lay])])
             for i in range(mask_phone_demolish.shape[0]):
                 dim = int(demolish[mask_phone_demolish[i], 5])
-                layer = int(demolish[mask_phone_demolish[i], 4])
-                if np.min(feats[:, dim, layer]) < thres_feats:
-                    print(f'The Salmonn neuron {dim} at layer {layer} has the most significant correlation with word feature {np.argmin(feats[:, dim, layer])} with a p-value of {np.min(feats[:, dim, layer])}')
+                lay = int(demolish[mask_phone_demolish[i], 4])
+                if np.min(feats[:, dim, lay]) < thres_feats:
+                    print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                    counter += 1
+                    counter_vector[np.argmin(feats[:, dim, lay])] += 1
+                    mask_feats_2.append([mask_phone_demolish[i], np.argmin(feats[:, dim, lay])])
+            print(f'Proportion of significant neurons: {counter/(mask_phone_reduced.shape[0]+mask_phone_demolish.shape[0])}')
+            print(counter_vector)
+            mask_feats_1 = np.array(mask_feats_1)
+            mask_feats_2 = np.array(mask_feats_2)
+            feats_to_disp = [i for i, occur in enumerate(counter_vector) if occur > 0]
+            red_colour = generate_red_variations(len(feats_to_disp))
+            for i, ind in enumerate(feats_to_disp):
+                new_mask = [k for j, k in enumerate(mask_feats_1[:, 0]) if mask_feats_1[j, 1] == ind]
+                scatter = ax.scatter(reduced[new_mask, 0], reduced[new_mask, 4], c=red_colour[i], marker='.', s=15, label = f'{word_dict[ind]}')
+            for i, ind in enumerate(feats_to_disp):
+                new_mask = [k for j, k in enumerate(mask_feats_2[:, 0]) if mask_feats_2[j, 1] == ind]
+                scatter = ax.scatter(demolish[new_mask, 0], demolish[new_mask, 4], c=red_colour[i], marker='.', s=15)
+
+            scatter = ax.scatter(reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 0], reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 4], c='red', marker='.', s=5, alpha= 0.15, label = 'Other Word Features')
+            scatter = ax.scatter(demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 0], demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 4], c='red', marker='.', s=5, alpha= 0.15)
+
          
 
         plt.xlabel('Latency (ms) relative to onset of the environment')
@@ -180,7 +306,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_phone_vs_word_v4', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_v1.png', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':
