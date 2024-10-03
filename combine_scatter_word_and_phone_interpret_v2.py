@@ -328,11 +328,11 @@ def asr_models_loop_full():
     unique_labels = dict(zip(labels, handles))
 
     # Create the legend with unique labels
-    plt.legend(unique_labels.values(), unique_labels.keys())
+    ax.legend(unique_labels.values(), unique_labels.keys(), fontsize=5)
 
     # ax.set_ylim(-1, layer)
     ax.set_ylim(-100, neuron+100)
-    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
+    # ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
 
     plt.ylabel('Salmonn neuron number')
 
