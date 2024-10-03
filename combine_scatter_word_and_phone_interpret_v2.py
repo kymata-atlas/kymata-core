@@ -6,87 +6,87 @@ from matplotlib.colors import PowerNorm
 from statistics import NormalDist
 from kymata.io.nkg import load_expression_set
 
-phone_dict = {0: 'Consonantal',
-              1: 'Sonorant',
-              2: 'Voiced',
-              3: 'Nasal',
-              4: 'Plosive',
-              5: 'Fricative',
-              6: 'Approximant',
-              7: 'Labial',
-              8: 'Coronal',
-              9: 'Dorsal',
-              10: 'High',
-              11: 'Mid',
-              12: 'Low',
-              13: 'Front',
-              14: 'Central',
-              15: 'Back',
-              16: 'Round',
-              17: 'Tense',
-              18: 'AA',
-              19: 'AE',
-              20: 'AH',
-              21: 'AO',
-              22: 'AW',
-              23: 'AY',
-              24: 'B',
-              25: 'CH',
-              26: 'D',
-              27: 'DH',
-              28: 'EH',
-              29: 'ER',
-              30: 'EY',
-              31: 'F',
-              32: 'G',
-              33: 'HH',
-              34: 'IH',
-              35: 'IY',
-              36: 'JH',
-              37: 'K',
-              38: 'L',
-              39: 'M',
-              40: 'N',
-              41: 'NG',
-              42: 'OW',
-              43: 'OY',
-              44: 'P',
-              45: 'R',
-              46: 'S',
-              47: 'SH',
-              48: 'T',
-              49: 'TH',
-              50: 'UH',
-              51: 'UW',
-              52: 'V',
-              53: 'W',
-              54: 'Y',
-              55: 'Z',
-              56: 'ZH'}
+phone_dict = {0: 'Articulatory Features',
+              1: 'Articulatory Features',
+              2: 'Articulatory Features',
+              3: 'Articulatory Features',
+              4: 'Articulatory Features',
+              5: 'Articulatory Features',
+              6: 'Articulatory Features',
+              7: 'Articulatory Features',
+              8: 'Articulatory Features',
+              9: 'Articulatory Features',
+              10: 'Articulatory Features',
+              11: 'Articulatory Features',
+              12: 'Articulatory Features',
+              13: 'Articulatory Features',
+              14: 'Articulatory Features',
+              15: 'Articulatory Features',
+              16: 'Articulatory Features',
+              17: 'Articulatory Features',
+              18: 'Phoneme Identity',
+              19: 'Phoneme Identity',
+              20: 'Phoneme Identity',
+              21: 'Phoneme Identity',
+              22: 'Phoneme Identity',
+              23: 'Phoneme Identity',
+              24: 'Phoneme Identity',
+              25: 'Phoneme Identity',
+              26: 'Phoneme Identity',
+              27: 'Phoneme Identity',
+              28: 'Phoneme Identity',
+              29: 'Phoneme Identity',
+              30: 'Phoneme Identity',
+              31: 'Phoneme Identity',
+              32: 'Phoneme Identity',
+              33: 'Phoneme Identity',
+              34: 'Phoneme Identity',
+              35: 'Phoneme Identity',
+              36: 'Phoneme Identity',
+              37: 'Phoneme Identity',
+              38: 'Phoneme Identity',
+              39: 'Phoneme Identity',
+              40: 'Phoneme Identity',
+              41: 'Phoneme Identity',
+              42: 'Phoneme Identity',
+              43: 'Phoneme Identity',
+              44: 'Phoneme Identity',
+              45: 'Phoneme Identity',
+              46: 'Phoneme Identity',
+              47: 'Phoneme Identity',
+              48: 'Phoneme Identity',
+              49: 'Phoneme Identity',
+              50: 'Phoneme Identity',
+              51: 'Phoneme Identity',
+              52: 'Phoneme Identity',
+              53: 'Phoneme Identity',
+              54: 'Phoneme Identity',
+              55: 'Phoneme Identity',
+              56: 'Phoneme Identity'}
 
-word_dict = {0: 'Log Frequency',
-             1: 'Number of Phonological Neighbours',
-             2: 'Frequency of Phonological Neighbours',
-             3: 'Correctness Rating',
-             4: 'Semantic Neighborhood Density',
-             5: 'Semantic Diversity',
-             6: 'Age Of Acquisition',
-             7: 'Body Object Interaction',
-             8: 'Emotional Valence',
-             9: 'Emotional Arousal',
-             10: 'Emotional Dominance',
-             11: 'Mean Reaction Time (Lexical Decision)',
-             12: 'Mean Reaction Time (Naming)',
-             13: 'Occurrences',
-             14: 'Preposition',
-             15: 'Number',
-             16: 'Noun',
-             17: 'Determiner',
-             18: 'Conjunction',
-             19: 'Adverb',
-             20: 'Adjective',
-             21: 'Verb',
-             22: 'Pronoun'
+word_dict = {0: 'Lexical Features',
+             1: 'Lexical Features',
+             2: 'Lexical Features',
+             3: 'Semantic Features',
+             4: 'Semantic Features',
+             5: 'Semantic Features',
+             6: 'Invalid',
+             7: 'Invalid',
+             8: 'Invalid',
+             9: 'Invalid',
+             10: 'Invalid',
+             11: 'Semantic-Behavioural Features',
+             12: 'Semantic-Behavioural Features',
+             13: 'Invalid',
+             14: 'Part of Speech',
+             15: 'Part of Speech',
+             16: 'Part of Speech',
+             17: 'Part of Speech',
+             18: 'Part of Speech',
+             19: 'Part of Speech',
+             20: 'Part of Speech',
+             21: 'Part of Speech',
+             22: 'Part of Speech'
              }
 
 def generate_green_variations(n):
@@ -150,8 +150,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'word_with_class'
-    thres_feats = 0.01
+    figure_opt = 'phone'
+    thres_feats = 0.001
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -215,7 +215,7 @@ def asr_models_loop_full():
             dim = int(enhanced[mask_phone_enhanced[i], 5])
             lay = int(enhanced[mask_phone_enhanced[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])} with latency {enhanced[mask_phone_enhanced[i], 0]}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_enhanced[i], np.argmin(feats[:, dim, lay])])
@@ -223,7 +223,7 @@ def asr_models_loop_full():
             dim = int(emerge[mask_phone_emerge[i], 5])
             lay = int(emerge[mask_phone_emerge[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])} with latency {emerge[mask_phone_emerge[i], 0]}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_emerge[i], np.argmin(feats[:, dim, lay])])
@@ -232,23 +232,29 @@ def asr_models_loop_full():
         mask_feats_1 = np.array(mask_feats_1)
         mask_feats_2 = np.array(mask_feats_2)
         feats_to_disp = [i for i, occur in enumerate(counter_vector) if occur > occur_thres]
-        green_colour = generate_green_variations(len(feats_to_disp))
+        green_colour = generate_green_variations(2)
         for i, ind in enumerate(feats_to_disp):
             new_mask = [k for j, k in enumerate(mask_feats_1[:, 0]) if mask_feats_1[j, 1] == ind]
             if x_data == 'latency':
-                scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 4], color=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
+                if phone_dict[ind] == 'Articulatory Features':
+                    scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 5], color=green_colour[0], marker='.', s=15, label = f'{phone_dict[ind]}')
+                else:
+                    scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 5], color=green_colour[1], marker='.', s=15, label = f'{phone_dict[ind]}')
             else:
                 scatter = ax.scatter(enhanced[new_mask, 5], enhanced[new_mask, 4], color=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
         for i, ind in enumerate(feats_to_disp):
             new_mask = [k for j, k in enumerate(mask_feats_2[:, 0]) if mask_feats_2[j, 1] == ind]
             if x_data == 'latency':
-                scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 4], color=green_colour[i], marker='.', s=15)
+                if phone_dict[ind] == 'Articulatory Features':
+                    scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 5], color=green_colour[0], marker='.', s=15)
+                else:
+                    scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 5], color=green_colour[1], marker='.', s=15)
             else:
                 scatter = ax.scatter(emerge[new_mask, 5], emerge[new_mask, 4], color=green_colour[i], marker='.', s=15)
 
         if x_data == 'latency':
-            scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
-            scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)
+            scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 5], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
+            scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 5], color='green', marker='.', s=5, alpha= 0.15)
         else:
             scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 5], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
             scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 5], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)            
@@ -316,10 +322,19 @@ def asr_models_loop_full():
         plt.xlabel('Neuron number')
         x_upper = neuron + 200
 
-    ax.set_ylim(-1, layer)
+    handles, labels = plt.gca().get_legend_handles_labels()
+
+    # Create a dictionary to remove duplicates (preserve the order)
+    unique_labels = dict(zip(labels, handles))
+
+    # Create the legend with unique labels
+    plt.legend(unique_labels.values(), unique_labels.keys())
+
+    # ax.set_ylim(-1, layer)
+    ax.set_ylim(-100, neuron+100)
     ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
 
-    plt.ylabel('Salmonn layer number')
+    plt.ylabel('Salmonn neuron number')
 
     # # Define y-tick positions and labels
     # yticks = [0, 5, 10, 15, 20, 25, 30]
@@ -331,7 +346,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_v1.png', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_v3.png', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':

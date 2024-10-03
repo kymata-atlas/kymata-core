@@ -291,6 +291,41 @@ def main():
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
         expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
                         xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
+        
+    elif args.asr_option == 'one' and 'asr' in args.function_path:
+
+        function_values = load_function(args.function_path,
+                            func_name=args.function_name[0],
+                            nn_neuron=args.num_neurons,
+                            mfa=args.mfa,
+                            )
+    
+        function_values = function_values.downsampled(args.downsample_rate)
+
+        es = do_gridsearch(
+            emeg_values=emeg_values,
+            channel_names=ch_names,
+            channel_space=channel_space,
+            function=function_values,
+            seconds_per_split=args.seconds_per_split,
+            n_derangements=args.n_derangements,
+            n_splits=args.n_splits,
+            n_reps=n_reps,
+            start_latency=args.start_latency,
+            plot_location=args.save_plot_location,
+            emeg_t_start=args.emeg_t_start,
+            stimulus_shift_correction=stimulus_shift_correction,
+            stimulus_delivery_latency=stimulus_delivery_latency,
+            plot_top_five_channels=args.plot_top_channels,
+            overwrite=args.overwrite,
+            seed=dataset_config['random_seed'],
+        )
+         
+
+        if args.save_expression_set_location is not None:
+            save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
+                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
 
     else:
         combined_expression_set = None

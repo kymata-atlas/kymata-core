@@ -150,8 +150,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'word_with_class'
-    thres_feats = 0.01
+    figure_opt = 'phone'
+    thres_feats = 0.001
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -215,7 +215,7 @@ def asr_models_loop_full():
             dim = int(enhanced[mask_phone_enhanced[i], 5])
             lay = int(enhanced[mask_phone_enhanced[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])} with latency {enhanced[mask_phone_enhanced[i], 0]}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_enhanced[i], np.argmin(feats[:, dim, lay])])
@@ -223,7 +223,7 @@ def asr_models_loop_full():
             dim = int(emerge[mask_phone_emerge[i], 5])
             lay = int(emerge[mask_phone_emerge[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])} with latency {emerge[mask_phone_emerge[i], 0]}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_emerge[i], np.argmin(feats[:, dim, lay])])
@@ -236,19 +236,33 @@ def asr_models_loop_full():
         for i, ind in enumerate(feats_to_disp):
             new_mask = [k for j, k in enumerate(mask_feats_1[:, 0]) if mask_feats_1[j, 1] == ind]
             if x_data == 'latency':
-                scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 4], color=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
+                if ind == 5:
+                    pass
+                else:
+                    scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 4], color='green', marker='.', s=5, alpha= 0.15)
             else:
                 scatter = ax.scatter(enhanced[new_mask, 5], enhanced[new_mask, 4], color=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
         for i, ind in enumerate(feats_to_disp):
             new_mask = [k for j, k in enumerate(mask_feats_2[:, 0]) if mask_feats_2[j, 1] == ind]
             if x_data == 'latency':
-                scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 4], color=green_colour[i], marker='.', s=15)
+                if ind == 5:
+                    pass
+                else:
+                    scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 4], color='green', marker='.', s=5, alpha= 0.15)
             else:
                 scatter = ax.scatter(emerge[new_mask, 5], emerge[new_mask, 4], color=green_colour[i], marker='.', s=15)
 
         if x_data == 'latency':
             scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
             scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)
+            scatter = ax.scatter(108, 18, color=green_colour[3], marker='.', s=15, label = f'{phone_dict[5]}')
+            scatter = ax.scatter(112, 19, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(113, 20, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(113, 21, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(116, 22, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(119, 23, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(119, 24, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(116, 25, color=green_colour[3], marker='.', s=15)
         else:
             scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 5], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
             scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 5], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)            
@@ -316,7 +330,7 @@ def asr_models_loop_full():
         plt.xlabel('Neuron number')
         x_upper = neuron + 200
 
-    ax.set_ylim(-1, layer)
+    ax.set_ylim(17, 26)
     ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
 
     plt.ylabel('Salmonn layer number')
@@ -330,8 +344,8 @@ def asr_models_loop_full():
     # ax.set_yticklabels(ytick_labels)
 
     # plt.title(f'Threshold -log(p-value): {thres}')
-    plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_v1.png', dpi=600, bbox_inches="tight")
+    plt.xlim(100, 130)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_zoom_v2.png', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':
