@@ -176,9 +176,14 @@ def main():
 
     args = parser.parse_args()
 
-    dataset_config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", args.config))
-    )
+    specified_config_file = Path(args.config)
+    if specified_config_file.exists():
+        _logger.info(f"Loading config file from {str(specified_config_file)}")
+        load_config(str(specified_config_file))
+    else:
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
+        _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
+        dataset_config = load_config(str(default_config_file))
 
     # Config defaults
     participants = dataset_config.get("participants")
