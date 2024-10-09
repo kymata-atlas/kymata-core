@@ -165,7 +165,7 @@ def asr_models_loop_full():
     thres_tvl_true = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*370)))))
 
     plt.figure(3)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 3))
 
     stds = []
 
@@ -239,7 +239,7 @@ def asr_models_loop_full():
                 if ind == 5:
                     pass
                 else:
-                    scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 4], color='green', marker='.', s=5, alpha= 0.15)
+                    scatter = ax.scatter(enhanced[new_mask, 0], enhanced[new_mask, 5], color='green', marker='.', s=5, alpha= 0.15)
             else:
                 scatter = ax.scatter(enhanced[new_mask, 5], enhanced[new_mask, 4], color=green_colour[i], marker='.', s=15, label = f'{phone_dict[ind]}')
         for i, ind in enumerate(feats_to_disp):
@@ -248,21 +248,21 @@ def asr_models_loop_full():
                 if ind == 5:
                     pass
                 else:
-                    scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 4], color='green', marker='.', s=5, alpha= 0.15)
+                    scatter = ax.scatter(emerge[new_mask, 0], emerge[new_mask, 5], color='green', marker='.', s=5, alpha= 0.15)
             else:
                 scatter = ax.scatter(emerge[new_mask, 5], emerge[new_mask, 4], color=green_colour[i], marker='.', s=15)
 
         if x_data == 'latency':
-            scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
-            scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)
-            scatter = ax.scatter(108, 18, color=green_colour[3], marker='.', s=15, label = f'{phone_dict[5]}')
-            scatter = ax.scatter(112, 19, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(113, 20, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(113, 21, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(116, 22, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(119, 23, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(119, 24, color=green_colour[3], marker='.', s=15)
-            scatter = ax.scatter(116, 25, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 0], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 5], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
+            scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 0], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 5], color='green', marker='.', s=5, alpha= 0.15)
+            scatter = ax.scatter(108, 1404, color=green_colour[3], marker='.', s=15, label = f'{phone_dict[5]}')
+            scatter = ax.scatter(112, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(113, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(113, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(116, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(119, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(119, 1404, color=green_colour[3], marker='.', s=15)
+            scatter = ax.scatter(116, 1404, color=green_colour[3], marker='.', s=15)
         else:
             scatter = ax.scatter(enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 5], enhanced[np.setdiff1d(mask_phone_enhanced, mask_feats_1), 4], color='green', marker='.', s=5, alpha= 0.15, label = 'Other Phonetic Features')
             scatter = ax.scatter(emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 5], emerge[np.setdiff1d(mask_phone_emerge, mask_feats_2), 4], color='green', marker='.', s=5, alpha= 0.15)            
@@ -330,8 +330,9 @@ def asr_models_loop_full():
         plt.xlabel('Neuron number')
         x_upper = neuron + 200
 
-    ax.set_ylim(17, 26)
+    ax.set_ylim(1403, 1405)
     ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
+    ax.set_yticks([1404])
 
     plt.ylabel('Salmonn layer number')
 
@@ -345,7 +346,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(100, 130)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_zoom_v2.png', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_zoom_v4.png', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':

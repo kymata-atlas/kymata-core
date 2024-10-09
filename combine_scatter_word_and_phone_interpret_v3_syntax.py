@@ -86,7 +86,12 @@ word_dict = {0: 'Lexical Features',
              19: 'Part of Speech',
              20: 'Part of Speech',
              21: 'Part of Speech',
-             22: 'Part of Speech'
+             22: 'Part of Speech',
+             23: 'Syntax',
+             24: 'Syntax',
+             25: 'Syntax',
+             26: 'Syntax',
+             27: 'Syntax'
              }
 
 def generate_green_variations(n):
@@ -150,8 +155,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'phone'
-    thres_feats = 0.001
+    figure_opt = 'word_with_class_syntax'
+    thres_feats = 0.01
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -268,15 +273,17 @@ def asr_models_loop_full():
         counter = 0
         if figure_opt == 'word':
             counter_vector = np.zeros((14,))
-        else:
+        elif figure_opt == 'word_with_class':
             counter_vector = np.zeros((23,))
+        else:
+            counter_vector = np.zeros((28,))
         mask_feats_1 = []
         mask_feats_2 = []
         for i in range(mask_phone_reduced.shape[0]):
             dim = int(reduced[mask_phone_reduced[i], 5])
             lay = int(reduced[mask_phone_reduced[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with word feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_reduced[i], np.argmin(feats[:, dim, lay])])
@@ -284,7 +291,7 @@ def asr_models_loop_full():
             dim = int(demolish[mask_phone_demolish[i], 5])
             lay = int(demolish[mask_phone_demolish[i], 4])
             if np.min(feats[:, dim, lay]) < thres_feats:
-                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with phonetic feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
+                print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with word feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_demolish[i], np.argmin(feats[:, dim, lay])])
