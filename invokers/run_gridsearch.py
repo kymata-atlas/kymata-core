@@ -56,7 +56,7 @@ def main():
     parser.add_argument('--function-path', type=str, default='predicted_function_contours/GMSloudness/stimulisig', help='location of function stimulisig')
     parser.add_argument('--replace-nans', type=str, required=False, choices=["zero", "mean"], default=None, help="If the function contour contains NaN values, this will replace them with the specified values.")
     parser.add_argument('--asr-option', type=str, default="ave",
-                        help='Whether to get the output from all neurons (all) or do the average (ave)')
+                        help='Whether to get the output from all neurons (all) or do the average (ave) or with only one neuron (one)')
     parser.add_argument('--num-neurons', type=int, default=512,
                         help='Number of neurons in each layer')
     parser.add_argument('--mfa', type=bool, default=False,
