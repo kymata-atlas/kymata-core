@@ -119,6 +119,19 @@ See `demos/demo_ippm.ipynb`.
 
 ## Troubleshooting on the CBU compute cluster
 
+You see `Acccess denied permission error: 403` when you try to use github.
+
+- Create (or modify) the `config` file in `~/.ssh/`:
+
+```
+Host github.com
+        LogLevel DEBUG3
+        User git
+        Hostname github.com
+        PreferredAuthentications publickey
+        IdentityFile /home/<username>/.ssh/<name of private key>
+```
+
 You see `pyenv: Command not found`, `poetry: Command not found`
 
 - On the CBU nodes, `pyenv` only works in `bash`, so make sure you are using this.
@@ -148,7 +161,7 @@ You see `ModuleNotFoundError: No module named 'kymata'`
   # Allow the CBU poetry to communicate with pip
   export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
   
-  $VENV_PATH/bin/poetry install 
+  $VENV_PATH/bin/poetry install
   ```
 
 - Now (within the Apptainer) you can run it using `poetry`, e.g.:
