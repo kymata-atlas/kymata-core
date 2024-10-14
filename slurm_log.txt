@@ -1,6 +1,45 @@
 Loading apptainer version:
 1.0.3
-/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/lib/python3.11/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
-  warnings.warn(
-WhisperModel is using WhisperSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `layer_head_mask` not None. Falling back to the manual attention implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.
-Execution time: 313.1433296203613 seconds
+Finish best function selection
+  0%|          | 0/74 [00:00<?, ?it/s]  9%|▉         | 7/74 [00:00<00:01, 44.09it/s] 20%|██        | 15/74 [00:00<00:01, 58.65it/s] 30%|██▉       | 22/74 [00:00<00:01, 39.50it/s] 42%|████▏     | 31/74 [00:00<00:00, 51.57it/s] 53%|█████▎    | 39/74 [00:00<00:00, 58.76it/s] 64%|██████▎   | 47/74 [00:00<00:00, 63.68it/s] 74%|███████▍  | 55/74 [00:00<00:00, 66.71it/s] 85%|████████▌ | 63/74 [00:01<00:00, 68.55it/s] 96%|█████████▌| 71/74 [00:01<00:00, 52.10it/s]100%|██████████| 74/74 [00:01<00:00, 55.67it/s]
+Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data.
+Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
+Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data"
+Downloading dataset: fsaverage
+0 files missing from root.txt in /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage
+0 files missing from bem.txt in /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage/fsaverage
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/plot/plot.py:248: UserWarning: Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.
+  warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/invokers/invoker_run_nkg_plotting.py", line 174, in <module>
+    main()
+  File "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/invokers/invoker_run_nkg_plotting.py", line 62, in main
+    fig = expression_plot(expression_data, paired_axes=True, minimap=True, show_legend=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/plot/plot.py", line 542, in expression_plot
+    _plot_minimap_hexel(expression_set,
+  File "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/plot/plot.py", line 268, in _plot_minimap_hexel
+    lh_brain = stc.plot(hemi="lh", **plot_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/lib/python3.11/site-packages/mne/source_estimate.py", line 793, in plot
+    brain = plot_source_estimates(
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "<decorator-gen-186>", line 12, in plot_source_estimates
+  File "/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/lib/python3.11/site-packages/mne/viz/_3d.py", line 2401, in plot_source_estimates
+    backend = _get_3d_backend()
+              ^^^^^^^^^^^^^^^^^
+  File "/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/lib/python3.11/site-packages/mne/viz/backends/renderer.py", line 185, in _get_3d_backend
+    raise RuntimeError(
+RuntimeError: Could not load any valid 3D backend
+pyvistaqt: No Qt bindings could be found
+notebook: libX11.so.6: cannot open shared object file: No such file or directory
+
+ install pyvistaqt, using pip or conda:
+'pip install pyvistaqt'
+'conda install -c conda-forge pyvistaqt'
+
+ or install ipywidgets, if using a notebook backend
+'pip install ipywidgets'
+'conda install -c conda-forge ipywidgets'

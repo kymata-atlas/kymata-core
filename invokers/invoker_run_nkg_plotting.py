@@ -1,5 +1,6 @@
 from logging import basicConfig, INFO
 from pathlib import Path
+import os
 from os import path
 
 from kymata.io.logging import log_message, date_format
@@ -9,6 +10,24 @@ from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 import time
 from tqdm import tqdm
+
+def load_all_expression_data(base_folder):
+    expression_data = None
+    # Loop through each subdirectory inside the base folder
+    for subdir in os.listdir(base_folder):
+        subdir_path = os.path.join(base_folder, subdir)
+        if os.path.isdir(subdir_path):  # Ensure we are processing directories
+            # List all .nkg files inside the subdirectory
+            nkg_files = [f for f in os.listdir(subdir_path) if f.endswith('.nkg')]
+            for nkg_file in nkg_files:
+                file_path = os.path.join(subdir_path, nkg_file)
+                if expression_data is None:
+                    # Load the first .nkg file
+                    expression_data = load_expression_set(file_path)
+                else:
+                    # Add data from subsequent .nkg files
+                    expression_data += load_expression_set(file_path)
+    return expression_data
 
 def main():
 
@@ -26,7 +45,12 @@ def main():
 
         # phonetic_func = expression_data.functions
 
-        expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
+        # expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
+
+        base_folder = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron"
+
+        # Load all expression data from .nkg files
+        expression_data = load_all_expression_data(base_folder)
 
         # for func in expression_data.functions:
         #     fig = expression_plot(expression_data, show_only=func, paired_axes=False, minimap=False, show_legend=True,)
@@ -35,13 +59,10 @@ def main():
         # fig = expression_plot(expression_data, show_only=expression_data.functions[18:], paired_axes=False, minimap=False, show_legend=True,)
                             #   color=gradient_color_dict(expression_data.functions[:18], start_color = 'blue', stop_color="red"))
 
-        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=True, 
-                              color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
-                              | constant_color_dict(['IL'], 'red')
-                              | constant_color_dict(['STL'], 'pink'))
+        fig = expression_plot(expression_data, paired_axes=True, minimap=True, show_legend=False)
                             #   | constant_color_dict(phonetic_func, 'green'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_recolour.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
 
     elif function_family_type == 'standard':
 
@@ -54,7 +75,7 @@ def main():
                               | constant_color_dict(['IL'], 'red')
                               | constant_color_dict(['STL'], 'pink'))
 
-        fig.savefig("expression_plot.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
 
     elif function_family_type == 'ANN':
 

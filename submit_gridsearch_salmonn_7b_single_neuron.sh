@@ -40,12 +40,12 @@ apptainer exec \
         --plot-top-channels \
         --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/salmonn/7B' \
         --num-neurons \$b \
-        --function-name "layer\$a" \
+        --function-name "layer\${a}" \
         --n-derangements 5 \
         --asr-option 'one' \
         --mfa True \
-        --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\$a_\$b" \
-        --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\$a_\$b" \
+        --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
+        --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
         --use-inverse-operator \
         --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
         --morph \
