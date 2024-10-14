@@ -4,7 +4,7 @@
 # To run gridsearch on the queue at the CBU, run the following command in command line:
 #   sbatch submit_gridsearch.sh
 ###
-
+#
 #######
 #SBATCH --job-name=gridsearch
 #SBATCH --output=logs/slurm_log-%x.%j.out.txt
