@@ -6,10 +6,10 @@
 ###
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/word/brain/log/slurm_log_word.txt
-#SBATCH --error=kymata-core-data/output/paper/word/brain/log/slurm_log_word.txt
+#SBATCH --output=kymata-core-data/output/paper/feats/source/word/log/slurm_log_word.txt
+#SBATCH --error=kymata-core-data/output/paper/feats/source/word/log/slurm_log_word.txt
 #SBATCH --ntasks=1
-#SBATCH --time=24:00:00
+#SBATCH --time=120:00:00
 #SBATCH --mem=10G
 #SBATCH --array=0-0
 #SBATCH --exclusive
@@ -31,6 +31,9 @@ apptainer exec \
         --num-neurons 23 \
         --function-name 'word' \
         --n-derangements 5 \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word/brain/plot' \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word/brain/expression_set/' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/plot' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set' \
+        --use-inverse-operator \
+        --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+        --morph \
   "

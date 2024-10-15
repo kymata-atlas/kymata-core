@@ -2,12 +2,12 @@
 
 ###
 # To run gridsearch on the queue at the CBU, run the following command in command line:
-#   sbatch submit_gridsearch_phonetics_brain.sh
+#   sbatch submit_gridsearch_syntax_brain.sh
 ###
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/feats/source/phonetics/log/slurm_log_phone.txt
-#SBATCH --error=kymata-core-data/output/paper/feats/source/phonetics/log/slurm_log_phone.txt
+#SBATCH --output=kymata-core-data/output/paper/feats/source/syntax/log/slurm_log_syntax.txt
+#SBATCH --error=kymata-core-data/output/paper/feats/source/syntax/log/slurm_log_syntax.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=10G
@@ -27,12 +27,12 @@ apptainer exec \
         --config dataset4.yaml \
         --input-stream auditory \
         --plot-top-channels \
-        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/phone' \
-        --num-neurons 57 \
-        --function-name 'phone' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/syntax_time' \
+        --num-neurons 5 \
+        --function-name 'syntax' \
         --n-derangements 5 \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/plot' \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/plot' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set' \
         --use-inverse-operator \
         --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
         --morph \
