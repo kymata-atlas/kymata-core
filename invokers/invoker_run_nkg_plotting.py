@@ -81,7 +81,7 @@ def main():
         # fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True,
                             #   | constant_color_dict(phonetic_func, 'green'))
 
-        fig = expression_plot(all_data, paired_axes=True, minimap=False, show_legend=True,
+        fig = expression_plot(all_data, paired_axes=True, minimap=True, show_legend=True,
                                 color= constant_color_dict(word_name+syntax_name, color='green')
                                     | constant_color_dict(salmonn_name, color= 'red'),
                                 legend_display=legend_display_dict(word_name+syntax_name, 'Word features')
