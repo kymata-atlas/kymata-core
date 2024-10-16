@@ -27,7 +27,7 @@ apptainer exec \
         --config dataset4.yaml \
         --input-stream auditory \
         --plot-top-channels \
-        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/phone' \
+        --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/phone_time' \
         --num-neurons 57 \
         --function-name 'phone' \
         --n-derangements 5 \

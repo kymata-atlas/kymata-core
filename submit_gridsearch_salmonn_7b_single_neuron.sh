@@ -7,8 +7,8 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/single_neuron/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/paper/single_neuron/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/paper/single_neuron_sensor/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/paper/single_neuron_sensor/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
@@ -44,11 +44,14 @@ apptainer exec \
         --n-derangements 5 \
         --asr-option 'one' \
         --mfa True \
-        --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
-        --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
-        --use-inverse-operator \
-        --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
-        --morph \
+        --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_sensor/\${a}_\${b}" \
+        --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_sensor/\${a}_\${b}" \
+
+        # --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
+        # --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron/\${a}_\${b}" \
+        # --use-inverse-operator \
+        # --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+        # --morph \
 
 
       # \$VENV_PATH/bin/poetry run python -m invokers.run_gridsearch \

@@ -48,9 +48,28 @@ def main():
         # expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
 
         base_folder = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron"
+        # base_folder = "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_sensor"
 
         # Load all expression data from .nkg files
-        expression_data = load_all_expression_data(base_folder)
+        expression_data_salmonn = load_all_expression_data(base_folder)
+
+        # import ipdb;ipdb.set_trace()
+
+        salmonn_name = expression_data_salmonn.functions
+
+        # expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/word/brain/expression_set/word_22_gridsearch.nkg')
+        expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
+        word_name = expression_data_word.functions
+
+        # expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/syntax/brain/expression_set/syntax_4_gridsearch.nkg')
+        expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
+        syntax_name = expression_data_syntax.functions
+
+        # all_data = expression_data_salmonn + expression_data_word + expression_data_syntax
+        all_data = expression_data_word + expression_data_syntax
+
+        # import ipdb;ipdb.set_trace()
+
 
         # for func in expression_data.functions:
         #     fig = expression_plot(expression_data, show_only=func, paired_axes=False, minimap=False, show_legend=True,)
@@ -59,10 +78,18 @@ def main():
         # fig = expression_plot(expression_data, show_only=expression_data.functions[18:], paired_axes=False, minimap=False, show_legend=True,)
                             #   color=gradient_color_dict(expression_data.functions[:18], start_color = 'blue', stop_color="red"))
 
-        fig = expression_plot(expression_data, paired_axes=True, minimap=True, show_legend=False)
+        # fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True,
                             #   | constant_color_dict(phonetic_func, 'green'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
+        # fig = expression_plot(all_data, paired_axes=True, minimap=False, show_legend=True,
+        #                         color= constant_color_dict(word_name+syntax_name, color='green')
+        #                             | constant_color_dict(salmonn_name, color= 'red'),
+        #                         legend_display=legend_display_dict(word_name+syntax_name, 'Word features')
+        #                             | legend_display_dict(salmonn_name, 'SALMONN neurons'))
+        fig = expression_plot(all_data, paired_axes=True, minimap=False, show_legend=True)
+
+
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats_source.png")
 
     elif function_family_type == 'standard':
 
