@@ -121,7 +121,9 @@ See `demos/demo_ippm.ipynb`.
 
 - You see `Acccess denied permission error: 403` when you try to use github.
 
-Create (or modify) the `config` file in `~/.ssh/`:
+This is because your git instance at the CBU is not passing the correct authorisation credentials to your GitHub account. You will [have to create a new public key in ~/.ssh/ in your cbu home folder](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent), and then use this to [create an SSH key in your github settings](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
+
+Then, create (or modify) the `config` file in `~/.ssh/`:
 
 ```
 Host github.com
@@ -146,18 +148,6 @@ python3 -m venv $VENV_PATH
 $VENV_PATH/bin/pip install -U pip setuptools
 $VENV_PATH/bin/pip install poetry
 ```
-
-- You see `pyenv: Command not found`, `poetry: Command not found`
-
-On the CBU nodes, `pyenv` only works in `bash`, so make sure you are using this.
-
-  ```
-  bash
-  ```
-
-- You see `/lib64/libm.so.6: version 'GLIBC_2.29' not found` when running gridsearch
-
-You are running it on a cbu node that does not have the right libraries installed. You could try it on a node which does (such as `lws-gpu02`), or (prefered) use `submit_gridsearch.sh` which will implement apptainer which layers the right libraries over the top of the node. 
 
 - You see `ModuleNotFoundError: No module named 'numpy'`
 
@@ -184,7 +174,3 @@ Now (within the Apptainer) you can run it using `poetry`, e.g.:
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
   ```
-
-- When using Git, you try to push a commit to Github and you get the following error: ‘the requested returned an error: 403’
-
-This is because your git instance at the CBU is not passing the correct authorisation credentials to your GitHub account. You will [have to create a new public key in ~/.ssh/ in your cbu home folder](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent), and then use this to [create an SSH key in your github settings](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
