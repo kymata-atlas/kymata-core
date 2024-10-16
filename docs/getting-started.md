@@ -131,6 +131,7 @@ Host github.com
         PreferredAuthentications publickey
         IdentityFile /home/<username>/.ssh/<name of private key>
 ```
+
 - You can't install python versions using pyenv.
 
 This is becasue the login nodes don't have the right C++ compilers. To get around this, ignore pyenv, and instead use
@@ -183,6 +184,7 @@ Now (within the Apptainer) you can run it using `poetry`, e.g.:
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
   ```
+
 - When using Git, you try to push a commit to Github and you get the following error: ‘the requested returned an error: 403’
 
 This is because your git instance at the CBU is not passing the correct authorisation credentials to your GitHub account. You will [have to create a new public key in ~/.ssh/ in your cbu home folder](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent), and then use this to [create an SSH key in your github settings](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
