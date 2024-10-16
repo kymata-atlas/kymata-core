@@ -131,6 +131,20 @@ Host github.com
         PreferredAuthentications publickey
         IdentityFile /home/<username>/.ssh/<name of private key>
 ```
+- you can't install python versions using pyenv.
+
+This is becasue the login nodes don't have the right C++ compilers. To get around this, ignore pyenv, and instead use
+apptainer to install poetry:
+
+```
+module load apptainer
+apptainer shell /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
+mkdir ~/poetry
+export VENV_PATH=~/poetry/
+python3 -m venv $VENV_PATH
+$VENV_PATH/bin/pip install -U pip setuptools
+$VENV_PATH/bin/pip install poetry
+```
 
 You see `pyenv: Command not found`, `poetry: Command not found`
 
