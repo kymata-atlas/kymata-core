@@ -91,20 +91,26 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    if emeg_sample_rate != function.sample_rate:
+        _logger.warning(f"Data sample rate ({emeg_sample_rate} Hz) and "
+                        f"function sample rate ({function.sample_rate} Hz) differ. "
+                        f"Data will be down-sampled.")
+    downsample_ratio = emeg_sample_rate / function.sample_rate
+    if downsample_ratio.is_integer():
+        downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    else:
+        raise ValueError(f"Data sample rate ({emeg_sample_rate} Hz) and "
+                         f"function sample rate ({function.sample_rate} Hz) are incompatible.")
 
-    n_samples_per_split = int(
-        seconds_per_split * emeg_sample_rate * 2 // downsample_rate
-    )
+    n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
     # the number of samples in the function 'trial' which is half that needed for the EMEG
     n_func_samples_per_split = n_samples_per_split // 2
 
     func_length = n_splits * n_func_samples_per_split
     if func_length < function.values.shape[0]:
-        _logger.warning(
-            f"WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)"
-        )
+        _logger.warning(f"WARNING: "
+                        f"not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)")
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)

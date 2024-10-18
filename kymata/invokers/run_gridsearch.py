@@ -43,8 +43,7 @@ def main():
                         help="EMEG directory, relative to base dir")
 
     # Analysis specific
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Silently overwrite existing files.")
+    parser.add_argument("--overwrite", action="store_true", help="Silently overwrite existing files.")
 
     # Participants
     parser.add_argument("--single-participant-override", type=str, default=None, required=False,
@@ -62,6 +61,8 @@ def main():
     parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
                         help="If the function contour contains NaN values, "
                              "this will replace them with the specified values.")
+    parser.add_argument("--function-sample-rate", type=float, required=False, default=1000,
+                        help="The sample rate of the function contour.")
 
     # For source space
     parser.add_argument("--use-inverse-operator", action="store_true",
@@ -72,10 +73,8 @@ def main():
     parser.add_argument("--inverse-operator-suffix", type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
                         help="inverse solution suffix")
 
-    parser.add_argument("--snr", type=float, default=3,
-                        help="Inverse solution SNR")
-    parser.add_argument("--downsample-rate", type=int, default=5,
-                        help="Downsample rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz")
+    parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
+    parser.add_argument("--resample", type=float, required=False, default=None, help="Resample rate in Hz.")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
@@ -91,8 +90,7 @@ def main():
                         help="Start of the emeg evoked files relative to the start of the function")
 
     # Output paths
-    parser.add_argument("--save-name", type=str, required=False,
-                        help="Specify the name of the saved .nkg file.")
+    parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
     parser.add_argument("--save-expression-set-location", type=Path, default=Path(_default_output_dir),
                         help="Save the results of the gridsearch into an ExpressionSet .nkg file")
     parser.add_argument("--save-plot-location", type=Path, default=Path(_default_output_dir),
@@ -218,19 +216,21 @@ def main():
 
     for function_name in args.function_name:
         _logger.info(f"Running gridsearch on {function_name}")
-        function_values = load_function(
+        function = load_function(
             function_path,
             func_name=function_name,
             replace_nans=args.replace_nans,
             bruce_neurons=(5, 10),
+            sample_rate=args.function_sample_rate,
         )
-        function_values = function_values.downsampled(args.downsample_rate)
+        if args.resample is not None and args.function_sample_rate != args.resample:
+            function = function.resampled(args.resample)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
             channel_names=ch_names,
             channel_space=channel_space,
-            function=function_values,
+            function=function,
             seconds_per_split=args.seconds_per_split,
             n_derangements=args.n_derangements,
             n_splits=args.n_splits,
