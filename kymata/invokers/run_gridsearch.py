@@ -230,7 +230,8 @@ def main():
         function_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
         if function.sample_rate != function_resample_rate:
             _logger.info(f"Function sample rate ({function.sample_rate} Hz) doesn't match target sample rate "
-                         f"({function_resample_rate} Hz). Function will be resampled to match.")
+                         f"({function_resample_rate} Hz). Function will be resampled to match. "
+                         f"({function.sample_rate} → {function_resample_rate} Hz)")
             function = function.resampled(function_resample_rate)
 
         es = do_gridsearch(
