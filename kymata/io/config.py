@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 
+from invokers.run_gridsearch import _logger
 from kymata.datasets.data_root import data_root_path
 from kymata.io.file import PathType, FileType, open_or_use
 
@@ -76,3 +77,31 @@ def get_root_dir(config: dict) -> str:
         raise ValueError(
             "The `data_location` parameter in the config file must be either 'cbu' or 'local' or 'cbu-local'."
         )
+
+
+def get_config_value_with_fallback(config: dict, config_key: str, fallback):
+    """
+    Retrieve a config value by key, with a fallback option if the key does not exist.
+
+    This function attempts to fetch the value associated with `config_key` from the
+    provided `config` dictionary. If the key is not present, it logs an error message
+    and returns the specified `fallback` value.
+
+    Args:
+        config (dict): A dictionary containing configuration settings.
+        config_key (str): The key for the desired configuration value.
+        fallback (any): The value to return if the configuration key is not found.
+
+    Returns:
+        any: The value associated with `config_key` if it exists; otherwise, the `fallback` value.
+
+    Raises:
+        None: This function does not raise exceptions; it handles missing keys gracefully.
+    """
+    try:
+        return config[config_key]
+    except KeyError:
+        _logger.error(
+            f'Config did not contain any value for "{config_key}", falling back to default value {fallback}'
+        )
+        return fallback

@@ -17,19 +17,6 @@ _default_output_dir = Path(data_root_path(), "output")
 _logger = getLogger(__file__)
 
 
-def get_config_value_with_fallback(config: dict, config_key: str, fallback):
-    """
-    Get a value from the config, with a default fallback, and a notification explaining this.
-    """
-    try:
-        return config[config_key]
-    except KeyError:
-        _logger.error(
-            f'Config did not contain any value for "{config_key}", falling back to default value {fallback}'
-        )
-        return fallback
-
-
 def main():
     _default_output_dir.mkdir(exist_ok=True, parents=False)
 
