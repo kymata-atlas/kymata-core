@@ -17,6 +17,7 @@ def test_integer_subsample():
     f_resampled = f.resampled(new_sample_rate)
     assert f_resampled.sample_rate == new_sample_rate
     assert len(f.values) / downsample_ratio == len(f_resampled.values)
+    assert array_equal(f_resampled.values, array(range(0, 100, 2)))
 
 
 def test_noninteger_downsample():

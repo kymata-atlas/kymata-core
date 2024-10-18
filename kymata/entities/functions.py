@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from math import floor
 
-from numpy import floor as np_floor, arange, clip, zeros
+from numpy import floor as np_floor, arange, zeros
 from numpy.typing import NDArray
 
 
@@ -40,7 +40,7 @@ class Function:
                 resampled_values = self.values[idxs]
 
         else:  # Upsampling
-            new_length = int(len(self.values) / ratio)
+            new_length = floor(len(self.values) / ratio)
 
             resampled_values = zeros(new_length)
             for i in range(new_length):
