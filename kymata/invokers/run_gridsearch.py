@@ -231,7 +231,7 @@ def main():
         if function.sample_rate != function_resample_rate:
             _logger.info(f"Function sample rate ({function.sample_rate} Hz) doesn't match target sample rate "
                          f"({function_resample_rate} Hz). Function will be resampled to match.")
-            function.resampled(function_resample_rate)
+            function = function.resampled(function_resample_rate)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
@@ -284,9 +284,7 @@ def main():
             combined_names + f"_{args.single_participant_override}",
         ).with_suffix(".png")
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(
-            ".png"
-        )
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(
         combined_expression_set,
