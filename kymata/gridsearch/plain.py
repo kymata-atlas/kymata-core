@@ -21,7 +21,7 @@ _logger = getLogger(__name__)
 
 
 def do_gridsearch(
-    emeg_values: NDArray,  # chan x time
+    emeg_values: NDArray,  # chans x reps x time
     function: Function,
     channel_names: list,
     channel_space: str,
@@ -46,7 +46,7 @@ def do_gridsearch(
     testing and optional plotting.
 
     Args:
-        emeg_values (NDArray): A 2D array of EMEG values with shape (n_channels, time).
+        emeg_values (NDArray): A 2D array of EMEG values with shape (channels, reps, time).
         function (Function): The function against which the EMEG data will be correlated. It should
             have a `values` attribute representing the function's values and a `sample_rate`
             attribute indicating its sample rate.
@@ -107,8 +107,7 @@ def do_gridsearch(
     # the number of samples in the function 'trial' which is half that needed for the EMEG
     n_func_samples_per_split = n_samples_per_split // 2
 
-    _logger.info(f"Total EMEG length: {emeg_values.shape[1] / emeg_sample_rate:.2} s")
-    _logger.info(f"\t({emeg_values.shape=}, {emeg_sample_rate=})")
+    _logger.info(f"Total EMEG length: {emeg_values.shape[2] / emeg_sample_rate:.2} s")
     _logger.info(f"Total function length: {function.values.shape[0] / function.sample_rate:.2} s")
 
     func_length = n_splits * n_func_samples_per_split
