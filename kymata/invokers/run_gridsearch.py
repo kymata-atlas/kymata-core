@@ -34,14 +34,13 @@ def main():
     parser = argparse.ArgumentParser(description="Gridsearch Params")
 
     # Dataset specific
-    parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--config", type=str, required=True,
+                        help="Either the path to the config file to be used, or the name of the config file to be used "
+                             "if included with kymata-core.")
 
-    parser.add_argument(
-        "--emeg-dir",
-        type=str,
-        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
-        help="emeg directory, relative to base dir",
-    )
+    parser.add_argument("--emeg-dir", type=str,
+                        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
+                        help="EMEG directory, relative to base dir")
 
     # Analysis specific
     parser.add_argument("--overwrite", action="store_true",
@@ -56,9 +55,10 @@ def main():
     # Functions
     parser.add_argument("--input-stream", type=str, required=True, choices=["auditory", "visual", "tactile"],
                         help="The input stream for the functions being tested.")
-    parser.add_argument("--function-name", type=str, nargs="+", help="function names in stimulisig")
     parser.add_argument("--function-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
-                        help="location of function stimulisig")
+                        help="Location of function stimulisig. Either supply relative to the data dir, or as an "
+                             "absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.")
+    parser.add_argument("--function-name", type=str, nargs="+", help="function names in stimulisig")
     parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
                         help="If the function contour contains NaN values, "
                              "this will replace them with the specified values.")
@@ -73,22 +73,22 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3,
-                        help="inverse solution snr")
+                        help="Inverse solution SNR")
     parser.add_argument("--downsample-rate", type=int, default=5,
-                        help="downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz")
+                        help="Downsample rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
-                        help="seconds in each split of the recording, also maximum range of latencies being checked")
+                        help="Seconds in each split of the recording, also maximum range of latencies being checked")
     parser.add_argument("--n-splits", type=int, default=400,
-                        help="number of splits to split the recording into, "
+                        help="Number of splits to split the recording into, "
                              "(set to stimulus_length/seconds_per_split for full file)")
     parser.add_argument("--n-derangements", type=int, default=5,
-                        help="number of deragements for the null distribution")
+                        help="Number of deragements for the null distribution")
     parser.add_argument("--start-latency", type=float, default=-200,
-                        help="earliest latency to check in cross correlation")
+                        help="Earliest latency to check in cross correlation")
     parser.add_argument("--emeg-t-start", type=float, default=-200,
-                        help="start of the emeg evoked files relative to the start of the function")
+                        help="Start of the emeg evoked files relative to the start of the function")
 
     # Output paths
     parser.add_argument("--save-name", type=str, required=False,
@@ -209,10 +209,17 @@ def main():
 
     combined_expression_set = None
 
+    # Get stimulisig path
+    if Path(args.function_path).exists():
+        function_path = Path(args.function_path)
+    else:
+        function_path = Path(base_dir, args.function_path)
+    _logger.info(f"Loading functions from {str(function_path)}")
+
     for function_name in args.function_name:
         _logger.info(f"Running gridsearch on {function_name}")
         function_values = load_function(
-            Path(base_dir, args.function_path),
+            function_path,
             func_name=function_name,
             replace_nans=args.replace_nans,
             bruce_neurons=(5, 10),
