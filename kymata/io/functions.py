@@ -16,6 +16,7 @@ _logger = getLogger(__file__)
 def load_function(
     function_path_without_suffix: PathType,
     func_name: str,
+    sample_rate: float,
     replace_nans: Optional[str] = None,
     n_derivatives: int = 0,
     bruce_neurons: tuple = (0, 10),
@@ -99,7 +100,7 @@ def load_function(
     return Function(
         name=func_name,
         values=func.flatten().squeeze(),
-        sample_rate=1000,
+        sample_rate=sample_rate,
     )
 
 
