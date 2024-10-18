@@ -214,6 +214,8 @@ def main():
         function_path = Path(base_dir, args.function_path)
     _logger.info(f"Loading functions from {str(function_path)}")
 
+    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
+
     for function_name in args.function_name:
         _logger.info(f"Running gridsearch on {function_name}")
         function = load_function(
@@ -223,8 +225,13 @@ def main():
             bruce_neurons=(5, 10),
             sample_rate=args.function_sample_rate,
         )
-        if args.resample is not None and args.function_sample_rate != args.resample:
-            function = function.resampled(args.resample)
+
+        # Resample function to match target sample rate if specified, else emeg sample rate
+        function_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+        if function.sample_rate != function_resample_rate:
+            _logger.info(f"Function sample rate ({function.sample_rate} Hz) doesn't match target sample rate "
+                         f"({function_resample_rate} Hz). Function will be resampled to match.")
+            function.resampled(function_resample_rate)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
@@ -235,6 +242,7 @@ def main():
             n_derangements=args.n_derangements,
             n_splits=args.n_splits,
             n_reps=n_reps,
+            emeg_sample_rate=emeg_sample_rate,
             start_latency=args.start_latency,
             plot_location=args.save_plot_location,
             emeg_t_start=args.emeg_t_start,
