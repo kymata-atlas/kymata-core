@@ -108,6 +108,7 @@ def do_gridsearch(
     n_func_samples_per_split = n_samples_per_split // 2
 
     _logger.info(f"Total EMEG length: {emeg_values.shape[1] / emeg_sample_rate:.2} s")
+    _logger.info(f"\t({emeg_values.shape=}, {emeg_sample_rate=})")
     _logger.info(f"Total function length: {function.values.shape[0] / function.sample_rate:.2} s")
 
     func_length = n_splits * n_func_samples_per_split
