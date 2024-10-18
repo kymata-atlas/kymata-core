@@ -24,9 +24,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     try:
         return config[config_key]
     except KeyError:
-        _logger.error(
-            f'Config did not contain any value for "{config_key}", falling back to default value {fallback}'
-        )
+        _logger.error(f'Config did not contain any value for "{config_key}", falling back to default value {fallback}')
         return fallback
 
 
@@ -46,133 +44,61 @@ def main():
     )
 
     # Analysis specific
-    parser.add_argument(
-        "--overwrite", action="store_true", help="Silently overwrite existing files."
-    )
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Silently overwrite existing files.")
 
     # Participants
-    parser.add_argument(
-        "--single-participant-override",
-        type=str,
-        default=None,
-        required=False,
-        help="Supply to run only on one participant",
-    )
-    parser.add_argument(
-        "--ave-mode",
-        type=str,
-        default="ave",
-        choices=["ave", "concatenate"],
-        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.",
-    )
+    parser.add_argument("--single-participant-override", type=str, default=None, required=False,
+                        help="Supply to run only on one participant")
+    parser.add_argument("--ave-mode", type=str, default="ave", choices=["ave", "concatenate"],
+                        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.")
 
     # Functions
-    parser.add_argument(
-        "--input-stream",
-        type=str,
-        required=True,
-        choices=["auditory", "visual", "tactile"],
-        help="The input stream for the functions being tested.",
-    )
-    parser.add_argument(
-        "--function-name", type=str, nargs="+", help="function names in stimulisig"
-    )
-    parser.add_argument(
-        "--function-path",
-        type=str,
-        default="predicted_function_contours/GMSloudness/stimulisig",
-        help="location of function stimulisig",
-    )
-    parser.add_argument(
-        "--replace-nans",
-        type=str,
-        required=False,
-        choices=["zero", "mean"],
-        default=None,
-        help="If the function contour contains NaN values, this will replace them with the specified values.",
-    )
+    parser.add_argument("--input-stream", type=str, required=True, choices=["auditory", "visual", "tactile"],
+                        help="The input stream for the functions being tested.")
+    parser.add_argument("--function-name", type=str, nargs="+", help="function names in stimulisig")
+    parser.add_argument("--function-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
+                        help="location of function stimulisig")
+    parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
+                        help="If the function contour contains NaN values, "
+                             "this will replace them with the specified values.")
 
     # For source space
-    parser.add_argument(
-        "--use-inverse-operator",
-        action="store_true",
-        help="Use inverse operator to conduct gridsearch in source space.",
-    )
-    parser.add_argument(
-        "--morph",
-        action="store_true",
-        help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.",
-    )
-    parser.add_argument(
-        "--inverse-operator-suffix",
-        type=str,
-        default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
-        help="inverse solution suffix",
-    )
+    parser.add_argument("--use-inverse-operator", action="store_true",
+                        help="Use inverse operator to conduct gridsearch in source space.")
+    parser.add_argument("--morph", action="store_true",
+                        help="Morph hexel data to fs-average space prior to running gridsearch. "
+                             "Only has an effect if an inverse operator is specified.",)
+    parser.add_argument("--inverse-operator-suffix", type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+                        help="inverse solution suffix")
 
-    parser.add_argument("--snr", type=float, default=3, help="inverse solution snr")
-    parser.add_argument(
-        "--downsample-rate",
-        type=int,
-        default=5,
-        help="downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz",
-    )
+    parser.add_argument("--snr", type=float, default=3,
+                        help="inverse solution snr")
+    parser.add_argument("--downsample-rate", type=int, default=5,
+                        help="downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz")
 
-    parser.add_argument(
-        "--seconds-per-split",
-        type=float,
-        default=1,
-        help="seconds in each split of the recording, also maximum range of latencies being checked",
-    )
-    parser.add_argument(
-        "--n-splits",
-        type=int,
-        default=400,
-        help="number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)",
-    )
-    parser.add_argument(
-        "--n-derangements",
-        type=int,
-        default=5,
-        help="number of deragements for the null distribution",
-    )
-    parser.add_argument(
-        "--start-latency",
-        type=float,
-        default=-200,
-        help="earliest latency to check in cross correlation",
-    )
-    parser.add_argument(
-        "--emeg-t-start",
-        type=float,
-        default=-200,
-        help="start of the emeg evoked files relative to the start of the function",
-    )
+    # General gridsearch
+    parser.add_argument("--seconds-per-split", type=float, default=1,
+                        help="seconds in each split of the recording, also maximum range of latencies being checked")
+    parser.add_argument("--n-splits", type=int, default=400,
+                        help="number of splits to split the recording into, "
+                             "(set to stimulus_length/seconds_per_split for full file)")
+    parser.add_argument("--n-derangements", type=int, default=5,
+                        help="number of deragements for the null distribution")
+    parser.add_argument("--start-latency", type=float, default=-200,
+                        help="earliest latency to check in cross correlation")
+    parser.add_argument("--emeg-t-start", type=float, default=-200,
+                        help="start of the emeg evoked files relative to the start of the function")
 
     # Output paths
-    parser.add_argument(
-        "--save-name",
-        type=str,
-        required=False,
-        help="Specify the name of the saved .nkg file.",
-    )
-    parser.add_argument(
-        "--save-expression-set-location",
-        type=Path,
-        default=Path(_default_output_dir),
-        help="Save the results of the gridsearch into an ExpressionSet .nkg file",
-    )
-    parser.add_argument(
-        "--save-plot-location",
-        type=Path,
-        default=Path(_default_output_dir),
-        help="Save an expression plots, and other plots, in this location",
-    )
-    parser.add_argument(
-        "--plot-top-channels",
-        action="store_true",
-        help="Plots the p-values and correlations of the top channels in the gridsearch.",
-    )
+    parser.add_argument("--save-name", type=str, required=False,
+                        help="Specify the name of the saved .nkg file.")
+    parser.add_argument("--save-expression-set-location", type=Path, default=Path(_default_output_dir),
+                        help="Save the results of the gridsearch into an ExpressionSet .nkg file")
+    parser.add_argument("--save-plot-location", type=Path, default=Path(_default_output_dir),
+                        help="Save an expression plots, and other plots, in this location")
+    parser.add_argument("--plot-top-channels", action="store_true",
+                        help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
