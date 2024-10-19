@@ -60,6 +60,6 @@ audio_delivery_latency:   0.026     # the audio stimulus is delayed by this amou
 visual_delivery_latency:  0.017     # the visual stimulus is delayed by this amount in seconds
 tactile_delivery_latency: null      # the tactile stimulus is delayed by this amount in seconds
 audio_delivery_drift_correction:   0.0005404  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
-visual_delivery_drift_correction:  0          # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
+visual_delivery_drift_correction:  0.0004937  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
 tactile_delivery_drift_correction: null       # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
 latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
