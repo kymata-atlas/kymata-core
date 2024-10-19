@@ -27,7 +27,7 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
 
     Notes:
     ------
-    The function expects the layout file to be located at 'kymata-core-data/sensor_locations/Vectorview-all.lout'.
+    The function expects the layout file to be located at 'kymata/data/sensor_locations/Vectorview-all.lout'.
     """
 
     d = dict()
@@ -40,8 +40,8 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
         r"(?P<sensor>MEG \d+)$"
     )
     with Path(
-        Path(__file__).parent.parent.parent,
-        "kymata-core-data",
+        Path(__file__).parent.parent,
+        "data",
         "sensor_locations",
         "Vectorview-all.lout",
     ).open("r") as layout_file:
@@ -71,12 +71,12 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
 
     Notes:
     ------
-    The function expects the layout file to be located at 'kymata-core-data/sensor_locations/EEG1005.lay'
-    and the mapping file to be located at 'kymata-core-data/sensor_locations/EEG-layout-channel-mappings.yaml'.
+    The function expects the layout file to be located at 'kymata/data/sensor_locations/EEG1005.lay'
+    and the mapping file to be located at 'kymata/data/sensor_locations/EEG-layout-channel-mappings.yaml'.
     """
     with Path(
-        Path(__file__).parent.parent.parent,
-        "kymata-core-data",
+        Path(__file__).parent.parent,
+        "data",
         "sensor_locations",
         "EEG-layout-channel-mappings.yaml",
     ).open("r") as eeg_name_mapping_file:
@@ -84,8 +84,8 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
     mapping = {k.upper(): v.upper() for k, v in mapping.items()}
     d = dict()
     with Path(
-        Path(__file__).parent.parent.parent,
-        "kymata-core-data",
+        Path(__file__).parent.parent,
+        "data",
         "sensor_locations",
         "EEG1005.lay",
     ).open("r") as layout_file:
