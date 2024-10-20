@@ -125,7 +125,7 @@ This is because your git instance at the CBU is not passing the correct authoris
 
 Then, create (or modify) the `config` file in `~/.ssh/`:
 
-```
+```shell
 Host github.com
         LogLevel DEBUG3
         User git
@@ -139,7 +139,7 @@ Host github.com
 This is becasue the login nodes don't have the right C++ compilers. To get around this, ignore pyenv, and instead use
 apptainer to install poetry:
 
-```
+```shell
 module load apptainer
 apptainer shell /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
 mkdir ~/poetry
@@ -159,6 +159,7 @@ Update to point it at your copy.
 You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure `kymata-core` is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
 
   ```shell
+  module load apptainer
   apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
   export VENV_PATH=~/poetry/
   cd /path/to/kymata-core
