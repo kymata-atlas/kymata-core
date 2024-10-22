@@ -122,6 +122,25 @@ def read_log_file_asr(n, log_dir, layer, neuron):
 
     return lat_sig
 
+def read_log_file(log_dir, neuron, layer):
+
+    lat_sig = np.zeros((1, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
+    with open(log_dir, 'r') as f:
+        a = f.readlines()
+        if 'word' in log_dir:
+            a = [i for i in a if 'peak lat:' in i and 'Functions to be tested' not in i]
+            a = a[6:14]
+        else:
+            a = [i for i in a if 'peak lat:' in i and 'Functions to be tested' not in i]
+        for ia in range(len(a)):
+            _a = [j for j in a[ia].split()]
+            for k in range(layer):
+                lat_sig[0, k, ia, :] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), k, 0]
+
+    lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
+
+    return lat_sig
+
 def selection(lat_sig, neuron_selection, layer):
     col_2 = lat_sig[:, 2]
     col_3 = lat_sig[:, 3]
@@ -155,8 +174,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'phone'
-    thres_feats = 0.001
+    figure_opt = 'word_with_class_syntax'
+    thres_feats = 0.01
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -214,7 +233,6 @@ def asr_models_loop_full():
     neuron_picks_sem = []
     neuron_picks_pos = []
     neuron_picks_syn = []
-    neuron_pick_other = []
 
     neuron_picks_id = []
     neuron_picks_art = []
@@ -239,8 +257,6 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_enhanced[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         for i in range(mask_phone_emerge.shape[0]):
             dim = int(emerge[mask_phone_emerge[i], 5])
             lay = int(emerge[mask_phone_emerge[i], 4])
@@ -254,13 +270,10 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_emerge[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         print(f'Proportion of significant neurons: {counter/(mask_phone_enhanced.shape[0]+mask_phone_emerge.shape[0])}')
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/phone_sig.npy', np.array(neuron_picks))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/id_sig.npy', np.array(neuron_picks_id))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/art_sig.npy', np.array(neuron_picks_art))
-        np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy', np.array(neuron_pick_other))
         print(counter_vector)
         mask_feats_1 = np.array(mask_feats_1)
         mask_feats_2 = np.array(mask_feats_2)
@@ -295,6 +308,33 @@ def asr_models_loop_full():
         feats = np.load(feats_path)
         feats[6:14, :, :] = np.ones((8, neuron, layer))
 
+        lat_sig = read_log_file('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/word/brain/log/slurm_log_word.txt', 23, layer)
+        thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*23)))))
+        word_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])      
+
+        lat_sig = read_log_file('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/syntax/brain/log/slurm_log_syntax.txt', 5, layer)
+        thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*5)))))
+        syntax_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])        
+
+        man_feats = np.concatenate((word_feats, syntax_feats), axis=0)
+
+        col_2 = man_feats[:, 2]
+        col_3 = man_feats[:, 3]
+        unique_values = np.unique(col_2)
+        salmonn_feats = np.concatenate((reduced, demolish), axis=0)
+        for val in unique_values:
+            for i in range(layer):
+                indices = np.where(np.logical_and(col_2 == val, man_feats[:, 4] == i))
+                col_3_subset = col_3[indices]
+                salmonn_indices = np.where(np.logical_and(salmonn_feats[:, 2] == val, salmonn_feats[:, 4] == i))
+                salmonn_p = salmonn_feats[salmonn_indices, 3]
+                for j, pval in enumerate(col_3_subset):
+                    if salmonn_p.size > 0:
+                        if pval < salmonn_p.max():
+                            print(f'A feature has been deleted at latency {man_feats[indices[0][j], 0]}')
+                            np.delete(man_feats, indices[0][j], axis = 0)
+        # return lat_sig[max_indices, :]
+
         counter = 0
         if figure_opt == 'word':
             counter_vector = np.zeros((14,))
@@ -323,8 +363,6 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_reduced[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         for i in range(mask_phone_demolish.shape[0]):
             dim = int(demolish[mask_phone_demolish[i], 5])
             lay = int(demolish[mask_phone_demolish[i], 4])
@@ -344,15 +382,12 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_demolish[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         print(f'Proportion of significant neurons: {counter/(mask_phone_reduced.shape[0]+mask_phone_demolish.shape[0])}')
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/word_sig.npy', np.array(neuron_picks))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sem_sig.npy', np.array(neuron_picks_sem))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/lex_sig.npy', np.array(neuron_picks_lex))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/pos_sig.npy', np.array(neuron_picks_pos))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/syn_sig.npy', np.array(neuron_picks_syn))
-        np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy', np.array(neuron_pick_other))
         print(counter_vector)
         mask_feats_1 = np.array(mask_feats_1)
         mask_feats_2 = np.array(mask_feats_2)
@@ -381,6 +416,7 @@ def asr_models_loop_full():
         if x_data =='latency':
             scatter = ax.scatter(reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 0], reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 4], color='red', marker='.', s=5, alpha= 0.15, label = 'Other Word Features')
             scatter = ax.scatter(demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 0], demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 4], color='red', marker='.', s=5, alpha= 0.15)
+            scatter = ax.scatter(man_feats[:, 0], man_feats[:, 4], color='purple', marker='.', s=10, alpha= 0.5, label = 'Manual Word Features')
         else:
             scatter = ax.scatter(reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 5], reduced[np.setdiff1d(mask_phone_reduced, mask_feats_1), 4], color='red', marker='.', s=5, alpha= 0.15, label = 'Other Word Features')
             scatter = ax.scatter(demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 5], demolish[np.setdiff1d(mask_phone_demolish, mask_feats_2), 4], color='red', marker='.', s=5, alpha= 0.15)           
@@ -418,7 +454,7 @@ def asr_models_loop_full():
 
     # plt.title(f'Threshold -log(p-value): {thres}')
     plt.xlim(-200, x_upper)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_v5.png', dpi=600, bbox_inches="tight")
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/salmonn_7b_{figure_opt}_interpret_{thres_feats}_{occur_thres}_{x_data}_v6_manual.png', dpi=600, bbox_inches="tight")
 
 
 if __name__ == '__main__':

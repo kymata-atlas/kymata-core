@@ -155,8 +155,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'phone'
-    thres_feats = 0.001
+    figure_opt = 'word_with_class_syntax'
+    thres_feats = 0.01
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_phone/fc2/log/'
@@ -214,7 +214,6 @@ def asr_models_loop_full():
     neuron_picks_sem = []
     neuron_picks_pos = []
     neuron_picks_syn = []
-    neuron_pick_other = []
 
     neuron_picks_id = []
     neuron_picks_art = []
@@ -239,8 +238,6 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_enhanced[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         for i in range(mask_phone_emerge.shape[0]):
             dim = int(emerge[mask_phone_emerge[i], 5])
             lay = int(emerge[mask_phone_emerge[i], 4])
@@ -254,13 +251,10 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_emerge[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         print(f'Proportion of significant neurons: {counter/(mask_phone_enhanced.shape[0]+mask_phone_emerge.shape[0])}')
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/phone_sig.npy', np.array(neuron_picks))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/id_sig.npy', np.array(neuron_picks_id))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/art_sig.npy', np.array(neuron_picks_art))
-        np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy', np.array(neuron_pick_other))
         print(counter_vector)
         mask_feats_1 = np.array(mask_feats_1)
         mask_feats_2 = np.array(mask_feats_2)
@@ -323,8 +317,6 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_1.append([mask_phone_reduced[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         for i in range(mask_phone_demolish.shape[0]):
             dim = int(demolish[mask_phone_demolish[i], 5])
             lay = int(demolish[mask_phone_demolish[i], 4])
@@ -344,15 +336,12 @@ def asr_models_loop_full():
                 counter += 1
                 counter_vector[np.argmin(feats[:, dim, lay])] += 1
                 mask_feats_2.append([mask_phone_demolish[i], np.argmin(feats[:, dim, lay])])
-            else:
-                neuron_pick_other.append([lay, dim])
         print(f'Proportion of significant neurons: {counter/(mask_phone_reduced.shape[0]+mask_phone_demolish.shape[0])}')
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/word_sig.npy', np.array(neuron_picks))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sem_sig.npy', np.array(neuron_picks_sem))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/lex_sig.npy', np.array(neuron_picks_lex))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/pos_sig.npy', np.array(neuron_picks_pos))
         np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/syn_sig.npy', np.array(neuron_picks_syn))
-        np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy', np.array(neuron_pick_other))
         print(counter_vector)
         mask_feats_1 = np.array(mask_feats_1)
         mask_feats_2 = np.array(mask_feats_2)
