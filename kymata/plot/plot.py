@@ -57,7 +57,6 @@ class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
     fig_size: tuple[float, float]
-    expression_yaxis_label_xpos: float
     subplots_adjust_kwargs: dict[str, float] = None
 
     def __post_init__(self):
@@ -85,8 +84,6 @@ def _minimap_mosaic(
             "left": 0.02,
             "right": 0.8,
         }
-        # Place next to the expression plot yaxis
-        yaxis_label_xpos = width_ratios[0] / (width_ratios[1] + width_ratios[0]) - 0.04
     else:
         width_ratios = None
         subplots_adjust = {
@@ -94,7 +91,6 @@ def _minimap_mosaic(
             "left": 0.08,
             "right": 0.84,
         }
-        yaxis_label_xpos = 0.04
 
     if paired_axes:
         if show_minimap:
@@ -130,7 +126,6 @@ def _minimap_mosaic(
         width_ratios=width_ratios,
         fig_size=fig_size,
         subplots_adjust_kwargs=subplots_adjust,
-        expression_yaxis_label_xpos=yaxis_label_xpos,
     )
 
 
@@ -683,6 +678,8 @@ def expression_plot(
             raise NotImplementedError()
 
     # Format one-off axis qualities
+    top_ax: pyplot.Axes
+    bottom_ax: pyplot.Axes
     if paired_axes:
         top_ax = axes[_AxName.top]
         bottom_ax = axes[_AxName.bottom]
@@ -696,41 +693,6 @@ def expression_plot(
     bottom_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
     )
-    if paired_axes:
-        top_ax.text(
-            s=axes_names[0],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
-            style="italic",
-            verticalalignment="center",
-        )
-        bottom_ax.text(
-            s=axes_names[1],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
-            style="italic",
-            verticalalignment="center",
-        )
-    fig.text(
-        x=mosaic.expression_yaxis_label_xpos,
-        y=0.5,
-        s="p-value (with α at 5-sigma, Šidák corrected)",
-        ha="center",
-        va="center",
-        rotation="vertical",
-    )
-    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
-        bottom_ax.text(
-            s="   onset of environment   ",
-            x=0,
-            y=0 if paired_axes else ylim / 2,
-            color="black",
-            fontsize="x-small",
-            bbox={"facecolor": "white", "edgecolor": "none", "pad": 2},
-            verticalalignment="center",
-            horizontalalignment="center",
-            rotation="vertical",
-        )
 
     # Legend for plotted function
     legends = []
@@ -784,6 +746,8 @@ def expression_plot(
                                * max_axes_right_inches
                                / max_extent_inches))
 
+    __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
+
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
         save_to = Path(save_to)
@@ -794,6 +758,45 @@ def expression_plot(
             raise FileExistsError(save_to)
 
     return fig
+
+
+def __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim):
+    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
+    if paired_axes:
+        top_ax.text(
+            s=axes_names[0],
+            x=bottom_ax_xmin + 20,
+            y=ylim * 0.95,
+            style="italic",
+            verticalalignment="center",
+        )
+        bottom_ax.text(
+            s=axes_names[1],
+            x=bottom_ax_xmin + 20,
+            y=ylim * 0.95,
+            style="italic",
+            verticalalignment="center",
+        )
+    fig.text(
+        x=top_ax.get_position().xmin - 0.05,
+        y=0.5,
+        s="p-value (with α at 5-sigma, Šidák corrected)",
+        ha="center",
+        va="center",
+        rotation="vertical",
+    )
+    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
+        bottom_ax.text(
+            s="   onset of environment   ",
+            x=0,
+            y=0 if paired_axes else ylim / 2,
+            color="black",
+            fontsize="x-small",
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 2},
+            verticalalignment="center",
+            horizontalalignment="center",
+            rotation="vertical",
+        )
 
 
 def _restrict_channels(
