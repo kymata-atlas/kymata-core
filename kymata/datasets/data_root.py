@@ -11,7 +11,10 @@ DATA_DIR_NAME = "kymata-core-data"
 # Places downloaded datasets could go, in order of preference
 _preferred_default_data_locations = [
     Path(
-        Path(__file__).parent.parent.parent
+        Path(__file__)  # data_root.py
+        .parent         # datasets
+        .parent         # kymata
+        .parent         # kymata-core
     ),  # kymata/../data_dir (next to kymata dir)
     Path(getcwd()),  # <cwd>/data_dir
     Path(Path.home(), "Documents"),  # ~/Documents/data_dir
@@ -20,6 +23,28 @@ _preferred_default_data_locations = [
 
 
 def data_root_path(data_root: Optional[PathType] = None) -> Path:
+    """
+    Retrieve or create the path to the data root directory.
+
+    This function checks for the data root directory in the following order:
+    1. If provided as an argument.
+    2. If specified in the environment variable defined by `$KYMATA_DATA_ROOT`.
+    3. If not specified, it checks preferred default locations
+       and attempts to create the directory if it does not exist.
+
+    Parameters:
+        data_root (Optional[PathType]): An optional path to the data root.
+                                         If None, the function will check the
+                                         environment variable and default locations.
+
+    Returns:
+        Path: Path object representing the data root directory.
+
+    Raises:
+        FileNotFoundError: If the specified data root does not exist or cannot be created.
+        NotADirectoryError: If the specified data root is not a directory.
+    """
+
     # Check if the data root has been specified
 
     # Might be in an environmental variable
