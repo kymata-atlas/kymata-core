@@ -28,6 +28,7 @@ def plot_ippm(
     figwidth: int = 10,
     arrowhead_dims: tuple[float, float] = None,
     linewidth: float = 3,
+    show_labels: bool = True,
 ):
     """
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
@@ -41,6 +42,7 @@ def plot_ippm(
         scale_spikes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
+        show_labels (bool, optional): Show function names as labels on the graph. Defaults to True.
     """
 
     if arrowhead_dims is None:
@@ -106,15 +108,16 @@ def plot_ippm(
     text_offset_x = -10
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
-        ax.text(
-            x=path[0][-1] + text_offset_x,
-            y=path[1][-1],
-            s=f"{label}()",
-            color=color,
-            zorder=1,
-            horizontalalignment="right", verticalalignment='center',
-            path_effects=[pe.withStroke(linewidth=4, foreground="white")],
-        )
+        if show_labels:
+            ax.text(
+                x=path[0][-1] + text_offset_x,
+                y=path[1][-1],
+                s=f"{label}()",
+                color=color,
+                zorder=1,
+                horizontalalignment="right", verticalalignment='center',
+                path_effects=[pe.withStroke(linewidth=4, foreground="white")],
+            )
         ax.arrow(
             x=path[0][-1], dx=1,
             y=path[1][-1], dy=0,
