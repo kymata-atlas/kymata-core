@@ -735,16 +735,7 @@ def expression_plot(
         )
         legends.append(top_legend)
 
-    # Adjust figure width to accommodate legend(s)
-    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
-    max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
-                             for leg in legends)
-                         * 1.2  # Plus a bit extra because matplotlib
-                         if len(legends) > 0
-                         else max_axes_right_inches)
-    fig.subplots_adjust(right=(fig.get_figwidth()
-                               * max_axes_right_inches
-                               / max_extent_inches))
+    __reposition_axes_for_legends(fig, legends)
 
     __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
 
@@ -760,9 +751,27 @@ def expression_plot(
     return fig
 
 
-def __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim):
+def __reposition_axes_for_legends(fig, legends):
+    """Adjust figure width to accommodate legend(s)"""
+    buffer = 1.0
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
+                             for leg in legends)
+                         # Plus a bit extra because matplotlib
+                         + buffer
+                         if len(legends) > 0
+                         else max_axes_right_inches)
+    fig.subplots_adjust(right=(fig.get_figwidth()
+                               * max_axes_right_inches
+                               / max_extent_inches))
+
+
+def __add_text_annotations(axes_names: Sequence[str],
+                           top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
+                           paired_axes: bool, ylim: float):
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     if paired_axes:
+        assert len(axes_names) >= 2
         top_ax.text(
             s=axes_names[0],
             x=bottom_ax_xmin + 20,
