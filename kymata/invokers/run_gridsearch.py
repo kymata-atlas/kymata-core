@@ -74,7 +74,7 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=None, help="Resample rate in Hz.")
+    parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
