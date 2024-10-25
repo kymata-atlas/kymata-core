@@ -10,7 +10,8 @@ from typing import NamedTuple
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import SpikeDict, TransformHierarchy, ExpressionPairing
+from kymata.ippm.data_tools import SpikeDict, ExpressionPairing
+from kymata.ippm.ctl import TransformHierarchy
 
 
 class NodePosition(NamedTuple):

@@ -59,9 +59,6 @@ class IPPMSpike(object):
 
 SpikeDict = dict[str, IPPMSpike]
 
-# Maps function names to lists of parent functions
-TransformHierarchy = dict[str, list[str]]
-
 
 def fetch_spike_dict(api: str) -> SpikeDict:
     """

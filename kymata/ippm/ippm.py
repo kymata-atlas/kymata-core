@@ -1,7 +1,8 @@
 from typing import Dict, List
 
 from kymata.ippm.build import IPPMBuilder
-from kymata.ippm.data_tools import SpikeDict, TransformHierarchy
+from kymata.ippm.data_tools import SpikeDict
+from kymata.ippm.ctl import TransformHierarchy
 from kymata.ippm.plot import plot_ippm
 
 
