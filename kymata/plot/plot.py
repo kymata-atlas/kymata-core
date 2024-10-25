@@ -733,9 +733,10 @@ def expression_plot(
         )
 
     # Legend for plotted function
+    legends = []
     if show_legend:
         split_legend_at_n_functions = 15
-        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
+        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 1
         if hidden_functions_in_legend and len(not_shown) > 0:
             if len(not_shown) > split_legend_at_n_functions:
                 legend_n_col = 2
@@ -747,7 +748,7 @@ def expression_plot(
                 if custom_label not in custom_labels_not_shown:
                     custom_labels_not_shown.append(custom_label)
                     dummy_patches.append(Patch(color=None, label=custom_label))
-            leg = bottom_ax.legend(
+            bottom_legend = bottom_ax.legend(
                 labels=custom_labels_not_shown,
                 fontsize="x-small",
                 alignment="left",
@@ -757,9 +758,10 @@ def expression_plot(
                 loc="lower left",
                 handles=dummy_patches,
             )
-            for lh in leg.legend_handles:
+            for lh in bottom_legend.legend_handles:
                 lh.set_alpha(0)
-        top_ax.legend(
+            legends.append(bottom_legend)
+        top_legend = top_ax.legend(
             handles=custom_handles,
             labels=custom_labels,
             fontsize="x-small",
@@ -769,6 +771,18 @@ def expression_plot(
             loc="upper left",
             bbox_to_anchor=(1.02, 1.02),
         )
+        legends.append(top_legend)
+
+    # Adjust figure width to accommodate legend(s)
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
+                             for leg in legends)
+                         * 1.2  # Plus a bit extra because matplotlib
+                         if len(legends) > 0
+                         else max_axes_right_inches)
+    fig.subplots_adjust(right=(fig.get_figwidth()
+                               * max_axes_right_inches
+                               / max_extent_inches))
 
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
