@@ -57,7 +57,6 @@ class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
     fig_size: tuple[float, float]
-    expression_yaxis_label_xpos: float
     subplots_adjust_kwargs: dict[str, float] = None
 
     def __post_init__(self):
@@ -85,8 +84,6 @@ def _minimap_mosaic(
             "left": 0.02,
             "right": 0.8,
         }
-        # Place next to the expression plot yaxis
-        yaxis_label_xpos = width_ratios[0] / (width_ratios[1] + width_ratios[0]) - 0.04
     else:
         width_ratios = None
         subplots_adjust = {
@@ -94,7 +91,6 @@ def _minimap_mosaic(
             "left": 0.08,
             "right": 0.84,
         }
-        yaxis_label_xpos = 0.04
 
     if paired_axes:
         if show_minimap:
@@ -130,7 +126,6 @@ def _minimap_mosaic(
         width_ratios=width_ratios,
         fig_size=fig_size,
         subplots_adjust_kwargs=subplots_adjust,
-        expression_yaxis_label_xpos=yaxis_label_xpos,
     )
 
 
@@ -683,6 +678,8 @@ def expression_plot(
             raise NotImplementedError()
 
     # Format one-off axis qualities
+    top_ax: pyplot.Axes
+    bottom_ax: pyplot.Axes
     if paired_axes:
         top_ax = axes[_AxName.top]
         bottom_ax = axes[_AxName.bottom]
@@ -696,7 +693,85 @@ def expression_plot(
     bottom_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
     )
+
+    # Legend for plotted function
+    legends = []
+    if show_legend:
+        split_legend_at_n_functions = 15
+        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 1
+        if hidden_functions_in_legend and len(not_shown) > 0:
+            if len(not_shown) > split_legend_at_n_functions:
+                legend_n_col = 2
+            # Plot dummy legend for other functions which are included in model selection but not plotted
+            custom_labels_not_shown = []
+            dummy_patches = []
+            for hidden_function in not_shown:
+                custom_label = _custom_label(hidden_function)
+                if custom_label not in custom_labels_not_shown:
+                    custom_labels_not_shown.append(custom_label)
+                    dummy_patches.append(Patch(color=None, label=custom_label))
+            bottom_legend = bottom_ax.legend(
+                labels=custom_labels_not_shown,
+                fontsize="x-small",
+                alignment="left",
+                title="Non-plotted functions",
+                ncol=legend_n_col,
+                bbox_to_anchor=(1.02, -0.02),
+                loc="lower left",
+                handles=dummy_patches,
+            )
+            for lh in bottom_legend.legend_handles:
+                lh.set_alpha(0)
+            legends.append(bottom_legend)
+        top_legend = top_ax.legend(
+            handles=custom_handles,
+            labels=custom_labels,
+            fontsize="x-small",
+            alignment="left",
+            title="Plotted functions",
+            ncol=legend_n_col,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.02),
+        )
+        legends.append(top_legend)
+
+    __reposition_axes_for_legends(fig, legends)
+
+    __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
+
+    if save_to is not None:
+        pyplot.rcParams["savefig.dpi"] = 300
+        save_to = Path(save_to)
+
+        if overwrite or not save_to.exists():
+            pyplot.savefig(Path(save_to), bbox_inches="tight")
+        else:
+            raise FileExistsError(save_to)
+
+    return fig
+
+
+def __reposition_axes_for_legends(fig, legends):
+    """Adjust figure width to accommodate legend(s)"""
+    buffer = 1.0
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
+                             for leg in legends)
+                         # Plus a bit extra because matplotlib
+                         + buffer
+                         if len(legends) > 0
+                         else max_axes_right_inches)
+    fig.subplots_adjust(right=(fig.get_figwidth()
+                               * max_axes_right_inches
+                               / max_extent_inches))
+
+
+def __add_text_annotations(axes_names: Sequence[str],
+                           top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
+                           paired_axes: bool, ylim: float):
+    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     if paired_axes:
+        assert len(axes_names) >= 2
         top_ax.text(
             s=axes_names[0],
             x=bottom_ax_xmin + 20,
@@ -712,7 +787,7 @@ def expression_plot(
             verticalalignment="center",
         )
     fig.text(
-        x=mosaic.expression_yaxis_label_xpos,
+        x=top_ax.get_position().xmin - 0.05,
         y=0.5,
         s="p-value (with α at 5-sigma, Šidák corrected)",
         ha="center",
@@ -731,55 +806,6 @@ def expression_plot(
             horizontalalignment="center",
             rotation="vertical",
         )
-
-    # Legend for plotted function
-    if show_legend:
-        split_legend_at_n_functions = 15
-        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
-        if hidden_functions_in_legend and len(not_shown) > 0:
-            if len(not_shown) > split_legend_at_n_functions:
-                legend_n_col = 2
-            # Plot dummy legend for other functions which are included in model selection but not plotted
-            custom_labels_not_shown = []
-            dummy_patches = []
-            for hidden_function in not_shown:
-                custom_label = _custom_label(hidden_function)
-                if custom_label not in custom_labels_not_shown:
-                    custom_labels_not_shown.append(custom_label)
-                    dummy_patches.append(Patch(color=None, label=custom_label))
-            leg = bottom_ax.legend(
-                labels=custom_labels_not_shown,
-                fontsize="x-small",
-                alignment="left",
-                title="Non-plotted functions",
-                ncol=legend_n_col,
-                bbox_to_anchor=(1.02, -0.02),
-                loc="lower left",
-                handles=dummy_patches,
-            )
-            for lh in leg.legend_handles:
-                lh.set_alpha(0)
-        top_ax.legend(
-            handles=custom_handles,
-            labels=custom_labels,
-            fontsize="x-small",
-            alignment="left",
-            title="Plotted functions",
-            ncol=legend_n_col,
-            loc="upper left",
-            bbox_to_anchor=(1.02, 1.02),
-        )
-
-    if save_to is not None:
-        pyplot.rcParams["savefig.dpi"] = 300
-        save_to = Path(save_to)
-
-        if overwrite or not save_to.exists():
-            pyplot.savefig(Path(save_to), bbox_inches="tight")
-        else:
-            raise FileExistsError(save_to)
-
-    return fig
 
 
 def _restrict_channels(
