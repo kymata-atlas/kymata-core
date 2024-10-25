@@ -24,9 +24,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     try:
         return config[config_key]
     except KeyError:
-        _logger.error(
-            f'Config did not contain any value for "{config_key}", falling back to default value {fallback}'
-        )
+        _logger.error(f'Config did not contain any value for "{config_key}", falling back to default value {fallback}')
         return fallback
 
 
@@ -36,149 +34,80 @@ def main():
     parser = argparse.ArgumentParser(description="Gridsearch Params")
 
     # Dataset specific
-    parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--config", type=str, required=True,
+                        help="Either the path to the config file to be used, or the name of the config file to be used "
+                             "if included with kymata-core.")
 
-    parser.add_argument(
-        "--emeg-dir",
-        type=str,
-        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
-        help="emeg directory, relative to base dir",
-    )
+    parser.add_argument("--emeg-dir", type=str,
+                        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
+                        help="EMEG directory, relative to base dir")
 
     # Analysis specific
-    parser.add_argument(
-        "--overwrite", action="store_true", help="Silently overwrite existing files."
-    )
+    parser.add_argument("--overwrite", action="store_true", help="Silently overwrite existing files.")
 
     # Participants
-    parser.add_argument(
-        "--single-participant-override",
-        type=str,
-        default=None,
-        required=False,
-        help="Supply to run only on one participant",
-    )
-    parser.add_argument(
-        "--ave-mode",
-        type=str,
-        default="ave",
-        choices=["ave", "concatenate"],
-        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.",
-    )
+    parser.add_argument("--single-participant-override", type=str, default=None, required=False,
+                        help="Supply to run only on one participant")
+    parser.add_argument("--ave-mode", type=str, default="ave", choices=["ave", "concatenate"],
+                        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.")
 
     # Functions
-    parser.add_argument(
-        "--input-stream",
-        type=str,
-        required=True,
-        choices=["auditory", "visual", "tactile"],
-        help="The input stream for the functions being tested.",
-    )
-    parser.add_argument(
-        "--function-name", type=str, nargs="+", help="function names in stimulisig"
-    )
-    parser.add_argument(
-        "--function-path",
-        type=str,
-        default="predicted_function_contours/GMSloudness/stimulisig",
-        help="location of function stimulisig",
-    )
-    parser.add_argument(
-        "--replace-nans",
-        type=str,
-        required=False,
-        choices=["zero", "mean"],
-        default=None,
-        help="If the function contour contains NaN values, this will replace them with the specified values.",
-    )
+    parser.add_argument("--input-stream", type=str, required=True, choices=["auditory", "visual", "tactile"],
+                        help="The input stream for the functions being tested.")
+    parser.add_argument("--function-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
+                        help="Location of function stimulisig. Either supply relative to the data dir, or as an "
+                             "absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.")
+    parser.add_argument("--function-name", type=str, nargs="+", help="function names in stimulisig")
+    parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
+                        help="If the function contour contains NaN values, "
+                             "this will replace them with the specified values.")
+    parser.add_argument("--function-sample-rate", type=float, required=False, default=1000,
+                        help="The sample rate of the function contour.")
 
     # For source space
-    parser.add_argument(
-        "--use-inverse-operator",
-        action="store_true",
-        help="Use inverse operator to conduct gridsearch in source space.",
-    )
-    parser.add_argument(
-        "--morph",
-        action="store_true",
-        help="Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.",
-    )
-    parser.add_argument(
-        "--inverse-operator-suffix",
-        type=str,
-        default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
-        help="inverse solution suffix",
-    )
+    parser.add_argument("--use-inverse-operator", action="store_true",
+                        help="Use inverse operator to conduct gridsearch in source space.")
+    parser.add_argument("--morph", action="store_true",
+                        help="Morph hexel data to fs-average space prior to running gridsearch. "
+                             "Only has an effect if an inverse operator is specified.",)
+    parser.add_argument("--inverse-operator-suffix", type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+                        help="inverse solution suffix")
 
-    parser.add_argument("--snr", type=float, default=3, help="inverse solution snr")
-    parser.add_argument(
-        "--downsample-rate",
-        type=int,
-        default=5,
-        help="downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz",
-    )
+    parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
+    parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
 
-    parser.add_argument(
-        "--seconds-per-split",
-        type=float,
-        default=1,
-        help="seconds in each split of the recording, also maximum range of latencies being checked",
-    )
-    parser.add_argument(
-        "--n-splits",
-        type=int,
-        default=400,
-        help="number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)",
-    )
-    parser.add_argument(
-        "--n-derangements",
-        type=int,
-        default=5,
-        help="number of deragements for the null distribution",
-    )
-    parser.add_argument(
-        "--start-latency",
-        type=float,
-        default=-200,
-        help="earliest latency to check in cross correlation",
-    )
-    parser.add_argument(
-        "--emeg-t-start",
-        type=float,
-        default=-200,
-        help="start of the emeg evoked files relative to the start of the function",
-    )
+    # General gridsearch
+    parser.add_argument("--seconds-per-split", type=float, default=1,
+                        help="Seconds in each split of the recording, also maximum range of latencies being checked")
+    parser.add_argument("--n-splits", type=int, default=400,
+                        help="Number of splits to split the recording into, "
+                             "(set to stimulus_length/seconds_per_split for full file)")
+    parser.add_argument("--n-derangements", type=int, default=5,
+                        help="Number of deragements for the null distribution")
+    parser.add_argument("--start-latency", type=float, default=-200,
+                        help="Earliest latency to check in cross correlation")
+    parser.add_argument("--emeg-t-start", type=float, default=-200,
+                        help="Start of the emeg evoked files relative to the start of the function")
 
     # Output paths
-    parser.add_argument(
-        "--save-name",
-        type=str,
-        required=False,
-        help="Specify the name of the saved .nkg file.",
-    )
-    parser.add_argument(
-        "--save-expression-set-location",
-        type=Path,
-        default=Path(_default_output_dir),
-        help="Save the results of the gridsearch into an ExpressionSet .nkg file",
-    )
-    parser.add_argument(
-        "--save-plot-location",
-        type=Path,
-        default=Path(_default_output_dir),
-        help="Save an expression plots, and other plots, in this location",
-    )
-    parser.add_argument(
-        "--plot-top-channels",
-        action="store_true",
-        help="Plots the p-values and correlations of the top channels in the gridsearch.",
-    )
+    parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
+    parser.add_argument("--save-expression-set-location", type=Path, default=Path(_default_output_dir),
+                        help="Save the results of the gridsearch into an ExpressionSet .nkg file")
+    parser.add_argument("--save-plot-location", type=Path, default=Path(_default_output_dir),
+                        help="Save an expression plots, and other plots, in this location")
+    parser.add_argument("--plot-top-channels", action="store_true",
+                        help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
-    dataset_config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", args.config))
-    )
+    specified_config_file = Path(args.config)
+    if specified_config_file.exists():
+        _logger.info(f"Loading config file from {str(specified_config_file)}")
+        dataset_config = load_config(str(specified_config_file))
+    else:
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
+        _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
+        dataset_config = load_config(str(default_config_file))
 
     # Config defaults
     participants = dataset_config.get("participants")
@@ -278,25 +207,43 @@ def main():
 
     combined_expression_set = None
 
+    # Get stimulisig path
+    if Path(args.function_path).exists():
+        function_path = Path(args.function_path)
+    else:
+        function_path = Path(base_dir, args.function_path)
+    _logger.info(f"Loading functions from {str(function_path)}")
+
+    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
+
     for function_name in args.function_name:
         _logger.info(f"Running gridsearch on {function_name}")
-        function_values = load_function(
-            Path(base_dir, args.function_path),
+        function = load_function(
+            function_path,
             func_name=function_name,
             replace_nans=args.replace_nans,
             bruce_neurons=(5, 10),
+            sample_rate=args.function_sample_rate,
         )
-        function_values = function_values.downsampled(args.downsample_rate)
+
+        # Resample function to match target sample rate if specified, else emeg sample rate
+        function_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+        if function.sample_rate != function_resample_rate:
+            _logger.info(f"Function sample rate ({function.sample_rate} Hz) doesn't match target sample rate "
+                         f"({function_resample_rate} Hz). Function will be resampled to match. "
+                         f"({function.sample_rate} → {function_resample_rate} Hz)")
+            function = function.resampled(function_resample_rate)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
             channel_names=ch_names,
             channel_space=channel_space,
-            function=function_values,
+            function=function,
             seconds_per_split=args.seconds_per_split,
             n_derangements=args.n_derangements,
             n_splits=args.n_splits,
             n_reps=n_reps,
+            emeg_sample_rate=emeg_sample_rate,
             start_latency=args.start_latency,
             plot_location=args.save_plot_location,
             emeg_t_start=args.emeg_t_start,
@@ -338,9 +285,7 @@ def main():
             combined_names + f"_{args.single_participant_override}",
         ).with_suffix(".png")
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(
-            ".png"
-        )
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(
         combined_expression_set,

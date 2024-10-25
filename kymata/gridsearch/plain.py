@@ -21,7 +21,7 @@ _logger = getLogger(__name__)
 
 
 def do_gridsearch(
-    emeg_values: NDArray,  # chan x time
+    emeg_values: NDArray,  # chans x reps x time
     function: Function,
     channel_names: list,
     channel_space: str,
@@ -29,8 +29,8 @@ def do_gridsearch(
     emeg_t_start: float,  # ms
     stimulus_shift_correction: float,  # seconds/second
     stimulus_delivery_latency: float,  # seconds
+    emeg_sample_rate: float,  # Hertz
     plot_location: Optional[Path] = None,
-    emeg_sample_rate: int = 1000,  # Hertz
     n_derangements: int = 1,
     seconds_per_split: float = 1,
     n_splits: int = 400,
@@ -46,7 +46,7 @@ def do_gridsearch(
     testing and optional plotting.
 
     Args:
-        emeg_values (NDArray): A 2D array of EMEG values with shape (n_channels, time).
+        emeg_values (NDArray): A 2D array of EMEG values with shape (channels, reps, time).
         function (Function): The function against which the EMEG data will be correlated. It should
             have a `values` attribute representing the function's values and a `sample_rate`
             attribute indicating its sample rate.
@@ -60,7 +60,7 @@ def do_gridsearch(
         stimulus_delivery_latency (float): Correction offset for stimulus delivery in seconds.
         plot_location (Optional[Path], optional): Path to save the plot of the top five channels of the
             grid search. If None, plotting is skipped. Default is None.
-        emeg_sample_rate (int, optional): The sample rate of the EMEG data in Hertz. Default is 1000 Hz.
+        emeg_sample_rate (float, optional): The sample rate of the EMEG data in Hertz.
         n_derangements (int, optional): Number of derangements (random permutations) used to create the
             null distribution. Default is 1.
         seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
@@ -91,20 +91,30 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the function's sample rate
-    downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    if emeg_sample_rate != function.sample_rate:
+        _logger.warning(f"Data sample rate ({emeg_sample_rate} Hz) and "
+                        f"function sample rate ({function.sample_rate} Hz) differ. "
+                        f"Data will be down-sampled.")
+    downsample_ratio = emeg_sample_rate / function.sample_rate
+    if downsample_ratio.is_integer():
+        downsample_rate: int = int(emeg_sample_rate / function.sample_rate)
+    else:
+        raise ValueError(f"Data sample rate ({emeg_sample_rate} Hz) and "
+                         f"function sample rate ({function.sample_rate} Hz) are incompatible.")
 
-    n_samples_per_split = int(
-        seconds_per_split * emeg_sample_rate * 2 // downsample_rate
-    )
+    n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
     # the number of samples in the function 'trial' which is half that needed for the EMEG
     n_func_samples_per_split = n_samples_per_split // 2
 
+    _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
+                 f" @ {emeg_sample_rate} Hz")
+    _logger.info(f"Total function length is {function.values.shape[0] / function.sample_rate:.2f} s"
+                 f" @ {function.sample_rate} Hz")
+
     func_length = n_splits * n_func_samples_per_split
     if func_length < function.values.shape[0]:
-        _logger.warning(
-            f"WARNING: not using full length of the file (only using {round(n_splits * seconds_per_split, 2)}s)"
-        )
+        _logger.warning(f"WARNING: not using full length of the file (only using {n_splits * seconds_per_split:.2f}s)")
         func = function.values[:func_length].reshape(n_splits, n_func_samples_per_split)
     else:
         func = function.values.reshape(n_splits, n_func_samples_per_split)
@@ -136,9 +146,7 @@ def do_gridsearch(
                 * seconds_per_split
                 * (1 + stimulus_shift_correction)
             )  # splits, stretched by the shift correction
-            + round(
-                stimulus_delivery_latency * emeg_sample_rate
-            )  # correct for stimulus delivery latency delay
+            + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
         )
         for i in range(n_splits)
     ]
