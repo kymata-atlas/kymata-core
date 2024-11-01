@@ -67,7 +67,7 @@ def test_MaxPoolClusterer_Fit_Successfully(mock_tag_labels, mock_assign_points):
 
     mp = MaxPoolClusterer(label_significance_threshold=2)
     mp = mp.fit(test_df)
-    cluster_labels = mp.labels
+    cluster_labels = mp.labels_
     expected_labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
 
     assert cluster_labels == expected_labels
