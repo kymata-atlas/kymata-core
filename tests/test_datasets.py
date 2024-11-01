@@ -9,8 +9,7 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 @pytest.mark.skipif(
     IN_GITHUB_ACTIONS,
-    reason="Test only when run locally - otherwise github will download 0.5GB each"
-    "time we push",
+    reason="Test only when run locally - otherwise github will download 0.5GB each time we push",
 )
 def test_download_and_delete_q3_2023_data_files():
     from kymata.datasets.sample import KymataMirror2023Q3Dataset
@@ -25,10 +24,10 @@ def test_download_and_delete_q3_2023_data_files():
         for filename in dataset.filenames:
             assert not Path(dataset.path, filename).exists()
 
+
 @pytest.mark.skipif(
     IN_GITHUB_ACTIONS,
-    reason="Test only when run locally - otherwise github will download files each"
-    "time we push",
+    reason="Test only when run locally - otherwise github will download files each time we push",
 )
 def test_download_and_delete_gm_loudness3_data_files():
     from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
@@ -43,10 +42,10 @@ def test_download_and_delete_gm_loudness3_data_files():
         for filename in dataset.filenames:
             assert not Path(dataset.path, filename).exists()
 
+
 @pytest.mark.skipif(
     IN_GITHUB_ACTIONS,
-    reason="Test only when run locally - otherwise github will download files each"
-    "time we push",
+    reason="Test only when run locally - otherwise github will download files each time we push",
 )
 def test_download_and_delete_fsaverage_surfaces():
     from kymata.datasets.fsaverage import FSAverageDataset

@@ -13,6 +13,9 @@ from kymata.entities.expression import (
 from kymata.math.p_values import p_to_logp, logp_to_p
 
 
+_data_dtype = np.float32
+
+
 def test_log_p_single_value():
     p = 0.000_000_000_001
     assert np.isclose(p_to_logp(p), -12)
@@ -40,8 +43,8 @@ def hexel_expression_set_5_hexels() -> HexelExpressionSet:
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10),
-        data_rh=np.random.randn(5, 10),
+        data_lh=np.random.randn(5, 10).astype(_data_dtype),
+        data_rh=np.random.randn(5, 10).astype(_data_dtype),
     )
 
 
@@ -376,7 +379,7 @@ def test_ses_validation_input_lengths_two_functions_one_dataset():
             functions=["first", "second"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10),
+            data=np.random.randn(5, 10).astype(_data_dtype),
         )
 
 
@@ -394,7 +397,7 @@ def test_ses_validation_input_lengths_two_functions_two_datasets_contiguous():
         functions=["first", "second"],
         sensors=list("abcde"),
         latencies=range(10),
-        data=np.random.randn(5, 10, 2),
+        data=np.random.randn(5, 10, 2).astype(_data_dtype),
     )
 
 
@@ -404,7 +407,7 @@ def test_ses_validation_input_lengths_one_function_two_datasets_contiguous():
             functions=["first"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10, 2),
+            data=np.random.randn(5, 10, 2).astype(_data_dtype),
         )
 
 
@@ -424,7 +427,7 @@ def test_ses_validation_input_lengths_two_functions_three_datasets_contiguous():
             functions=["first", "second"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10, 3),
+            data=np.random.randn(5, 10, 3).astype(_data_dtype),
         )
 
 
@@ -435,8 +438,8 @@ def test_hes_validation_input_lengths_two_functions_one_dataset():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10),
-            data_rh=np.random.randn(5, 10),
+            data_lh=np.random.randn(5, 10).astype(_data_dtype),
+            data_rh=np.random.randn(5, 10).astype(_data_dtype),
         )
 
 
@@ -446,8 +449,8 @@ def test_hes_validation_input_lengths_two_functions_two_datasets_sequence():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=[np.random.randn(5, 10) for _ in range(2)],
-        data_rh=[np.random.randn(5, 10) for _ in range(2)],
+        data_lh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)],
+        data_rh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)],
     )
 
 
@@ -457,8 +460,8 @@ def test_hes_validation_input_lengths_two_functions_two_datasets_contiguous():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10, 2),
-        data_rh=np.random.randn(5, 10, 2),
+        data_lh=np.random.randn(5, 10, 2).astype(_data_dtype),
+        data_rh=np.random.randn(5, 10, 2).astype(_data_dtype),
     )
 
 
@@ -469,8 +472,8 @@ def test_hes_validation_input_lengths_two_functions_three_datasets_sequence():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10) for _ in range(3)],
-            data_rh=[np.random.randn(5, 10) for _ in range(3)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(3)],
+            data_rh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(3)],
         )
 
 
@@ -481,8 +484,8 @@ def test_hes_validation_input_lengths_two_functions_three_datasets_contiguous():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10, 3),
-            data_rh=np.random.randn(5, 10, 3),
+            data_lh=np.random.randn(5, 10, 3).astype(_data_dtype),
+            data_rh=np.random.randn(5, 10, 3).astype(_data_dtype),
         )
 
 
@@ -502,8 +505,8 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels():
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10),
-        data_rh=np.random.randn(6, 10),
+        data_lh=np.random.randn(5, 10).astype(_data_dtype),
+        data_rh=np.random.randn(6, 10).astype(_data_dtype),
     )
 
 
@@ -513,8 +516,10 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_function
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
-        data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+        data_lh=[np.random.randn(5, 10).astype(_data_dtype),
+                 np.random.randn(5, 10).astype(_data_dtype)],
+        data_rh=[np.random.randn(6, 10).astype(_data_dtype),
+                 np.random.randn(6, 10).astype(_data_dtype)],
     )
 
 
@@ -524,8 +529,8 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_function
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10, 2),
-        data_rh=np.random.randn(6, 10, 2),
+        data_lh=np.random.randn(5, 10, 2).astype(_data_dtype),
+        data_rh=np.random.randn(6, 10, 2).astype(_data_dtype),
     )
 
 
@@ -536,8 +541,8 @@ def test_hes_validation_input_mismatched_blocks_discordent_channels():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10),
-            data_rh=np.random.randn(6, 10),
+            data_lh=np.random.randn(5, 10).astype(_data_dtype),
+            data_rh=np.random.randn(6, 10).astype(_data_dtype),
         )
 
 
@@ -548,8 +553,8 @@ def test_hes_validation_mixmatched_latencies_between_functions():
             hexels_lh=range(5),
             hexels_rh=range(6),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10), np.random.randn(5, 11)],
-            data_rh=[np.random.randn(6, 10), np.random.randn(6, 11)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype), np.random.randn(5, 11)],
+            data_rh=[np.random.randn(6, 10).astype(_data_dtype), np.random.randn(6, 11)],
         )
 
 
@@ -560,14 +565,14 @@ def test_hes_validation_mixmatched_hexels_between_functions():
             hexels_lh=range(5),
             hexels_rh=range(6),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
-            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype), np.random.randn(4, 10)],
+            data_rh=[np.random.randn(6, 10).astype(_data_dtype), np.random.randn(6, 10)],
         )
 
 
 def test_hes_rename_functions():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         functions=["first", "second"],
@@ -591,8 +596,8 @@ def test_hes_rename_functions():
 
 
 def test_hes_rename_functions_noop():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         functions=["first", "second"],
@@ -610,8 +615,8 @@ def test_hes_rename_functions_noop():
 
 
 def test_hes_rename_functions_just_one():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         functions=["first", "second"],
@@ -635,8 +640,8 @@ def test_hes_rename_functions_just_one():
 
 
 def test_hes_rename_functions_wrong_name():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         functions=["first", "second"],
@@ -651,8 +656,8 @@ def test_hes_rename_functions_wrong_name():
 
 
 def test_hes_rename_hexels():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         functions=["first", "second"],
