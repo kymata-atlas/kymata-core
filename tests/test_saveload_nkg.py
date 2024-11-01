@@ -39,7 +39,7 @@ def test_load_v0_1_nkg():
     es = load_expression_set(v01_path)
     assert isinstance(es, HexelExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.hexels_left) == 100
     assert len(es.hexels_right) == 100
@@ -55,7 +55,7 @@ def test_load_v0_2_hexel_nkg():
     es = load_expression_set(v02_path)
     assert isinstance(es, HexelExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.hexels_left) == 100
     assert len(es.hexels_right) == 100
@@ -68,7 +68,7 @@ def test_load_v0_2_sensor_nkg():
     )
     assert isinstance(es, SensorExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.sensors) == 305
     assert es.scalp.shape == (305, 10, 1)
@@ -83,7 +83,7 @@ def test_load_v0_3_hexel_nkg():
     es = load_expression_set(v03_path)
     assert isinstance(es, HexelExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.hexels_left) == 100
     assert len(es.hexels_right) == 100
@@ -99,7 +99,7 @@ def test_load_v0_3_sensor_nkg():
     es = load_expression_set(v03_path)
     assert isinstance(es, SensorExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.sensors) == 305
     assert es.scalp.shape == (305, 10, 1)
@@ -114,7 +114,7 @@ def test_load_v0_4_hexel_nkg():
     es = load_expression_set(v04_path)
     assert isinstance(es, HexelExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.hexels_left) == 100
     assert len(es.hexels_right) == 100
@@ -130,7 +130,7 @@ def test_load_v0_4_sensor_nkg():
     es = load_expression_set(v04_path)
     assert isinstance(es, SensorExpressionSet)
     assert len(es.transforms) == 1
-    assert es.transforms == ["test transform"]
+    assert es.transforms == ["test function"]
     assert len(es.latencies) == 10
     assert len(es.sensors) == 305
     assert es.scalp.shape == (305, 10, 1)
