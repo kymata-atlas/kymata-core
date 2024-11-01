@@ -1,5 +1,7 @@
 from copy import deepcopy
+
 import pandas as pd
+import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.data_tools import IPPMSpike
@@ -11,7 +13,10 @@ from kymata.ippm.denoising_strategies import (
     MeanShiftStrategy, MAGNITUDE, LATENCY,
 )
 
-test_data_func1 = [
+
+_test_dtype = np.float32
+
+test_data_func1 = np.array([
     [-100, 1e-50],
     [-90, 1e-34],
     [-95, 1e-8],
@@ -27,8 +32,8 @@ test_data_func1 = [
     [200, 1e-50],
     [210, 1e-44],
     [211, 1e-55],
-]
-significant_test_data_func1 = [
+]).astype(_test_dtype)
+significant_test_data_func1 = np.array([
     [-100, 1e-50],
     [-90, 1e-34],
     [-75, 1e-75],
@@ -41,11 +46,11 @@ significant_test_data_func1 = [
     [200, 1e-50],
     [210, 1e-44],
     [211, 1e-55],
-]
+]).astype(_test_dtype)
 significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
 test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=[LATENCY, MAGNITUDE])
 
-test_data_func2 = [
+test_data_func2 = np.array([
     [-30, 1e-2],
     [23, 1e-44],
     [26, 1e-59],
@@ -55,15 +60,15 @@ test_data_func2 = [
     [131, 1e-76],
     [131, 1e-4],
     [200, 1e-2],
-]
-significant_test_data_func2 = [
+]).astype(_test_dtype)
+significant_test_data_func2 = np.array([
     [23, 1e-44],
     [26, 1e-59],
     [30, 1e-99],
     [130, 1e-81],
     [131, 1e-23],
     [131, 1e-76],
-]
+]).astype(_test_dtype)
 test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=[LATENCY, MAGNITUDE])
 
 noisy_test_hexels = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}

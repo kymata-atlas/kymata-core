@@ -1,10 +1,14 @@
 from unittest.mock import patch, MagicMock
 
 import pandas as pd
+import numpy as np
 
 from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 
-test_data = [
+
+_test_dtype = np.float32
+
+test_data = np.array([
     [-100, 1e-50],
     [-90, 1e-34],
     [-95, 1e-8],
@@ -20,7 +24,7 @@ test_data = [
     [200, 1e-50],
     [210, 1e-44],
     [211, 1e-55],
-]
+]).astype(_test_dtype)
 test_df = pd.DataFrame(test_data, columns=["Latency", "Mag"])
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 
@@ -98,23 +102,7 @@ def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
 ):
     mock_assign_points.return_value = [4, 4, 4, 5, 5,  8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
     mock_tag_labels.return_value    = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    mock_merge_significant.return_value = [
-        0,
-        0,
-        0,
-        0,
-        0,
-        -1,
-        1,
-        1,
-        1,
-        -1,
-        2,
-        2,
-        2,
-        2,
-        2,
-    ]
+    mock_merge_significant.return_value = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
     amp = AdaptiveMaxPoolClusterer(label_significance_threshold=2, base_label_size=25)
     amp = amp.fit(test_df)
@@ -142,6 +130,7 @@ def test_Should_GMMClusterer_GridSearchForOptimalNumberOfClusters_Successfully(m
     optimal_model = gmm._grid_search_for_optimal_number_of_clusters(test_df)
     assert optimal_model == mocked_best_fit_gmm_instance
 
+
 """
 def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
     mocked_gmm_instance = MagicMock()
@@ -156,28 +145,11 @@ def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully()
     assert actual_labels == [-1, 1, 2]
 """
 
-@patch(
-    "kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters"
-)
+
+@patch("kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters")
 def test_Should_GMMClusterer_Fit_Successfully(mock_grid_search):
     mocked_optimal_model = MagicMock()
-    mocked_optimal_model.predict.return_value = [
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        2,
-        2,
-        2,
-        3,
-        4,
-        4,
-        4,
-        4,
-        4,
-    ]
+    mocked_optimal_model.predict.return_value = [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 4, 4]
     mock_grid_search.return_value = mocked_optimal_model
 
     gmm = GMMClusterer()
