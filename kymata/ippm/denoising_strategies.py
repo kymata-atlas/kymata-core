@@ -6,11 +6,11 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
+from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
 from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer)
-from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
-from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 
 
 # Column names
@@ -103,7 +103,7 @@ class DenoisingStrategy(ABC):
             2. Cluster using the clustering method of the child class.
             3. For each cluster, we take the most significant point and discard the rest.
                 3.1) [Optional] Perform any postprocessing.
-                    - should_max_pool: Take the most significant point over all of the clusters. I.e., only 1
+                    - should_max_pool: Take the most significant point over all the clusters. I.e., only 1
                                              spike per transform.
 
         :param spikes:
@@ -112,9 +112,7 @@ class DenoisingStrategy(ABC):
             hemisphere.
         :return: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
         """
-        spikes = deepcopy(
-            spikes
-        )  # When we copy the input, it is because we don't want to modify the original structure.
+        spikes = deepcopy(spikes)  # When we copy the input, it is because we don't want to modify the original structure.
         # These are called side effects, and they can introduce obscure bugs.
 
         for func, df in self._map_spikes_to_df(spikes):
@@ -124,14 +122,14 @@ class DenoisingStrategy(ABC):
 
             preprocessed_df = self._preprocess(df)
 
-            self._clusterer = self._clusterer.fit(preprocessed_df)
+            self._clusterer: CustomClusterer = self._clusterer.fit(preprocessed_df)
             # It is important you don't use the preprocessed_df to get the denoised because
             # we do not want to plot the preprocessed latencies and magnitudes.
             denoised_time_series = self._get_denoised_time_series(df)
 
             spikes[func] = self._postprocess(spikes[func], denoised_time_series)
 
-            self._clusterer.labels_ = []  # reset clusterer labels between runs
+            self._clusterer.reset()
 
         return spikes
 
@@ -250,7 +248,7 @@ class DenoisingStrategy(ABC):
             )
 
         df = deepcopy(df)
-        df["Label"] = self._clusterer.labels_
+        df["Label"] = self._clusterer.labels
         most_significant_points = __keep_most_significant_per_label(df)
         most_significant_points = __filter_out_anomalies(most_significant_points)
         return __convert_df_to_list(most_significant_points)

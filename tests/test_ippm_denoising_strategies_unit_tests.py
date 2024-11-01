@@ -175,7 +175,7 @@ def test_DenoisingStrategy_Preprocess_Successfully():
 
 def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
     mocked_clusterer = MagicMock()
-    mocked_clusterer.labels_ = significant_test_data_func1_labels
+    mocked_clusterer.labels = significant_test_data_func1_labels
     strategy = DenoisingStrategy(HEMI_RIGHT)
     strategy._clusterer = mocked_clusterer
     actual = strategy._get_denoised_time_series(test_df_func1)

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import Counter
-from copy import copy, deepcopy
+from copy import deepcopy
 from math import floor
 from typing import List, Dict, Self, Optional
 
@@ -8,43 +8,49 @@ from sklearn.mixture import GaussianMixture
 from sklearn.cluster import DBSCAN, MeanShift
 from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
-
 import pandas as pd
 import numpy as np
 
-from kymata.ippm.constants import LATENCY_OFFSET, ANOMALOUS_TAG
+from kymata.ippm.constants import LATENCY_OFFSET
+
+
+_ANOMALOUS_CLUSTER_TAG = -1
 
 
 class CustomClusterer(ABC):
     """
-    You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
+    You need to override these methods to create a new clusterer. self.labels assigns each datapoint
     in df to a cluster. Set anomalies to ANOMALOUS_TAG.
+
     self.labels_ is a list of cluster labels. It has the same size as the dataset.
     """
 
     def __init__(self):
-        self.labels_ = []
+        self.labels: list[int] = []
 
     @abstractmethod
     def fit(self, df: pd.DataFrame) -> Self:
         raise NotImplementedError()
 
+    def reset(self):
+        self.labels = []
+
 
 class MaxPoolClusterer(CustomClusterer):
-    def __init__(self, label_significance_threshold: int = 15, label_size: int = 25):
+    def __init__(self,
+                 label_significance_threshold: int = 15,
+                 label_size: int = 25):
         super().__init__()
         self._label_significance_threshold = label_significance_threshold
         self._label_size = label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self.labels_ = self._assign_points_to_labels(df)
-        count_of_data_per_label = dict(Counter(self.labels_))
-        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
+        labels = self._assign_points_to_labels(df)
+        count_of_data_per_label = Counter(labels)
+        self.labels = self._tag_labels_below_label_significance_threshold_as_anomalies(self.labels, count_of_data_per_label)
         return self
 
-    def _assign_points_to_labels(
-        self, df_with_latency: pd.DataFrame, latency_col_index: int = 0
-    ) -> List[int]:
+    def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
         def __get_bin_index(latency: float) -> int:
             return floor(
                 (latency + LATENCY_OFFSET) / self._label_size
@@ -52,11 +58,10 @@ class MaxPoolClusterer(CustomClusterer):
 
         return list(map(__get_bin_index, df_with_latency.iloc[:, latency_col_index]))
 
-    def _tag_labels_below_label_significance_threshold_as_anomalies(self, count_of_data_per_bin: Dict[int, int]):
-        labels = copy(self.labels_)
+    def _tag_labels_below_label_significance_threshold_as_anomalies(self, labels: list[int], count_of_data_per_bin: Dict[int, int]):
         for label, count in count_of_data_per_bin.items():
             if count < self._label_significance_threshold:
-                labels = self._map_label_to_new_label(label, ANOMALOUS_TAG, labels)
+                labels = MaxPoolClusterer._map_label_to_new_label(label, _ANOMALOUS_CLUSTER_TAG, labels)
         return labels
 
     @staticmethod
@@ -66,31 +71,27 @@ class MaxPoolClusterer(CustomClusterer):
 
 class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
     """
-
-        NOTE: AMP assumes a sorted time-series, so shuffling is not ideal.
-
+    NOTE: AMP assumes a sorted time-series, so shuffling is not ideal.
     """
-    def __init__(
-        self, label_significance_threshold: int = 5, base_label_size: int = 10
-    ):
+    def __init__(self,
+                 label_significance_threshold: int = 5,
+                 base_label_size: int = 10):
         super().__init__(label_significance_threshold, base_label_size)
-        self.labels_ = None
+        self.labels = []
         self._base_label_size = base_label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
-        self.labels_ = self._assign_points_to_labels(df)
-        count_of_data_per_label = dict(Counter(self.labels_))
-        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(count_of_data_per_label)
-        self.labels_ = self._merge_significant_labels(df)
+        labels = self._assign_points_to_labels(df)
+        count_of_data_per_label = Counter(labels)
+        labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
+        self.labels = self._merge_significant_labels(labels, df)
         return self
 
-    def _merge_significant_labels(self, df: pd.DataFrame) -> List[int]:
+    def _merge_significant_labels(self, labels: list[int], df: pd.DataFrame) -> List[int]:
         def __is_insignificant_label(end_index: int) -> bool:
-            return self.labels_[end_index] == ANOMALOUS_TAG
+            return labels[end_index] == _ANOMALOUS_CLUSTER_TAG
 
-        def __labels_are_not_adjacent_and_previous_was_significant(
-            end_index: int,
-        ) -> bool:
+        def __labels_are_not_adjacent_and_previous_was_significant(end_index: int) -> bool:
             if __is_insignificant_label(end_index - 1):
                 # we do not care about the gap between insignificant label and significant label
                 return False
@@ -99,17 +100,18 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
             return current_latency - previous_latency > self._base_label_size
 
         def __reached_end(end_index: int) -> bool:
-            return end_index == len(self.labels_) - 1
+            return end_index == len(labels) - 1
 
         new_label = 0
         start_index = 0
-        for end_index in range(len(self.labels_)):
+        for end_index in range(len(labels)):
             if (
                 __is_insignificant_label(end_index)
                 or __labels_are_not_adjacent_and_previous_was_significant(end_index)
                 or __reached_end(end_index)
             ):
-                self.labels_ = self._merge_labels(
+                labels = self._merge_labels(
+                    labels,
                     start_index,
                     end_index,
                     new_label,
@@ -122,24 +124,22 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
                 else:
                     start_index = end_index
 
-        return self.labels_
+        return labels
 
-    def _merge_labels(
-        self,
-        start_index: int,
-        end_index: int,
-        new_label: int,
-        current_label_is_anomalous: bool,
-    ):
+    @staticmethod
+    def _merge_labels(labels: list[str],
+                      start_index: int, end_index: int,
+                      new_label: int,
+                      current_label_is_anomalous: bool):
         if start_index < end_index:
             if not current_label_is_anomalous:
                 # inclusive merge
                 end_index += 1
 
             for index in range(start_index, end_index):
-                self.labels_[index] = new_label
+                labels[index] = new_label
 
-        return self.labels_
+        return labels
 
 
 class GMMClusterer(CustomClusterer):
@@ -180,7 +180,7 @@ class GMMClusterer(CustomClusterer):
         optimal_model = self._grid_search_for_optimal_number_of_clusters(df)
         if optimal_model is not None:
             # None if no data.
-            self.labels_ = optimal_model.predict(df)
+            self.labels = optimal_model.predict(df)
             # do not remove anomalies for now
             #self.labels_ = self._tag_low_loglikelihood_points_as_anomalous(
             #    df, optimal_model
@@ -214,7 +214,7 @@ class GMMClusterer(CustomClusterer):
         optimal_model = None
         for number_of_clusters in range(1, self._number_of_clusters_upper_bound):
             if number_of_clusters > len(df) or len(df) == 1:
-                self.labels_ = [0 for _ in range(len(df))] # default label == 0.
+                self.labels = [0 for _ in range(len(df))]  # default label == 0.
                 break
 
             copy_of_df = deepcopy(df)
@@ -266,31 +266,26 @@ class GMMClusterer(CustomClusterer):
             # we do > cus more negative loglikelihood, the higher the likelihood.
             return list(
                 map(
-                    lambda x: ANOMALOUS_TAG if x[0] < anomaly_threshold else x[1],
-                    zip(log_likelihoods, self.labels_),
+                    lambda x: _ANOMALOUS_CLUSTER_TAG if x[0] < anomaly_threshold else x[1],
+                    zip(log_likelihoods, self.labels),
                 )
             )
 
         log_likelihood = optimal_model.score_samples(df)
         threshold = np.percentile(log_likelihood, anomaly_percentile_threshold)
-        self.labels_ = __update_labels_to_anomalous_label(log_likelihood, threshold)
-        return self.labels_
+        return __update_labels_to_anomalous_label(log_likelihood, threshold)
 
 
 class DBSCANClusterer(CustomClusterer):
-    def __init__(
-        self,
-        eps: int = 10,
-        min_samples: int = 2,
-        metric: str = "euclidean",
-        algorithm: str = "auto",
-        leaf_size: int = 30,
-        n_jobs: int = -1,
-        metric_params: Optional[dict] = None):
-
+    def __init__(self,
+                 eps: int = 10,
+                 min_samples: int = 2,
+                 metric: str = "euclidean",
+                 algorithm: str = "auto",
+                 leaf_size: int = 30,
+                 n_jobs: int = -1,
+                 metric_params: Optional[dict] = None):
         super().__init__()
-
-        # A thin wrapper around DBSCAN
         self._dbscan: DBSCAN = DBSCAN(
             eps=eps,
             min_samples=min_samples,
@@ -298,12 +293,12 @@ class DBSCANClusterer(CustomClusterer):
             metric_params=metric_params,
             algorithm=algorithm,
             leaf_size=leaf_size,
-            n_jobs=n_jobs,
-        )
+            n_jobs=n_jobs)
 
     def fit(self, df: pd.DataFrame) -> Self:
+        # A thin wrapper around DBSCAN
         self._dbscan.fit(df)
-        self.labels_ = self._dbscan.labels_
+        self.labels = self._dbscan.labels_
         return self
 
 
@@ -313,19 +308,17 @@ class MeanShiftClusterer(CustomClusterer):
                  bandwidth: float = 30,
                  seeds: Optional[int] = None,
                  min_bin_freq: int = 2,
-                 n_jobs: int = -1,):
-
+                 n_jobs: int = -1):
         super().__init__()
-
         self._meanshift = MeanShift(
             bandwidth=bandwidth,
             seeds=seeds,
             min_bin_freq=min_bin_freq,
             cluster_all=cluster_all,
-            n_jobs=n_jobs,
-        )
+            n_jobs=n_jobs)
 
     def fit(self, df: pd.DataFrame) -> Self:
+        # A thin wrapper around MeanShift
         self._meanshift.fit(df)
-        self.labels_ = self._meanshift.labels_
+        self.labels = self._meanshift.labels_
         return self
