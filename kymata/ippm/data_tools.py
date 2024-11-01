@@ -22,22 +22,12 @@ class IPPMSpike(object):
         transform : the name of the transform who caused the spike
         right_best_pairings : right hemisphere's best timings for this transform
         left_best_pairings : right hemisphere's best timings for this transform
-        description : optional written description
-        github_commit : github commit of the transform
     """
 
-    def __init__(
-        self,
-        transform_name: str,
-        description: str = None,
-        github_commit: str = None,
-    ):
+    def __init__(self, transform_name: str):
         self.transform: str = transform_name
         self.right_best_pairings: list[ExpressionPairing] = []
         self.left_best_pairings: list[ExpressionPairing] = []
-        self.description: Optional[str] = description
-        self.github_commit: str = github_commit
-        self.color: Optional[str] = None
 
         self.input_stream: Optional[str] = None
 

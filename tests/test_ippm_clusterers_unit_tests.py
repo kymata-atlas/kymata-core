@@ -82,7 +82,7 @@ def test_AdaptiveMaxPoolClusterer_MergeSignificantLabels_Successfully(mock_merge
     ]
     amp = AdaptiveMaxPoolClusterer(base_label_size=25)
     amp.labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    amp._merge_significant_labels(test_df)
+    amp.labels = amp._merge_significant_labels(amp.labels, test_df)
     actual_labels = amp.labels
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 

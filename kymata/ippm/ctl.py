@@ -4,54 +4,55 @@ from typing import Optional
 from networkx import DiGraph
 
 
-# Maps function names to lists of parent functions
-TransformHierarchy = dict[str, list[str]]
-
-
-@dataclass
-class Transform:
+@dataclass(frozen=True)
+class TransformMetadata:
     name: str
     equation: Optional[str] = None
     color: str = "#000000"
+    commit: Optional[str] = None
+
+    def __str__(self):
+        # Hide optional members if not used
+        equation_str = f",\tequation='{self.equation}'" if self.equation is not None else ""
+        commit_str = f",\tcommit='{self.commit}'" if self.commit is not None else ""
+        return f"TransformNode(name='{self.name}'{equation_str},\tcolor='{self.color}'{commit_str})"
+
+
+# Maps transforms to lists of names of parent transforms
+TransformHierarchy = dict[TransformMetadata, list[str]]
 
 
 class CandidateTransformList:
-    def __init__(self, hierarchy: TransformHierarchy,
-                 color_overrides: Optional[dict[str, str]] = None,
-                 equation_overrides: Optional[dict[str, str]] = None):
-        if color_overrides is None:
-            color_overrides = dict()
-        if equation_overrides is None:
-            equation_overrides = dict()
+    def __init__(self, hierarchy: TransformHierarchy):
+        nodes_by_name: dict[str, TransformMetadata] = {
+            node.name: node
+            for node in hierarchy.keys()
+        }
 
         self.graph = DiGraph()
-
         # Add nodes
-        for trans, parent_trans in hierarchy.items():
-            node = Transform(trans)
-            if trans in color_overrides:
-                node.color = color_overrides[trans]
-            if trans in equation_overrides:
-                node.equation = equation_overrides[trans]
-            self.graph.add_node(node)
+        self.graph.add_nodes_from(hierarchy.keys())
         # Add edges
-        for trans, parent_trans in hierarchy.items():
-            for parent in parent_trans:
-                if parent not in self.graph:
-                    raise ValueError(f"{parent=} not in transform list")
+        for trans, parents in hierarchy.items():
+            for parent_name in parents:
+                parent = nodes_by_name[parent_name]
+                if parent not in self.transforms:
+                    raise ValueError(f"{parent_name=} not in transform list")
                 self.graph.add_edge(parent, trans)
 
     @property
-    def transforms(self) -> set[Transform]:
+    def transforms(self) -> set[TransformMetadata]:
         """All transforms."""
         return set(self.graph.nodes)
 
     @property
-    def inputs(self) -> set[Transform]:
+    def inputs(self) -> set[TransformMetadata]:
         """Input transforms (those with no predecessors)."""
-        return set(t for t in self.graph.nodes if self.graph.in_degree(t) == 0)
+        # noinspection PyUnresolvedReferences
+        return set(t for t in self.graph.nodes if self.graph.in_degree[t] == 0)
 
     @property
-    def terminals(self) -> set[Transform]:
+    def terminals(self) -> set[TransformMetadata]:
         """Terminal transforms (those with no successors)."""
-        return set(t for t in self.graph.nodes if self.graph.out_degree(t) == 0)
+        # noinspection PyUnresolvedReferences
+        return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
