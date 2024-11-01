@@ -9,8 +9,8 @@ class ExpressionPairing(NamedTuple):
     """
     A temporal location representing evidence of expression with an associated p-value.
     """
-    latency_ms: float
-    logp_value: float
+    latency_ms: float  # [0]
+    p_value: float     # [1]
 
 
 class IPPMSpike(object):

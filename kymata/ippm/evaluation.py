@@ -5,7 +5,7 @@ from statistics import NormalDist
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.ippm.data_tools import SpikeDict, IPPMSpike
-from kymata.ippm.ctl import TransformHierarchy
+from kymata.ippm.hierarchy import TransformHierarchy
 from kymata.ippm.build import IPPMGraph
 
 
