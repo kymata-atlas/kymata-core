@@ -3,11 +3,11 @@ Tests for kymata.ippm.data_tools
 """
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
-from kymata.ippm.data_tools import IPPMSpike, copy_hemisphere, remove_excess_transforms
+from kymata.ippm.data_tools import IPPMSpike, copy_hemisphere
 
 
 def test_hexel():
-    hexel = IPPMSpike("test", "test description", "test commit")
+    hexel = IPPMSpike("test")
     test_right_pairings = [(20, 10e-3), (50, 0.000012), (611, 0.00053)]
     test_left_pairings = [(122, 0.32), (523, 0.00578), (200, 0.0006)]
     for left, right in zip(test_right_pairings, test_left_pairings):
@@ -15,17 +15,8 @@ def test_hexel():
         hexel.add_pairing(HEMI_LEFT, right)
 
     assert hexel.transform == "test"
-    assert hexel.description == "test description"
-    assert hexel.github_commit == "test commit"
     assert hexel.left_best_pairings == [(122, 0.32), (523, 0.00578), (200, 0.0006)]
     assert hexel.right_best_pairings == [(20, 10e-3), (50, 0.000012), (611, 0.00053)]
-
-
-def test_Should_removeExcessFuncs_When_validInput():
-    hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2"), "f3": IPPMSpike("f3")}
-    to_retain = ["f2"]
-    filtered = remove_excess_transforms(to_retain, hexels)
-    assert list(filtered.keys()) == to_retain
 
 
 def test_Should_copyHemisphere_When_validInput():

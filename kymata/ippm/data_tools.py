@@ -74,31 +74,6 @@ def build_spike_dict_from_expression_set(expression_set: HexelExpressionSet) -> 
     return spikes
 
 
-def remove_excess_transforms(to_retain: list[str], spikes: SpikeDict) -> SpikeDict:
-    """
-    Utility function to distill the spikes down to a subset of transforms. Use this to visualise a subset of transforms
-    for time-series. E.g., you want the time-series for one transform, so just pass it wrapped in a list as to_retain
-
-    Parameters
-    ----------
-    to_retain: list of transforms we want to retain in the spikes dict
-    spikes: dict transform_name as key and spike object as value. Spikes contain timings for left/right.
-
-    Returns
-    -------
-    spikes but all transforms that aren't in to_retain are filtered.
-    """
-
-    transforms = list(
-        spikes.keys()
-    )  # need this because we can't remove from the dict while also iterating over it.
-    for trans in transforms:
-        if trans not in to_retain:
-            # delete
-            spikes.pop(trans)
-    return spikes
-
-
 def copy_hemisphere(
     spikes_to: SpikeDict,
     spikes_from: SpikeDict,
