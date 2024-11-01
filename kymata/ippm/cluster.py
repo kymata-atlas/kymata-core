@@ -19,21 +19,21 @@ _ANOMALOUS_CLUSTER_TAG = -1
 
 class CustomClusterer(ABC):
     """
-    You need to override these methods to create a new clusterer. self.labels assigns each datapoint
+    You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
     in df to a cluster. Set anomalies to ANOMALOUS_TAG.
 
     self.labels_ is a list of cluster labels. It has the same size as the dataset.
     """
 
     def __init__(self):
-        self.labels: list[int] = []
+        self.labels_: list[int] = []
 
     @abstractmethod
     def fit(self, df: pd.DataFrame) -> Self:
         raise NotImplementedError()
 
     def reset(self):
-        self.labels = []
+        self.labels_ = []
 
 
 class MaxPoolClusterer(CustomClusterer):
@@ -47,7 +47,7 @@ class MaxPoolClusterer(CustomClusterer):
     def fit(self, df: pd.DataFrame) -> Self:
         labels = self._assign_points_to_labels(df)
         count_of_data_per_label = Counter(labels)
-        self.labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
+        self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
         return self
 
     def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
@@ -77,14 +77,14 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
                  label_significance_threshold: int = 5,
                  base_label_size: int = 10):
         super().__init__(label_significance_threshold, base_label_size)
-        self.labels = []
+        self.labels_ = []
         self._base_label_size = base_label_size
 
     def fit(self, df: pd.DataFrame) -> Self:
         labels = self._assign_points_to_labels(df)
         count_of_data_per_label = Counter(labels)
         labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
-        self.labels = self._merge_significant_labels(labels, df)
+        self.labels_ = self._merge_significant_labels(labels, df)
         return self
 
     def _merge_significant_labels(self, labels: list[int], df: pd.DataFrame) -> List[int]:
@@ -180,7 +180,7 @@ class GMMClusterer(CustomClusterer):
         optimal_model = self._grid_search_for_optimal_number_of_clusters(df)
         if optimal_model is not None:
             # None if no data.
-            self.labels = optimal_model.predict(df)
+            self.labels_ = optimal_model.predict(df)
             # do not remove anomalies for now
             #self.labels_ = self._tag_low_loglikelihood_points_as_anomalous(
             #    df, optimal_model
@@ -214,7 +214,7 @@ class GMMClusterer(CustomClusterer):
         optimal_model = None
         for number_of_clusters in range(1, self._number_of_clusters_upper_bound):
             if number_of_clusters > len(df) or len(df) == 1:
-                self.labels = [0 for _ in range(len(df))]  # default label == 0.
+                self.labels_ = [0 for _ in range(len(df))]  # default label == 0.
                 break
 
             copy_of_df = deepcopy(df)
@@ -267,7 +267,7 @@ class GMMClusterer(CustomClusterer):
             return list(
                 map(
                     lambda x: _ANOMALOUS_CLUSTER_TAG if x[0] < anomaly_threshold else x[1],
-                    zip(log_likelihoods, self.labels),
+                    zip(log_likelihoods, self.labels_),
                 )
             )
 
@@ -298,7 +298,7 @@ class DBSCANClusterer(CustomClusterer):
     def fit(self, df: pd.DataFrame) -> Self:
         # A thin wrapper around DBSCAN
         self._dbscan.fit(df)
-        self.labels = self._dbscan.labels_
+        self.labels_ = self._dbscan.labels_
         return self
 
 
@@ -320,5 +320,5 @@ class MeanShiftClusterer(CustomClusterer):
     def fit(self, df: pd.DataFrame) -> Self:
         # A thin wrapper around MeanShift
         self._meanshift.fit(df)
-        self.labels = self._meanshift.labels_
+        self.labels_ = self._meanshift.labels_
         return self

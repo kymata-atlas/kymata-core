@@ -248,7 +248,7 @@ class DenoisingStrategy(ABC):
             )
 
         df = deepcopy(df)
-        df["Label"] = self._clusterer.labels
+        df["Label"] = self._clusterer.labels_
         most_significant_points = __keep_most_significant_per_label(df)
         most_significant_points = __filter_out_anomalies(most_significant_points)
         return __convert_df_to_list(most_significant_points)

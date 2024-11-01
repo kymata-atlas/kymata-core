@@ -29,8 +29,8 @@ def test_MaxPoolClusterer_MapLabelToNewLabel_Successfully():
     test_labels = [1, 1, 2, 3, 4, 5, 6, 6, 6, 7, 9]
     expected_labels = [1, 1, 2, 3, 4, 5, -1, -1, -1, 7, 9]
     mp = MaxPoolClusterer(label_significance_threshold=2)
-    mp.labels = test_labels
-    actual_labels = mp._map_label_to_new_label(6, -1, mp.labels)
+    mp.labels_ = test_labels
+    actual_labels = mp._map_label_to_new_label(6, -1, mp.labels_)
 
     assert expected_labels == actual_labels
 
@@ -81,9 +81,9 @@ def test_AdaptiveMaxPoolClusterer_MergeSignificantLabels_Successfully(mock_merge
         [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2],
     ]
     amp = AdaptiveMaxPoolClusterer(base_label_size=25)
-    amp.labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    amp.labels = amp._merge_significant_labels(amp.labels, test_df)
-    actual_labels = amp.labels
+    amp.labels_ = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
+    amp.labels_ = amp._merge_significant_labels(amp.labels_, test_df)
+    actual_labels = amp.labels_
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
     assert actual_labels == expected_labels
@@ -117,7 +117,7 @@ def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
 
     amp = AdaptiveMaxPoolClusterer(label_significance_threshold=2, base_label_size=25)
     amp = amp.fit(test_df)
-    cluster_labels = amp.labels
+    cluster_labels = amp.labels_
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
     assert cluster_labels == expected_labels
@@ -182,4 +182,4 @@ def test_Should_GMMClusterer_Fit_Successfully(mock_grid_search):
     gmm = GMMClusterer()
     gmm = gmm.fit(test_df)
 
-    assert gmm.labels == [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 4, 4]
+    assert gmm.labels_ == [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 4, 4]
