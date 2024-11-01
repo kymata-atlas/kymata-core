@@ -11,7 +11,7 @@ import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.data_tools import SpikeDict, ExpressionPairing
-from kymata.ippm.ctl import TransformHierarchy
+from kymata.ippm.hierarchy import TransformHierarchy
 
 
 class NodePosition(NamedTuple):
