@@ -4,17 +4,16 @@ from copy import deepcopy
 from math import floor
 from typing import Self, Optional
 
-from sklearn.mixture import GaussianMixture
-from sklearn.cluster import DBSCAN, MeanShift
-from sklearn.utils._testing import ignore_warnings
-from sklearn.exceptions import ConvergenceWarning
 import numpy as np
 from numpy.typing import NDArray
+from sklearn.cluster import DBSCAN, MeanShift
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.mixture import GaussianMixture
+from sklearn.utils._testing import ignore_warnings
 
-from kymata.ippm.constants import LATENCY_OFFSET
 from kymata.ippm.data_tools import ExpressionPairing
 
-_ANOMALOUS_CLUSTER_TAG = -1
+ANOMALOUS_CLUSTER_TAG = -1
 
 
 class CustomClusterer(ABC):
@@ -43,10 +42,12 @@ class CustomClusterer(ABC):
 class MaxPoolClusterer(CustomClusterer):
     def __init__(self,
                  label_significance_threshold: int = 15,
-                 label_size: int = 25):
+                 label_size: int = 25,
+                 latency_offset_ms: float = 200):
         super().__init__()
         self._label_significance_threshold = label_significance_threshold
         self._label_size = label_size
+        self._latency_offset_ms: float = latency_offset_ms
 
     def fit(self, pairings: list[ExpressionPairing]) -> Self:
         labels = self._assign_points_to_labels(pairings)
@@ -57,7 +58,7 @@ class MaxPoolClusterer(CustomClusterer):
     def _assign_points_to_labels(self, pairings: list[ExpressionPairing]) -> list[int]:
         def __get_bin_index(latency_ms: float) -> int:
             return floor(
-                (latency_ms + LATENCY_OFFSET) / self._label_size
+                (latency_ms + self._latency_offset_ms) / self._label_size
             )  # floor because end is exclusive
 
         return list(map(__get_bin_index, [p.latency_ms for p in pairings]))
@@ -65,7 +66,7 @@ class MaxPoolClusterer(CustomClusterer):
     def _tag_labels_below_label_significance_threshold_as_anomalies(self, labels: list[int], count_of_data_per_bin: dict[int, int]):
         for label, count in count_of_data_per_bin.items():
             if count < self._label_significance_threshold:
-                labels = MaxPoolClusterer._map_label_to_new_label(label, _ANOMALOUS_CLUSTER_TAG, labels)
+                labels = MaxPoolClusterer._map_label_to_new_label(label, ANOMALOUS_CLUSTER_TAG, labels)
         return labels
 
     @staticmethod
@@ -93,7 +94,7 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
 
     def _merge_significant_labels(self, labels: list[int], pairings: list[ExpressionPairing]) -> list[int]:
         def __is_insignificant_label(end_index: int) -> bool:
-            return labels[end_index] == _ANOMALOUS_CLUSTER_TAG
+            return labels[end_index] == ANOMALOUS_CLUSTER_TAG
 
         def __labels_are_not_adjacent_and_previous_was_significant(end_index: int) -> bool:
             if __is_insignificant_label(end_index - 1):
@@ -268,7 +269,7 @@ class GMMClusterer(CustomClusterer):
             # we do > cus more negative loglikelihood, the higher the likelihood.
             return list(
                 map(
-                    lambda x: _ANOMALOUS_CLUSTER_TAG if x[0] < anomaly_threshold else x[1],
+                    lambda x: ANOMALOUS_CLUSTER_TAG if x[0] < anomaly_threshold else x[1],
                     zip(log_likelihoods, self.labels_),
                 )
             )
