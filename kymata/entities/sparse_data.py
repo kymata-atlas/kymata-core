@@ -30,8 +30,8 @@ def expand_dims(x: sparse.COO, axis=-1) -> sparse.COO:
 
 def sparsify_log_pmatrix(log_pmatrix: NDArray) -> sparse.COO:
     """
-    Converts a (channel, latency, function)-shaped data matrix containing log p-values into a sparse matrix only storing
-    the minimum (over latencies) log p-value for each channel, for each function.
+    Converts a (channel, latency, transform)-shaped data matrix containing log p-values into a sparse matrix only storing
+    the minimum (over latencies) log p-value for each channel, for each transform.
     """
     fill_value = 0.0
     # Iterate over the third dimension

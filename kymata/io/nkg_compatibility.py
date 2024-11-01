@@ -16,7 +16,7 @@ from zipfile import ZipFile
 from numpy import frombuffer
 from numpy.typing import NDArray
 
-from kymata.entities.datatypes import LatencyDType, FunctionNameDType, HexelDType
+from kymata.entities.datatypes import LatencyDType, TransformNameDType, HexelDType
 from kymata.io.file import PathType, FileType, open_or_use
 
 
@@ -49,7 +49,7 @@ def _load_data_0_3(from_path_or_file: PathType | FileType) -> dict[str, Any]:
             ]
         with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
             return_dict["functions"] = [
-                FunctionNameDType(fun.strip()) for fun in f.readlines()
+                TransformNameDType(fun.strip()) for fun in f.readlines()
             ]
         return_dict["data"] = dict()
         for layer in layers:
@@ -97,7 +97,7 @@ def _load_data_0_2(from_path_or_file: PathType | FileType) -> dict[str, Any]:
             ]
         with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
             return_dict["functions"] = [
-                FunctionNameDType(fun.strip()) for fun in f.readlines()
+                TransformNameDType(fun.strip()) for fun in f.readlines()
             ]
         return_dict["data"] = dict()
         for layer in layers:
@@ -144,8 +144,8 @@ def _load_data_0_1(from_path_or_file: PathType | FileType) -> dict[str, Any]:
                 LatencyDType(lat.strip()) for lat in f.readlines()
             ]
         with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-            return_dict["functions"]: list[FunctionNameDType] = [
-                FunctionNameDType(fun.strip()) for fun in f.readlines()
+            return_dict["functions"]: list[TransformNameDType] = [
+                TransformNameDType(fun.strip()) for fun in f.readlines()
             ]
         return_dict["data"] = dict()
         for layer in ["left", "right"]:

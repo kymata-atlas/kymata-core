@@ -480,7 +480,7 @@ def test_eeg_left_right_medial_count(eeg_sensors):
     assert len(bottom_eeg) == 27
 
 
-def test_expression_set_plot_with_explicit_colour_for_hidden_function():
+def test_expression_set_plot_with_explicit_colour_for_hidden_transform():
     es = load_expression_set(
         Path(Path(__file__).parent, "test-data", "many_functions.nkg")
     )

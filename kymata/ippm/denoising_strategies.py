@@ -45,7 +45,7 @@ class DenoisingStrategy(ABC):
                 Indicates whether we should discard the magnitude dimension from the clustering algorithm.
                 We can term this "density-based clustering" as it focuses on the density of points in time only.
         :param should_max_pool:
-                Indicates whether we want to enforce the constraint that each function should have 1 spike.
+                Indicates whether we want to enforce the constraint that each transform should have 1 spike.
                 Equivalently, we take the maximum over all clusters and discard all other points. Setting this to
                 True optimises performance in the context of IPPMs.
         :param should_merge_hemis:
@@ -91,11 +91,11 @@ class DenoisingStrategy(ABC):
 
     def denoise(self, spikes: SpikeDict) -> SpikeDict:
         """
-        For a set of functions, cluster their IPPMSpike and retain the most significant spikes per cluster.
+        For a set of transforms, cluster their IPPMSpike and retain the most significant spikes per cluster.
 
         Algorithm
         ---------
-        For each function in hemi,
+        For each transform in hemi,
             1. We create a dataframe containing only significant spikes.
                 1.1) [Optional] Perform any preprocessing.
                     - should_normalise: Scale each dimension to have a total length of 1.
@@ -104,13 +104,13 @@ class DenoisingStrategy(ABC):
             3. For each cluster, we take the most significant point and discard the rest.
                 3.1) [Optional] Perform any postprocessing.
                     - should_max_pool: Take the most significant point over all of the clusters. I.e., only 1
-                                             spike per function.
+                                             spike per transform.
 
         :param spikes:
-            The key is the function name and the IPPMSpike contains information about the function. Specifically,
+            The key is the transform name and the IPPMSpike contains information about the transform. Specifically,
             it contains a list of (Latency (ms), Magnitude (^10-x)) for each hemisphere. We cluster over one
             hemisphere.
-        :return: A dictionary of functions as keys and a IPPMSpike containing the clustered time-series.
+        :return: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
         """
         spikes = deepcopy(
             spikes
@@ -140,7 +140,7 @@ class DenoisingStrategy(ABC):
         A generator used to transform each pair of key, IPPMSpike to a DataFrame containing significance spikes only.
 
         :param spikes: The dictionary we want to iterate over and transform into DataFrames.
-        :returns: a clean DataFrame with columns ['Latency', 'Mag'] for each function key.
+        :returns: a clean DataFrame with columns ['Latency', 'Mag'] for each transform key.
         """
         for func, spike in spikes.items():
             extracted_spikes = spike.right_best_pairings if self._hemi == HEMI_RIGHT else spike.left_best_pairings
@@ -273,7 +273,7 @@ class DenoisingStrategy(ABC):
 
     def _perform_max_pooling(self, spike: IPPMSpike) -> IPPMSpike:
         """
-        Enforce the constraint that there is only 1 spike for a specific function. It is basically max(all_spikes).
+        Enforce the constraint that there is only 1 spike for a specific transform. It is basically max(all_spikes).
 
         :param spike: Contains the time-series we want to take the maximum over.
         :returns: same spike but with only one spike.

@@ -9,4 +9,4 @@ Latency = float
 HexelDType = int_
 SensorDType = str_
 LatencyDType = float_
-FunctionNameDType = str_
+TransformNameDType = str_

@@ -22,7 +22,7 @@ class TestDataTools(unittest.TestCase):
         hexels = data_tools.fetch_spike_dict("testing")
         self.assertEqual(
             list(hexels.keys()), ["left1", "right1"]
-        )  # check functions are saved correctly
+        )  # check transforms are saved correctly
         # check p value is stored and calculated correctly
         self.assertEqual(
             hexels["left1"].left_best_pairings,
