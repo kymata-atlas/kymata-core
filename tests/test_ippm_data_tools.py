@@ -5,7 +5,7 @@ Tests for kymata.ippm.data_tools
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
 from kymata.ippm.data_tools import (
     IPPMSpike, build_spike_dict_from_api_response,
-    copy_hemisphere, remove_excess_funcs,
+    copy_hemisphere, remove_excess_transforms,
 )
 
 
@@ -17,7 +17,7 @@ def test_hexel():
         hexel.add_pairing(HEMI_RIGHT, left)
         hexel.add_pairing(HEMI_LEFT, right)
 
-    assert hexel.function == "test"
+    assert hexel.transform == "test"
     assert hexel.description == "test description"
     assert hexel.github_commit == "test commit"
     assert hexel.left_best_pairings == [(122, 0.32), (523, 0.00578), (200, 0.0006)]
@@ -32,7 +32,7 @@ def test_build_spike_dict():
 
     hexels = build_spike_dict_from_api_response(test_dict)
 
-    # check functions are saved correctly
+    # check transforms are saved correctly
     assert list(hexels.keys()) == ["left1", "right1"]
     # check p value is stored and calculated correctly
     assert hexels["left1"].left_best_pairings == [
@@ -45,7 +45,7 @@ def test_build_spike_dict():
 def test_Should_removeExcessFuncs_When_validInput():
     hexels = {"f1": IPPMSpike("f1"), "f2": IPPMSpike("f2"), "f3": IPPMSpike("f3")}
     to_retain = ["f2"]
-    filtered = remove_excess_funcs(to_retain, hexels)
+    filtered = remove_excess_transforms(to_retain, hexels)
     assert list(filtered.keys()) == to_retain
 
 
@@ -58,6 +58,6 @@ def test_Should_copyHemisphere_When_validInput():
         spikes_from=hexels,
         hemi_to=HEMI_RIGHT,
         hemi_from=HEMI_LEFT,
-        func="f1",
+        trans="f1",
     )
     assert hexels["f1"].right_best_pairings == hexels["f1"].left_best_pairings

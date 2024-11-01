@@ -28,7 +28,7 @@ def load_mat_variable(path, variable_name: str):
 
 
 def load_matab_hexel_expression_files(
-    function_name: str,
+    transform_name: str,
     lh_file: Path | str,
     rh_file: Path | str,
     flipped_lh_file: Optional[Path | str] = None,
@@ -41,11 +41,11 @@ def load_matab_hexel_expression_files(
             flipped_lh_file is None and flipped_rh_file is None
         ), "Please supply 2 or 4 files."
         return _load_matab_expression_files_combined_flipped(
-            function_name=function_name, lh_file=lh_file, rh_file=rh_file
+            transform_name=transform_name, lh_file=lh_file, rh_file=rh_file
         )
     else:
         return _load_matab_expression_files_separate_flipped(
-            function_name=function_name,
+            transform_name=transform_name,
             lh_file=lh_file,
             rh_file=rh_file,
             flipped_lh_file=flipped_lh_file,
@@ -60,8 +60,8 @@ def _load_matlab_validate(lh_mats: tuple[dict, ...], rh_mats: tuple[dict, ...]) 
     all_mats = (*lh_mats, *rh_mats)
     assert len(all_mats) in {2, 4}
 
-    # All the same function
-    assert all_equal([_base_function_name(mat["functionname"]) for mat in all_mats])
+    # All the same transform
+    assert all_equal([_base_transform_name(mat["functionname"]) for mat in all_mats])
     # Timing information is the same
     assert all_equal([mat["latency_step"] for mat in all_mats])
     assert all_equal([len(mat["latencies"]) for mat in all_mats])
@@ -109,7 +109,7 @@ def _prep_matlab_data(data, n_latencies, downsample_ratio):
 
 
 def _load_matab_expression_files_separate_flipped(
-    function_name: str,
+    transform_name: str,
     lh_file: Path | str,
     flipped_lh_file: Path | str,
     rh_file: Path | str,
@@ -169,7 +169,7 @@ def _load_matab_expression_files_separate_flipped(
     )
 
     return HexelExpressionSet(
-        functions=function_name,
+        transforms=transform_name,
         hexels_lh=lh_mat["outputSTC"]["vertices"],
         hexels_rh=rh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
@@ -179,7 +179,7 @@ def _load_matab_expression_files_separate_flipped(
 
 
 def _load_matab_expression_files_combined_flipped(
-    function_name: str, lh_file: Path | str, rh_file: Path | str
+    transform_name: str, lh_file: Path | str, rh_file: Path | str
 ) -> HexelExpressionSet:
     """
     For loading Matlab files where the flipped and non-flipped versions are already combined
@@ -216,7 +216,7 @@ def _load_matab_expression_files_combined_flipped(
     )
 
     return HexelExpressionSet(
-        functions=function_name,
+        transforms=transform_name,
         hexels_lh=lh_mat["outputSTC"]["vertices"],
         hexels_rh=rh_mat["outputSTC"]["vertices"],
         latencies=lh_mat["latencies"] / 1000,  # These will be the same left and right
@@ -225,12 +225,12 @@ def _load_matab_expression_files_combined_flipped(
     )
 
 
-def _base_function_name(function_name: str) -> str:
+def _base_transform_name(transform_name: str) -> str:
     """
-    Removes extraneous metadata from function names.
+    Removes extraneous metadata from transform names.
     """
-    function_name = function_name.removesuffix("-flipped")
-    return function_name
+    transform_name = transform_name.removesuffix("-flipped")
+    return transform_name
 
 
 def _downsample_data(data, ratio):

@@ -37,12 +37,12 @@ def plot_ippm(
         graph (NodeDict): Dictionary with keys as node names and values as IPPMNode objects.
             Contains nodes as keys and magnitude, position, and incoming edges in the IPPMNode object.
         colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
-            Contains the color for each function. The nodes and edges are colored accordingly.
+            Contains the color for each transform. The nodes and edges are colored accordingly.
         title (str): Title of the plot.
         scale_spikes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
-        show_labels (bool, optional): Show function names as labels on the graph. Defaults to True.
+        show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
     """
 
     if arrowhead_dims is None:
@@ -78,9 +78,9 @@ def plot_ippm(
     bsplines = []
     edge_labels = []
     for i, node in enumerate(graph.keys()):
-        for function, color in colors.items():
-            # search for function color.
-            if function in node:
+        for transform, color in colors.items():
+            # search for transform color.
+            if transform in node:
                 node_colors[i] = color
                 break
 
@@ -283,7 +283,7 @@ def stem_plot(
 
     Params
     ------
-        spikes : Contains function spikes in the form of a spike object. All timings are found there.
+        spikes : Contains transform spikes in the form of a spike object. All timings are found there.
         title : Title of plot.
     """
     # estimate significance parameter
@@ -292,7 +292,7 @@ def stem_plot(
         pow((1 - alpha), (1 / (2 * timepoints * number_of_spikes)))
     )
 
-    # assign unique color to each function
+    # assign unique color to each transform
     cycol = cycle(sns.color_palette("hls", len(spikes.keys())))
     for _, spike in spikes.items():
         spike.color = matplotlib.colors.to_hex(next(cycol))
@@ -305,9 +305,9 @@ def stem_plot(
 
     custom_handles = []
     custom_labels = []
-    for key, my_function in spikes.items():
-        color = my_function.color
-        label = my_function.function
+    for key, my_transform in spikes.items():
+        color = my_transform.color
+        label = my_transform.transform
 
         custom_handles.extend(
             [Line2D([], [], marker=".", color=color, linestyle="None")]
@@ -315,7 +315,7 @@ def stem_plot(
         custom_labels.append(label)
 
         # left
-        left = list(zip(*(my_function.left_best_pairings)))
+        left = list(zip(*(my_transform.left_best_pairings)))
         if len(left) != 0:
             x_left, y_left = left[0], left[1]
             left_color = np.where(
@@ -327,7 +327,7 @@ def stem_plot(
             left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
         # right
-        right = list(zip(*(my_function.right_best_pairings)))
+        right = list(zip(*(my_transform.right_best_pairings)))
         if len(right) != 0:
             x_right, y_right = right[0], right[1]
             right_color = np.where(
@@ -421,7 +421,7 @@ def plot_k_dist_1D(
 
     Parameters
     ----------
-    timings: list of timings extracted from a spikes. It contains the timings for one function and one hemisphere
+    timings: list of timings extracted from a spikes. It contains the timings for one transform and one hemisphere
     k: the k we use to find the kth neighbour. Paper above advises to use k=4.
     normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
 

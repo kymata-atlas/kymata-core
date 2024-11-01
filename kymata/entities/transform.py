@@ -6,13 +6,13 @@ from numpy.typing import NDArray
 
 
 @dataclass
-class Function:
+class Transform:
     """
-    A class representing a function with a name, values, and a sample rate.
+    A class representing a transform with a name, values, and a sample rate.
 
     Attributes:
-        name (str): The name of the function.
-        values (NDArray): The sampled values of the function.
+        name (str): The name of the transform.
+        values (NDArray): The sampled values of the transform.
         sample_rate (float): The sample rate in Hertz.
     """
     name: str
@@ -21,13 +21,13 @@ class Function:
 
     def resampled(self, rate_hz: float):
         """
-        Resamples the function's values to a new sample rate, using the most recent sampling method.
+        Resamples the transform's values to a new sample rate, using the most recent sampling method.
 
         Args:
             rate_hz (float): The new sample rate in Hertz.
 
         Returns:
-            Function: A new Function instance with resampled values and the specified sample rate.
+            Transform: A new Transform instance with resampled values and the specified sample rate.
         """
         ratio = self.sample_rate / rate_hz
         if ratio > 1:  # Downsampling
@@ -47,7 +47,7 @@ class Function:
                 # Use most recent sampling
                 resampled_values[i] = self.values[floor(i * ratio)]
 
-        return Function(
+        return Transform(
             name=self.name,
             values=resampled_values,
             sample_rate=rate_hz)

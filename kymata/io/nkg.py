@@ -14,7 +14,7 @@ from sparse import COO
 from kymata.entities.datatypes import (
     HexelDType,
     LatencyDType,
-    FunctionNameDType,
+    TransformNameDType,
     SensorDType,
 )
 from kymata.entities.expression import (
@@ -33,7 +33,7 @@ from kymata.io.file import PathType, FileType, open_or_use
 class _Keys(StrEnum):
     channels = "channels"
     latencies = "latencies"
-    functions = "functions"
+    transforms = "functions"
     layers = "layers"
     data = "data"
 
@@ -126,7 +126,7 @@ def load_expression_set(
 
     if type_identifier == _ExpressionSetTypeIdentifier.hexel:
         return HexelExpressionSet(
-            functions=data_dict[_Keys.functions],
+            transforms=data_dict[_Keys.transforms],
             hexels_lh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_LEFT]],
             hexels_rh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_RIGHT]],
             latencies=data_dict[_Keys.latencies],
@@ -135,7 +135,7 @@ def load_expression_set(
         )
     elif type_identifier == _ExpressionSetTypeIdentifier.sensor:
         return SensorExpressionSet(
-            functions=data_dict[_Keys.functions],
+            transforms=data_dict[_Keys.transforms],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels][BLOCK_SCALP]],
             latencies=data_dict[_Keys.latencies],
             data=data_dict[_Keys.data][BLOCK_SCALP],
@@ -187,7 +187,7 @@ def save_expression_set(
             "/latencies.txt", "\n".join(str(x) for x in expression_set.latencies)
         )
         zf.writestr(
-            "/functions.txt", "\n".join(str(x) for x in expression_set.functions)
+            "/functions.txt", "\n".join(str(x) for x in expression_set.transforms)
         )
         zf.writestr(
             "/blocks.txt", "\n".join(str(x) for x in expression_set._block_names)
@@ -266,7 +266,7 @@ def _load_data(
                 block_name: dict_0_1["hexels"]
                 for block_name in _ExpressionSetTypeIdentifier.hexel.block_names()
             },
-            _Keys.functions: dict_0_1["functions"],
+            _Keys.transforms: dict_0_1["functions"],
             _Keys.latencies: dict_0_1["latencies"],
             _Keys.data: data,
             # Keys not present in v0.1
@@ -307,7 +307,7 @@ def _load_data(
                     expressionset_type
                 ).block_names()
             },
-            _Keys.functions: dict_0_2["functions"],
+            _Keys.transforms: dict_0_2["functions"],
             _Keys.latencies: dict_0_2["latencies"],
             _Keys.data: data,
         }
@@ -346,7 +346,7 @@ def _load_data(
                     expressionset_type
                 ).block_names()
             },
-            _Keys.functions: dict_0_3["functions"],
+            _Keys.transforms: dict_0_3["functions"],
             _Keys.latencies: dict_0_3["latencies"],
             _Keys.data: data,
         }
@@ -376,8 +376,8 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
                 LatencyDType(lat.strip()) for lat in f.readlines()
             ]
         with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-            return_dict[_Keys.functions] = [
-                FunctionNameDType(fun.strip()) for fun in f.readlines()
+            return_dict[_Keys.transforms] = [
+                TransformNameDType(fun.strip()) for fun in f.readlines()
             ]
         return_dict[_Keys.channels] = dict()
         return_dict[_Keys.data] = dict()
@@ -405,7 +405,7 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
             assert shape == (
                 len(return_dict[_Keys.channels][block_name]),
                 len(return_dict[_Keys.latencies]),
-                len(return_dict[_Keys.functions]),
+                len(return_dict[_Keys.transforms]),
             )
             return_dict[_Keys.data][block_name] = sparse_data
     return return_dict
