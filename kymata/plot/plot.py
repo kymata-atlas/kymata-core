@@ -622,7 +622,7 @@ def expression_plot(
     if show_legend:
         split_legend_at_n_functions = 15
         legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
-        if hidden_functions_in_legend and len(not_shown) > 0:
+        if hidden_transforms_in_legend and len(not_shown) > 0:
 
             if len(not_shown) > split_legend_at_n_functions:
                 legend_n_col = 2

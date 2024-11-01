@@ -77,15 +77,15 @@ def main():
         # salmonn_name = expression_data_salmonn.functions
 
         # # expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/word/brain/expression_set/word_22_gridsearch.nkg')
-        expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
-        word_name = expression_data_word.functions
-        lex_name = word_name[:3]
-        sem_name = word_name[3:6]
-        pos_name = word_name[14:]
+        # expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
+        # word_name = expression_data_word.functions
+        # lex_name = word_name[:3]
+        # sem_name = word_name[3:6]
+        # pos_name = word_name[14:]
 
         # # expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/syntax/brain/expression_set/syntax_4_gridsearch.nkg')
-        expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
-        syntax_name = expression_data_syntax.functions
+        # expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
+        # syntax_name = expression_data_syntax.functions
 
         # all_data = expression_data_salmonn + expression_data_word + expression_data_syntax
         # all_data = expression_data_word + expression_data_syntax
@@ -104,35 +104,35 @@ def main():
                             #   | constant_color_dict(phonetic_func, 'green'))
 
         ### First plot
-        expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
-        phonetic_func = expression_data.functions
-        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        salmonn_name = expression_data_salmonn_phone.functions
-        fig = expression_plot(expression_data + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=False,
-                                color= constant_color_dict(phonetic_func, color='#98fb98')
-                                    | constant_color_dict(salmonn_name, color= 'green'))
+        # expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
+        # phonetic_func = expression_data.functions
+        # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
+        # salmonn_name = expression_data_salmonn_phone.functions
+        # fig = expression_plot(expression_data + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=False,
+        #                         color= constant_color_dict(phonetic_func, color='#98fb98')
+        #                             | constant_color_dict(salmonn_name, color= 'green'))
                                 # legend_display=legend_display_dict(phonetic_func, 'Phoneme features')
                                 #     | legend_display_dict(salmonn_name, 'SALMONN neurons'))
         # fig = expression_plot(all_data, paired_axes=True, minimap=True, show_legend=True)
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_phone_vs_feats_source_v3.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_phone_vs_feats_source_v3.png")
 
-        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        salmonn_word_name = expression_data_salmonn_word.functions
-        fig = expression_plot(expression_data_word + expression_data_syntax + expression_data_salmonn_word, paired_axes=True, minimap=False, show_legend=False, show_only=lex_name + sem_name + pos_name + syntax_name + salmonn_word_name,
-                                color= constant_color_dict(lex_name + sem_name + pos_name + syntax_name, color='#ffcccb')
-                                    | constant_color_dict(salmonn_word_name, color= 'red'))
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
+        # salmonn_word_name = expression_data_salmonn_word.functions
+        # fig = expression_plot(expression_data_word + expression_data_syntax + expression_data_salmonn_word, paired_axes=True, minimap=False, show_legend=False, show_only=lex_name + sem_name + pos_name + syntax_name + salmonn_word_name,
+        #                         color= constant_color_dict(lex_name + sem_name + pos_name + syntax_name, color='#ffcccb')
+        #                             | constant_color_dict(salmonn_word_name, color= 'red'))
                                 # legend_display=legend_display_dict(lex_name + sem_name + pos_name + syntax_name, 'Word features')
                                 #     | legend_display_dict(salmonn_word_name, 'SALMONN neurons'))
         # fig = expression_plot(all_data, paired_axes=True, minimap=True, show_legend=True)
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_vs_feats_source_v3.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_vs_feats_source_v3.png")
 
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
         # word_name = expression_data_salmonn_word.functions
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
         # phone_name = expression_data_salmonn_phone.functions
-        # expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/english_TVL_family_source_baseline.nkg')
+        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/english_TVL_family_source_baseline.nkg')
         # tvl_name = expression_data_tvl.functions
         # IL_name = [i for i in tvl_name if i != 'STL']
         # STL_name = ['STL']
@@ -149,10 +149,10 @@ def main():
         #                             | legend_display_dict(phone_name, 'SALMONN phone features'),
         #                         display_range=(40, 55))
         # fig = expression_plot(expression_data_tvl[40:55], paired_axes=True, minimap=False, show_legend=True)
-        # fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True, display_range=slice(40, 55))
+        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=True, show_legend=True, display_latency_range=[0, 0.075])
 
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_part_source.png")
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75_test.png")
 
 
         # ### Second plot
