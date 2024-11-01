@@ -39,7 +39,7 @@ BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
 # Column names
-COL_LOGP_VALUE = "log-p-value"
+COL_LOGP_VALUE = "log p-value"
 
 
 class ExpressionSet(ABC):

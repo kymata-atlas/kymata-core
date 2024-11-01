@@ -2,7 +2,6 @@ from typing import NamedTuple, Optional
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import HexelExpressionSet, DIM_TRANSFORM, DIM_LATENCY, COL_LOGP_VALUE
-from kymata.io.atlas import fetch_data_dict
 from kymata.math.p_values import logp_to_p
 
 
@@ -60,23 +59,6 @@ class IPPMSpike(object):
 SpikeDict = dict[str, IPPMSpike]
 
 
-def fetch_spike_dict(api: str) -> SpikeDict:
-    """
-    Fetches data from Kymata API and converts it into a dictionary of transform names as keys
-    and spike objects as values. Advantage of dict is O(1) look-up and spike object is readable
-    access to attributes.
-
-    Params
-    ------
-        api : URL of the API from which to fetch data
-
-    Returns
-    -------
-        Dictionary containing data in the format [transform name, spike]
-    """
-    return build_spike_dict_from_api_response(fetch_data_dict(api))
-
-
 def build_spike_dict_from_expression_set(expression_set: HexelExpressionSet) -> SpikeDict:
     """
     Builds the dictionary from an ExpressionSet. This function builds a new dictionary
@@ -99,34 +81,6 @@ def build_spike_dict_from_expression_set(expression_set: HexelExpressionSet) -> 
             if trans not in spikes:
                 spikes[trans] = IPPMSpike(trans)
             spikes[trans].add_pairing(hemi, ExpressionPairing(latency, logp_to_p(logp)))
-    return spikes
-
-
-def build_spike_dict_from_api_response(dict_: dict) -> SpikeDict:
-    """
-    Builds the dictionary from response dictionary. Response dictionary has unneccesary
-    keys and does not have transform names as keys. This function builds a new dictionary
-    which has transform names (fast look-up) and only necessary data.
-
-    Params
-    ------
-        dict_ : JSON dictionary of HTTP GET response object.
-
-    Returns
-    -------
-        Dict of the format [transform name, spike(trans_name, id, left_timings, right_timings)]
-    """
-    spikes = {}
-    for hemi in [HEMI_LEFT, HEMI_RIGHT]:
-        for _, latency, pval, trans in dict_[hemi]:
-            # we have id, latency (ms), pvalue (log_10), transform name.
-            # discard id as it conveys no useful information
-            if trans not in spikes:
-                # first time seeing transform, so create key and spike object.
-                spikes[trans] = IPPMSpike(trans)
-
-            spikes[trans].add_pairing(hemi, ExpressionPairing(latency, pow(10, pval)))
-
     return spikes
 
 

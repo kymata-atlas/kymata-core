@@ -3,10 +3,7 @@ Tests for kymata.ippm.data_tools
 """
 
 from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
-from kymata.ippm.data_tools import (
-    IPPMSpike, build_spike_dict_from_api_response,
-    copy_hemisphere, remove_excess_transforms,
-)
+from kymata.ippm.data_tools import IPPMSpike, copy_hemisphere, remove_excess_transforms
 
 
 def test_hexel():
@@ -22,24 +19,6 @@ def test_hexel():
     assert hexel.github_commit == "test commit"
     assert hexel.left_best_pairings == [(122, 0.32), (523, 0.00578), (200, 0.0006)]
     assert hexel.right_best_pairings == [(20, 10e-3), (50, 0.000012), (611, 0.00053)]
-
-
-def test_build_spike_dict():
-    test_dict = {
-        HEMI_LEFT: [[2, 1, 0.012, "left1"], [2, 14, 0.213, "left1"]],
-        HEMI_RIGHT: [[3, 51, 0.1244, "left1"], [4, 345, 0.557, "right1"]],
-    }
-
-    hexels = build_spike_dict_from_api_response(test_dict)
-
-    # check transforms are saved correctly
-    assert list(hexels.keys()) == ["left1", "right1"]
-    # check p value is stored and calculated correctly
-    assert hexels["left1"].left_best_pairings == [
-        (1, pow(10, 0.012)),
-        (14, pow(10, 0.213)),
-    ]
-    assert hexels["left1"].right_best_pairings == [(51, pow(10, 0.1244))]
 
 
 def test_Should_removeExcessFuncs_When_validInput():
