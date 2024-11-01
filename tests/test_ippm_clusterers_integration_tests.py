@@ -79,7 +79,7 @@ def test_MaxPooler_Fit_Successfully_When_NoData():
 
 def test_MaxPooler_Fit_Successfully_When_StartInsignificant():
     mp = MaxPoolClusterer(label_significance_threshold=2)
-    mp = mp.fit(test_case_start_insignif_df)
+    mp.fit(test_case_start_insignif_df)
     expected_labels = [-1, 8, 8, 9, 9, -1, 16, 16]
     assert mp.labels == expected_labels
 

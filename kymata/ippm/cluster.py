@@ -47,7 +47,7 @@ class MaxPoolClusterer(CustomClusterer):
     def fit(self, df: pd.DataFrame) -> Self:
         labels = self._assign_points_to_labels(df)
         count_of_data_per_label = Counter(labels)
-        self.labels = self._tag_labels_below_label_significance_threshold_as_anomalies(self.labels, count_of_data_per_label)
+        self.labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
         return self
 
     def _assign_points_to_labels(self, df_with_latency: pd.DataFrame, latency_col_index: int = 0) -> List[int]:
@@ -65,7 +65,7 @@ class MaxPoolClusterer(CustomClusterer):
         return labels
 
     @staticmethod
-    def _map_label_to_new_label(old_label: int, new_label: int, labels) -> List[int]:
+    def _map_label_to_new_label(old_label: int, new_label: int, labels: list[int]) -> List[int]:
         return list(map(lambda x: new_label if x == old_label else x, labels))
 
 
