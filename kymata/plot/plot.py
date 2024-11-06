@@ -430,7 +430,7 @@ def expression_plot(
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
-        ** (1 / (2
+        ** np.float128(1 / (2
                  * len(expression_set.latencies)
                  * n_channels
                  * len(show_only))))
@@ -731,9 +731,6 @@ def plot_top_five_channels_of_gridsearch(
         - The second subplot shows the corresponding p-values for these channels.
     """
 
-    figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
-    figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
-
     # maxs = np.max(corr_avrs, axis=1)
     maxs = np.min(log_pvalues, axis=1)
     n_amaxs = 5
@@ -742,14 +739,9 @@ def plot_top_five_channels_of_gridsearch(
     amax = np.argmin(log_pvalues) // (n_samples_per_split // 2)
     amaxs = [i for i in amaxs if i != amax]
 
-    axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
-    axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
     std_null = np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits)  # 3 pop std.s
     std_real = np.std(corrs[amax, 0], axis=-2).T * 3 / np.sqrt(n_reps * n_splits)
     av_real = np.mean(corrs[amax, 0], axis=-2).T
-
-    axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
-    axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
 
     # peak_lat_ind = np.argmax(corr_avrs) % (n_samples_per_split // 2)
     peak_lat_ind = np.argmin(log_pvalues) % (n_samples_per_split // 2)
@@ -757,25 +749,35 @@ def plot_top_five_channels_of_gridsearch(
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
     print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
 
-    auto_corrs = np.mean(auto_corrs, axis=0)
-    axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
-                    label='func auto-corr')
-
-    axis[0].axvline(0, color='k')
-    axis[0].legend()
-    axis[0].set_title("Corr coef.")
-    axis[0].set_xlabel('latencies (ms)')
-    axis[0].set_ylabel('Corr coef.')
-
-    axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
-    axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-    axis[1].axvline(0, color='k')
-    axis[1].legend()
-    axis[1].set_title("p-values")
-    axis[1].set_xlabel('latencies (ms)')
-    axis[1].set_ylabel('p-values')
-
     if save_to is not None:
+
+        figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
+        figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
+
+        axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
+        axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
+
+        axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color='grey')
+        axis[0].fill_between(latencies, av_real - std_real, av_real + std_real, alpha=0.25, color='red')
+
+        auto_corrs = np.mean(auto_corrs, axis=0)
+        axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
+                        label='func auto-corr')
+
+        axis[0].axvline(0, color='k')
+        axis[0].legend()
+        axis[0].set_title("Corr coef.")
+        axis[0].set_xlabel('latencies (ms)')
+        axis[0].set_ylabel('Corr coef.')
+
+        axis[1].plot(latencies, -log_pvalues[amax].T, 'r-', label=amax)
+        axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
+        axis[1].axvline(0, color='k')
+        axis[1].legend()
+        axis[1].set_title("p-values")
+        axis[1].set_xlabel('latencies (ms)')
+        axis[1].set_ylabel('p-values')
+
         pyplot.rcParams['savefig.dpi'] = 300
         save_to = Path(save_to, function.name + '_gridsearch_top_five_channels.png')
 

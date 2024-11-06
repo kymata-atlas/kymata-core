@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/word_source/slurm_log_batch_1.txt
-#SBATCH --error=kymata-core-data/output/paper/word_source/slurm_log_batch_1.txt
+#SBATCH --output=kymata-core-data/output/paper/word_source/slurm_log_batch_4.txt
+#SBATCH --error=kymata-core-data/output/paper/word_source/slurm_log_batch_4.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=200G
@@ -24,7 +24,7 @@ apptainer exec \
     layers=() ;
     neurons=() ;
     
-    for i in {0..99}; do
+    for i in {300..465}; do
       output=\$(\$VENV_PATH/bin/poetry run python -m invokers.read_npy \$npy_file \$i) ;
 
       a=\$(echo \$output | awk '{print \$1}') ;
@@ -49,8 +49,8 @@ apptainer exec \
       --n-derangements 5 \
       --asr-option 'some' \
       --mfa True \
-      --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_1' \
-      --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_1' \
+      --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_4' \
+      --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_4' \
       --use-inverse-operator \
       --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
       --morph

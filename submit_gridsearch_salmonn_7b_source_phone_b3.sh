@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/word_source/slurm_log_batch_1.txt
-#SBATCH --error=kymata-core-data/output/paper/word_source/slurm_log_batch_1.txt
+#SBATCH --output=kymata-core-data/output/paper/phone_source/slurm_log_batch_3.txt
+#SBATCH --error=kymata-core-data/output/paper/phone_source/slurm_log_batch_3.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=200G
@@ -19,12 +19,12 @@ apptainer exec \
     cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ;
     export VENV_PATH=~/poetry/ ;
     export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ;
-    npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy' ;
+    npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy' ;
     
     layers=() ;
     neurons=() ;
     
-    for i in {0..99}; do
+    for i in {200..299}; do
       output=\$(\$VENV_PATH/bin/poetry run python -m invokers.read_npy \$npy_file \$i) ;
 
       a=\$(echo \$output | awk '{print \$1}') ;
@@ -43,14 +43,14 @@ apptainer exec \
       --config dataset4.yaml \
       --input-stream auditory \
       --plot-top-channels \
-      --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/salmonn/7B' \
+      --function-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/salmonn_phone/7B' \
       --num-neurons \$neurons_string \
       --function-name \$layers_string \
       --n-derangements 5 \
       --asr-option 'some' \
       --mfa True \
-      --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_1' \
-      --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source/batch_1' \
+      --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source/batch_3' \
+      --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source/batch_3' \
       --use-inverse-operator \
       --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
       --morph
