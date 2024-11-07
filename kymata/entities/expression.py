@@ -237,6 +237,7 @@ class ExpressionSet(ABC):
 
     @abstractmethod
     def __getitem__(self, key: Union[str, Sequence[str], slice]) -> ExpressionSet:
+    def __getitem__(self, key: Union[str, Sequence[str], slice]) -> ExpressionSet:
         pass
 
     @abstractmethod
@@ -392,6 +393,14 @@ class HexelExpressionSet(ExpressionSet):
         """Right-hemisphere data."""
         return self._data[BLOCK_RIGHT]
 
+    def __getitem__(self, key: Union[str, Sequence[str], slice]) -> HexelExpressionSet:
+
+        if isinstance(key, slice):
+            return self._slice_latencies(key)
+        else:
+            return self._getitem_functions(key)
+        
+    def _getitem_functions(self, functions: str | Sequence[str]) -> HexelExpressionSet:
     def __getitem__(self, key: Union[str, Sequence[str], slice]) -> HexelExpressionSet:
 
         if isinstance(key, slice):
