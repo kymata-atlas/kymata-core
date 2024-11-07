@@ -171,8 +171,10 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame,
     x = function_data["latency"].values * 1000  # Convert to milliseconds
     y = function_data["value"].values
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
-    ax.vlines(x=x, ymin=1, ymax=y, color=c)
-    ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
+    # ax.vlines(x=x, ymin=1, ymax=y, color=c)
+    # ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
+    ax.vlines(x=x, ymin=1, ymax=y, color=c, alpha = 0.2)
+    ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c, alpha = 0.2)
 
     x_min = x.min() if len(x) > 0 else np.Inf
     x_max = x.max() if len(x) > 0 else -np.Inf
@@ -308,6 +310,7 @@ def expression_plot(
         overwrite: bool = True,
         show_legend: bool = True,
         legend_display: dict[str, str] | None = None,
+        display_range: Optional[slice] = None,
 ) -> pyplot.Figure:
     """
     Generates a plot of function expressions over time with optional display customizations.
@@ -533,13 +536,17 @@ def expression_plot(
         ]
         ax.set_yticklabels(pval_labels)
 
+    latency_min = expression_set.latencies[display_range][0] * 1000
+    latency_max = expression_set.latencies[display_range][-1] * 1000
+    fig.fill([latency_min, latency_max, latency_max, latency_min, latency_min], [-ylim, -ylim, ylim, ylim, -ylim], color="black", alpha=0.05)
+
     # Plot minimap
     if minimap:
         if isinstance(expression_set, SensorExpressionSet):
-            _plot_minimap_sensor(expression_set, minimap_axis=axes[_AxName.minimap_main],
+            _plot_minimap_sensor(expression_set[display_range], minimap_axis=axes[_AxName.minimap_main],
                                  colors=color, alpha_logp=sidak_corrected_alpha)
         elif isinstance(expression_set, HexelExpressionSet):
-            _plot_minimap_hexel(expression_set,
+            _plot_minimap_hexel(expression_set[display_range],
                                 show_functions=show_only,
                                 lh_minimap_axis=axes[_AxName.minimap_top],
                                 rh_minimap_axis=axes[_AxName.minimap_bottom],

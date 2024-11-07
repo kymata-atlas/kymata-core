@@ -236,7 +236,7 @@ class ExpressionSet(ABC):
         return latencies[self._block_names[0]]
 
     @abstractmethod
-    def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
+    def __getitem__(self, key: Union[str, Sequence[str], slice]) -> ExpressionSet:
         pass
 
     @abstractmethod
@@ -392,7 +392,14 @@ class HexelExpressionSet(ExpressionSet):
         """Right-hemisphere data."""
         return self._data[BLOCK_RIGHT]
 
-    def __getitem__(self, functions: str | Sequence[str]) -> HexelExpressionSet:
+    def __getitem__(self, key: Union[str, Sequence[str], slice]) -> HexelExpressionSet:
+
+        if isinstance(key, slice):
+            return self._slice_latencies(key)
+        else:
+            return self._getitem_functions(key)
+        
+    def _getitem_functions(self, functions: str | Sequence[str]) -> HexelExpressionSet:
         """
         Select data for specified function(s) only.
         Use a function name or list/array of function names
@@ -411,7 +418,18 @@ class HexelExpressionSet(ExpressionSet):
             data_lh=[self._data[BLOCK_LEFT].sel({DIM_FUNCTION: function}).data for function in functions],
             data_rh=[self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
         )
-
+    
+    def _slice_latencies(self, key: slice) -> HexelExpressionSet:
+        new_latencies = self.latencies[key]
+        return HexelExpressionSet(
+            functions=self.functions,
+            hexels_lh=self.hexels_left,
+            hexels_rh=self.hexels_right,
+            latencies=new_latencies,
+            data_lh=self._data[BLOCK_LEFT].sel({DIM_LATENCY: new_latencies}).data,
+            data_rh=self._data[BLOCK_RIGHT].sel({DIM_LATENCY: new_latencies}).data,
+        )
+    
     def __copy__(self):
         return HexelExpressionSet(
             functions=self.functions.copy(),
