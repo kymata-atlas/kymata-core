@@ -819,8 +819,8 @@ def test_time_crop_both_endpoints_inside():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=[-.2, -.1, 0, .1, .2, .3],
-        data_lh=[d[:, 2:8] for d in data_left],
-        data_rh=[d[:, 2:8] for d in data_right],
+        data_lh=[d[:, 3:9] for d in data_left],
+        data_rh=[d[:, 3:9] for d in data_right],
     )
 
     # Inclusive of endpoints
@@ -850,8 +850,8 @@ def test_time_crop_half_open_left():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=[-.5, -.4, -.3, -.2, -.1],
-        data_lh=[d[:, :4] for d in data_left],
-        data_rh=[d[:, :4] for d in data_right],
+        data_lh=[d[:, :5] for d in data_left],
+        data_rh=[d[:, :5] for d in data_right],
     )
 
     # Inclusive of endpoints
