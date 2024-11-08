@@ -531,7 +531,7 @@ class HexelExpressionSet(ExpressionSet):
         else:
             return self._getitem_functions(key)
         
-    def _getitem_functions(self, functions: str | Sequence[str]) -> HexelExpressionSet:
+    def _getitem_functions(self, transforms: str | Sequence[str]) -> HexelExpressionSet:
         """
         Select data for specified transform(s) only.
         Use a transform name or list/array of transform names
