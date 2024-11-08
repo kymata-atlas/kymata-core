@@ -536,9 +536,11 @@ def expression_plot(
         ]
         ax.set_yticklabels(pval_labels)
 
-    latency_min = expression_set.latencies[display_range][0] * 1000
-    latency_max = expression_set.latencies[display_range][-1] * 1000
-    fig.fill([latency_min, latency_max, latency_max, latency_min, latency_min], [-ylim, -ylim, ylim, ylim, -ylim], color="black", alpha=0.05)
+        if minimap:
+            # Plot a box around the display range for the mini map
+            latency_min = expression_set.latencies[display_range][0] * 1000
+            latency_max = expression_set.latencies[display_range][-1] * 1000
+            ax.fill([latency_min, latency_max, latency_max, latency_min, latency_min], [-ylim, -ylim, ylim, ylim, -ylim], color="black", alpha=0.2)
 
     # Plot minimap
     if minimap:
