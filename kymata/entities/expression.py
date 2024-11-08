@@ -263,10 +263,10 @@ class ExpressionSet(ABC):
         Returns a copy of the ExpressionSet with time cropped between the two endpoints (inclusive).
 
         Args:
-            start (float | None): Time in seconds to start the cropped window.
-                                  Use None for no cropping at the start (e.g. half-open crop).
-            stop (float | None): Time in seconds to stop the cropped window.
-                                  Use None for no cropping at the end (e.g. half-open crop).
+            start (float | None): Time in seconds to start the cropped window. Use None for no cropping at the start
+                (e.g. half-open crop).
+            stop (float | None): Time in seconds to stop the cropped window. Use None for no cropping at the end
+                (e.g. half-open crop).
 
         Returns:
             Self: A copy of the ExpressionSet with the time cropped between the specified start and stop.
