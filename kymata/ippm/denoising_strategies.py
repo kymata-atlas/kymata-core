@@ -1,21 +1,14 @@
 from abc import ABC
 from copy import deepcopy
+from random import shuffle
 from statistics import NormalDist
 from typing import Optional
 
-import numpy as np
-import pandas as pd
-
 from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
-from .constants import TIMEPOINTS, NUMBER_OF_HEXELS
 from .cluster import (
-    MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer)
-
-
-# Column names
-LATENCY = "Latency"
-MAGNITUDE = "Magnitude"
+    MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
+    ANOMALOUS_CLUSTER_TAG)
 
 
 class DenoisingStrategy(ABC):
@@ -27,6 +20,7 @@ class DenoisingStrategy(ABC):
     def __init__(
         self,
         hemi: str,
+        n_timepoints: int, n_hexels: int,
         should_normalise: bool = False,
         should_cluster_only_latency: bool = False,
         should_max_pool: bool = False,
@@ -50,7 +44,8 @@ class DenoisingStrategy(ABC):
                 True optimises performance in the context of IPPMs.
         :param should_merge_hemis:
                 Indicates whether we want to combine the two hemispheres into one, then cluster. If this is True, then
-                the final expression plot is plot overwrites the "hemi" expression plot. E.g., if hemi == HEMI_RIGHT, then overwrite it
+                the final expression plot is plot overwrites the "hemi" expression plot. E.g., if hemi == HEMI_RIGHT,
+                then overwrite it.
         :param should_exclude_insignificant:
                 Indicates whether we want to exclude insignificant spikes before clustering.
         """
@@ -63,14 +58,11 @@ class DenoisingStrategy(ABC):
         self._should_merge_hemis = should_merge_hemis
         self._should_exclude_insignificant = should_exclude_insignificant
         self._should_shuffle = should_shuffle
-        self._threshold_for_significance = (
-            DenoisingStrategy._estimate_threshold_for_significance(
-                normal_dist_threshold
-            )
-        )
+        self._threshold_for_significance = self._estimate_threshold_for_significance(
+            normal_dist_threshold, n_timepoints, n_hexels)
 
     @staticmethod
-    def _estimate_threshold_for_significance(x: float) -> float:
+    def _estimate_threshold_for_significance(x: float, n_timepoints: int, n_hexels: int) -> float:
         """
         Bonferroni corrected = probability / number_of_trials.
 
@@ -80,7 +72,7 @@ class DenoisingStrategy(ABC):
 
         def __calculate_bonferroni_corrected_alpha(one_minus_probability):
             return 1 - pow(
-                (1 - one_minus_probability), (1 / (2 * TIMEPOINTS * NUMBER_OF_HEXELS))
+                (1 - one_minus_probability), (1 / (2 * n_timepoints * n_hexels))
             )
 
         probability_X_gt_x = 1 - NormalDist(mu=0, sigma=1).cdf(x)
@@ -96,7 +88,7 @@ class DenoisingStrategy(ABC):
         Algorithm
         ---------
         For each transform in hemi,
-            1. We create a dataframe containing only significant spikes.
+            1. We create a list of ExpressionPairings containing only significant spikes.
                 1.1) [Optional] Perform any preprocessing.
                     - should_normalise: Scale each dimension to have a total length of 1.
                     - cluster_only_latency: Remove magnitude dimension.
@@ -112,20 +104,22 @@ class DenoisingStrategy(ABC):
             hemisphere.
         :return: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
         """
-        spikes = deepcopy(spikes)  # When we copy the input, it is because we don't want to modify the original structure.
+        # When we copy the input, it is because we don't want to modify the original structure.
         # These are called side effects, and they can introduce obscure bugs.
+        spikes = deepcopy(spikes)
 
-        for func, df in self._map_spikes_to_df(spikes):
-            if len(df) == 0:
-                spikes[func] = self._update_pairings(spikes[func], [])
+        pairings: list[ExpressionPairing]
+        for func, pairings in self._map_spikes_to_pairings(spikes):
+            if len(pairings) == 0:
+                spikes[func] = self._update_pairings(spikes[func], pairings)
                 continue
 
-            preprocessed_df = self._preprocess(df)
+            preprocessed_pairings = self._preprocess(pairings)
 
-            self._clusterer: CustomClusterer = self._clusterer.fit(preprocessed_df)
+            self._clusterer: CustomClusterer = self._clusterer.fit(preprocessed_pairings)
             # It is important you don't use the preprocessed_df to get the denoised because
             # we do not want to plot the preprocessed latencies and magnitudes.
-            denoised_time_series = self._get_denoised_time_series(df)
+            denoised_time_series = self._get_denoised_time_series(pairings)
 
             spikes[func] = self._postprocess(spikes[func], denoised_time_series)
 
@@ -133,47 +127,44 @@ class DenoisingStrategy(ABC):
 
         return spikes
 
-    def _map_spikes_to_df(self, spikes: SpikeDict) -> pd.DataFrame:
+    def _map_spikes_to_pairings(self, spikes: SpikeDict) -> list[tuple[str, ExpressionPairing]]:
         """
-        A generator used to transform each pair of key, IPPMSpike to a DataFrame containing significance spikes only.
+        A generator used to transform each pair of key, IPPMSpike to a list of ExpressionPairings containing
+        significance spikes only.
 
-        :param spikes: The dictionary we want to iterate over and transform into DataFrames.
-        :returns: a clean DataFrame with columns ['Latency', 'Mag'] for each transform key.
+        :param spikes: The dictionary we want to iterate over and transform into list of ExpressionPairings.
+        :returns: a clean list of ExpressionPairings.
         """
-        for func, spike in spikes.items():
-            extracted_spikes = spike.right_best_pairings if self._hemi == HEMI_RIGHT else spike.left_best_pairings
+        for trans, spike in spikes.items():
+            spike_pairings = spike.right_best_pairings if self._hemi == HEMI_RIGHT else spike.left_best_pairings
             if self._should_merge_hemis:
-                other_hemi_spikes = spike.left_best_pairings if self._hemi == HEMI_LEFT else spike.right_best_pairings
-                extracted_spikes.extend(other_hemi_spikes)
+                other_hemi_spike_pairings = spike.left_best_pairings if self._hemi == HEMI_LEFT else spike.right_best_pairings
+                spike_pairings.extend(other_hemi_spike_pairings)
             if self._should_exclude_insignificant:
-                extracted_spikes = self._filter_out_insignificant_spikes(
-                    extracted_spikes
+                spike_pairings = self._filter_out_insignificant_pairings(
+                    spike_pairings
                     if self._hemi == HEMI_RIGHT
                     else spike.left_best_pairings,
                 )
-            df = pd.DataFrame(extracted_spikes, columns=[LATENCY, MAGNITUDE])
             if self._should_shuffle:
-                df = df.sample(frac=1).reset_index(drop=True)  # shuffle to remove correlations between rows.
-            yield func, df
+                # shuffle to remove correlations between rows
+                shuffle(spike_pairings)
+            yield trans, spike_pairings
 
-    def _filter_out_insignificant_spikes(
-        self, spikes: list[ExpressionPairing]
-    ) -> list[list[float]]:
+    def _filter_out_insignificant_pairings(self, pairings: list[ExpressionPairing]) -> list[ExpressionPairing]:
         """
-        For a list of spikes, remove all that are not statistically significant and save them to a DataFrame.
+        For a list of spikes, remove all that are not statistically significant and save them to a list of
+        ExpressionPairings.
 
-        :param spikes: spikes we want to filter based on their statistical significance.
-        :returns: DataFrame that is a subset of spikes with only significant spikes.
+        :param pairings: pairings we want to filter based on their statistical significance.
+        :returns: subset of pairings with significant p-values.
         """
-        significant_datapoints = []
-        for latency, spike in spikes:
-            if spike <= self._threshold_for_significance:
-                significant_datapoints.append([latency, spike])
-        return significant_datapoints
+        return [
+            p for p in pairings
+            if p.p_value <= self._threshold_for_significance
+        ]
 
-    def _update_pairings(
-        self, spike: IPPMSpike, denoised: list[tuple[float, float]]
-    ) -> IPPMSpike:
+    def _update_pairings(self, spike: IPPMSpike, denoised: list[ExpressionPairing]) -> IPPMSpike:
         """
         :param spike: We want to update this spike to store the denoised spikes, with max pooling if desired.
         :param denoised: We want to save these spikes into spike, overwriting the previous ones.
@@ -189,73 +180,78 @@ class DenoisingStrategy(ABC):
                 spike.right_best_pairings = []
         return spike
 
-    def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _preprocess(self, pairings: list[ExpressionPairing]) -> list[ExpressionPairing]:
         """
         Currently, this can normalise or remove the magnitude dimension.
 
-        :param df: Dataframe we want to preprocess.
-        :return: if we cluster_only_latency, we return a numpy array. Else, dataframe.
+        :param pairings: pairings we want to preprocess.
+        :return: if we cluster_only_latency, we return a numpy array. Else, a list of ExpressionPairings.
         """
 
-        def __extract_and_wrap_latency_dim(df_with_latency_col):
-            np_arr = np.reshape(df_with_latency_col[LATENCY], (-1, 1))
-            return pd.DataFrame(np_arr, columns=[LATENCY])
-
-        df = deepcopy(df)
-        if self._should_cluster_only_latency:
-            df = __extract_and_wrap_latency_dim(df)
+        pairings = deepcopy(pairings)
         if self._should_normalise:
-            # Assumption: we only have latency, mag columns.
             """
-                Short text on normalisation for future reference.
-                https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
+            Short text on normalisation for future reference.
+            https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
             """
-            if self._should_cluster_only_latency:
-                df = self._normalize(df, [LATENCY])
-            else:
-                df = self._normalize(df, [LATENCY, MAGNITUDE])
-        return df
+            pairings = self._normalize(pairings, self._should_cluster_only_latency)
+        return pairings
     
     @staticmethod
-    def _normalize(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-        for col in cols:
-            df[col] = df[col] / df[col].sum()
-        return df
+    def _normalize(parings: list[ExpressionPairing], latency_only: bool) -> list[ExpressionPairing]:
+        # Normalise latency
+        latency_sum = sum(p.latency_ms for p in parings)
+        if latency_only:
+            pval_sum = 1
+        else:
+            pval_sum = sum(p.p_value for p in parings)
 
-    def _get_denoised_time_series(self, df: pd.DataFrame) -> list[tuple[float, float]]:
+        return [
+            ExpressionPairing(latency_ms=p.latency_ms / latency_sum,
+                              p_value=p.p_value / pval_sum)
+            for p in parings
+        ]
+
+    def _get_denoised_time_series(self, pairings: list[ExpressionPairing]) -> list[ExpressionPairing]:
         """
-        For a given dataframe, extract out the most significant spike for each cluster along with its associated latency
-        and ignore anomalies (label == -1).
+        For a given list of ExpressionPairings, extract out the most significant spike for each cluster along with its
+        associated latency and ignore anomalies.
 
-        Assumes self._clusterer.fit has been called already. Also, assumes anomalies are tagged as "-1".
+        Assumes self._clusterer.fit() has been called already.
 
-        :param df: Contains cols ["Latency", "Mag"] and IPPMHexel time-series.
-        :returns: Each tuple contains ("Latency", "Mag") of the most significant points (excl. anomalies).
+        :param pairings: list of pairings for the time series.
+        :returns: list of pairings (denoised).
         """
 
-        def __keep_most_significant_per_label(labelled_df):
-            return labelled_df.loc[labelled_df.groupby("Label")[MAGNITUDE].idxmin()]
+        def __keep_most_significant_per_label(pairings: list[ExpressionPairing],
+                                              labels: list[int],
+                                              ) -> tuple[
+                                                  list[ExpressionPairing],
+                                                  list[int]
+                                              ]:
+            from pandas import DataFrame
 
-        def __filter_out_anomalies(labelled_df):
-            return labelled_df[labelled_df["Label"] != -1]
+            assert len(pairings) == len(labels)
 
-        def __convert_df_to_list(most_significant_points_df):
-            return list(
-                zip(
-                    most_significant_points_df[LATENCY],
-                    most_significant_points_df[MAGNITUDE],
-                )
+            df = DataFrame({
+                "pvalue":  [p.p_value for p in pairings],
+                "label":   labels,
+            })
+            idxs = df.groupby("label")["pvalue"].idxmin()
+
+            return (
+                [pairings[i] for i in idxs],  # Filtered pairings
+                [labels[i] for i in idxs],    # Filtered labels
             )
 
-        df = deepcopy(df)
-        df["Label"] = self._clusterer.labels_
-        most_significant_points = __keep_most_significant_per_label(df)
-        most_significant_points = __filter_out_anomalies(most_significant_points)
-        return __convert_df_to_list(most_significant_points)
+        pairings, labels = __keep_most_significant_per_label(pairings, self._clusterer.labels_)
+        # Filter out anomalies
+        pairings = [p
+                    for p, l in zip(pairings, labels)
+                    if l != ANOMALOUS_CLUSTER_TAG]
+        return pairings
 
-    def _postprocess(
-        self, spike: IPPMSpike, denoised_time_series: list[tuple[float, float]]
-    ) -> IPPMSpike:
+    def _postprocess(self, spike: IPPMSpike, denoised_time_series: list[ExpressionPairing]) -> IPPMSpike:
         """
         To postprocess, overwrite the spike data with most significant points and perform any postprocessing steps,
         such as max pooling.
@@ -289,21 +285,22 @@ class DenoisingStrategy(ABC):
 
 
 class MaxPoolingStrategy(DenoisingStrategy):
-    def __init__(
-        self,
-        hemi: str,
-        should_normalise: bool = True,
-        should_cluster_only_latency: bool = False,
-        should_max_pool: bool = False,
-        normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = True,
-        should_exclude_insignificant: bool = True,
-        should_shuffle: bool = True,
-        bin_significance_threshold: int = 1,
-        bin_size: int = 1,
+    def __init__(self,
+                 hemi: str,
+                 n_timepoints: int, n_hexels: int,
+                 should_normalise: bool = True,
+                 should_cluster_only_latency: bool = False,
+                 should_max_pool: bool = False,
+                 normal_dist_threshold: float = 5,
+                 should_merge_hemis: bool = True,
+                 should_exclude_insignificant: bool = True,
+                 should_shuffle: bool = True,
+                 bin_significance_threshold: int = 1,
+                 bin_size: int = 1,
     ):
         super().__init__(
             hemi,
+            n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
@@ -316,20 +313,21 @@ class MaxPoolingStrategy(DenoisingStrategy):
 
 
 class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
-    def __init__(
-        self,
-        hemi: str,
-        should_normalise: bool = True,
-        should_cluster_only_latency: bool = False,
-        should_max_pool: bool = False,
-        normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = True,
-        should_exclude_insignificant: bool = True,
-        bin_significance_threshold: int = 1,
-        base_bin_size: int = 1,
+    def __init__(self,
+                 hemi: str,
+                 n_timepoints: int, n_hexels: int,
+                 should_normalise: bool = True,
+                 should_cluster_only_latency: bool = False,
+                 should_max_pool: bool = False,
+                 normal_dist_threshold: float = 5,
+                 should_merge_hemis: bool = True,
+                 should_exclude_insignificant: bool = True,
+                 bin_significance_threshold: int = 1,
+                 base_bin_size: int = 1,
     ):
         super().__init__(
             hemi,
+            n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
@@ -342,26 +340,27 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
 
 
 class GMMStrategy(DenoisingStrategy):
-    def __init__(
-        self,
-        hemi: str,
-        should_normalise: bool = True,
-        should_cluster_only_latency: bool = True,
-        should_max_pool: bool = False,
-        normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = True,
-        should_exclude_insignificant: bool = True,
-        should_shuffle: bool = True,
-        number_of_clusters_upper_bound: int = 2,
-        covariance_type: str = "full",
-        max_iter: int = 1000,
-        n_init: int = 5,
-        init_params: str = "kmeans",
-        random_state: Optional[int] = None,
-        should_evaluate_using_AIC: bool = True,
+    def __init__(self,
+                 hemi: str,
+                 n_timepoints: int, n_hexels: int,
+                 should_normalise: bool = True,
+                 should_cluster_only_latency: bool = True,
+                 should_max_pool: bool = False,
+                 normal_dist_threshold: float = 5,
+                 should_merge_hemis: bool = True,
+                 should_exclude_insignificant: bool = True,
+                 should_shuffle: bool = True,
+                 number_of_clusters_upper_bound: int = 2,
+                 covariance_type: str = "full",
+                 max_iter: int = 1000,
+                 n_init: int = 5,
+                 init_params: str = "kmeans",
+                 random_state: Optional[int] = None,
+                 should_evaluate_using_AIC: bool = True,
     ):
         super().__init__(
             hemi,
+            n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
@@ -382,26 +381,27 @@ class GMMStrategy(DenoisingStrategy):
 
 
 class DBSCANStrategy(DenoisingStrategy):
-    def __init__(
-        self,
-        hemi: str,
-        should_normalise: bool = False,
-        should_cluster_only_latency: bool = False,
-        should_max_pool: bool = False,
-        normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = False,
-        should_exclude_insignificant: bool = True,
-        should_shuffle: bool = True,
-        eps: int = 10,
-        min_samples: int = 2,
-        metric: str = "euclidean",
-        algorithm: str = "auto",
-        leaf_size: int = 30,
-        n_jobs: int = -1,
-        metric_params: Optional[dict] = None,
+    def __init__(self,
+                 hemi: str,
+                 n_timepoints: int, n_hexels: int,
+                 should_normalise: bool = False,
+                 should_cluster_only_latency: bool = False,
+                 should_max_pool: bool = False,
+                 normal_dist_threshold: float = 5,
+                 should_merge_hemis: bool = False,
+                 should_exclude_insignificant: bool = True,
+                 should_shuffle: bool = True,
+                 eps: int = 10,
+                 min_samples: int = 2,
+                 metric: str = "euclidean",
+                 algorithm: str = "auto",
+                 leaf_size: int = 30,
+                 n_jobs: int = -1,
+                 metric_params: Optional[dict] = None,
     ):
         super().__init__(
             hemi,
+            n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
@@ -422,24 +422,25 @@ class DBSCANStrategy(DenoisingStrategy):
 
 
 class MeanShiftStrategy(DenoisingStrategy):
-    def __init__(
-        self,
-        hemi: str,
-        should_normalise: bool = True,
-        should_cluster_only_latency: bool = True,
-        should_max_pool: bool = False,
-        normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = True,
-        should_exclude_insignificant: bool = True,
-        should_shuffle: bool = True,
-        cluster_all: bool = False,
-        bandwidth: float = 0.5,
-        seeds: Optional[int] = None,
-        min_bin_freq: int = 1,
-        n_jobs: int = -1,
+    def __init__(self,
+                 hemi: str,
+                 n_timepoints: int, n_hexels: int,
+                 should_normalise: bool = True,
+                 should_cluster_only_latency: bool = True,
+                 should_max_pool: bool = False,
+                 normal_dist_threshold: float = 5,
+                 should_merge_hemis: bool = True,
+                 should_exclude_insignificant: bool = True,
+                 should_shuffle: bool = True,
+                 cluster_all: bool = False,
+                 bandwidth: float = 0.5,
+                 seeds: Optional[int] = None,
+                 min_bin_freq: int = 1,
+                 n_jobs: int = -1,
     ):
         super().__init__(
             hemi,
+            n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,

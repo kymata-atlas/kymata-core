@@ -2,85 +2,89 @@ from copy import deepcopy
 from math import isclose
 from unittest.mock import patch, MagicMock
 
-import pandas as pd
-from pandas.testing import assert_frame_equal
-
-
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMSpike
-from kymata.ippm.denoising_strategies import DenoisingStrategy, LATENCY, MAGNITUDE
+from kymata.ippm.data_tools import IPPMSpike, ExpressionPairing
+from kymata.ippm.denoising_strategies import DenoisingStrategy
 
-test_data_func1 = [
-    [-100, 1e-50],
-    [-90, 1e-34],
-    [-95, 1e-8],
-    [-75, 1e-75],
-    [-70, 1e-27],
-    [0, 1e-1],
-    [30, 1e-100],
-    [32, 1e-93],
-    [35, 1e-72],
-    [50, 1e-9],
-    [176, 1e-50],
-    [199, 1e-90],
-    [200, 1e-50],
-    [210, 1e-44],
-    [211, 1e-55],
+n_timepoints = 201
+n_hexels = 20_000
+
+test_data_trans1 = [
+    ExpressionPairing(-100, 1e-50),
+    ExpressionPairing(-90, 1e-34),
+    ExpressionPairing(-95, 1e-8),
+    ExpressionPairing(-75, 1e-75),
+    ExpressionPairing(-70, 1e-27),
+    ExpressionPairing(0, 1e-1),
+    ExpressionPairing(30, 1e-100),
+    ExpressionPairing(32, 1e-93),
+    ExpressionPairing(35, 1e-72),
+    ExpressionPairing(50, 1e-9),
+    ExpressionPairing(176, 1e-50),
+    ExpressionPairing(199, 1e-90),
+    ExpressionPairing(200, 1e-50),
+    ExpressionPairing(210, 1e-44),
+    ExpressionPairing(211, 1e-55),
 ]
-significant_test_data_func1 = [
-    [-100, 1e-50],
-    [-90, 1e-34],
-    [-75, 1e-75],
-    [-70, 1e-27],
-    [30, 1e-100],
-    [32, 1e-93],
-    [35, 1e-72],
-    [176, 1e-50],
-    [199, 1e-90],
-    [200, 1e-50],
-    [210, 1e-44],
-    [211, 1e-55],
+significant_test_data_trans1 = [
+    ExpressionPairing(-100, 1e-50),
+    ExpressionPairing(-90, 1e-34),
+    ExpressionPairing(-75, 1e-75),
+    ExpressionPairing(-70, 1e-27),
+    ExpressionPairing(30, 1e-100),
+    ExpressionPairing(32, 1e-93),
+    ExpressionPairing(35, 1e-72),
+    ExpressionPairing(176, 1e-50),
+    ExpressionPairing(199, 1e-90),
+    ExpressionPairing(200, 1e-50),
+    ExpressionPairing(210, 1e-44),
+    ExpressionPairing(211, 1e-55),
 ]
-significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
-test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=[LATENCY, MAGNITUDE])
-denoised_func1 = [(-75, 1e-75), (30, 1e-100), (199, 1e-90)]
-
-test_empty_df = pd.DataFrame([], columns=[LATENCY, MAGNITUDE])
-
-test_data_func2 = [
-    [-30, 1e-2],
-    [23, 1e-44],
-    [26, 1e-59],
-    [30, 1e-99],
-    [130, 1e-81],
-    [131, 1e-23],
-    [131, 1e-76],
-    [131, 1e-4],
-    [200, 1e-2],
+significant_test_data_trans1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
+denoised_trans1 = [
+    ExpressionPairing(-75, 1e-75),
+    ExpressionPairing(30, 1e-100),
+    ExpressionPairing(199, 1e-90)
 ]
-significant_test_data_func2 = [
-    [23, 1e-44],
-    [26, 1e-59],
-    [30, 1e-99],
-    [130, 1e-81],
-    [131, 1e-23],
-    [131, 1e-76],
+
+test_data_empty = []
+
+test_data_trans2 = [
+    ExpressionPairing(-30, 1e-2),
+    ExpressionPairing(23, 1e-44),
+    ExpressionPairing(26, 1e-59),
+    ExpressionPairing(30, 1e-99),
+    ExpressionPairing(130, 1e-81),
+    ExpressionPairing(131, 1e-23),
+    ExpressionPairing(131, 1e-76),
+    ExpressionPairing(131, 1e-4),
+    ExpressionPairing(200, 1e-2),
 ]
-test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=[LATENCY, MAGNITUDE])
-denoised_func2 = [(30, 1e-99), (130, 1e-81)]
+significant_test_data_trans2 = [
+    ExpressionPairing(23, 1e-44),
+    ExpressionPairing(26, 1e-59),
+    ExpressionPairing(30, 1e-99),
+    ExpressionPairing(130, 1e-81),
+    ExpressionPairing(131, 1e-23),
+    ExpressionPairing(131, 1e-76),
+]
+denoised_trans2 = [
+    ExpressionPairing(30, 1e-99),
+    ExpressionPairing(130, 1e-81)
+]
 
-noisy_test_spikes = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
-noisy_test_spikes["func1"].right_best_pairings = test_data_func1
-noisy_test_spikes["func2"].right_best_pairings = test_data_func2
+noisy_test_spikes = {"trans1": IPPMSpike("trans1"), "trans2": IPPMSpike("trans2")}
+noisy_test_spikes["trans1"].right_best_pairings = test_data_trans1
+noisy_test_spikes["trans2"].right_best_pairings = test_data_trans2
 
-denoised_test_spikes = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
-denoised_test_spikes["func1"].right_best_pairings = denoised_func1
-denoised_test_spikes["func2"].right_best_pairings = denoised_func2
+denoised_test_spikes = {"trans1": IPPMSpike("trans1"), "trans2": IPPMSpike("trans2")}
+denoised_test_spikes["trans1"].right_best_pairings = denoised_trans1
+denoised_test_spikes["trans2"].right_best_pairings = denoised_trans2
 
 
 def test_DenoisingStrategy_EstimateThresholdForSignificance_Successfully():
     expected_threshold = 3.55e-15
-    actual_threshold = DenoisingStrategy._estimate_threshold_for_significance(5)
+    actual_threshold = DenoisingStrategy._estimate_threshold_for_significance(5, n_timepoints=n_timepoints, n_hexels=n_hexels)
     assert isclose(expected_threshold, actual_threshold, abs_tol=1e-15)
 
 
@@ -92,119 +96,116 @@ def test_DenoisingStrategy_Denoise_Successfully(
     mock_postprocess, mock_get_denoised, mock_preprocess, mock_map_spikes
 ):
     expected_spikes = deepcopy(noisy_test_spikes)
-    func1_spike = deepcopy(expected_spikes["func1"])  # return value from _postprocess
-    func2_spike = deepcopy(expected_spikes["func2"])  # return value from _postprocess
-    func1_spike.right_best_pairings = denoised_func1
-    func2_spike.right_best_pairings = denoised_func2
-    expected_spikes["func1"].right_best_pairings = denoised_func1
-    expected_spikes["func2"].right_best_pairings = denoised_func2
+    trans1_spike = deepcopy(expected_spikes["trans1"])  # return value from _postprocess
+    trans2_spike = deepcopy(expected_spikes["trans2"])  # return value from _postprocess
+    trans1_spike.right_best_pairings = denoised_trans1
+    trans2_spike.right_best_pairings = denoised_trans2
+    expected_spikes["trans1"].right_best_pairings = denoised_trans1
+    expected_spikes["trans2"].right_best_pairings = denoised_trans2
 
     # To mock a generator, you have to return an iterable.
     mock_map_spikes.return_value = iter(
-        [("func1", test_df_func1), ("func2", test_df_func2)]
+        [("trans1", test_data_trans1), ("trans2", test_data_trans2)]
     )
-    mock_preprocess.side_effect = [test_df_func1, test_df_func2]
+    mock_preprocess.side_effect = [test_data_trans1, test_data_trans2]
     clusterer = MagicMock()
     clusterer.fit.return_value = clusterer
-    mock_get_denoised.side_effect = [denoised_func1, denoised_func2]
-    mock_postprocess.side_effect = [func1_spike, func2_spike]
+    mock_get_denoised.side_effect = [denoised_trans1, denoised_trans2]
+    mock_postprocess.side_effect = [trans1_spike, trans2_spike]
 
-    strategy = DenoisingStrategy(HEMI_RIGHT)
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
     strategy._clusterer = clusterer
     actual_spikes = strategy.denoise(noisy_test_spikes)
 
     assert (
-        actual_spikes["func1"].right_best_pairings
-        == expected_spikes["func1"].right_best_pairings
+        actual_spikes["trans1"].right_best_pairings ==
+        expected_spikes["trans1"].right_best_pairings
     )
     assert (
-        actual_spikes["func2"].right_best_pairings
-        == expected_spikes["func2"].right_best_pairings
+        actual_spikes["trans2"].right_best_pairings ==
+        expected_spikes["trans2"].right_best_pairings
     )
 
 
-@patch(
-    "kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes"
-)
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes")
 def test_DenoisingStrategy_MapSpikesToDF_Successfully(mock_filter):
-    mock_filter.side_effect = [significant_test_data_func1, significant_test_data_func2]
-    strategy = DenoisingStrategy(HEMI_RIGHT)
-    actual_dfs = []
-    for func, df in strategy._map_spikes_to_df(noisy_test_spikes):
-        actual_dfs.append((func, df))
+    mock_filter.side_effect = [significant_test_data_trans1, significant_test_data_trans2]
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
 
-    assert actual_dfs[0][0] == "func1"
-    assert actual_dfs[1][0] == "func2"
-    assert_unordered_frame_equal(actual_dfs[0][1], test_df_func1)
-    assert_unordered_frame_equal(actual_dfs[1][1], test_df_func2)
+    actual_spikes: list[tuple[str, ExpressionPairing]] = list(strategy._map_spikes_to_pairings(noisy_test_spikes))
 
+    assert len(actual_spikes) == 2
+    assert actual_spikes[0][0] == "trans1"
+    assert actual_spikes[1][0] == "trans2"
 
-def assert_unordered_frame_equal(df1: pd.DataFrame, df2: pd.DataFrame):
-    assert set(df1["Latency"]) == set(df2["Latency"])
-    assert set(df1["Magnitude"]) == set(df2["Magnitude"])
+    assert (
+        set(spike.latency_ms for _, spike in actual_spikes) ==
+        set(spike.latency_ms for _, spike in test_data_trans1)
+    )
+    assert (
+        set(spike.p_value for _, spike in actual_spikes) ==
+        set(spike.p_value for _, spike in test_data_trans1)
+    )
 
 
 def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():
-    strategy = DenoisingStrategy(HEMI_RIGHT)
-    actual_datapoints = strategy._filter_out_insignificant_spikes(test_data_func1)
-    expected_datapoints = significant_test_data_func1
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
+    actual_datapoints = strategy._filter_out_insignificant_pairings(test_data_trans1)
+    expected_datapoints = significant_test_data_trans1
     assert actual_datapoints == expected_datapoints
 
 
 def test_DenoisingStrategy_UpdatePairings_Successfully():
-    actual_spike = deepcopy(noisy_test_spikes["func1"])
-    strategy = DenoisingStrategy(HEMI_RIGHT)
-    actual_spike = strategy._update_pairings(actual_spike, denoised_func1)
-    assert actual_spike.right_best_pairings == denoised_func1
+    actual_spike = deepcopy(noisy_test_spikes["trans1"])
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
+    actual_spike = strategy._update_pairings(actual_spike, denoised_trans1)
+    assert actual_spike.right_best_pairings == denoised_trans1
 
 
 def test_DenoisingStrategy_Preprocess_Successfully():
-    df = deepcopy(test_df_func2)
-    latencies_only_test_data_2 = list(map(lambda x: x[0], significant_test_data_func2))
-    sum_latency = sum(latencies_only_test_data_2)
-    normed_latencies = [latency / sum_latency for latency in list(latencies_only_test_data_2)]
-    expected_df = pd.DataFrame(normed_latencies, columns=[LATENCY])
+    test_data = deepcopy(test_data_trans2)
+    latencies_only_test_data = [p.latency_ms for p in test_data]
+    sum_latency = sum(latencies_only_test_data)
+    normed_latencies = [latency / sum_latency for latency in list(latencies_only_test_data)]
 
-    strategy = DenoisingStrategy(
-        HEMI_RIGHT, should_normalise=True, should_cluster_only_latency=True
-    )
-    preprocessed_df = strategy._preprocess(df)
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels,
+                                 should_normalise=True, should_cluster_only_latency=True)
+    preprocessed_pairings = strategy._preprocess(test_data)
 
-    assert_frame_equal(expected_df, preprocessed_df)
+    assert [p.latency_ms for p in preprocessed_pairings] == normed_latencies
 
 
 def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
     mocked_clusterer = MagicMock()
-    mocked_clusterer.labels_ = significant_test_data_func1_labels
-    strategy = DenoisingStrategy(HEMI_RIGHT)
+    mocked_clusterer.labels_ = significant_test_data_trans1_labels
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
     strategy._clusterer = mocked_clusterer
-    actual = strategy._get_denoised_time_series(test_df_func1)
+    actual = strategy._get_denoised_time_series(test_data_trans1)
 
-    assert denoised_func1 == actual
+    assert actual == denoised_trans1
 
 
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._perform_max_pooling")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._update_pairings")
-def test_DenoisingStrategy_Postprocess_Successfully(
-    mock_update_pairings, mock_perform_max
-):
-    mock_update_pairings.return_value = denoised_test_spikes["func1"]
+def test_DenoisingStrategy_Postprocess_Successfully(mock_update_pairings, mock_perform_max):
+    mock_update_pairings.return_value = denoised_test_spikes["trans1"]
 
-    max_pooled_spike = deepcopy(denoised_test_spikes["func1"])
-    max_pooled_spike.right_best_pairings = [(30, 1e-100)]
+    max_pooled_spike = deepcopy(denoised_test_spikes["trans1"])
+    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, 1e-100)]
     mock_perform_max.return_value = max_pooled_spike
 
-    strategy = DenoisingStrategy(HEMI_RIGHT, should_max_pool=True)
-    actual_spike = strategy._postprocess(noisy_test_spikes["func1"], denoised_func1)
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels,
+                                 should_max_pool=True)
+    actual_spike = strategy._postprocess(noisy_test_spikes["trans1"], denoised_trans1)
 
     assert actual_spike == max_pooled_spike
 
 
 def test_DenoisingStrategy_PerformMaxPooling_Successfully():
-    max_pooled_spike = deepcopy(denoised_test_spikes["func1"])
-    max_pooled_spike.right_best_pairings = [(30, 1e-100)]
+    max_pooled_spike = deepcopy(denoised_test_spikes["trans1"])
+    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, 1e-100)]
 
-    strategy = DenoisingStrategy(HEMI_RIGHT)
-    actual_max_pooled = strategy._perform_max_pooling(denoised_test_spikes["func1"])
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
+    actual_max_pooled = strategy._perform_max_pooling(denoised_test_spikes["trans1"])
 
     assert actual_max_pooled.right_best_pairings == max_pooled_spike.right_best_pairings
