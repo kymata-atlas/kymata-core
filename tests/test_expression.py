@@ -314,4 +314,153 @@ def test_hes_rename_functions_wrong_name():
                             data_rh=data_right,
                             )
     with pytest.raises(KeyError):
-        es.rename(functions={"first": "first_renamed", "missing": "second_renamed"})
+        es.rename(transforms={"first": "first_renamed", "missing": "second_renamed"})
+
+
+def test_hes_rename_hexels():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    target_es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(1, 6),
+        hexels_rh=range(1, 6),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    assert es != target_es
+    es.rename(channels={c: c + 1 for c in range(5)})
+    assert es == target_es
+
+
+def test_combine_vaild_ses_works(sensor_expression_set_4_sensors_3_latencies):
+    ses_1 = copy(sensor_expression_set_4_sensors_3_latencies)
+    ses_2 = copy(sensor_expression_set_4_sensors_3_latencies)
+    ses_2.rename({f: f"{f}+++" for f in ses_2.transforms})
+    combined = combine([ses_1, ses_2])
+    assert np.array_equal(combined.sensors, ses_1.sensors)
+    assert np.array_equal(combined.sensors, ses_2.sensors)
+    assert np.array_equal(combined.latencies, ses_1.latencies)
+    assert np.array_equal(combined.latencies, ses_2.latencies)
+    assert set(ses_1.transforms) | set(ses_2.transforms) == set(combined.transforms)
+
+
+def test_combine_fails_with_mixed_types(
+    hexel_expression_set_5_hexels, sensor_expression_set_4_sensors_3_latencies
+):
+    with pytest.raises(ValueError):
+        combine(
+            [hexel_expression_set_5_hexels, sensor_expression_set_4_sensors_3_latencies]
+        )
+
+
+def test_combine_fails_with_mismatched_sensor_counts(
+    sensor_expression_set_4_sensors_3_latencies, sensor_expression_set_5_sensors
+):
+    with pytest.raises(ValueError):
+        combine(
+            [
+                sensor_expression_set_4_sensors_3_latencies,
+                sensor_expression_set_5_sensors,
+            ]
+        )
+
+
+def test_combine_fails_with_mismatched_sensor_names(
+    sensor_expression_set_4_sensors_3_latencies,
+):
+    ses_renamed_sensors: SensorExpressionSet = copy(
+        sensor_expression_set_4_sensors_3_latencies
+    )
+    ses_renamed_sensors.rename(
+        channels={
+            c: f"{c}'" for c in sensor_expression_set_4_sensors_3_latencies.sensors
+        }
+    )
+    with pytest.raises(ValueError):
+        combine([sensor_expression_set_4_sensors_3_latencies, ses_renamed_sensors])
+
+
+def test_combine_fails_with_mismatched_latency_counts(
+    sensor_expression_set_4_sensors_3_latencies,
+    sensor_expression_set_4_sensors_4_latencies,
+):
+    with pytest.raises(ValueError):
+        combine(
+            [
+                sensor_expression_set_4_sensors_3_latencies,
+                sensor_expression_set_4_sensors_4_latencies,
+            ]
+        )
+
+
+def test_combine_fails_with_mismatched_latencies(
+    sensor_expression_set_4_sensors_4_latencies,
+    sensor_expression_set_4_sensors_4_different_latencies,
+):
+    with pytest.raises(ValueError):
+        combine(
+            [
+                sensor_expression_set_4_sensors_4_latencies,
+                sensor_expression_set_4_sensors_4_different_latencies,
+            ]
+        )
+
+
+def test_subset_transforms_one():
+    data_left  = [np.random.randn(5, 10) for _ in range(3)]
+    data_right = [np.random.randn(5, 10) for _ in range(3)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+
+    first = HexelExpressionSet(
+        transforms=["first"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=[data_left[0]],
+        data_rh=[data_right[0]],
+    )
+
+    assert es["first"] == first
+
+
+def test_subset_transforms_two():
+    data_left  = [np.random.randn(5, 10) for _ in range(3)]
+    data_right = [np.random.randn(5, 10) for _ in range(3)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+
+    first_two = HexelExpressionSet(
+        transforms=["first", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=[data_left[0], data_left[2]],
+        data_rh=[data_right[0], data_right[2]],
+    )
+
+    assert es["first", "third"] == first_two
