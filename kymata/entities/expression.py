@@ -401,17 +401,9 @@ class HexelExpressionSet(ExpressionSet):
             return self._getitem_functions(key)
         
     def _getitem_functions(self, functions: str | Sequence[str]) -> HexelExpressionSet:
-    def __getitem__(self, key: Union[str, Sequence[str], slice]) -> HexelExpressionSet:
-
-        if isinstance(key, slice):
-            return self._slice_latencies(key)
-        else:
-            return self._getitem_functions(key)
-        
-    def _getitem_functions(self, functions: str | Sequence[str]) -> HexelExpressionSet:
         """
-        Select data for specified function(s) only.
-        Use a function name or list/array of function names
+        Select data for specified transform(s) only.
+        Use a transform name or list/array of transform names
         """
         # Allow indexing by a single function
         if isinstance(functions, str):
