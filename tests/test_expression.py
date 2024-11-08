@@ -593,7 +593,7 @@ def test_time_crop_one_datapoint_at_end():
         transforms=["first", "second", "third"],
         sensors=range(5),
         latencies=[.5],
-        data=[d[:, -1] for d in data],
+        data=[d[:, -1:] for d in data],
     )
 
     assert es.crop_time(.401, 1) == cropped
