@@ -242,7 +242,7 @@ class ExpressionSet(ABC):
     def __getitem__(self, transforms: str | Sequence[str]) -> ExpressionSet:
         pass
 
-    def _validate_crop_time_args_and_select_latencies(self, start: float, stop: float) -> None:
+    def _validate_crop_latency_args(self, start: float, stop: float) -> None:
         """
         Raises IndexError if the start and stop indices are invalid.
         """
@@ -258,18 +258,18 @@ class ExpressionSet(ABC):
             raise IndexError(f"No latencies fell between selected range ({start=}, {stop=})")
 
     @abstractmethod
-    def crop_time(self, start: float | None, stop: float | None) -> Self:
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> Self:
         """
-        Returns a copy of the ExpressionSet with time cropped between the two endpoints (inclusive).
+        Returns a copy of the ExpressionSet with latencies cropped between the two endpoints (inclusive).
 
         Args:
-            start (float | None): Time in seconds to start the cropped window. Use None for no cropping at the start
-                (e.g. half-open crop).
-            stop (float | None): Time in seconds to stop the cropped window. Use None for no cropping at the end
-                (e.g. half-open crop).
+            latency_start (float | None): Latency in seconds to start the cropped window. Use None for no cropping at
+                the start (e.g. half-open crop).
+            latency_stop (float | None): Latency in seconds to stop the cropped window. Use None for no cropping at the
+                end (e.g. half-open crop).
 
         Returns:
-            Self: A copy of the ExpressionSet with the time cropped between the specified start and stop.
+            Self: A copy of the ExpressionSet with the latencies cropped between the specified start and stop.
         """
         pass
 
@@ -464,17 +464,17 @@ class HexelExpressionSet(ExpressionSet):
             data_rh=[self._data[BLOCK_RIGHT].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
-    def crop_time(self, start: float | None, stop: float | None) -> HexelExpressionSet:
-        if start is None:
-            start = -inf
-        if stop is None:
-            stop = inf
-        self._validate_crop_time_args_and_select_latencies(start, stop)
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> HexelExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
 
         selected_latencies = [
             (i, lat)
             for i, lat in enumerate(self.latencies)
-            if start <= lat <= stop
+            if latency_start <= lat <= latency_stop
         ]
         # Unzip idxs and latencies
         new_latency_idxs, selected_latencies = zip(*selected_latencies)
@@ -637,17 +637,17 @@ class SensorExpressionSet(ExpressionSet):
             data=[self._data[BLOCK_SCALP].sel({DIM_FUNCTION: function}).data for function in functions],
         )
 
-    def crop_time(self, start: float | None, stop: float | None) -> SensorExpressionSet:
-        if start is None:
-            start = -inf
-        if stop is None:
-            stop = inf
-        self._validate_crop_time_args_and_select_latencies(start, stop)
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
 
         selected_latencies = [
             (i, lat)
             for i, lat in enumerate(self.latencies)
-            if start <= lat <= stop
+            if latency_start <= lat <= latency_stop
         ]
         # Unzip idxs and latencies
         new_latency_idxs, selected_latencies = zip(*selected_latencies)

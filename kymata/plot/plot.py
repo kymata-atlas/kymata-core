@@ -565,14 +565,14 @@ def expression_plot(
     if minimap:
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
-                expression_set.crop_time(*display_latency_range),
+                expression_set.crop(*display_latency_range),
                 minimap_axis=axes[_AxName.minimap_main],
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
             )
         elif isinstance(expression_set, HexelExpressionSet):
             _plot_minimap_hexel(
-                expression_set.crop_time(*display_latency_range),
+                expression_set.crop(*display_latency_range),
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_top],
                 rh_minimap_axis=axes[_AxName.minimap_bottom],

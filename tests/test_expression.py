@@ -466,7 +466,7 @@ def test_subset_transforms_two():
     assert es["first", "third"] == first_two
 
 
-def test_time_crop_both_endpoints_inside():
+def test_latency_crop_both_endpoints_inside():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -491,13 +491,13 @@ def test_time_crop_both_endpoints_inside():
     )
 
     # Inclusive of endpoints
-    assert es.crop_time(-.2, .3) == cropped
+    assert es.crop(-.2, .3) == cropped
 
     # Endpoints between timepoints
-    assert es.crop_time(-.25, .35) == cropped
+    assert es.crop(-.25, .35) == cropped
 
 
-def test_time_crop_half_open_left():
+def test_latency_crop_half_open_left():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -522,13 +522,13 @@ def test_time_crop_half_open_left():
     )
 
     # Inclusive of endpoints
-    assert es.crop_time(None, -.1) == cropped
+    assert es.crop(None, -.1) == cropped
 
     # Endpoints between timepoints
-    assert es.crop_time(None, -.05) == cropped
+    assert es.crop(None, -.05) == cropped
 
 
-def test_time_crop_half_open_right():
+def test_latency_crop_half_open_right():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -553,13 +553,13 @@ def test_time_crop_half_open_right():
     )
 
     # Inclusive of endpoints
-    assert es.crop_time(-.1, None) == cropped
+    assert es.crop(-.1, None) == cropped
 
     # Endpoints between timepoints
-    assert es.crop_time(-.15, None) == cropped
+    assert es.crop(-.15, None) == cropped
 
 
-def test_time_crop_contains_whole():
+def test_latency_crop_contains_whole():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -574,10 +574,10 @@ def test_time_crop_contains_whole():
         data_rh=data_right,
     )
 
-    assert es.crop_time(-1, 1) == es
+    assert es.crop(-1, 1) == es
 
 
-def test_time_crop_one_datapoint_at_end():
+def test_latency_crop_one_datapoint_at_end():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -596,10 +596,10 @@ def test_time_crop_one_datapoint_at_end():
         data=[d[:, -1:] for d in data],
     )
 
-    assert es.crop_time(.401, 1) == cropped
+    assert es.crop(.401, 1) == cropped
 
 
-def test_time_crop_no_datapoints_between():
+def test_latency_crop_no_datapoints_between():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -615,10 +615,10 @@ def test_time_crop_no_datapoints_between():
     )
 
     with pytest.raises(IndexError):
-        es.crop_time(0.01, 0.02)
+        es.crop(0.01, 0.02)
 
 
-def test_time_crop_outside_range():
+def test_latency_crop_outside_range():
     #              0    1    2    3    4  5   6   7   8   9  10
     latencies = [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5]
     data_left  = [np.random.randn(5, len(latencies)) for _ in range(3)]
@@ -634,7 +634,7 @@ def test_time_crop_outside_range():
     )
 
     with pytest.raises(IndexError):
-        es.crop_time(-1, -.8)
+        es.crop(-1, -.8)
 
     with pytest.raises(IndexError):
-        es.crop_time(1, 2)
+        es.crop(1, 2)
