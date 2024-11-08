@@ -747,3 +747,53 @@ def test_combine_fails_with_mismatched_latencies(
                 sensor_expression_set_4_sensors_4_different_latencies,
             ]
         )
+
+
+def test_subset_transforms_one():
+    data_left  = [np.random.randn(5, 10) for _ in range(3)]
+    data_right = [np.random.randn(5, 10) for _ in range(3)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+
+    first = HexelExpressionSet(
+        transforms=["first"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=[data_left[0]],
+        data_rh=[data_right[0]],
+    )
+
+    assert es["first"] == first
+
+
+def test_subset_transforms_two():
+    data_left  = [np.random.randn(5, 10) for _ in range(3)]
+    data_right = [np.random.randn(5, 10) for _ in range(3)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+
+    first_two = HexelExpressionSet(
+        transforms=["first", "third"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=[data_left[0], data_left[2]],
+        data_rh=[data_right[0], data_right[2]],
+    )
+
+    assert es["first", "third"] == first_two
