@@ -308,7 +308,7 @@ def expression_plot(
     minimap_view: str = "lateral",
     minimap_surface: str = "inflated",
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
-    display_range: Optional[tuple[float | None, float | None]] = None,
+    display_time_range: Optional[tuple[float | None, float | None]] = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -357,7 +357,7 @@ def expression_plot(
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
-        display_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
+        display_time_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
             minimap view to only the specified time window, and highlight the time window on the expression plot.
             Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for half-open
             intervals.
@@ -399,9 +399,9 @@ def expression_plot(
         assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
 
-    if display_range is None:
-        display_range = (None, None)
-    assert len(display_range) == 2
+    if display_time_range is None:
+        display_time_range = (None, None)
+    assert len(display_time_range) == 2
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -548,8 +548,8 @@ def expression_plot(
         ax.set_yticklabels(pval_labels)
 
         # Show highlighted range
-        if display_range != (None, None):
-            start, stop = display_range
+        if display_time_range != (None, None):
+            start, stop = display_time_range
             if start is None:
                 start = ax.get_xlim()[0]
             else:
@@ -565,14 +565,14 @@ def expression_plot(
     if minimap:
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
-                expression_set.crop_time(*display_range),
+                expression_set.crop_time(*display_time_range),
                 minimap_axis=axes[_AxName.minimap_main],
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
             )
         elif isinstance(expression_set, HexelExpressionSet):
             _plot_minimap_hexel(
-                expression_set.crop_time(*display_range),
+                expression_set.crop_time(*display_time_range),
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_top],
                 rh_minimap_axis=axes[_AxName.minimap_bottom],
