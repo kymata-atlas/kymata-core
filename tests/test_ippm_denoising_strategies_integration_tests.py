@@ -1,12 +1,12 @@
 from copy import deepcopy
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMSpike
+from kymata.ippm.data_tools import IPPMSpike, ExpressionPairing
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, DBSCANStrategy, MeanShiftStrategy)
 
 n_timepoints = 201
-n_hexels = 20_000
+n_hexels = 200_000
 
 test_data_trans1 = [
     (-100, 1e-50),
@@ -74,8 +74,8 @@ noisy_test_hexels["trans2"].right_best_pairings = test_data_trans2
 
 def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [(30, 1e-100)]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99)]
+    expected_denoised["trans1"].right_best_pairings = [ExpressionPairing(30, 1e-100)]
+    expected_denoised["trans2"].right_best_pairings = [ExpressionPairing(30, 1e-99)]
 
     strategy = MaxPoolingStrategy(
         hemi=HEMI_RIGHT,

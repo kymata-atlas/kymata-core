@@ -7,7 +7,7 @@ from kymata.ippm.data_tools import IPPMSpike, ExpressionPairing
 from kymata.ippm.denoising_strategies import DenoisingStrategy
 
 n_timepoints = 201
-n_hexels = 20_000
+n_hexels = 200_000
 
 test_data_trans1 = [
     ExpressionPairing(-100, 1e-50),
@@ -88,7 +88,7 @@ def test_DenoisingStrategy_EstimateThresholdForSignificance_Successfully():
     assert isclose(expected_threshold, actual_threshold, abs_tol=1e-15)
 
 
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._map_spikes_to_df")
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._map_spikes_to_pairings")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._preprocess")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._get_denoised_time_series")
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._postprocess")
@@ -127,24 +127,24 @@ def test_DenoisingStrategy_Denoise_Successfully(
     )
 
 
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes")
-def test_DenoisingStrategy_MapSpikesToDF_Successfully(mock_filter):
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_pairings")
+def test_DenoisingStrategy_MapSpikesToPairings_Successfully(mock_filter):
     mock_filter.side_effect = [significant_test_data_trans1, significant_test_data_trans2]
     strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
 
-    actual_spikes: list[tuple[str, ExpressionPairing]] = list(strategy._map_spikes_to_pairings(noisy_test_spikes))
+    actual_spikes: list[tuple[str, list[ExpressionPairing]]] = list(strategy._map_spikes_to_pairings(noisy_test_spikes))
 
     assert len(actual_spikes) == 2
     assert actual_spikes[0][0] == "trans1"
     assert actual_spikes[1][0] == "trans2"
 
     assert (
-        set(spike.latency_ms for _, spike in actual_spikes) ==
-        set(spike.latency_ms for _, spike in test_data_trans1)
+        set(pairing.latency_ms for _name, pairings in actual_spikes for pairing in pairings) ==
+        set(pairing.latency_ms for pairing in test_data_trans1)
     )
     assert (
-        set(spike.p_value for _, spike in actual_spikes) ==
-        set(spike.p_value for _, spike in test_data_trans1)
+        set(pairing.p_value for _name, pairings in actual_spikes for pairing in pairings) ==
+        set(pairing.p_value for pairing in test_data_trans1)
     )
 
 

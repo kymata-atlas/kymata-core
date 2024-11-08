@@ -246,9 +246,9 @@ class DenoisingStrategy(ABC):
 
         pairings, labels = __keep_most_significant_per_label(pairings, self._clusterer.labels_)
         # Filter out anomalies
-        pairings = [p
-                    for p, l in zip(pairings, labels)
-                    if l != ANOMALOUS_CLUSTER_TAG]
+        pairings = [pairing
+                    for pairing, label in zip(pairings, labels)
+                    if label != ANOMALOUS_CLUSTER_TAG]
         return pairings
 
     def _postprocess(self, spike: IPPMSpike, denoised_time_series: list[ExpressionPairing]) -> IPPMSpike:
