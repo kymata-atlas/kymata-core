@@ -5,13 +5,13 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, TypeVar
+from typing import Sequence, Union, get_args, Tuple, TypeVar, Self
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal)
+    array, array_equal, inf)
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sparse import SparseArray, COO
@@ -327,12 +327,43 @@ class ExpressionSet(ABC):
     def __getitem__(self, transforms: str | Sequence[str]) -> ExpressionSet:
         pass
 
+    def _validate_crop_latency_args(self, start: float, stop: float) -> None:
+        """
+        Raises IndexError if the start and stop indices are invalid.
+        """
+        if start >= stop:
+            raise IndexError(f"start must be less than stop ({start=}, {stop=})")
+        if start > self.latencies.max() or stop < self.latencies.min():
+            raise IndexError(f"Crop range lies entirely outside expression data"
+                             f" ({start}–{stop} is outside {self.latencies.min()}–{self.latencies.max()})")
+
+        selected_latencies = [lat for lat in self.latencies if start <= lat <= stop]
+
+        if len(selected_latencies) == 0:
+            raise IndexError(f"No latencies fell between selected range ({start=}, {stop=})")
+
     @abstractmethod
-    def __copy__(self) -> ExpressionSet:
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> Self:
+        """
+        Returns a copy of the ExpressionSet with latencies cropped between the two endpoints (inclusive).
+
+        Args:
+            latency_start (float | None): Latency in seconds to start the cropped window. Use None for no cropping at
+                the start (e.g. half-open crop).
+            latency_stop (float | None): Latency in seconds to stop the cropped window. Use None for no cropping at the
+                end (e.g. half-open crop).
+
+        Returns:
+            Self: A copy of the ExpressionSet with the latencies cropped between the specified start and stop.
+        """
         pass
 
     @abstractmethod
-    def __add__(self, other) -> ExpressionSet:
+    def __copy__(self) -> Self:
+        pass
+
+    @abstractmethod
+    def __add__(self, other) -> Self:
         pass
 
     def _add_compatibility_check(self, other) -> None:
@@ -548,6 +579,30 @@ class HexelExpressionSet(ExpressionSet):
             data_rh=self._data[BLOCK_RIGHT].data[:, :, transform_idxs],
         )
 
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> HexelExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
+
+        selected_latencies = [
+            (i, lat)
+            for i, lat in enumerate(self.latencies)
+            if latency_start <= lat <= latency_stop
+        ]
+        # Unzip idxs and latencies
+        new_latency_idxs, selected_latencies = zip(*selected_latencies)
+
+        return HexelExpressionSet(
+            transforms=self.transforms.copy(),
+            hexels_lh=self.hexels_left.copy(),
+            hexels_rh=self.hexels_right.copy(),
+            latencies=selected_latencies,
+            data_lh=self._data[BLOCK_LEFT].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+            data_rh=self._data[BLOCK_RIGHT].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+        )
+    
     def __copy__(self):
         return HexelExpressionSet(
             transforms=self.transforms.copy(),
@@ -699,6 +754,28 @@ class SensorExpressionSet(ExpressionSet):
             latencies=self.latencies,
             # Slice data by requested transforms
             data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
+        )
+
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
+
+        selected_latencies = [
+            (i, lat)
+            for i, lat in enumerate(self.latencies)
+            if latency_start <= lat <= latency_stop
+        ]
+        # Unzip idxs and latencies
+        new_latency_idxs, selected_latencies = zip(*selected_latencies)
+
+        return SensorExpressionSet(
+            transforms=self.transforms.copy(),
+            sensors=self.sensors.copy(),
+            latencies=selected_latencies,
+            data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
         )
 
     def best_transforms(self) -> DataFrame:
