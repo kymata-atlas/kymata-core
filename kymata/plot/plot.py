@@ -171,10 +171,10 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame,
     x = function_data["latency"].values * 1000  # Convert to milliseconds
     y = function_data["value"].values
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
-    # ax.vlines(x=x, ymin=1, ymax=y, color=c)
-    # ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
-    ax.vlines(x=x, ymin=1, ymax=y, color=c, alpha = 0.2)
-    ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c, alpha = 0.2)
+    ax.vlines(x=x, ymin=1, ymax=y, color=c)
+    ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
+    # ax.vlines(x=x, ymin=1, ymax=y, color=c, alpha = 0.2)
+    # ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c, alpha = 0.2)
 
     x_min = x.min() if len(x) > 0 else np.Inf
     x_max = x.max() if len(x) > 0 else -np.Inf
