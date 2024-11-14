@@ -18,6 +18,6 @@ def get_stds(x, n):
     d0, d1, d2 = x.shape
     y = np.concatenate((np.zeros((d0, d1, 1)), np.cumsum(x**2, axis=-1)), axis=-1)
     z = np.concatenate((np.zeros((d0, d1, 1)), np.cumsum(x, axis=-1)), axis=-1)
-    y = y[:,:,-n-1:-1] - y[:,:,:n]
-    z = z[:,:,-n-1:-1] - z[:,:,:n]
+    y = y[:, :, -n - 1 : -1] - y[:, :, :n]
+    z = z[:, :, -n - 1 : -1] - z[:, :, :n]
     return (y - ((z**2) / n)) ** 0.5

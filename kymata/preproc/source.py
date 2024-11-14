@@ -9,20 +9,24 @@ from numpy.typing import NDArray
 import mne
 
 from kymata.io.file import PathType
-from kymata.preproc.premorph import pick_channels_inverse_operator, premorph_inverse_operator
+from kymata.preproc.premorph import (
+    pick_channels_inverse_operator,
+    premorph_inverse_operator,
+)
 
 _logger = getLogger(__name__)
 
 
-def load_single_emeg(emeg_path: Path,
-                     need_names=False,
-                     inverse_operator_path: Optional[Path] = None,
-                     snr=4,
-                     morph_path: Optional[Path] = None,
-                     old_morph=False,
-                     premorphed_inverse_operator_path: Optional[Path] = None,
-                     ch_names_path: Optional[Path] = None,
-                     ) -> tuple[NDArray, list[str]]:
+def load_single_emeg(
+    emeg_path: Path,
+    need_names=False,
+    inverse_operator_path: Optional[Path] = None,
+    snr=4,
+    morph_path: Optional[Path] = None,
+    old_morph=False,
+    premorphed_inverse_operator_path: Optional[Path] = None,
+    ch_names_path: Optional[Path] = None,
+) -> tuple[NDArray, list[str]]:
     """
     When using the inverse operator, returns left and right hemispheres concatenated.
 
@@ -34,7 +38,12 @@ def load_single_emeg(emeg_path: Path,
     if inverse_operator_path is None:
         ch_names_path = Path(emeg_path.parent, "ch_names.npy")
 
-    if isfile(emeg_path_npy) and (not need_names) and (inverse_operator_path is None) and (morph_path is None):
+    if (
+        isfile(emeg_path_npy)
+        and (not need_names)
+        and (inverse_operator_path is None)
+        and (morph_path is None)
+    ):
         # Load npy-format sensor data
         channel_names: list[str] = np.load(ch_names_path)
         emeg = np.load(emeg_path_npy)
@@ -54,23 +63,41 @@ def load_single_emeg(emeg_path: Path,
     if old_morph:
         # Load and apply fif-format morph data
         _logger.info(f"Reading source morph from {morph_path}")
-        morph_map = mne.read_source_morph(morph_path) if morph_path is not None else None
+        morph_map = (
+            mne.read_source_morph(morph_path) if morph_path is not None else None
+        )
 
-        lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(evoked, inverse_operator_path, snr, morph_map=morph_map)
+        lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(
+            evoked, inverse_operator_path, snr, morph_map=morph_map
+        )
         # Stack into a single matrix, to be split after gridsearch
         emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
 
         return emeg, morph_hexel_names
 
     if premorphed_inverse_operator_path is not None:
-        common_channels_path = Path(premorphed_inverse_operator_path.parent, Path(premorphed_inverse_operator_path.name).stem + "_list_of_common_channels")
+        common_channels_path = Path(
+            premorphed_inverse_operator_path.parent,
+            Path(premorphed_inverse_operator_path.name).stem
+            + "_list_of_common_channels",
+        )
         if not Path(premorphed_inverse_operator_path).exists():
             # Compute premorphed operator path
-            inverse_operator, premorphed_inverse_operator, morph_hexel_names = premorph_inverse_operator(
-                morph_path, evoked, inverse_operator_path, snr ** -2, 'MNE', pick_ori='normal')
+            inverse_operator, premorphed_inverse_operator, morph_hexel_names = (
+                premorph_inverse_operator(
+                    morph_path,
+                    evoked,
+                    inverse_operator_path,
+                    snr**-2,
+                    "MNE",
+                    pick_ori="normal",
+                )
+            )
 
             # Common channels to restrict to
-            common_channels = pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
+            common_channels = pick_channels_inverse_operator(
+                evoked.ch_names, inverse_operator
+            )
 
             np.save(premorphed_inverse_operator_path, premorphed_inverse_operator)
             np.save(ch_names_path, morph_hexel_names)
@@ -80,11 +107,13 @@ def load_single_emeg(emeg_path: Path,
             # Load precomputed
             premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
             morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
-            common_channels = np.load(common_channels_path.with_suffix('.npy'))
+            common_channels = np.load(common_channels_path.with_suffix(".npy"))
 
-        emeg = np.matmul(premorphed_inverse_operator,
-                         # Restrict to common channels
-                         evoked.data[common_channels])
+        emeg = np.matmul(
+            premorphed_inverse_operator,
+            # Restrict to common channels
+            evoked.data[common_channels],
+        )
 
         del evoked, premorphed_inverse_operator
 
@@ -94,13 +123,18 @@ def load_single_emeg(emeg_path: Path,
     return emeg, morph_hexel_names
 
 
-def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None):
-    lambda2 = 1.0 / snr ** 2
+def inverse_operate(
+    evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None
+):
+    lambda2 = 1.0 / snr**2
     _logger.info(f"Reading inverse operator from {inverse_operator}")
-    inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
-    mne.set_eeg_reference(evoked, projection=True, verbose=False)
+    inverse_operator = mne.minimum_norm.read_inverse_operator(
+        inverse_operator, verbose=False
+    )
     _logger.info("Applying inverse operator")
-    stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, 'MNE', pick_ori='normal', verbose=False)
+    stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(
+        evoked, inverse_operator, lambda2, "MNE", pick_ori="normal", verbose=False
+    )
     _logger.info("Inverse operator applied")
 
     if morph_map is not None:
@@ -119,10 +153,18 @@ def apply_morph_map(morph_map: mne.SourceMorph, stc: mne.VectorSourceEstimate):
     return stc
 
 
-def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution=False, mri_space=None, verbose=None):
+def __morph_apply(
+    morph: mne.SourceMorph,
+    stc_from,
+    output="stc",
+    mri_resolution=False,
+    mri_space=None,
+    verbose=None,
+):
     """A copy of mne.SourceMorph.apply, for optimisation."""
     import copy
     from mne.morph import _morphed_stc_as_volume
+
     # _validate_type(output, str, "output")
     # _validate_type(stc_from, _BaseSourceEstimate, "stc_from", "source estimate")
     # if isinstance(stc_from, _BaseSurfaceSourceEstimate):
@@ -159,8 +201,13 @@ def __morph_apply(morph: mne.SourceMorph, stc_from, output="stc", mri_resolution
 
 def __mne_apply_morph_data(morph, stc_from):
     """A copy of mne.morph._apply_morph_data, for optimisation."""
-    from mne.morph import _BaseSurfaceSourceEstimate, _BaseVolSourceEstimate, _check_vertices_match, \
-        _VOL_MAT_CHECK_RATIO
+    from mne.morph import (
+        _BaseSurfaceSourceEstimate,
+        _BaseVolSourceEstimate,
+        _check_vertices_match,
+        _VOL_MAT_CHECK_RATIO,
+    )
+
     if stc_from.subject is not None and stc_from.subject != morph.subject_from:
         raise ValueError(
             "stc.subject (%s) != morph.subject_from (%s)"
@@ -200,7 +247,7 @@ def __mne_apply_morph_data(morph, stc_from):
     from_vol_stop = stc_from.data.shape[0]
     vertices_to = morph.vertices_to
     if morph.kind == "mixed":
-        vertices_to = vertices_to[0 if do_surf else 2: None if do_vol else 2]
+        vertices_to = vertices_to[0 if do_surf else 2 : None if do_vol else 2]
     to_vol_stop = sum(len(v) for v in vertices_to)
 
     mesg = "Ori × Time" if stc_from.data.ndim == 3 else "Time"
@@ -222,7 +269,7 @@ def __mne_apply_morph_data(morph, stc_from):
         to_used[to_sl] = True
         # Loop over time points to save memory
         if morph.vol_morph_mat is None and n_times >= _VOL_MAT_CHECK_RATIO * (
-                to_vol_stop - to_surf_stop
+            to_vol_stop - to_surf_stop
         ):
             warn(
                 "Computing a sparse volume morph matrix will save time over "
@@ -239,7 +286,7 @@ def __mne_apply_morph_data(morph, stc_from):
             data[to_sl, :] = morph.vol_morph_mat @ data_from[from_sl]
     if do_surf:
         for hemi, v1, v2 in zip(
-                ("left", "right"), morph.src_data["vertices_from"], stc_from.vertices[:2]
+            ("left", "right"), morph.src_data["vertices_from"], stc_from.vertices[:2]
         ):
             _check_vertices_match(v1, v2, "%s hemisphere" % (hemi,))
         from_sl = slice(0, from_surf_stop)
@@ -264,18 +311,19 @@ def __mne_apply_morph_data(morph, stc_from):
     return stc_to
 
 
-def load_emeg_pack(emeg_filenames,
-                   emeg_dir: PathType,
-                   inverse_operator_dir: Optional[PathType],
-                   ch_names_path: Path,
-                   morph_dir: Optional[PathType] = None,
-                   need_names=False,
-                   ave_mode=None,
-                   inverse_operator_suffix=None,
-                   snr=4,
-                   old_morph=False,
-                   invsol_npy_dir=None,
-                   ):
+def load_emeg_pack(
+    emeg_filenames,
+    emeg_dir: PathType,
+    inverse_operator_dir: Optional[PathType],
+    ch_names_path: Path,
+    morph_dir: Optional[PathType] = None,
+    need_names=False,
+    ave_mode=None,
+    inverse_operator_suffix=None,
+    snr=4,
+    old_morph=False,
+    invsol_npy_dir=None,
+):
     """
 
     Args:
@@ -302,22 +350,26 @@ def load_emeg_pack(emeg_filenames,
             The number of repetitions present in the emeg array
     """
 
-    emeg_paths = [
-        Path(emeg_dir, emeg_fn)
-        for emeg_fn in emeg_filenames
-    ]
+    emeg_paths = [Path(emeg_dir, emeg_fn) for emeg_fn in emeg_filenames]
     n_reps = len(emeg_paths)
     morph_paths = [
-        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5") if morph_dir is not None else None
+        Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5")
+        if morph_dir is not None
+        else None
         for emeg_fn in emeg_filenames
     ]
     invsol_paths = [
-        Path(invsol_npy_dir, f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy")
+        Path(
+            invsol_npy_dir,
+            f"{_strip_ave(emeg_fn)}{_strip_file_ext(inverse_operator_suffix)}_{_strip_ave(emeg_fn)}_fsaverage_morph.npy",
+        )
         for emeg_fn in emeg_filenames
     ]
     if inverse_operator_dir is not None:
         inverse_operator_paths = [
-            Path(inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}")
+            Path(
+                inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}"
+            )
             for emeg_fn in emeg_filenames
         ]
     else:
@@ -325,35 +377,58 @@ def load_emeg_pack(emeg_filenames,
 
     # Load first one
     try:
-        emeg, emeg_names = load_single_emeg(emeg_paths[0], need_names, inverse_operator_paths[0], snr, morph_paths[0],
-                                            old_morph=old_morph, premorphed_inverse_operator_path=invsol_paths[0],
-                                            ch_names_path=ch_names_path)
+        emeg, emeg_names = load_single_emeg(
+            emeg_paths[0],
+            need_names,
+            inverse_operator_paths[0],
+            snr,
+            morph_paths[0],
+            old_morph=old_morph,
+            premorphed_inverse_operator_path=invsol_paths[0],
+            ch_names_path=ch_names_path,
+        )
     except Exception as ex:
         _logger.error(f"Error loading EMEG data from {str(emeg_paths[0])}")
-        _logger.error(f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}")
+        _logger.error(
+            f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}"
+        )
         _logger.error(f"\tmorph {str(morph_paths[0])}")
         raise ex
     emeg = np.expand_dims(emeg, 1)
 
     # Load remaining ones in using the appropriate ave_mode
-    if ave_mode == 'concatenate':
+    if ave_mode == "concatenate":
         # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
         for i in range(1, len(emeg_paths)):
-            new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                                   morph_paths[i], old_morph=old_morph, premorphed_inverse_operator_path=invsol_paths[i],
-                                                   ch_names_path=ch_names_path)
+            new_emeg, _ch_names = load_single_emeg(
+                emeg_paths[i],
+                need_names,
+                inverse_operator_paths[i],
+                snr,
+                morph_paths[i],
+                old_morph=old_morph,
+                premorphed_inverse_operator_path=invsol_paths[i],
+                ch_names_path=ch_names_path,
+            )
             emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
 
-    elif ave_mode == 'ave':
+    elif ave_mode == "ave":
         # Averaging together all participants
 
         for i in range(1, len(emeg_paths)):
-            new_emeg, _ch_names = load_single_emeg(emeg_paths[i], need_names, inverse_operator_paths[i], snr,
-                                                   morph_paths[i], old_morph=old_morph, premorphed_inverse_operator_path=invsol_paths[i],
-                                                   ch_names_path=ch_names_path)
+            new_emeg, _ch_names = load_single_emeg(
+                emeg_paths[i],
+                need_names,
+                inverse_operator_paths[i],
+                snr,
+                morph_paths[i],
+                old_morph=old_morph,
+                premorphed_inverse_operator_path=invsol_paths[i],
+                ch_names_path=ch_names_path,
+            )
             emeg += np.expand_dims(new_emeg, 1)
 
-        n_reps = 1 # n_reps is now 1 as all averaged
+        n_reps = 1  # n_reps is now 1 as all averaged
 
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
@@ -366,6 +441,7 @@ def _strip_ave(name: str) -> str:
         return name[:-4]
     else:
         return name
+
 
 def _strip_file_ext(name: str) -> str:
     """Returns a string, minus the final `.` and anything following it."""

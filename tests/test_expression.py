@@ -1,7 +1,15 @@
+from copy import copy
+
 import pytest
 import numpy as np
 
-from kymata.entities.expression import SensorExpressionSet, HexelExpressionSet, DIM_FUNCTION, DIM_LATENCY
+from kymata.entities.expression import (
+    SensorExpressionSet,
+    HexelExpressionSet,
+    DIM_TRANSFORM,
+    DIM_LATENCY,
+    combine, COL_LOGP_VALUE, DIM_SENSOR,
+)
 from kymata.math.p_values import p_to_logp, logp_to_p
 
 
@@ -25,294 +33,619 @@ def test_unlog_p_array():
     assert np.isclose(logp_to_p(logps), np.array([0.000_1, 0.001, 0.01, 0.1, 1])).all()
 
 
-def test_hes_hexels():
+@pytest.fixture
+def hexel_expression_set_5_hexels() -> HexelExpressionSet:
+    return HexelExpressionSet(
+        transforms="transform",
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10),
+        data_rh=np.random.randn(5, 10),
+    )
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_3_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+
+    sensors = [str(i) for i in range(4)]
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2  latencies
+                    [1, 0.1, 1],  # 0
+                    [1, 1, 0.2],  # 1
+                    [0.1, 1, 1],  # 2
+                    [0.2, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 0.2],
+                    [1, 0.1, 1],
+                    [1, 0.2, 1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+    return SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[transform_a_data, transform_b_data],
+    )
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_4_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+
+    sensors = [str(i) for i in range(4)]
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2   3  latencies
+                    [1, 0.1, 1, 1],  # 0
+                    [1, 1, 0.2, 1],  # 1
+                    [0.1, 1, 1, 1],  # 2
+                    [0.2, 1, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 0.2, 1],
+                    [1, 0.1, 1, 1],
+                    [1, 0.2, 1, 1],
+                    [1, 1, 0.1, 1],
+                ]
+            )
+        )
+    )
+    return SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(4),
+        data=[transform_a_data, transform_b_data],
+    )
+
+
+@pytest.fixture
+def sensor_expression_set_4_sensors_4_different_latencies() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+
+    sensors = [str(i) for i in range(4)]
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2   3  latencies
+                    [1, 0.1, 1, 1],  # 0
+                    [1, 1, 0.2, 1],  # 1
+                    [0.1, 1, 1, 1],  # 2
+                    [0.2, 1, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 0.2, 1],
+                    [1, 0.1, 1, 1],
+                    [1, 0.2, 1, 1],
+                    [1, 1, 0.1, 1],
+                ]
+            )
+        )
+    )
+    return SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(1, 5),
+        data=[transform_a_data, transform_b_data],
+    )
+
+
+@pytest.fixture
+def sensor_expression_set_5_sensors() -> SensorExpressionSet:
+    from numpy import array
+    from numpy.typing import NDArray
+
+    sensors = [str(i) for i in range(5)]
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2  latencies
+                    [1, 0.1, 1],  # 0
+                    [1, 1, 0.2],  # 1
+                    [0.1, 1, 1],  # 2
+                    [0.2, 1, 1],  # 3
+                    [1, 0.1, 1],  # 4 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 0.2],
+                    [1, 0.1, 1],
+                    [1, 0.2, 1],
+                    [1, 1, 0.1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+    return SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 5
+        latencies=range(3),
+        data=[transform_a_data, transform_b_data],
+    )
+
+
+def test_copy_ses(sensor_expression_set_4_sensors_3_latencies):
+    c = copy(sensor_expression_set_4_sensors_3_latencies)
+    assert sensor_expression_set_4_sensors_3_latencies == c
+
+
+def test_copy_hes(hexel_expression_set_5_hexels):
+    c = copy(hexel_expression_set_5_hexels)
+    assert hexel_expression_set_5_hexels == c
+
+
+def test_hes_hexels_left_equals_right(hexel_expression_set_5_hexels):
     from numpy import array, array_equal
-    es = HexelExpressionSet(functions="function",
-                            hexels_lh=range(5),
-                            hexels_rh=range(5),
-                            latencies=range(10),
-                            data_lh=np.random.randn(5, 10),
-                            data_rh=np.random.randn(5, 10),
-                            )
-    assert array_equal(es.hexels_left, array(range(5)))
-    assert array_equal(es.hexels_right, array(range(5)))
+
+    assert array_equal(hexel_expression_set_5_hexels.hexels_left, array(range(5)))
+    assert array_equal(hexel_expression_set_5_hexels.hexels_right, array(range(5)))
 
 
-def test_ses_best_function():
+def test_ses_best_transform():
     from numpy import array
     from numpy.typing import NDArray
     from pandas import DataFrame
+
     sensors = [str(i) for i in range(4)]
-    function_a_data: NDArray = array(p_to_logp(array([
-        # 0   1   2  latencies
-        [ 1, .1,  1],  # 0
-        [ 1,  1, .2],  # 1
-        [.1,  1,  1],  # 2
-        [.2,  1,  1],  # 3 sensors
-    ])))
-    function_b_data: NDArray = array(p_to_logp(array([
-        [ 1,  1, .2],
-        [ 1, .1,  1],
-        [ 1, .2,  1],
-        [ 1,  1, .1],
-    ])))
-    es = SensorExpressionSet(functions=["a", "b"],
-                             sensors=sensors,  # 4
-                             latencies=range(3),
-                             data=[function_a_data, function_b_data])
-    best_function_df: DataFrame = es.best_functions()
-    correct: DataFrame = DataFrame.from_dict({
-        "sensor":               ["0", "1", "2", "3"],
-        DIM_FUNCTION:           ["a", "b", "a", "b"],
-        DIM_LATENCY:            [ 1,   1,   0,   2 ],
-        "value":      p_to_logp([.1,  .1,  .1,  .1 ]),
-    })
-    assert DataFrame(best_function_df == correct).values.all()
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2  latencies
+                    [1, 0.1, 1],  # 0
+                    [1, 1, 0.2],  # 1
+                    [0.1, 1, 1],  # 2
+                    [0.2, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 0.2],
+                    [1, 0.1, 1],
+                    [1, 0.2, 1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+    es = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[transform_a_data, transform_b_data],
+    )
+    best_transform_df: DataFrame = es.best_transforms()
+    correct: DataFrame = DataFrame.from_dict(
+        {
+            DIM_SENSOR: ["0", "1", "2", "3"],
+            DIM_TRANSFORM: ["a", "b", "a", "b"],
+            DIM_LATENCY: [1, 1, 0, 2],
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1, 0.1]),
+        }
+    )
+    assert DataFrame(best_transform_df == correct).values.all()
 
 
-def test_ses_best_function_with_one_channel_all_1s():
+def test_ses_best_transform_with_one_channel_all_1s():
     from numpy import array
     from numpy.typing import NDArray
     from pandas import DataFrame
+
     sensors = [str(i) for i in range(4)]
-    function_a_data: NDArray = array(p_to_logp(array([
-        #  0    1    2  latencies
-        [  1,   1,   1],  # 0  <-- set sensor 0 to 1 for some reason
-        [  1,   1,  .2],  # 1
-        [ .1,   1,   1],  # 2
-        [ .2,   1,   1],  # 3 sensors
-    ])))
-    function_b_data: NDArray = array(p_to_logp(array([
-        [ 1,    1,   1],
-        [ 1,   .1,   1],
-        [ 1,   .2,   1],
-        [ 1,    1,  .1],
-    ])))
-    es = SensorExpressionSet(functions=["a", "b"],
-                             sensors=sensors,  # 4
-                             latencies=range(3),
-                             data=[function_a_data, function_b_data])
-    best_function_df: DataFrame = es.best_functions()
-    correct: DataFrame = DataFrame.from_dict({
-        "sensor":               ["1", "2", "3"],
-        DIM_FUNCTION:           ["b", "a", "b"],
-        DIM_LATENCY:            [  1,   0,   2 ],
-        "value":      p_to_logp([ .1,  .1,  .1 ]),
-    })
-    assert DataFrame(best_function_df == correct).values.all()
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    #  0    1    2  latencies
+                    [1, 1, 1],  # 0  <-- set sensor 0 to 1 for some reason
+                    [1, 1, 0.2],  # 1
+                    [0.1, 1, 1],  # 2
+                    [0.2, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 1, 1],
+                    [1, 0.1, 1],
+                    [1, 0.2, 1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+    es = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[transform_a_data, transform_b_data],
+    )
+    best_transform_df: DataFrame = es.best_transforms()
+    correct: DataFrame = DataFrame.from_dict(
+        {
+            DIM_SENSOR: ["1", "2", "3"],
+            DIM_TRANSFORM: ["b", "a", "b"],
+            DIM_LATENCY: [1, 0, 2],
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
+        }
+    )
+    assert DataFrame(best_transform_df == correct).values.all()
 
 
-def test_ses_best_function_with_one_channel_all_nans():
+def test_ses_best_transform_with_one_channel_all_nans():
     from numpy import array, nan
     from numpy.typing import NDArray
     from pandas import DataFrame
+
     sensors = [str(i) for i in range(4)]
-    function_a_data: NDArray = array(p_to_logp(array([
-        #  0    1    2  latencies
-        [nan, nan, nan],  # 0  <-- set sensor 0 to nans for some reason
-        [  1,   1,  .2],  # 1
-        [ .1,   1,   1],  # 2
-        [ .2,   1,   1],  # 3 sensors
-    ])))
-    function_b_data: NDArray = array(p_to_logp(array([
-        [nan, nan, nan],
-        [ 1,   .1,   1],
-        [ 1,   .2,   1],
-        [ 1,    1,  .1],
-    ])))
-    es = SensorExpressionSet(functions=["a", "b"],
-                             sensors=sensors,  # 4
-                             latencies=range(3),
-                             data=[function_a_data, function_b_data])
-    best_function_df: DataFrame = es.best_functions()
-    correct: DataFrame = DataFrame.from_dict({
-        "sensor":               ["1", "2", "3"],
-        DIM_FUNCTION:           ["b", "a", "b"],
-        DIM_LATENCY:            [  1,   0,   2 ],
-        "value":      p_to_logp([ .1,  .1,  .1 ]),
-    })
-    assert DataFrame(best_function_df == correct).values.all()
+    transform_a_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    #  0    1    2  latencies
+                    [nan, nan, nan],  # 0  <-- set sensor 0 to nans for some reason
+                    [1, 1, 0.2],  # 1
+                    [0.1, 1, 1],  # 2
+                    [0.2, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [nan, nan, nan],
+                    [1, 0.1, 1],
+                    [1, 0.2, 1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+    es = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[transform_a_data, transform_b_data],
+    )
+    best_transform_df: DataFrame = es.best_transforms()
+    correct: DataFrame = DataFrame.from_dict(
+        {
+            DIM_SENSOR: ["1", "2", "3"],
+            DIM_TRANSFORM: ["b", "a", "b"],
+            DIM_LATENCY: [1, 0, 2],
+            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
+        }
+    )
+    assert DataFrame(best_transform_df == correct).values.all()
 
 
 # Test ExpressionSet arg validations
 
-def test_ses_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
-        SensorExpressionSet(functions=["first", "second"],
-                            sensors=list("abcde"),
-                            latencies=range(10),
-                            data=np.random.randn(5, 10),
-                            )
 
-
-def test_ses_validation_input_lengths_two_functions_two_datasets():
-    SensorExpressionSet(functions=["first", "second"],
-                        sensors=list("abcde"),
-                        latencies=range(10),
-                        data=[np.random.randn(5, 10) for _ in range(2)],
-                        )
-
-
-def test_ses_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
-        SensorExpressionSet(functions=["first", "second"],
-                            sensors=list("abcde"),
-                            latencies=range(10),
-                            data=[np.random.randn(5, 10) for _ in range(3)],
-                            )
-
-
-def test_hes_validation_input_lengths_two_functions_one_dataset():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels_lh=range(5),
-                           hexels_rh=range(5),
-                           latencies=range(10),
-                           data_lh=np.random.randn(5, 10),
-                           data_rh=np.random.randn(5, 10),
-                           )
-
-
-def test_hes_validation_input_lengths_two_functions_two_datasets():
-    HexelExpressionSet(functions=["first", "second"],
-                       hexels_lh=range(5),
-                       hexels_rh=range(5),
-                       latencies=range(10),
-                       data_lh=[np.random.randn(5, 10) for _ in range(2)],
-                       data_rh=[np.random.randn(5, 10) for _ in range(2)],
-                       )
-
-
-def test_hes_validation_input_lengths_two_functions_three_datasets():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels_lh=range(5),
-                           hexels_rh=range(5),
-                           latencies=range(10),
-                           data_lh=[np.random.randn(5, 10) for _ in range(3)],
-                           data_rh=[np.random.randn(5, 10) for _ in range(3)],
-                           )
-
-
-def test_ses_validation_duplicated_functions():
+def test_ses_validation_input_lengths_two_transforms_one_dataset():
     with pytest.raises(ValueError):
-        SensorExpressionSet(functions=["dupe", "dupe"],
-                            sensors=list("abcde"),
-                            latencies=range(10),
-                            data=[np.random.randn(5, 10) for _ in range(2)],
-                            )
+        SensorExpressionSet(
+            transforms=["first", "second"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10),
+        )
+
+
+def test_ses_validation_input_lengths_two_transforms_two_datasets_sequence():
+    SensorExpressionSet(
+        transforms=["first", "second"],
+        sensors=list("abcde"),
+        latencies=range(10),
+        data=[np.random.randn(5, 10) for _ in range(2)],
+    )
+
+
+def test_ses_validation_input_lengths_two_transforms_two_datasets_contiguous():
+    SensorExpressionSet(
+        transforms=["first", "second"],
+        sensors=list("abcde"),
+        latencies=range(10),
+        data=np.random.randn(5, 10, 2),
+    )
+
+
+def test_ses_validation_input_lengths_one_transform_two_datasets_contiguous():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            transforms=["first"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10, 2),
+        )
+
+
+def test_ses_validation_input_lengths_two_transforms_three_datasets_sequence():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            transforms=["first", "second"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=[np.random.randn(5, 10) for _ in range(3)],
+        )
+
+
+def test_ses_validation_input_lengths_two_transforms_three_datasets_contiguous():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            transforms=["first", "second"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=np.random.randn(5, 10, 3),
+        )
+
+
+def test_hes_validation_input_lengths_two_transforms_one_dataset():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(5),
+            latencies=range(10),
+            data_lh=np.random.randn(5, 10),
+            data_rh=np.random.randn(5, 10),
+        )
+
+
+def test_hes_validation_input_lengths_two_transforms_two_datasets_sequence():
+    HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=[np.random.randn(5, 10) for _ in range(2)],
+        data_rh=[np.random.randn(5, 10) for _ in range(2)],
+    )
+
+
+def test_hes_validation_input_lengths_two_transforms_two_datasets_contiguous():
+    HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10, 2),
+        data_rh=np.random.randn(5, 10, 2),
+    )
+
+
+def test_hes_validation_input_lengths_two_transforms_three_datasets_sequence():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(5),
+            latencies=range(10),
+            data_lh=[np.random.randn(5, 10) for _ in range(3)],
+            data_rh=[np.random.randn(5, 10) for _ in range(3)],
+        )
+
+
+def test_hes_validation_input_lengths_two_transforms_three_datasets_contiguous():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(5),
+            latencies=range(10),
+            data_lh=np.random.randn(5, 10, 3),
+            data_rh=np.random.randn(5, 10, 3),
+        )
+
+
+def test_ses_validation_duplicated_transforms():
+    with pytest.raises(ValueError):
+        SensorExpressionSet(
+            transforms=["dupe", "dupe"],
+            sensors=list("abcde"),
+            latencies=range(10),
+            data=[np.random.randn(5, 10) for _ in range(2)],
+        )
 
 
 def test_hes_validation_input_mismatched_blocks_concordent_channels():
-    HexelExpressionSet(functions="function",
-                       hexels_lh=range(5),
-                       hexels_rh=range(6),
-                       latencies=range(10),
-                       data_lh=np.random.randn(5, 10),
-                       data_rh=np.random.randn(6, 10),
-                       )
+    HexelExpressionSet(
+        transforms="transform",
+        hexels_lh=range(5),
+        hexels_rh=range(6),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10),
+        data_rh=np.random.randn(6, 10),
+    )
 
 
-def test_hes_validation_input_mismatched_blocks_concordent_channels_two_functions():
-    HexelExpressionSet(functions=["first", "second"],
-                       hexels_lh=range(5),
-                       hexels_rh=range(6),
-                       latencies=range(10),
-                       data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
-                       data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
-                       )
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_transforms_sequence():
+    HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(6),
+        latencies=range(10),
+        data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
+        data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+    )
+
+
+def test_hes_validation_input_mismatched_blocks_concordent_channels_two_transforms_contiguous():
+    HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(6),
+        latencies=range(10),
+        data_lh=np.random.randn(5, 10, 2),
+        data_rh=np.random.randn(6, 10, 2),
+    )
 
 
 def test_hes_validation_input_mismatched_blocks_discordent_channels():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions="function",
-                           hexels_lh=range(5),
-                           hexels_rh=range(5),
-                           latencies=range(10),
-                           data_lh=np.random.randn(5, 10),
-                           data_rh=np.random.randn(6, 10),
-                           )
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms="transform",
+            hexels_lh=range(5),
+            hexels_rh=range(5),
+            latencies=range(10),
+            data_lh=np.random.randn(5, 10),
+            data_rh=np.random.randn(6, 10),
+        )
 
 
-def test_hes_validation_mixmatched_latencies_between_functions():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels_lh=range(5),
-                           hexels_rh=range(6),
-                           latencies=range(10),
-                           data_lh=[np.random.randn(5, 10), np.random.randn(5, 11)],
-                           data_rh=[np.random.randn(6, 10), np.random.randn(6, 11)],
-                           )
+def test_hes_validation_mixmatched_latencies_between_transforms():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(6),
+            latencies=range(10),
+            data_lh=[np.random.randn(5, 10), np.random.randn(5, 11)],
+            data_rh=[np.random.randn(6, 10), np.random.randn(6, 11)],
+        )
 
 
-def test_hes_validation_mixmatched_hexels_between_functions():
-    with pytest.raises(AssertionError):
-        HexelExpressionSet(functions=["first", "second"],
-                           hexels_lh=range(5),
-                           hexels_rh=range(6),
-                           latencies=range(10),
-                           data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
-                           data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
-                           )
+def test_hes_validation_mixmatched_hexels_between_transforms():
+    with pytest.raises(ValueError):
+        HexelExpressionSet(
+            transforms=["first", "second"],
+            hexels_lh=range(5),
+            hexels_rh=range(6),
+            latencies=range(10),
+            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
+            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+        )
 
 
-def test_hes_rename_functions():
+def test_hes_rename_transforms():
     data_left = [np.random.randn(5, 10) for _ in range(2)]
     data_right = [np.random.randn(5, 10) for _ in range(2)]
 
-    es = HexelExpressionSet(functions=["first", "second"],
-                            hexels_lh=range(5),
-                            hexels_rh=range(5),
-                            latencies=range(10),
-                            data_lh=data_left,
-                            data_rh=data_right,
-                            )
-    target_es = HexelExpressionSet(functions=["first_renamed", "second_renamed"],
-                                   hexels_lh=range(5),
-                                   hexels_rh=range(5),
-                                   latencies=range(10),
-                                   data_lh=data_left,
-                                   data_rh=data_right,
-                                   )
+    es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    target_es = HexelExpressionSet(
+        transforms=["first_renamed", "second_renamed"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
     assert es != target_es
-    es.rename(functions={"first": "first_renamed", "second": "second_renamed"})
+    es.rename(transforms={"first": "first_renamed", "second": "second_renamed"})
     assert es == target_es
 
 
-def test_hes_rename_functions_just_one():
+def test_hes_rename_transforms_noop():
     data_left = [np.random.randn(5, 10) for _ in range(2)]
     data_right = [np.random.randn(5, 10) for _ in range(2)]
 
-    es = HexelExpressionSet(functions=["first", "second"],
-                            hexels_lh=range(5),
-                            hexels_rh=range(5),
-                            latencies=range(10),
-                            data_lh=data_left,
-                            data_rh=data_right,
-                            )
-    target_es = HexelExpressionSet(functions=["first_renamed", "second"],
-                                   hexels_lh=range(5),
-                                   hexels_rh=range(5),
-                                   latencies=range(10),
-                                   data_lh=data_left,
-                                   data_rh=data_right,
-                                   )
-    assert es != target_es
-    es.rename(functions={"first": "first_renamed"})
+    es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    target_es = copy(es)
+
+    assert es == target_es
+    es.rename()
     assert es == target_es
 
 
-def test_hes_rename_functions_wrong_name():
+def test_hes_rename_transforms_just_one():
     data_left = [np.random.randn(5, 10) for _ in range(2)]
     data_right = [np.random.randn(5, 10) for _ in range(2)]
 
-    es = HexelExpressionSet(functions=["first", "second"],
-                            hexels_lh=range(5),
-                            hexels_rh=range(5),
-                            latencies=range(10),
-                            data_lh=data_left,
-                            data_rh=data_right,
-                            )
+    es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    target_es = HexelExpressionSet(
+        transforms=["first_renamed", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
+    assert es != target_es
+    es.rename(transforms={"first": "first_renamed"})
+    assert es == target_es
+
+
+def test_hes_rename_transforms_wrong_name():
+    data_left = [np.random.randn(5, 10) for _ in range(2)]
+    data_right = [np.random.randn(5, 10) for _ in range(2)]
+
+    es = HexelExpressionSet(
+        transforms=["first", "second"],
+        hexels_lh=range(5),
+        hexels_rh=range(5),
+        latencies=range(10),
+        data_lh=data_left,
+        data_rh=data_right,
+    )
     with pytest.raises(KeyError):
         es.rename(transforms={"first": "first_renamed", "missing": "second_renamed"})
 

@@ -1,10 +1,11 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core/badge)](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core)
 <br />
 <br />
 <div>
       <a href="https://github.com/kymata-atlas/kymata-core">
-        <img src="docs/assets/images/toolbox_logo.png" alt="Logo" height="112" align="left">
+        <img src="https://kymata.org/assets/img/toolbox_logo.png" alt="Logo" height="112" align="left">
       </a>
     <div>
         <div>
@@ -35,7 +36,7 @@ _Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kyma
 
 The central pipeline includes:
 * Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
-* Gridsearch approaches for function mapping;
+* Gridsearch approaches for transform mapping;
 * Information Processing Pathway Map[^2] generation (both offline generation and evaluation);
 * Plotting functionality
 

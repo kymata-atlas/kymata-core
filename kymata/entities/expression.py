@@ -6,8 +6,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Sequence, Union, get_args, Tuple, TypeVar, Self
+from typing import Sequence, Union, get_args, Tuple, TypeVar, Self
 from warnings import warn
 
+from numpy import (
+    # Can't use NDArray for isinstance checks
+    ndarray,
+    array, array_equal, inf)
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
@@ -17,12 +22,13 @@ from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
-import numpy as np
-
-from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, \
-    Latency
+from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
+from kymata.entities.datatypes import (
+    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency)
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
+from kymata.entities.sparse_data import (
+    expand_dims, densify_data_block, sparsify_log_pmatrix)
+
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -33,36 +39,78 @@ DIM_LATENCY = "latency"
 DIM_TRANSFORM = "transform"
 
 # Block (e.g. hemisphere)
-BLOCK_LEFT  = "left"
-BLOCK_RIGHT = "right"
+BLOCK_LEFT = HEMI_LEFT
+BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
+
+# Column names
+COL_LOGP_VALUE = "log-p-value"
 
 
 class ExpressionSet(ABC):
     """
     Brain data associated with expression of a single transform.
-    Data is log10 p-values
+    Data is log10 p-values.
     """
 
-    def __init__(self,
-                 transforms: str | Sequence[str] | Sequence[Sequence[str]],
-                 # Metadata
-                 latencies: Sequence[Latency],
-                 # In general, we will combine flipped and non-flipped versions
-                 # data_blocks contains a dict mapping block names to data arrays
-                 # e.g., in the case there are three transforms:
-                 #             "left" → [array(), array(), array()],
-                 #        and "right" → [array(), array(), array()]
-                 #   or:      "scalp" → [array(), array(), array()]
-                 # All should be the same size.
-                 data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],  # log p-values
-                 # Supply channels already as an array, i.e.
-                 channel_coord_name: str,
-                 channel_coord_dtype,
-                 channel_coord_values: dict[str, Sequence],
-                 ):
+    def __init__(
+            self,
+            transforms: str | Sequence[str],
+            # Metadata
+            latencies: Sequence[Latency],
+            # In general, we will combine flipped and non-flipped versions.
+            data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],
+            channel_coord_name: str,
+            channel_coord_dtype,
+            channel_coord_values: dict[str, Sequence],
+    ):
         """
-        data_blocks' values should store log10 p-values
+        Initializes the ExpressionSet with the provided data.
+
+        Args:
+            transforms (str | Sequence[str]): Transform name, or sequence of names.
+            latencies (Sequence[Latency]): Latency values.
+            data_blocks (dict[str, _InputDataArray | Sequence[_InputDataArray]]):
+                Mapping of block names to data arrays (log10 p-values).
+
+                In general there are two possible formats for this argument.
+
+                In the first (safer, more explicit and flexible) format, `data_blocks` contains a dict mapping block
+                names to data arrays. E.g., in the case there are three transforms in a hexel setting:
+                ```
+                    {
+                                  # each array is (channel, latency)-shaped
+                                  # and there's one for each transform
+                                  # ↓
+                        "left":  [array(...), array(...), array(...)],
+                        "right": [array(...), array(...), array(...)],
+                    }
+                ```
+                or in a sensor setting:
+                ```
+                    {
+                        "scalp": [array(...), array(...), array(...)],
+                    }
+                ```
+                (and where `array(...)` can be a numpy array or a sparse array).
+                In this format, all data arrays should be the same size.
+
+                In the second (more performant) format, `data_blocks` contains a single data array whose `transform`
+                dimensions can be concatenated to achieve the desired resultant data block. E.g.
+                ```
+                    {
+                                  # each array is (channel, latency, transform)-shaped
+                                  # ↓
+                        "left":  array(...),
+                        "right": array(...),
+                    }
+                ```
+            channel_coord_name (str): Name of the channel coordinate.
+            channel_coord_dtype: Data type of the channel coordinate.
+            channel_coord_values (dict[str, Sequence]): Dictionary mapping block names to channel coordinate values.
+
+        Raises:
+            ValueError: when arguments are invalid
         """
 
         # Canonical order of dimensions
@@ -71,26 +119,46 @@ class ExpressionSet(ABC):
         self._block_names: list[str] = list(data_blocks.keys())
         self.channel_coord_name = channel_coord_name
 
-        # Validate arguments
-        assert set(self._block_names) == set(channel_coord_values.keys()), "Ensure data block names match channel block names"
-        _length_mismatch_message = ("Argument length mismatch, please supply one transform name and accompanying data, "
-                                    "or equal-length sequences of the same.")
+        #########################################
+        # region Validate and normalise arguments
+        #########################################
+
+        if set(self._block_names) != set(channel_coord_values.keys()):
+            raise ValueError("Ensure data block names match channel block names")
+
+        data_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
+
+        # If only one transform supplied, ensure that the other arguments are appropriately specified
         if isinstance(transforms, str):
-            # If only one transform
-            for data in data_blocks.values():
-                # Data should not be a sequence
-                assert isinstance(data, get_args(_InputDataArray)), _length_mismatch_message
-            # Wrap into sequences
+            if data_supplied_as_sequence:
+                raise ValueError("Single transform name provided but data came as a sequence")
+            # Only one transform, so no matter what format the data is in, we don't expect a sequence
+            # Wrap transform names and data blocks to ensure we have sequences from now on
             transforms = [transforms]
-            for bn in self._block_names:
-                data_blocks[bn] = [data_blocks[bn]]
 
-        if isinstance(transforms[0], str):
-            self._validate_transforms_no_duplicates(transforms)
+        self._validate_transforms_no_duplicates(transforms)
+
+        # If data was specified as sequence, ensure all arrays in the sequence have the same shape
+        if data_supplied_as_sequence:
+            if not all_equal([
+                # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
+                # is only one transform per item in the sequence
+                block_data_array.shape[1]
+                for block_data in data_blocks.values()
+                for block_data_array in block_data  # data format sequence
+            ]):
+                raise ValueError("Not all input data blocks have the same shape.")
+        # Otherwise ensure all blocks have the same size
         else:
-            self._validate_transforms_no_duplicates(sum(transforms, []))
+            if not all_equal([
+                # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
+                # is only one transform per item in the sequence
+                block_data_array.shape[1]
+                for block_data_array in data_blocks.values()
+            ]):
+                raise ValueError("Not all input data blocks have the same shape")
 
-        assert all_equal([arr.shape[1] for arrs in data_blocks.values() for arr in arrs]), "Not all input data blocks have the same"
+        # Additional validity checks may happen during construction
 
         # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
         # But latencies and transforms do not
@@ -99,10 +167,51 @@ class ExpressionSet(ABC):
             for bn in self._block_names
         }
         latencies = array(latencies, dtype=LatencyDType)
-        if isinstance(transforms[0], str):
-            transforms = array(transforms, dtype=TransformNameDType)
-        else:
-            transforms = [array(transform_block, dtype=TransformNameDType) for transform_block in transforms]
+        transforms = array(transforms, dtype=TransformNameDType)
+
+        for block_name, block_data in data_blocks.items():
+            if data_supplied_as_sequence:
+                for trans_name, data in zip(transforms, block_data):
+                    if len(channels[block_name]) != data.shape[0]:
+                        raise ValueError(f"{channel_coord_name} mismatch for {trans_name}: "
+                                         f"{len(channels)} {channel_coord_name} versus data shape {data.shape} "
+                                         f"({block_name})")
+                    if len(latencies) != data.shape[1]:
+                        raise ValueError(f"Latencies mismatch for {trans_name}: "
+                                         f"{len(latencies)} latencies versus data shape {data.shape} "
+                                         f"({block_name})")
+                    if not len(transforms) == len(block_data):
+                        raise ValueError(f"Transform mismatch for {block_name}: "
+                                         f"{len(transforms)} transforms but only {len(block_data)} data blocks")
+                    if len(data.shape) > 3:
+                        raise ValueError(f"Too many dimensions in data for {trans_name}: "
+                                         f"shape={data.shape} "
+                                         f"({block_name})")
+                    if len(data.shape) == 3 and data.shape[2] != 1:
+                        raise ValueError(f"Too many dimensions in data for {trans_name}: "
+                                         f"shape={data.shape} "
+                                         f"({block_name})")
+            else:
+                if len(channels[block_name]) != block_data.shape[0]:
+                    raise ValueError(f"{channel_coord_name} mismatch: "
+                                     f"{len(channels)} {channel_coord_name} versus data shape {block_data.shape} "
+                                     f"({block_name})")
+                if len(latencies) != block_data.shape[1]:
+                    raise ValueError(f"Latencies mismatch: "
+                                     f"{len(latencies)} latencies versus data shape {block_data.shape} "
+                                     f"({block_name})")
+                if len(block_data.shape) > 3:
+                    raise ValueError(f"Too many dimensions in data: "
+                                     f"shape={block_data.shape} "
+                                     f"({block_name})")
+                if len(block_data.shape) == 3 and len(transforms) != block_data.shape[2]:
+                    raise ValueError(f"Transforms mismatch: "
+                                     f"{len(transforms)} transforms versus data shape {block_data.shape} "
+                                     f"({block_name})")
+
+        ############################################
+        # endregion Validate and normalise arguments
+        ############################################
 
         # Input value `data_blocks` has type something like dict[str, list[array]].
         #  i.e. a dict mapping block names to a list of 2d data volumes, one for each transform
@@ -110,85 +219,64 @@ class ExpressionSet(ABC):
         # i.e. a dict mapping block names to a DataArray containing data for all transforms
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
-        for data in data_blocks.values():
-            if isinstance(data, list) and data[0].ndim == 2:
-                for block_name, data_for_transforms in data_blocks.items():
-                    for transform_name, data in zip(transforms, data_for_transforms):
-                        assert len(channels[block_name]) == data.shape[0], f"{channel_coord_name} mismatch for {transform_name}: {len(channels)} {channel_coord_name} versus data shape {data.shape} ({block_name})"
-                        assert len(latencies) == data.shape[1], f"Latencies mismatch for {transform_name}: {len(latencies)} latencies versus data shape {data.shape}"
-                    data_array: DataArray = concat(
-                        (
-                            DataArray(self._init_prep_data(d),
-                                    coords={
-                                        channel_coord_name: channels[block_name],
-                                        DIM_LATENCY: latencies,
-                                        DIM_TRANSFORM: [transform]
-                                    })
-                            for transform, d in zip(transforms, data_for_transforms)
-                        ),
-                        dim=DIM_TRANSFORM,
-                        data_vars="all",  # Required by concat of DataArrays
+        for block_name, block_data in data_blocks.items():
+            if data_supplied_as_sequence:
+                # Build DataArray by concatenating sequence
+                data_array: DataArray = _concat_dataarrays(
+                    [
+                        DataArray(
+                            self._init_prep_data(transform_data),
+                            coords={
+                                channel_coord_name: channels[block_name],
+                                DIM_LATENCY: latencies,
+                                DIM_TRANSFORM: [transform],
+                            },
                         )
-
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
-                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
-                    # warn the user about it.
-                    if data_array.isnull().any():
-                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
-                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
-                            nan_warning_sent = True
-
-                    assert data_array.dims == self._dims
-                    assert set(data_array.coords.keys()) == set(self._dims)
-                    assert array_equal(data_array.coords[DIM_TRANSFORM].values, transforms)
-
-                    self._data[block_name] = data_array
-            
+                        for transform, transform_data in zip(transforms, block_data)
+                    ])
             else:
-                for block_name, data_for_transforms in data_blocks.items():
-                    if not isinstance(data_for_transforms, list):
-                        data_array = DataArray(data_for_transforms,
-                                        coords={
-                                            channel_coord_name: channels[block_name],
-                                            DIM_LATENCY: latencies,
-                                            DIM_TRANSFORM: transforms
-                                        })
-                    else:
-                        data_array: DataArray = concat(
-                            (
-                                DataArray(d,
-                                        coords={
-                                            channel_coord_name: channels[block_name],
-                                            DIM_LATENCY: latencies,
-                                            DIM_TRANSFORM: transform
-                                        })
-                                for transform, d in zip(transforms, data_for_transforms)
-                            ),
-                            dim=DIM_TRANSFORM,
-                            data_vars="all",  # Required by concat of DataArrays
-                            )
+                # Build DataArray in one go
+                data_array: DataArray = DataArray(
+                    self._init_prep_data(block_data),
+                    coords={
+                        channel_coord_name: channels[block_name],
+                        DIM_LATENCY: latencies,
+                        DIM_TRANSFORM: transforms,
+                    }
+                )
 
-                    # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
-                    # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
-                    # warn the user about it.
-                    if data_array.isnull().any():
-                        data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
-                        if not nan_warning_sent:  # Only want to send the warning once, even if there are multiple data blocks with nans.
-                            warn("Supplied data contained nans. These will be replaced by p = 1 values.")
-                            nan_warning_sent = True
+            # Sometimes the data can contain nans, for example if the MEG hexel currents were set to nan on the medial
+            # wall. We can ignore these nans by setting the values to p=1, but because it's not typically expected we
+            # warn the user about it.
+            if data_array.isnull().any():
+                data_array = data_array.fillna(value=0)  # logp = 0 => p = 1
+                # Only want to send the warning once, even if there are multiple data blocks with nans
+                # (it's likely that if one has them, they all will)
+                if not nan_warning_sent:
+                    warn("Supplied data contained nans. These will be replaced by p = 1 values.")
+                    nan_warning_sent = True
+            if data_array.dims != self._dims:
+                raise ValueError("DataArray had wrong dimensions")
+            if set(data_array.coords.keys()) != set(self._dims):
+                raise ValueError("DataArray had wrong coordinates")
+            if not array_equal(data_array.coords[DIM_TRANSFORM].values, transforms):
+                raise ValueError("DataArray had wrong transforms")
 
-                    assert data_array.dims == self._dims
-                    assert set(data_array.coords.keys()) == set(self._dims)
-                    if isinstance(transforms, list):
-                        assert array_equal(data_array.coords[DIM_TRANSFORM].values, np.concatenate(transforms))
-                    else:
-                        assert array_equal(data_array.coords[DIM_TRANSFORM].values, transforms)
+            self._data[block_name] = data_array
 
-                    self._data[block_name] = data_array
-            
+    def _validate_data_supplied_as_sequence(self, data_blocks) -> bool:
+        # Determine if data is supplied as sequence or contiguous, and that it's the same for each block
+        data_supplied_as_sequence = {
+            block_name: not isinstance(block_data, get_args(_InputDataArray))
+            for block_name, block_data in data_blocks.items()
+        }
+        if not all_equal(data_supplied_as_sequence.values()):
+            ValueError("Not all input data blocks have the same format (sequence or contiguous)")
+        # Now we can just use the first one
+        return data_supplied_as_sequence[self._block_names[0]]
 
-    def _validate_transforms_no_duplicates(self, transforms):
+    # noinspection PyMethodMayBeStatic
+    def _validate_transforms_no_duplicates(self, transforms: Sequence[str]) -> None:
         if not len(transforms) == len(set(transforms)):
             checked = []
             for f in transforms:
@@ -199,11 +287,14 @@ class ExpressionSet(ABC):
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
+        # Convert to sparse matrix
         if isinstance(data, ndarray):
             data = sparsify_log_pmatrix(data)
         elif not isinstance(data, SparseArray):
             raise NotImplementedError()
-        data = expand_dims(data, 2)
+
+        if data.ndim < 3:
+            data = expand_dims(data, axis=2)
         return data
 
     @property
@@ -216,7 +307,7 @@ class ExpressionSet(ABC):
 
     @property
     def transforms(self) -> list[TransformNameDType]:
-        """transform names."""
+        """Transform names."""
         transforms = {
             bn: data.coords[DIM_TRANSFORM].values.tolist()
             for bn, data in self._data.items()
@@ -230,8 +321,7 @@ class ExpressionSet(ABC):
     def latencies(self) -> NDArray[LatencyDType]:
         """Latencies, in seconds."""
         latencies = {
-            bn: data.coords[DIM_LATENCY].values
-            for bn, data in self._data.items()
+            bn: data.coords[DIM_LATENCY].values for bn, data in self._data.items()
         }
         # Validate that latencies are the same for all data blocks
         assert all_equal(list(latencies.values()))
@@ -345,35 +435,55 @@ class ExpressionSet(ABC):
         # (channel) -> best transform name (at the best latency)
         best_transforms = best_transform.data
         # (channel) -> latency of the best transform
-        best_latencies = best_latency.sel({
-            # e.g. hexels          -> array([0, ..., 10241])
-            self.channel_coord_name: self._channels[block_name],
-            #          -> DataArray((hexel) -> transform)
-            DIM_TRANSFORM: best_transform
-        }).data
+        best_latencies = best_latency.sel(
+            {
+                # e.g. hexels          -> array([0, ..., 10241])
+                self.channel_coord_name: self._channels[block_name],
+                #          -> DataArray((hexel) -> transform)
+                DIM_TRANSFORM: best_transform,
+            }
+        ).data
 
         # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
         idxs = logp_vals < 0
 
-        return DataFrame.from_dict({
-            self.channel_coord_name: self._channels[block_name][idxs],
-            DIM_TRANSFORM: best_transforms[idxs],
-            DIM_LATENCY: best_latencies[idxs],
-            "value": logp_vals[idxs],
-        })
+        return DataFrame.from_dict(
+            {
+                self.channel_coord_name: self._channels[block_name][idxs],
+                DIM_TRANSFORM: best_transforms[idxs],
+                DIM_LATENCY: best_latencies[idxs],
+                COL_LOGP_VALUE: logp_vals[idxs],
+            }
+        )
 
-    def rename(self, transforms: dict[str, str]) -> None:
+    def rename(self, transforms: dict[str, str] = None, channels: dict = None) -> None:
         """
-        Renames the transforms within an ExpressionSet.
+        Renames the transforms and channels within an ExpressionSet.
 
-        Supply a dictionary mapping old transform names to new transform names.
+        Supply a dictionary mapping old values to new values.
 
         Raises KeyError if one of the keys in the renaming dictionary is not a transform name in the expression set.
         """
+        # Default values
+        if transforms is None:
+            transforms = dict()
+        if channels is None:
+            channels = dict()
+
+        # Validate
         for old, new in transforms.items():
             if old not in self.transforms:
                 raise KeyError(f"{old} is not a transform in this expression set")
+        for old, new in channels.items():
+            for bn in self._block_names:
+                if old not in self._channels[bn]:
+                    raise KeyError(
+                        f"{old} is not a {bn} {self.channel_coord_name} in this expression set"
+                    )
+
+        # Replace
         for bn, data in self._data.items():
+            # Transforms
             new_names = []
             for old_name in self._data[bn][DIM_TRANSFORM].values:
                 if old_name in transforms:
@@ -381,6 +491,15 @@ class ExpressionSet(ABC):
                 else:
                     new_names.append(old_name)
             self._data[bn][DIM_TRANSFORM] = new_names
+
+            # Channels
+            new_channels = []
+            for old_channel in self._data[bn][self.channel_coord_name].values:
+                if old_channel in channels:
+                    new_channels.append(channels[old_channel])
+                else:
+                    new_channels.append(old_channel)
+            self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
     def best_transforms(self) -> DataFrame | tuple[DataFrame, ...]:
@@ -397,18 +516,18 @@ class HexelExpressionSet(ExpressionSet):
     Data is log10 p-values
     """
 
-    def __init__(self,
-                 transforms: str | Sequence[str],
-                 # Metadata
-                 hexels_lh: Sequence[Hexel],
-                 hexels_rh: Sequence[Hexel],
-                 latencies: Sequence[Latency],
-                 # log p-values
-                 # In general, we will combine flipped and non-flipped versions
-                 data_lh: _InputDataArray | Sequence[_InputDataArray],
-                 data_rh: _InputDataArray | Sequence[_InputDataArray],
-                 ):
-
+    def __init__(
+        self,
+        transforms: str | Sequence[str],
+        # Metadata
+        hexels_lh: Sequence[Hexel],
+        hexels_rh: Sequence[Hexel],
+        latencies: Sequence[Latency],
+        # log p-values
+        # In general, we will combine flipped and non-flipped versions
+        data_lh: _InputDataArray | Sequence[_InputDataArray],
+        data_rh: _InputDataArray | Sequence[_InputDataArray],
+    ):
         super().__init__(
             transforms=transforms,
             latencies=latencies,
@@ -418,10 +537,7 @@ class HexelExpressionSet(ExpressionSet):
             },
             channel_coord_name=DIM_HEXEL,
             channel_coord_dtype=HexelDType,
-            channel_coord_values={
-                BLOCK_LEFT: hexels_lh,
-                BLOCK_RIGHT: hexels_rh
-            },
+            channel_coord_values={BLOCK_LEFT: hexels_lh, BLOCK_RIGHT: hexels_rh},
         )
 
     @property
@@ -452,16 +568,20 @@ class HexelExpressionSet(ExpressionSet):
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
+        # Get indices of sliced transforms within total transform list
+        transform_idxs = []
         for f in transforms:
-            if f not in self.transforms:
+            try:
+                transform_idxs.append(self.transforms.index(f))
+            except ValueError:
                 raise KeyError(f)
         return HexelExpressionSet(
             transforms=transforms,
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=[self._data[BLOCK_LEFT].sel({DIM_TRANSFORM: transform}).data for transform in transforms],
-            data_rh=[self._data[BLOCK_RIGHT].sel({DIM_TRANSFORM: transform}).data for transform in transforms],
+            data_lh=self._data[BLOCK_LEFT].data[:, :, transform_idxs],
+            data_rh=self._data[BLOCK_RIGHT].data[:, :, transform_idxs],
         )
 
     def crop(self, latency_start: float | None, latency_stop: float | None) -> HexelExpressionSet:
@@ -494,28 +614,25 @@ class HexelExpressionSet(ExpressionSet):
             hexels_lh=self.hexels_left.copy(),
             hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            data_lh=self._data[BLOCK_LEFT].values.copy(),
-            data_rh=self._data[BLOCK_RIGHT].values.copy(),
+            # Slice by transform
+            data_lh=self._data[BLOCK_LEFT].data.copy(),
+            data_rh=self._data[BLOCK_RIGHT].data.copy(),
         )
 
     def __add__(self, other: HexelExpressionSet) -> HexelExpressionSet:
-        assert array_equal(self.hexels_left, other.hexels_left), "Hexels mismatch (left)"
-        assert array_equal(self.hexels_right, other.hexels_right), "Hexels mismatch (right)"
+        self._add_compatibility_check(other)
+        if not array_equal(self.hexels_left, other.hexels_left):
+            raise ValueError("Hexels mismatch (left)")
+        if not array_equal(self.hexels_right, other.hexels_right):
+            raise ValueError("Hexels mismatch (right)")
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
-        # constructor expects a sequence of transform names and sequences of 2d matrices
-        transforms = []
-        data_lh = []
-        data_rh = []
-        for expr_set in [self, other]:
-            for i, transform in enumerate(expr_set.transforms):
-                transforms.append(transform)
-                data_lh.append(expr_set._data[BLOCK_LEFT].data[:, :, i])
-                data_rh.append(expr_set._data[BLOCK_RIGHT].data[:, :, i])
         return HexelExpressionSet(
-            transforms=transforms,
-            hexels_lh=self.hexels_left, hexels_rh=self.hexels_right,
+            transforms=self.transforms + other.transforms,
+            hexels_lh=self.hexels_left,
+            hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=data_lh, data_rh=data_rh,
+            data_lh=_concat_dataarrays([self.left, other.left]).data,
+            data_rh=_concat_dataarrays([self.right, other.right]).data,
         )
 
     def __eq__(self, other: HexelExpressionSet) -> bool:
@@ -547,15 +664,16 @@ class SensorExpressionSet(ExpressionSet):
     Data is represented as log10 p-values.
     """
 
-    def __init__(self,
-                 transforms: str | Sequence[str],
-                 # Metadata
-                 sensors: Sequence[Sensor],
-                 latencies: Sequence[Latency],
-                 # log p-values
-                 # In general, we will combine flipped and non-flipped versions
-                 data: _InputDataArray | Sequence[_InputDataArray],
-                 ):
+    def __init__(
+        self,
+        transforms: str | Sequence[str],
+        # Metadata
+        sensors: Sequence[Sensor],
+        latencies: Sequence[Latency],
+        # log p-values
+        # In general, we will combine flipped and non-flipped versions
+        data: _InputDataArray | Sequence[_InputDataArray],
+    ):
         """
         Initialize the SensorExpressionSet with transform names, sensor metadata, latency information, and log p-value data.
 
@@ -568,9 +686,7 @@ class SensorExpressionSet(ExpressionSet):
         super().__init__(
             transforms=transforms,
             latencies=latencies,
-            data_blocks={
-                BLOCK_SCALP: data
-            },
+            data_blocks={BLOCK_SCALP: data},
             channel_coord_name=DIM_SENSOR,
             channel_coord_dtype=SensorDType,
             channel_coord_values={BLOCK_SCALP: sensors},
@@ -605,18 +721,21 @@ class SensorExpressionSet(ExpressionSet):
             transforms=self.transforms.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
-            data=self._data[BLOCK_SCALP].values.copy(),
+            data=self._data[BLOCK_SCALP].data.copy(),
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
-        assert array_equal(self.sensors, other.sensors), "Sensors mismatch"
-        assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
+        self._add_compatibility_check(other)
+        if not array_equal(self.sensors, other.sensors):
+            raise ValueError("Sensors mismatch")
+        if not array_equal(self.latencies, other.latencies):
+            raise ValueError("Latencies mismatch")
         # constructor expects a sequence of transform names and sequences of 2d matrices
         return SensorExpressionSet(
-            transforms=[self.transforms, other.transforms],
-            sensors=self.sensors, 
+            transforms=self.transforms + other.transforms,
+            sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[BLOCK_SCALP].data, other._data[BLOCK_SCALP].data],
+            data=_concat_dataarrays([self.scalp, other.scalp]).data,
         )
 
     def __getitem__(self, transforms: str | Sequence[str]) -> SensorExpressionSet:
@@ -627,14 +746,19 @@ class SensorExpressionSet(ExpressionSet):
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
-        for f in transforms:
-            if f not in self.transforms:
-                raise KeyError(f)
+        # Get indices of sliced transforms within total transform list
+        transform_idxs = []
+        for t in transforms:
+            try:
+                transform_idxs.append(self.transforms.index(t))
+            except ValueError:
+                raise KeyError(t)
         return SensorExpressionSet(
             transforms=transforms,
             sensors=self.sensors,
             latencies=self.latencies,
-            data=[self._data[BLOCK_SCALP].sel({DIM_TRANSFORM: transform}).data for transform in transforms],
+            # Slice data by requested transforms
+            data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
         )
 
     def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
@@ -667,3 +791,26 @@ class SensorExpressionSet(ExpressionSet):
         Note that channels for which the best p-value is 1 will be omitted.
         """
         return super()._best_transforms_for_block(BLOCK_SCALP)
+
+
+T_ExpressionSetSubclass = TypeVar("T_ExpressionSetSubclass", bound=ExpressionSet)
+
+
+def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionSetSubclass:
+    """
+    Combines a sequence of `ExpressionSet`s into a single `ExpressionSet`.
+    All must be suitable for combination, e.g. same type, same channels, etc.
+    """
+    if len(expression_sets) == 0:
+        raise ValueError("Cannot combine empty collection of ExpressionSets")
+    if len(expression_sets) == 1:
+        return expression_sets[0]
+    return expression_sets[0] + combine(expression_sets[1:])
+
+
+def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
+    return concat(
+        arrays,
+        dim=DIM_TRANSFORM,
+        data_vars="all",  # Required by concat of DataArrays
+    )

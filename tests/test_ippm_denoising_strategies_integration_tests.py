@@ -1,9 +1,15 @@
 from copy import deepcopy
 import pandas as pd
 
-from kymata.ippm.data_tools import IPPMHexel
-from kymata.ippm.denoising_strategies import MaxPoolingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, \
-    DBSCANStrategy, MeanShiftStrategy
+from kymata.entities.constants import HEMI_RIGHT
+from kymata.ippm.data_tools import IPPMSpike
+from kymata.ippm.denoising_strategies import (
+    MaxPoolingStrategy,
+    AdaptiveMaxPoolingStrategy,
+    GMMStrategy,
+    DBSCANStrategy,
+    MeanShiftStrategy, MAGNITUDE, LATENCY,
+)
 
 test_data_func1 = [
     [-100, 1e-50],
@@ -20,7 +26,7 @@ test_data_func1 = [
     [199, 1e-90],
     [200, 1e-50],
     [210, 1e-44],
-    [211, 1e-55]
+    [211, 1e-55],
 ]
 significant_test_data_func1 = [
     [-100, 1e-50],
@@ -34,10 +40,10 @@ significant_test_data_func1 = [
     [199, 1e-90],
     [200, 1e-50],
     [210, 1e-44],
-    [211, 1e-55]
+    [211, 1e-55],
 ]
 significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
-test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=["Latency", "Mag"])
+test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=[LATENCY, MAGNITUDE])
 
 test_data_func2 = [
     [-30, 1e-2],
@@ -48,7 +54,7 @@ test_data_func2 = [
     [131, 1e-23],
     [131, 1e-76],
     [131, 1e-4],
-    [200, 1e-2]
+    [200, 1e-2],
 ]
 significant_test_data_func2 = [
     [23, 1e-44],
@@ -58,12 +64,9 @@ significant_test_data_func2 = [
     [131, 1e-23],
     [131, 1e-76],
 ]
-test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
+test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=[LATENCY, MAGNITUDE])
 
-noisy_test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2")
-}
+noisy_test_hexels = {"func1": IPPMSpike("func1"), "func2": IPPMSpike("func2")}
 noisy_test_hexels["func1"].right_best_pairings = test_data_func1
 noisy_test_hexels["func2"].right_best_pairings = test_data_func2
 
@@ -80,7 +83,7 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
     strategy = MaxPoolingStrategy(
-        hemi="rightHemisphere",
+        hemi=HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
         should_max_pool=True,
@@ -88,20 +91,35 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
-def test_MaxPoolingStrategy_AllFalse_Fit_Successfully():
+def test_MaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(-100, 1e-50), (-75, 1e-75), (30, 1e-100), (199, 1e-90), (211, 1e-55)]
-    expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["func1"].right_best_pairings = [
+        (-75, 1e-75),
+        (30, 1e-100),
+    ]
+    expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
-    strategy = MaxPoolingStrategy("rightHemisphere", bin_significance_threshold=2)
+    strategy = MaxPoolingStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
 def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
@@ -110,104 +128,195 @@ def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99)]
 
     strategy = AdaptiveMaxPoolingStrategy(
-        hemi="rightHemisphere",
+        hemi=HEMI_RIGHT,
         should_normalise=True,
         should_cluster_only_latency=True,
         bin_significance_threshold=2,
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
-def test_AdaptiveMaxPoolingStrategy_AllFalse_Fit_Successfully():
+def test_AdaptiveMaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(-75, 1e-75), (30, 1e-100), (199, 1e-90)]
+    expected_denoised["func1"].right_best_pairings = [
+        (-75, 1e-75),
+        (30, 1e-100),
+        (199, 1e-90),
+    ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
-    strategy = AdaptiveMaxPoolingStrategy("rightHemisphere", bin_significance_threshold=2, base_bin_size=25)
+    strategy = AdaptiveMaxPoolingStrategy(
+        HEMI_RIGHT, bin_significance_threshold=2, base_bin_size=0.025
+    )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
 def test_GMMStrategy_AllTrue_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(30, 1e-100), (199, 1e-90), (-75, 1e-75)]
-    expected_denoised["func2"].right_best_pairings = [(26, 1e-59), (130, 1e-81)]
+    expected_denoised["func1"].right_best_pairings = [
+        (176, 1e-50),
+        (30, 1e-100),
+        (199, 1e-90),
+        (-75, 1e-75),
+    ]
+    expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = GMMStrategy(
-        "rightHemisphere", should_normalise=True, should_cluster_only_latency=True, random_state=random_seed
+        HEMI_RIGHT,
+        should_normalise=True,
+        should_cluster_only_latency=True,
+        number_of_clusters_upper_bound=5,
+        random_state=random_seed,
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
-def test_GMMStrategy_AllFalse_Fit_Successfully():
+def test_GMMStrategy_AllDefault_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(30, 1e-100), (199, 1e-90), (-75, 1e-75), (176, 1e-50)]
-    expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (131, 1e-76), (23, 1e-44), (26, 1e-59)]
+    expected_denoised["func1"].right_best_pairings = [
+        (30, 1e-100),
+        (199, 1e-90),
+        (-75, 1e-75),
+        (176, 1e-50),
+    ]
+    expected_denoised["func2"].right_best_pairings = [
+        (30, 1e-99),
+        (130, 1e-81),
+    ]
 
-    strategy = GMMStrategy("rightHemisphere", random_state=random_seed)
+    strategy = GMMStrategy(HEMI_RIGHT, number_of_clusters_upper_bound=5, random_state=random_seed, should_evaluate_using_AIC=False)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
 def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(-75, 1e-75), (30, 1e-100), (199, 1e-90)]
+    expected_denoised["func1"].right_best_pairings = [
+        (-75, 1e-75),
+        (30, 1e-100),
+        (199, 1e-90),
+    ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
     strategy = DBSCANStrategy(
-        "rightHemisphere", should_normalise=False, should_cluster_only_latency=True, eps=25
+        HEMI_RIGHT,
+        should_normalise=False,
+        should_cluster_only_latency=True,
+        eps=25,
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
-def test_DBSCANStrategy_AllFalse_Fit_Successfully():
+def test_DBSCANStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(-100, 1e-50), (-75, 1e-75), (30, 1e-100), (199, 1e-90)]
+    expected_denoised["func1"].right_best_pairings = [
+        (-100, 1e-50),
+        (-75, 1e-75),
+        (30, 1e-100),
+        (199, 1e-90),
+    ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
-    strategy = DBSCANStrategy("rightHemisphere")
+    strategy = DBSCANStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
 def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(199, 1e-90), (-75, 1e-75), (30, 1e-100)]
+    expected_denoised["func1"].right_best_pairings = [
+        (199, 1e-90),
+        (-75, 1e-75),
+        (30, 1e-100),
+    ]
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
     strategy = MeanShiftStrategy(
-        "rightHemisphere", should_normalise=False, should_cluster_only_latency=True
+        HEMI_RIGHT, bandwidth=0.03, min_bin_freq=2
     )
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )
 
 
-def test_MeanShiftStrategy_AllFalse_Fit_Successfully():
+def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["func1"].right_best_pairings = [(199, 1e-90), (-75, 1e-75), (30, 1e-100)]
+    expected_denoised["func1"].right_best_pairings = [
+        (199, 1e-90),
+        (-75, 1e-75),
+        (30, 1e-100),
+    ]
     expected_denoised["func2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
 
-    strategy = MeanShiftStrategy("rightHemisphere")
+    strategy = MeanShiftStrategy(HEMI_RIGHT, bandwidth=0.03, min_bin_freq=2)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
-    assert actual_denoised["func1"].right_best_pairings == expected_denoised["func1"].right_best_pairings
-    assert actual_denoised["func2"].right_best_pairings == expected_denoised["func2"].right_best_pairings
+    assert (
+        set(actual_denoised["func1"].right_best_pairings)
+        == set(expected_denoised["func1"].right_best_pairings)
+    )
+    assert (
+        set(actual_denoised["func2"].right_best_pairings)
+        == set(expected_denoised["func2"].right_best_pairings)
+    )

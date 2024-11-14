@@ -19,11 +19,21 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM
-from kymata.entities.functions import Function
+from kymata.entities.expression import (
+    HexelExpressionSet,
+    SensorExpressionSet,
+    ExpressionSet,
+    DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY,
+)
+from kymata.entities.transform import Transform
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
+from kymata.plot.layouts import (
+    get_meg_sensor_xy,
+    get_eeg_sensor_xy,
+    get_meg_sensors,
+    get_eeg_sensors,
+)
 
 from tqdm import tqdm
 
@@ -35,12 +45,13 @@ _MAJOR_TICK_SIZE = 50
 
 class _AxName:
     """Canonical names for the axes."""
-    top    = "top"
+
+    top = "top"
     bottom = "bottom"
-    main   = "main"
-    minimap_top    = "minimap top"
+    main = "main"
+    minimap_top = "minimap top"
     minimap_bottom = "minimap bottom"
-    minimap_main   = "minimap main"
+    minimap_main = "minimap main"
 
 
 @dataclass
@@ -48,7 +59,6 @@ class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
     fig_size: tuple[float, float]
-    expression_yaxis_label_xpos: float
     subplots_adjust_kwargs: dict[str, float] = None
 
     def __post_init__(self):
@@ -57,39 +67,43 @@ class _MosaicSpec:
 
     def to_subplots(self) -> tuple[pyplot.Figure, dict[str, pyplot.Axes]]:
         return pyplot.subplot_mosaic(
-            self.mosaic,
-            width_ratios=self.width_ratios,
-            figsize=self.fig_size)
+            self.mosaic, width_ratios=self.width_ratios, figsize=self.fig_size
+        )
 
 
-def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: Type[ExpressionSet], fig_size: tuple[float, float]) -> _MosaicSpec:
+def _minimap_mosaic(
+    paired_axes: bool,
+    show_minimap: bool,
+    expression_set_type: Type[ExpressionSet],
+    fig_size: tuple[float, float],
+) -> _MosaicSpec:
     # Set defaults:
     if show_minimap:
         width_ratios = [1, 3]
         subplots_adjust = {
-            "hspace": 0, "wspace": 0.25,
-            "left": 0.02, "right": 0.8,
+            "hspace": 0,
+            "wspace": 0.25,
+            "left": 0.02,
+            "right": 0.8,
         }
-        # Place next to the expression plot yaxis
-        yaxis_label_xpos = width_ratios[0]/(width_ratios[1]+width_ratios[0]) - 0.04
     else:
         width_ratios = None
         subplots_adjust = {
             "hspace": 0,
-            "left": 0.08, "right": 0.84,
+            "left": 0.08,
+            "right": 0.84,
         }
-        yaxis_label_xpos = 0.04
 
     if paired_axes:
         if show_minimap:
             if expression_set_type == HexelExpressionSet:
                 spec = [
-                    [_AxName.minimap_top,    _AxName.top],
+                    [_AxName.minimap_top, _AxName.top],
                     [_AxName.minimap_bottom, _AxName.bottom],
                 ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
-                    [_AxName.minimap_main,    _AxName.top],
+                    [_AxName.minimap_main, _AxName.top],
                     [_AxName.minimap_main, _AxName.bottom],
                 ]
             else:
@@ -109,9 +123,12 @@ def _minimap_mosaic(paired_axes: bool, show_minimap: bool, expression_set_type: 
                 [_AxName.main],
             ]
 
-    return _MosaicSpec(mosaic=spec, width_ratios=width_ratios, fig_size=fig_size,
-                       subplots_adjust_kwargs=subplots_adjust,
-                       expression_yaxis_label_xpos=yaxis_label_xpos)
+    return _MosaicSpec(
+        mosaic=spec,
+        width_ratios=width_ratios,
+        fig_size=fig_size,
+        subplots_adjust_kwargs=subplots_adjust,
+    )
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
@@ -125,45 +142,63 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         expression_set (HexelExpressionSet): The set of hexel expressions to analyze.
         alpha_logp (float): The logarithm of the p-value threshold for significance. Hexels with values
             below this threshold are considered significant.
-        show_functions (list[str]): A list of function names to consider for significance. Only these
-            functions will be checked for significant hexels.
+        show_transforms (list[str]): A list of transform names to consider for significance. Only these
+            transforms will be checked for significant hexels.
 
     Returns:
         tuple[NDArray, NDArray]: A tuple containing two arrays (one for the left hemisphere and one for
         the right hemisphere). Each array has a length equal to the number of hexels in the respective
         hemisphere, with entries:
-            - 0, if no function is ever significant for this hexel.
-            - i + 1, where i is the index of the function (from show_functions) that is significant
+            - 0, if no transform is ever significant for this hexel.
+            - i + 1, where i is the index of the transform (from show_transforms) that is significant
               for this hexel.
 
     Notes:
-        This function identifies which hexels are significant for the given functions based on a provided
+        This function identifies which hexels are significant for the given transforms based on a provided
         significance threshold. It returns arrays for both the left and right hemispheres, where each entry
-        indicates whether the hexel is significant for any function and, if so, which function it is
+        indicates whether the hexel is significant for any transform and, if so, which transform it is
         significant for.
     """
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
-    best_functions_left, best_functions_right = expression_set.best_functions()
-    best_functions_left = best_functions_left[best_functions_left["value"] < alpha_logp]
-    best_functions_right = best_functions_right[best_functions_right["value"] < alpha_logp]
-    for function_i, function in enumerate(expression_set.functions,
-                                          # 1-indexed, as 0 will refer to transparent
-                                          start=1):
-        if function not in show_functions:
+    best_transforms_left, best_transforms_right = expression_set.best_transforms()
+    best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
+    best_transforms_right = best_transforms_right[
+        best_transforms_right[COL_LOGP_VALUE] < alpha_logp
+    ]
+    for trans_i, transform in enumerate(
+        expression_set.transforms,
+        # 1-indexed, as 0 will refer to transparent
+        start=1,
+    ):
+        if transform not in show_transforms:
             continue
-        significant_hexel_names_left = best_functions_left[best_functions_left[DIM_FUNCTION] == function][expression_set.channel_coord_name]
-        hexel_idxs_left = np.searchsorted(expression_set.hexels_left, significant_hexel_names_left.to_numpy())
-        data_left[hexel_idxs_left] = function_i
+        significant_hexel_names_left = best_transforms_left[
+            best_transforms_left[DIM_TRANSFORM] == transform
+            ][expression_set.channel_coord_name]
+        hexel_idxs_left = np.searchsorted(
+            expression_set.hexels_left, significant_hexel_names_left.to_numpy()
+        )
+        data_left[hexel_idxs_left] = trans_i
 
-        significant_hexel_names_right = best_functions_right[best_functions_right[DIM_FUNCTION] == function][expression_set.channel_coord_name]
-        hexel_idxs_right = np.searchsorted(expression_set.hexels_right, significant_hexel_names_right.to_numpy())
-        data_right[hexel_idxs_right] = function_i
+        significant_hexel_names_right = best_transforms_right[
+            best_transforms_right[DIM_TRANSFORM] == transform
+            ][expression_set.channel_coord_name]
+        hexel_idxs_right = np.searchsorted(
+            expression_set.hexels_right, significant_hexel_names_right.to_numpy()
+        )
+        data_right[hexel_idxs_right] = trans_i
 
     return data_left, data_right
 
 
-def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame, color, sidak_corrected_alpha: float, filled: bool):
+def _plot_transform_expression_on_axes(
+    ax: pyplot.Axes,
+    transform_data: DataFrame,
+    color,
+    sidak_corrected_alpha: float,
+    filled: bool,
+):
     """
     Returns:
         x_min, x_max, y_min, y_max
@@ -171,8 +206,8 @@ def _plot_function_expression_on_axes(ax: pyplot.Axes, function_data: DataFrame,
             Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
                   (so they can be added to min() and max() without altering the result).
     """
-    x = function_data["latency"].values * 1000  # Convert to milliseconds
-    y = function_data["value"].values
+    x = transform_data[DIM_LATENCY].values * 1000  # Convert to milliseconds
+    y = transform_data[COL_LOGP_VALUE].values
     c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, facecolors=c if filled else 'none', s=20, edgecolors=c)
@@ -195,64 +230,78 @@ class AxisAssignment(NamedTuple):
 
 
 sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
-    AxisAssignment(axis_name="left",
-                   axis_channels=[
-                       sensor
-                       for sensor, (x, y) in get_meg_sensor_xy().items()
-                       if x <= 0
-                   ] + [
-                       sensor
-                       for sensor, (x, y) in get_eeg_sensor_xy().items()
-                       if x <= 0
-                   ]),
-    AxisAssignment(axis_name="right",
-                   axis_channels=[
-                       sensor
-                       for sensor, (x, y) in get_meg_sensor_xy().items()
-                       if x >= 0
-                   ] + [
-                       sensor
-                       for sensor, (x, y) in get_eeg_sensor_xy().items()
-                       if x >= 0
-                   ]),
+    AxisAssignment(
+        axis_name="left",
+        axis_channels=[
+            sensor for sensor, (x, y) in get_meg_sensor_xy().items() if x <= 0
+        ]
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy().items() if x <= 0],
+    ),
+    AxisAssignment(
+        axis_name="right",
+        axis_channels=[
+            sensor for sensor, (x, y) in get_meg_sensor_xy().items() if x >= 0
+        ]
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy().items() if x >= 0],
+    ),
 )
 
 
-def _plot_minimap_sensor(expression_set: ExpressionSet, minimap_axis: pyplot.Axes, colors: dict[str, str], alpha_logp: float):
+def _plot_minimap_sensor(
+    expression_set: ExpressionSet,
+    minimap_axis: pyplot.Axes,
+    colors: dict[str, str],
+    alpha_logp: float,
+):
     raise NotImplementedError("Minimap not yet implemented for sensor data")
 
 
-def _plot_minimap_hexel(expression_set: HexelExpressionSet,
-                        show_functions: list[str],
-                        lh_minimap_axis: pyplot.Axes, rh_minimap_axis: pyplot.Axes,
-                        view: str, surface: str,
-                        colors: dict[str, Any], alpha_logp: float):
+def _plot_minimap_hexel(
+    expression_set: HexelExpressionSet,
+    show_transforms: list[str],
+    lh_minimap_axis: pyplot.Axes,
+    rh_minimap_axis: pyplot.Axes,
+    view: str,
+    surface: str,
+    colors: dict[str, Any],
+    alpha_logp: float,
+):
     # Ensure we have the FSAverage dataset downloaded
     from kymata.datasets.fsaverage import FSAverageDataset
+
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    # Functions which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
+    # Transforms which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
     # as transparent
     colors = colors.copy()
-    for function in expression_set.functions:
-        if function not in show_functions:
-            colors[function] = transparent
+    for transform in expression_set.transforms:
+        if transform not in show_transforms:
+            colors[transform] = transparent
 
     # segment at index 0 will map to transparent
-    # segment at index i will map to function of index i-1
-    colormap = LinearSegmentedColormap.from_list("custom",
-                                                 # Insert transparent for index 0
-                                                 colors=[transparent] + [colors[f] for f in expression_set.functions],
-                                                 # +1 for the transparency
-                                                 N=len(expression_set.functions)+1)
-    data_left, data_right = _hexel_minimap_data(expression_set, alpha_logp=alpha_logp, show_functions=show_functions)
-    stc = SourceEstimate(data=np.concatenate([data_left, data_right]),
-                         vertices=[expression_set.hexels_left, expression_set.hexels_right],
-                         tmin=0, tstep=1)
-    warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
+    # segment at index i will map to transform of index i-1
+    colormap = LinearSegmentedColormap.from_list(
+        "custom",
+        # Insert transparent for index 0
+        colors=[transparent] + [colors[f] for f in expression_set.transforms],
+        # +1 for the transparency
+        N=len(expression_set.transforms) + 1,
+    )
+    data_left, data_right = _hexel_minimap_data(
+        expression_set, alpha_logp=alpha_logp, show_transforms=show_transforms
+    )
+    stc = SourceEstimate(
+        data=np.concatenate([data_left, data_right]),
+        vertices=[expression_set.hexels_left, expression_set.hexels_right],
+        tmin=0,
+        tstep=1,
+    )
+    warn(
+        "Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain."
+    )
     plot_kwargs = dict(
-        subject='fsaverage',
+        subject="fsaverage",
         surface=surface,
         views=view,
         colormap=colormap,
@@ -267,7 +316,8 @@ def _plot_minimap_hexel(expression_set: HexelExpressionSet,
         transparent=False,
         clim=dict(
             kind="value",
-            lims=[0, len(expression_set.functions)/2, len(expression_set.functions)])
+            lims=[0, len(expression_set.transforms) / 2, len(expression_set.transforms)],
+        ),
     )
     # Plot left view
     lh_brain = stc.plot(hemi="lh", **plot_kwargs)
@@ -316,39 +366,41 @@ def expression_plot(
     legend_display: dict[str, str] | None = None,
 ) -> pyplot.Figure:
     """
-    Generates a plot of function expressions over time with optional display customizations.
+    Generates a plot of transform expressions over time with optional display customizations.
 
     Args:
-        expression_set (ExpressionSet): The set of expressions to plot, containing functions and associated data.
+        expression_set (ExpressionSet): The set of expressions to plot, containing transforms and associated data.
         show_only (Optional[str | Sequence[str]], optional): A string or a sequence of strings specifying which
-            functions to plot.
-            If None, all functions in the expression_set will be plotted. Default is None.
+            transforms to plot.
+            If None, all transforms in the expression_set will be plotted. Default is None.
         paired_axes (bool, optional): When True, shows the expression plot split into left and right axes.
             When False, all points are shown on the same axis. Default is True.
         alpha (float, optional): Significance level for statistical tests, defaulting to a 5-sigma threshold.
         color (Optional[str | dict[str, str] | list[str]], optional): Color settings for the plot. Can be a single
-            color,
-            a dictionary mapping function names to colors, or a list of colors. Default is None.
-        ylim (Optional[float], optional): The y-axis limit. If None, it will be determined automatically. Default is
-            None.
-        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple. None to use default
-            values,
-            or set either entry to None to use the default for that value. Default is (-100, 800).
-        hidden_functions_in_legend (bool, optional): If True, includes non-plotted functions in the legend. Default is
-            True.
-        title (str, optional): Title over the top axis in the figure. Default is "Function expression".
+            color, a dictionary mapping transform names to colors, or a list of colors. Default is None.
+        ylim (Optional[float], optional): The y-axis limit (p-value). Use log10 of the desired value — e.g. if the
+            desired limit is 10^-100, supply ylim=-100. If None, it will be determined automatically. Default is None.
+        xlims (tuple[Optional[float], Optional[float]], optional): The x-axis limits as a tuple (in ms). None to use
+            default values, or set either entry to None to use the default for that value. Default is (-100, 800).
+        hidden_transforms_in_legend (bool, optional): If True, includes non-plotted transforms in the legend.
+            Default is True.
+        title (str, optional): Title over the top axis in the figure. Default is "Transform expression".
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
-            `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is visible.
-            `"medial"`: From the left or right side such that the medial (inside) surface of the given hemisphere is visible (at least when in split or single-hemi mode).
+            `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is
+                         visible.
+            `"medial"`: From the left or right side such that the medial (inside) surface of the given hemisphere is
+                        visible (at least when in split or single-hemi mode).
             `"rostral"`: From the front.
             `"caudal"`: From the rear.
             `"dorsal"`: From above, with the front of the brain pointing up.
             `"ventral"`: From below, with the front of the brain pointing up.
-            `"frontal"`: From the front and slightly lateral, with the brain slightly tilted forward (yielding a view from slightly above).
-            `"parietal"`: From the rear and slightly lateral, with the brain slightly tilted backward (yielding a view from slightly above).
+            `"frontal"`: From the front and slightly lateral, with the brain slightly tilted forward (yielding a view
+                         from slightly above).
+            `"parietal"`: From the rear and slightly lateral, with the brain slightly tilted backward (yielding a view
+                          from slightly above).
             `"axial"`: From above with the brain pointing up (same as 'dorsal').
             `"sagittal"`: From the right side.
             `"coronal"`: From the rear.
@@ -365,9 +417,9 @@ def expression_plot(
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
         show_legend (bool, optional): If True, displays the legend. Default is True.
-        legend_display (dict[str, str] | None, optional): Allows grouping of multiple functions under the same legend
-            item.
-            Provide a dictionary mapping true function names to display names. Default is None.
+        legend_display (dict[str, str] | None, optional): Allows grouping of multiple transforms under the same legend
+            item. Provide a dictionary mapping true transform names to display names. None applies no grouping.
+            Default is None.
 
     Returns:
         pyplot.Figure: The matplotlib figure object containing the generated plot.
@@ -384,10 +436,10 @@ def expression_plot(
     # Default arg values
     if show_only is None:
         # Plot all
-        show_only = expression_set.functions
+        show_only = expression_set.transforms
     elif isinstance(show_only, str):
         show_only = [show_only]
-    not_shown = [f for f in expression_set.functions if f not in show_only]
+    not_shown = [f for f in expression_set.transforms if f not in show_only]
 
     if color is None:
         color = dict()
@@ -405,31 +457,33 @@ def expression_plot(
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
-    for function in show_only:
-        if function not in color:
-            color[function] = to_hex(next(cycol))
+    for transform in show_only:
+        if transform not in color:
+            color[transform] = to_hex(next(cycol))
 
-    best_functions = expression_set.best_functions()
+    best_transforms = expression_set.best_transforms()
 
-    print('Finish best function selection')
+    print('Finish best transform selection')
 
     if paired_axes:
         if isinstance(expression_set, HexelExpressionSet):
             axes_names = ("left hemisphere", "right hemisphere")
-            assert isinstance(best_functions, tuple)
+            assert isinstance(best_transforms, tuple)
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("left", "right")
-            # Same functions passed, filtering done at channel level
-            best_functions = (best_functions, best_functions)
+            # Same transforms passed, filtering done at channel level
+            best_transforms = (best_transforms, best_transforms)
         else:
             raise NotImplementedError()
     else:
         if isinstance(expression_set, HexelExpressionSet):
-            raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
+            raise NotImplementedError(
+                "HexelExpressionSets have preset hemisphere assignments"
+            )
         elif isinstance(expression_set, SensorExpressionSet):
-            axes_names = ("", )
+            axes_names = ("",)
             # Wrap into list
-            best_functions = (best_functions, )
+            best_transforms = (best_transforms,)
         else:
             raise NotImplementedError()
 
@@ -440,7 +494,9 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_channels(expression_set, best_functions, show_only_sensors)
+    chosen_channels = _restrict_channels(
+        expression_set, best_transforms, show_only_sensors
+    )
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
@@ -451,14 +507,18 @@ def expression_plot(
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
-    def _custom_label(function_name):
+    def _custom_label(transform_name):
         if legend_display is not None:
-            if function_name in legend_display.keys():
-                return legend_display[function_name]
-        return function_name
+            if transform_name in legend_display.keys():
+                return legend_display[transform_name]
+        return transform_name
 
-    mosaic = _minimap_mosaic(paired_axes=paired_axes, show_minimap=minimap, expression_set_type=type(expression_set),
-                             fig_size=fig_size)
+    mosaic = _minimap_mosaic(
+        paired_axes=paired_axes,
+        show_minimap=minimap,
+        expression_set_type=type(expression_set),
+        fig_size=fig_size,
+    )
 
     fig: pyplot.Figure
     axes: dict[str, pyplot.Axes]
@@ -466,21 +526,28 @@ def expression_plot(
 
     expression_axes_list: list[pyplot.Axes]
     if paired_axes:
-        expression_axes_list = [axes[_AxName.top], axes[_AxName.bottom]]  # For iterating over in a predictable order
+        expression_axes_list = [
+            axes[_AxName.top],
+            axes[_AxName.bottom],
+        ]  # For iterating over in a predictable order
     else:
         expression_axes_list = [axes[_AxName.main]]
 
     fig.subplots_adjust(**mosaic.subplots_adjust_kwargs)
 
+    # Turn off autoscaling to make plotting faster, and since we manually set the axes scale later
+    pyplot.autoscale(False)
+
     custom_handles = []
     custom_labels = []
     data_x_min, data_x_max = np.Inf, -np.Inf
-    data_y_min             = np.Inf
-    for function in tqdm(show_only):
-
-        custom_label = _custom_label(function)
+    data_y_min = np.Inf
+    for transform in tqdm(show_only):
+        custom_label = _custom_label(transform)
         if custom_label not in custom_labels:
-            custom_handles.extend([Line2D([], [], marker='.', color=color[function], linestyle='None')])
+            custom_handles.extend(
+                [Line2D([], [], marker=".", color=color[transform], linestyle="None")]
+            )
             custom_labels.append(custom_label)
 
         # We have a special case with paired sensor data, in that some sensors need to appear
@@ -488,28 +555,62 @@ def expression_plot(
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
             assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
-            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_channels
+            top_chans = (
+                set(assign_left_right_channels[0].axis_channels) & chosen_channels
+            )
+            bottom_chans = (
+                set(assign_left_right_channels[1].axis_channels) & chosen_channels
+            )
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
             bottom_chans -= both_chans
-            for ax, best_funs_this_ax, chans_this_ax in zip(expression_axes_list, best_functions, (top_chans, bottom_chans)):
+            for ax, best_funs_this_ax, chans_this_ax in zip(
+                expression_axes_list, best_transforms, (top_chans, bottom_chans)
+            ):
                 # Plot filled
-                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chans_this_ax))],
-                    color=color[function],
-                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
+                (
+                    x_min,
+                    x_max,
+                    y_min,
+                    _y_max,
+                ) = _plot_transform_expression_on_axes(
+                    transform_data=best_funs_this_ax[
+                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
+                        & (
+                            best_funs_this_ax[expression_set.channel_coord_name].isin(
+                                chans_this_ax
+                            )
+                        )
+                    ],
+                    color=color[transform],
+                    ax=ax,
+                    sidak_corrected_alpha=sidak_corrected_alpha,
+                    filled=True,
+                )
                 data_x_min = min(data_x_min, x_min)
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
                 # Plot empty
-                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(both_chans))],
-                    color=color[function],
-                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=False)
+                (
+                    x_min,
+                    x_max,
+                    y_min,
+                    _y_max,
+                ) = _plot_transform_expression_on_axes(
+                    transform_data=best_funs_this_ax[
+                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
+                        & (
+                            best_funs_this_ax[expression_set.channel_coord_name].isin(
+                                both_chans
+                            )
+                        )
+                    ],
+                    color=color[transform],
+                    ax=ax,
+                    sidak_corrected_alpha=sidak_corrected_alpha,
+                    filled=False,
+                )
                 data_x_min = min(data_x_min, x_min)
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
@@ -517,12 +618,26 @@ def expression_plot(
         # With non-sensor data, or non-paired axes, we can treat these cases together
         else:
             # As normal, plot appropriate filled points in each axis
-            for ax, best_funs_this_ax in zip(expression_axes_list, best_functions):
-                x_min, x_max, y_min, _y_max, = _plot_function_expression_on_axes(
-                    function_data=best_funs_this_ax[(best_funs_this_ax[DIM_FUNCTION] == function)
-                                                    & (best_funs_this_ax[expression_set.channel_coord_name].isin(chosen_channels))],
-                    color=color[function],
-                    ax=ax, sidak_corrected_alpha=sidak_corrected_alpha, filled=True)
+            for ax, best_funs_this_ax in zip(expression_axes_list, best_transforms):
+                (
+                    x_min,
+                    x_max,
+                    y_min,
+                    _y_max,
+                ) = _plot_transform_expression_on_axes(
+                    transform_data=best_funs_this_ax[
+                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
+                        & (
+                            best_funs_this_ax[expression_set.channel_coord_name].isin(
+                                chosen_channels
+                            )
+                        )
+                    ],
+                    color=color[transform],
+                    ax=ax,
+                    sidak_corrected_alpha=sidak_corrected_alpha,
+                    filled=True,
+                )
                 data_x_min = min(data_x_min, x_min)
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
@@ -533,12 +648,22 @@ def expression_plot(
         ylim = _get_best_ylim(ylim, data_y_min)
         ax.set_xlim(*xlims)
         ax.set_ylim((0, ylim))
-        ax.axvline(x=0, color='k', linestyle='dotted')
-        ax.axhline(y=sidak_corrected_alpha, color='k', linestyle='dotted')
-        ax.text(-50, sidak_corrected_alpha, 'α*',
-                bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
-        ax.text(600, sidak_corrected_alpha, 'α*',
-                bbox={'facecolor': 'white', 'edgecolor': 'none'}, verticalalignment='center')
+        ax.axvline(x=0, color="k", linestyle="dotted")
+        ax.axhline(y=sidak_corrected_alpha, color="k", linestyle="dotted")
+        ax.text(
+            -50,
+            sidak_corrected_alpha,
+            "α*",
+            bbox={"facecolor": "white", "edgecolor": "none"},
+            verticalalignment="center",
+        )
+        ax.text(
+            600,
+            sidak_corrected_alpha,
+            "α*",
+            bbox={"facecolor": "white", "edgecolor": "none"},
+            verticalalignment="center",
+        )
         ax.set_yticks(_get_yticks(ylim))
         # Format yaxis as p-values (e.g. 10^{-50} instead of -50)
         pval_labels = [
@@ -585,6 +710,8 @@ def expression_plot(
             raise NotImplementedError()
 
     # Format one-off axis qualities
+    top_ax: pyplot.Axes
+    bottom_ax: pyplot.Axes
     if paired_axes:
         top_ax = axes[_AxName.top]
         bottom_ax = axes[_AxName.bottom]
@@ -593,72 +720,131 @@ def expression_plot(
     else:
         top_ax = bottom_ax = axes[_AxName.main]
     top_ax.set_title(title)
-    bottom_ax.set_xlabel('Latency (ms) relative to onset of the environment')
+    bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
-    bottom_ax.xaxis.set_major_locator(FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax))))
-    if paired_axes:
-        top_ax.text(s=axes_names[0],
-                    x=bottom_ax_xmin + 20, y=ylim * 0.95,
-                    style='italic', verticalalignment='center')
-        bottom_ax.text(s=axes_names[1],
-                       x=bottom_ax_xmin + 20, y=ylim * 0.95,
-                       style='italic', verticalalignment='center')
-    fig.text(x=mosaic.expression_yaxis_label_xpos, y=0.5,
-             s='p-value (with α at 5-sigma, Šidák corrected)',
-             ha="center", va="center", rotation="vertical")
-    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
-        bottom_ax.text(s='   onset of environment   ',
-                       x=0, y=0 if paired_axes else ylim/2,
-                       color='black', fontsize='x-small',
-                       bbox={'facecolor': 'white',
-                             'edgecolor': 'none',
-                             'pad':2
-                             },
-                       verticalalignment='center',
-                       horizontalalignment='center',
-                       rotation='vertical')
+    bottom_ax.xaxis.set_major_locator(
+        FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
+    )
 
-    # Legend for plotted function
+    # Legend for plotted transform
+    legends = []
     if show_legend:
-        split_legend_at_n_functions = 15
-        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_functions else 2
+        split_legend_at_n_transforms = 15
+        legend_n_col = 2 if len(custom_handles) > split_legend_at_n_transforms else 1
         if hidden_transforms_in_legend and len(not_shown) > 0:
-
-            if len(not_shown) > split_legend_at_n_functions:
+            if len(not_shown) > split_legend_at_n_transforms:
                 legend_n_col = 2
-            # Plot dummy legend for other functions which are included in model selection but not plotted
+            # Plot dummy legend for other transforms which are included in model selection but not plotted
             custom_labels_not_shown = []
             dummy_patches = []
-            for hidden_function in not_shown:
-                custom_label = _custom_label(hidden_function)
+            for hidden_transform in not_shown:
+                custom_label = _custom_label(hidden_transform)
                 if custom_label not in custom_labels_not_shown:
                     custom_labels_not_shown.append(custom_label)
                     dummy_patches.append(Patch(color=None, label=custom_label))
-            leg = bottom_ax.legend(labels=custom_labels_not_shown, fontsize="x-small", alignment="left",
-                                   title="Non-plotted functions",
-                                   ncol=legend_n_col,
-                                   bbox_to_anchor=(1.02, -0.02), loc="lower left",
-                                   handles=dummy_patches)
-            for lh in leg.legend_handles:
+            bottom_legend = bottom_ax.legend(
+                labels=custom_labels_not_shown,
+                fontsize="x-small",
+                alignment="left",
+                title="Non-plotted transforms",
+                ncol=legend_n_col,
+                bbox_to_anchor=(1.02, -0.02),
+                loc="lower left",
+                handles=dummy_patches,
+            )
+            for lh in bottom_legend.legend_handles:
                 lh.set_alpha(0)
-        top_ax.legend(handles=custom_handles, labels=custom_labels, fontsize='x-small', alignment="left",
-                      title="Plotted functions",
-                      ncol=legend_n_col,
-                      loc="upper left", bbox_to_anchor=(1.02, 1.02))
+            legends.append(bottom_legend)
+        top_legend = top_ax.legend(
+            handles=custom_handles,
+            labels=custom_labels,
+            fontsize="x-small",
+            alignment="left",
+            title="Plotted transforms",
+            ncol=legend_n_col,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.02),
+        )
+        legends.append(top_legend)
+
+    __reposition_axes_for_legends(fig, legends)
+
+    __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
 
     if save_to is not None:
-        pyplot.rcParams['savefig.dpi'] = 300
+        pyplot.rcParams["savefig.dpi"] = 300
         save_to = Path(save_to)
 
         if overwrite or not save_to.exists():
-            pyplot.savefig(Path(save_to), bbox_inches='tight')
+            pyplot.savefig(Path(save_to), bbox_inches="tight")
         else:
             raise FileExistsError(save_to)
 
     return fig
 
 
-def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[DataFrame, ...], show_only_sensors: str | None):
+def __reposition_axes_for_legends(fig, legends):
+    """Adjust figure width to accommodate legend(s)"""
+    buffer = 1.0
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
+                             for leg in legends)
+                         # Plus a bit extra because matplotlib
+                         + buffer
+                         if len(legends) > 0
+                         else max_axes_right_inches)
+    fig.subplots_adjust(right=(fig.get_figwidth()
+                               * max_axes_right_inches
+                               / max_extent_inches))
+
+
+def __add_text_annotations(axes_names: Sequence[str],
+                           top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
+                           paired_axes: bool, ylim: float):
+    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
+    if paired_axes:
+        assert len(axes_names) >= 2
+        top_ax.text(
+            s=axes_names[0],
+            x=bottom_ax_xmin + 20,
+            y=ylim * 0.95,
+            style="italic",
+            verticalalignment="center",
+        )
+        bottom_ax.text(
+            s=axes_names[1],
+            x=bottom_ax_xmin + 20,
+            y=ylim * 0.95,
+            style="italic",
+            verticalalignment="center",
+        )
+    fig.text(
+        x=top_ax.get_position().xmin - 0.05,
+        y=0.5,
+        s="p-value (with α at 5-sigma, Šidák corrected)",
+        ha="center",
+        va="center",
+        rotation="vertical",
+    )
+    if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
+        bottom_ax.text(
+            s="   onset of environment   ",
+            x=0,
+            y=0 if paired_axes else ylim / 2,
+            color="black",
+            fontsize="x-small",
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 2},
+            verticalalignment="center",
+            horizontalalignment="center",
+            rotation="vertical",
+        )
+
+
+def _restrict_channels(
+    expression_set: ExpressionSet,
+    best_transforms: tuple[DataFrame, ...],
+    show_only_sensors: str | None,
+):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
@@ -675,14 +861,14 @@ def _restrict_channels(expression_set: ExpressionSet, best_functions: tuple[Data
             # All sensors
             chosen_channels = {
                 sensor
-                for best_funs_each_ax in best_functions
+                for best_funs_each_ax in best_transforms
                 for sensor in best_funs_each_ax[expression_set.channel_coord_name]
             }
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
             chosen_channels = {
                 sensor
-                for best_funs_each_ax in best_functions
+                for best_funs_each_ax in best_transforms
                 for sensor in best_funs_each_ax[expression_set.channel_coord_name]
             }
         else:
@@ -730,17 +916,17 @@ def _get_yticks(ylim):
 
 
 def plot_top_five_channels_of_gridsearch(
-        latencies: NDArray,
-        corrs: NDArray,
-        function: Function,
-        n_samples_per_split: int,
-        n_reps: int,
-        n_splits: int,
-        auto_corrs: NDArray,
-        log_pvalues: any,
-        # I/O args
-        save_to: Optional[Path] = None,
-        overwrite: bool = True,
+    latencies: NDArray,
+    corrs: NDArray,
+    transform: Transform,
+    n_samples_per_split: int,
+    n_reps: int,
+    n_splits: int,
+    auto_corrs: NDArray,
+    log_pvalues: any,
+    # I/O args
+    save_to: Optional[Path] = None,
+    overwrite: bool = True,
 ):
     """
     Generates correlation and p-value plots showing the top five channels of the gridsearch.
@@ -748,11 +934,11 @@ def plot_top_five_channels_of_gridsearch(
     Args:
         latencies (NDArray[any]): Array of latency values (e.g., time points in milliseconds) for the x-axis of the plots.
         corrs (NDArray[any]): Correlation coefficients array with shape (n_channels, n_conditions, n_splits, n_time_steps).
-        function (Function): The function object whose name attribute will be used in the plot title.
+        transform (Transform): The transform object whose name attribute will be used in the plot title.
         n_samples_per_split (int): Number of samples per split used in the grid search.
         n_reps (int): Number of repetitions in the grid search.
         n_splits (int): Number of splits in the grid search.
-        auto_corrs (NDArray[any]): Auto-correlation values array used for plotting the function auto-correlation.
+        auto_corrs (NDArray[any]): Auto-correlation values array used for plotting the transform auto-correlation.
         log_pvalues (any): Array of log-transformed p-values for each channel and time point.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -767,10 +953,16 @@ def plot_top_five_channels_of_gridsearch(
         - The second subplot shows the corresponding p-values for these channels.
     """
 
-    # maxs = np.max(corr_avrs, axis=1)
+    figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
+    figure.suptitle(
+        f"{transform.name}: Plotting corrs and pvalues for top five channels"
+    )
+
     maxs = np.min(log_pvalues, axis=1)
     n_amaxs = 5
     amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
+    amax = np.argmin(log_pvalues) // (n_samples_per_split // 2)
+    amaxs = [i for i in amaxs if i != amax]  # + [209]
     # amax = np.argmax(corr_avrs) // (n_samples_per_split // 2)
     amax = np.argmin(log_pvalues) // (n_samples_per_split // 2)
     amaxs = [i for i in amaxs if i != amax]
@@ -798,7 +990,7 @@ def plot_top_five_channels_of_gridsearch(
 
         auto_corrs = np.mean(auto_corrs, axis=0)
         axis[0].plot(latencies, np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs), 'k--',
-                        label='func auto-corr')
+                        label='trans auto-corr')
 
         axis[0].axvline(0, color='k')
         axis[0].legend()
@@ -826,18 +1018,18 @@ def plot_top_five_channels_of_gridsearch(
     pyplot.close()
 
 
-def legend_display_dict(functions: list[str], display_name) -> dict[str, str]:
+def legend_display_dict(transforms: list[str], display_name) -> dict[str, str]:
     """
     Creates a dictionary for the `legend_display` parameter of `expression_plot()`.
 
-    This function maps each function name in the provided list to a single display name,
-    which can be used to group multiple functions under one legend item in the plot.
+    This function maps each transform name in the provided list to a single display name,
+    which can be used to group multiple transforms under one legend item in the plot.
 
     Args:
-        functions (list[str]): A list of function names to be grouped under the same display name.
-        display_name (str): The display name to be used for all functions in the list.
+        transforms (list[str]): A list of transform names to be grouped under the same display name.
+        display_name (str): The display name to be used for all transforms in the list.
 
     Returns:
-        dict[str, str]: A dictionary mapping each function name to the provided display name.
+        dict[str, str]: A dictionary mapping each transform name to the provided display name.
     """
-    return {function: display_name for function in functions}
+    return {transform: display_name for transform in transforms}
