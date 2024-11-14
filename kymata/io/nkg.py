@@ -11,7 +11,7 @@ from numpy import frombuffer
 from numpy.typing import NDArray
 from sparse import COO
 
-from kymata.entities.datatypes import HexelDType, LatencyDType, FunctionNameDType, SensorDType
+from kymata.entities.datatypes import HexelDType, LatencyDType, TransformNameDType, SensorDType
 from kymata.entities.expression import ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, HexelExpressionSet, \
     SensorExpressionSet
 from kymata.math.p_values import p_to_logp
@@ -22,7 +22,7 @@ from kymata.io.file import PathType, FileType, open_or_use
 class _Keys(StrEnum):
     channels  = "channels"
     latencies = "latencies"
-    functions = "functions"
+    transforms = "transforms"
     layers    = "layers"
     data      = "data"
 
@@ -74,7 +74,7 @@ def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet
     """
     Loads an ExpressionSet from the specified path or file.
 
-    The function determines the type of ExpressionSet (HexelExpressionSet or SensorExpressionSet)
+    The transform determines the type of ExpressionSet (HexelExpressionSet or SensorExpressionSet)
     based on the data loaded from the provided path or file. It then constructs and returns an
     instance of the appropriate ExpressionSet subclass.
 
@@ -95,18 +95,18 @@ def load_expression_set(from_path_or_file: PathType | FileType) -> ExpressionSet
 
     if type_identifier == _ExpressionSetTypeIdentifier.hexel:
         return HexelExpressionSet(
-            functions=data_dict[_Keys.functions],
+            transforms=data_dict[_Keys.transforms],
             hexels_lh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_LEFT]],
             hexels_rh=[HexelDType(c) for c in data_dict[_Keys.channels][BLOCK_RIGHT]],
             latencies=data_dict[_Keys.latencies],
             data_lh=[data_dict[_Keys.data][BLOCK_LEFT][:, :, i]
-                     for i in range(len(data_dict[_Keys.functions]))],
+                     for i in range(len(data_dict[_Keys.transforms]))],
             data_rh=[data_dict[_Keys.data][BLOCK_RIGHT][:, :, i]
-                     for i in range(len(data_dict[_Keys.functions]))],
+                     for i in range(len(data_dict[_Keys.transforms]))],
         )
     elif type_identifier == _ExpressionSetTypeIdentifier.sensor:
         return SensorExpressionSet(
-            functions=data_dict[_Keys.functions],
+            transforms=data_dict[_Keys.transforms],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels][BLOCK_SCALP]],
             latencies=data_dict[_Keys.latencies],
             data=data_dict[_Keys.data][BLOCK_SCALP]
@@ -120,7 +120,7 @@ def save_expression_set(expression_set: ExpressionSet,
     """
     Save the given ExpressionSet to a specified path or an already open file.
 
-    This function saves the ExpressionSet data into a compressed file format.
+    This transform saves the ExpressionSet data into a compressed file format.
     If a file path is provided, it creates and writes to the file. If an open file is supplied,
     it should be opened in "wb" mode. The overwrite flag is ignored if an open file is supplied.
 
@@ -136,7 +136,7 @@ def save_expression_set(expression_set: ExpressionSet,
 
     Notes:
         - The compression parameter should be compatible with the `ZipFile` class.
-        - The function writes various metadata and data blocks in a structured format within the zip file.
+        - The transform writes various metadata and data blocks in a structured format within the zip file.
     """
 
     if isinstance(to_path_or_file, str):
@@ -148,7 +148,7 @@ def save_expression_set(expression_set: ExpressionSet,
         zf.writestr("_metadata/format-version.txt", CURRENT_VERSION)
         zf.writestr("_metadata/expression-set-type.txt", _ExpressionSetTypeIdentifier.from_expression_set(expression_set))
         zf.writestr("/latencies.txt", "\n".join(str(x) for x in expression_set.latencies))
-        zf.writestr("/functions.txt", "\n".join(str(x) for x in expression_set.functions))
+        zf.writestr("/transforms.txt", "\n".join(str(x) for x in expression_set.transforms))
         zf.writestr("/blocks.txt",    "\n".join(str(x) for x in expression_set._block_names))
 
         for block_name in expression_set._block_names:
@@ -174,7 +174,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
     if v < version.parse(CURRENT_VERSION):
         warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
     # Loading old versions
-    # For each, delegate to the appropriate _load_data_x_y() function, then
+    # For each, delegate to the appropriate _load_data_x_y() transform, then
     # ensure the keys are set correctly.
     if v <= version.parse("0.1"):
         from kymata.io.nkg_compatibility import _load_data_0_1
@@ -192,9 +192,9 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             assert sparse_data.shape == (
                 len(dict_0_1["hexels"]),
                 len(dict_0_1["latencies"]),
-                len(dict_0_1["functions"]),
+                len(dict_0_1["transforms"]),
             )
-            # In case there was only 1 function and we have a 2-d data matrix
+            # In case there was only 1 transform and we have a 2-d data matrix
             if len(sparse_data.shape) == 2:
                 sparse_data = expand_dims(sparse_data)
             data[block] = sparse_data
@@ -204,7 +204,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
                                  block_name: dict_0_1["hexels"]
                                  for block_name in _ExpressionSetTypeIdentifier.hexel.block_names()
                              },
-            _Keys.functions: dict_0_1["functions"],
+            _Keys.transforms: dict_0_1["transforms"],
             _Keys.latencies: dict_0_1["latencies"],
             _Keys.data:      data,
             # Keys not present in v0.1
@@ -226,9 +226,9 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             assert sparse_data.shape == (
                 len(dict_0_2["channels"]),
                 len(dict_0_2["latencies"]),
-                len(dict_0_2["functions"]),
+                len(dict_0_2["transforms"]),
             )
-            # In case there was only 1 function and we have a 2-d data matrix
+            # In case there was only 1 transform and we have a 2-d data matrix
             if len(sparse_data.shape) == 2:
                 sparse_data = expand_dims(sparse_data)
             data[block] = sparse_data
@@ -239,7 +239,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
                                           block_name: dict_0_2["channels"]
                                           for block_name in _ExpressionSetTypeIdentifier(expressionset_type).block_names()
                                       },
-            _Keys.functions:          dict_0_2["functions"],
+            _Keys.transforms:          dict_0_2["transforms"],
             _Keys.latencies:          dict_0_2["latencies"],
             _Keys.data:               data,
         }
@@ -259,9 +259,9 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             assert sparse_data.shape == (
                 len(dict_0_3["channels"]),
                 len(dict_0_3["latencies"]),
-                len(dict_0_3["functions"]),
+                len(dict_0_3["transforms"]),
             )
-            # In case there was only 1 function and we have a 2-d data matrix
+            # In case there was only 1 transform and we have a 2-d data matrix
             if len(sparse_data.shape) == 2:
                 sparse_data = expand_dims(sparse_data)
             data[block] = sparse_data
@@ -272,7 +272,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
                                           block_name: dict_0_3["channels"]
                                           for block_name in _ExpressionSetTypeIdentifier(expressionset_type).block_names()
                                       },
-            _Keys.functions:          dict_0_3["functions"],
+            _Keys.transforms:          dict_0_3["transforms"],
             _Keys.latencies:          dict_0_3["latencies"],
             _Keys.data:               data,
         }
@@ -296,8 +296,8 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
             blocks = [str(line.strip()) for line in f.readlines()]
         with TextIOWrapper(zf.open("/latencies.txt"), encoding="utf-8") as f:
             return_dict[_Keys.latencies] = [LatencyDType(lat.strip()) for lat in f.readlines()]
-        with TextIOWrapper(zf.open("/functions.txt"), encoding="utf-8") as f:
-            return_dict[_Keys.functions] = [FunctionNameDType(fun.strip()) for fun in f.readlines()]
+        with TextIOWrapper(zf.open("/transforms.txt"), encoding="utf-8") as f:
+            return_dict[_Keys.transforms] = [TransformNameDType(fun.strip()) for fun in f.readlines()]
         return_dict[_Keys.channels] = dict()
         return_dict[_Keys.data] = dict()
         for block_name in blocks:
@@ -310,11 +310,11 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
             with TextIOWrapper(zf.open(f"/{block_name}/coo-shape.txt"), encoding="utf-8") as f:
                 shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
             sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=0.0)
-            # In case there was only 1 function and we have a 2-d data matrix
+            # In case there was only 1 transform and we have a 2-d data matrix
             if len(shape) == 2:
                 sparse_data = expand_dims(sparse_data)
             assert shape == (len(return_dict[_Keys.channels][block_name]),
                              len(return_dict[_Keys.latencies]),
-                             len(return_dict[_Keys.functions]))
+                             len(return_dict[_Keys.transforms]))
             return_dict[_Keys.data][block_name] = sparse_data
     return return_dict

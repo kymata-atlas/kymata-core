@@ -19,7 +19,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
-from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_FUNCTION
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM
 from kymata.entities.functions import Function
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up

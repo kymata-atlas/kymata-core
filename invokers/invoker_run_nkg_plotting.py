@@ -50,19 +50,19 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    function_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
+    transform_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
     # template invoker for printing out expression set .nkgs
 
-    if function_family_type == 'simple':
+    if transform_family_type == 'simple':
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'model.decoder.layers.31.nkg'))
 
         # expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/expression_set/phone_56_gridsearch.nkg')
 
-        # phonetic_func = expression_data.functions
+        # phonetic_func = expression_data.transforms
 
         # expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
 
@@ -74,18 +74,18 @@ def main():
 
         # # import ipdb;ipdb.set_trace()
 
-        # salmonn_name = expression_data_salmonn.functions
+        # salmonn_name = expression_data_salmonn.transforms
 
         # # expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/word/brain/expression_set/word_22_gridsearch.nkg')
         # expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
-        # word_name = expression_data_word.functions
+        # word_name = expression_data_word.transforms
         # lex_name = word_name[:3]
         # sem_name = word_name[3:6]
         # pos_name = word_name[14:]
 
         # # expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/syntax/brain/expression_set/syntax_4_gridsearch.nkg')
         # expression_data_syntax = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
-        # syntax_name = expression_data_syntax.functions
+        # syntax_name = expression_data_syntax.transforms
 
         # all_data = expression_data_salmonn + expression_data_word + expression_data_syntax
         # all_data = expression_data_word + expression_data_syntax
@@ -93,21 +93,21 @@ def main():
         # import ipdb;ipdb.set_trace()
 
 
-        # for func in expression_data.functions:
+        # for func in expression_data.transforms:
         #     fig = expression_plot(expression_data, show_only=func, paired_axes=False, minimap=False, show_legend=True,)
         #     fig.savefig(f"/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phonetics/brain/plot/{func}.png")
 
-        # fig = expression_plot(expression_data, show_only=expression_data.functions[18:], paired_axes=False, minimap=False, show_legend=True,)
-                            #   color=gradient_color_dict(expression_data.functions[:18], start_color = 'blue', stop_color="red"))
+        # fig = expression_plot(expression_data, show_only=expression_data.transforms[18:], paired_axes=False, minimap=False, show_legend=True,)
+                            #   color=gradient_color_dict(expression_data.transforms[:18], start_color = 'blue', stop_color="red"))
 
         # fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True,
                             #   | constant_color_dict(phonetic_func, 'green'))
 
         ### First plot
         # expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
-        # phonetic_func = expression_data.functions
+        # phonetic_func = expression_data.transforms
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        # salmonn_name = expression_data_salmonn_phone.functions
+        # salmonn_name = expression_data_salmonn_phone.transforms
         # fig = expression_plot(expression_data + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=False,
         #                         color= constant_color_dict(phonetic_func, color='#98fb98')
         #                             | constant_color_dict(salmonn_name, color= 'green'))
@@ -118,7 +118,7 @@ def main():
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_phone_vs_feats_source_v3.png")
 
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        # salmonn_word_name = expression_data_salmonn_word.functions
+        # salmonn_word_name = expression_data_salmonn_word.transforms
         # fig = expression_plot(expression_data_word + expression_data_syntax + expression_data_salmonn_word, paired_axes=True, minimap=False, show_legend=False, show_only=lex_name + sem_name + pos_name + syntax_name + salmonn_word_name,
         #                         color= constant_color_dict(lex_name + sem_name + pos_name + syntax_name, color='#ffcccb')
         #                             | constant_color_dict(salmonn_word_name, color= 'red'))
@@ -129,11 +129,11 @@ def main():
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_vs_feats_source_v3.png")
 
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        # word_name = expression_data_salmonn_word.functions
+        # word_name = expression_data_salmonn_word.transforms
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        # phone_name = expression_data_salmonn_phone.functions
+        # phone_name = expression_data_salmonn_phone.transforms
         expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/english_TVL_family_source_baseline.nkg')
-        # tvl_name = expression_data_tvl.functions
+        # tvl_name = expression_data_tvl.transforms
         # IL_name = [i for i in tvl_name if i != 'STL']
         # STL_name = ['STL']
         # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=True,
@@ -143,9 +143,9 @@ def main():
         #                             | constant_color_dict(STL_name, color= 'pink')
         #                             | constant_color_dict(phone_name, color='green'),
         #                         legend_display=legend_display_dict(word_name, 'SALMONN word features')
-        #                             # | legend_display_dict(tvl_name, 'TVL functions')
-        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness Functions')
-        #                             | legend_display_dict(STL_name, 'Short Term Loudness Function')
+        #                             # | legend_display_dict(tvl_name, 'TVL transforms')
+        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+        #                             | legend_display_dict(STL_name, 'Short Term Loudness transform')
         #                             | legend_display_dict(phone_name, 'SALMONN phone features'),
         #                         display_range=(40, 55))
         # fig = expression_plot(expression_data_tvl[40:55], paired_axes=True, minimap=False, show_legend=True)
@@ -163,8 +163,8 @@ def main():
         # expression_data_salmonn_id = load_part_of_expression_data(base_folder, salmonn_id)
         # expression_data_salmonn_art = load_part_of_expression_data(base_folder, salmonn_art)
         # expression_data_salmonn_phone = expression_data_salmonn_id + expression_data_salmonn_art
-        # id_name_salmonn = expression_data_salmonn_id.functions
-        # art_name_salmonn = expression_data_salmonn_art.functions
+        # id_name_salmonn = expression_data_salmonn_id.transforms
+        # art_name_salmonn = expression_data_salmonn_art.transforms
         # fig = expression_plot(expression_data_salmonn_phone, paired_axes=True, minimap=True, show_legend=True,
         #                         color= constant_color_dict(id_name_salmonn, color='green')
         #                             | constant_color_dict(art_name_salmonn, color= 'red'),
@@ -197,10 +197,10 @@ def main():
         # expression_data_salmonn_lex = load_part_of_expression_data(base_folder, salmonn_lex)
         # expression_data_salmonn_syn = load_part_of_expression_data(base_folder, salmonn_syn)
         # expression_data_salmonn_pos = load_part_of_expression_data(base_folder, salmonn_pos)
-        # sem_name_salmonn = expression_data_salmonn_sem.functions
-        # syn_name_salmonn = expression_data_salmonn_syn.functions
-        # lex_name_salmonn = expression_data_salmonn_lex.functions
-        # pos_name_salmonn = expression_data_salmonn_pos.functions
+        # sem_name_salmonn = expression_data_salmonn_sem.transforms
+        # syn_name_salmonn = expression_data_salmonn_syn.transforms
+        # lex_name_salmonn = expression_data_salmonn_lex.transforms
+        # pos_name_salmonn = expression_data_salmonn_pos.transforms
         # fig = expression_plot(expression_data_salmonn, paired_axes=True, minimap=True, show_legend=True,
         #                         color= constant_color_dict(syn_name_salmonn, color='green')
         #                             | constant_color_dict(lex_name_salmonn, color= 'red')
@@ -216,8 +216,8 @@ def main():
 
         # ### Fifth plot
         # expression_data_phone_feats = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
-        # id_name = expression_data_phone_feats.functions[18:]
-        # art_name = expression_data_phone_feats.functions[:18]
+        # id_name = expression_data_phone_feats.transforms[18:]
+        # art_name = expression_data_phone_feats.transforms[:18]
         # fig = expression_plot(expression_data_phone_feats, paired_axes=True, minimap=True, show_legend=True,
         #                         color= constant_color_dict(id_name, color='green')
         #                             | constant_color_dict(art_name, color= 'red'),
@@ -228,10 +228,10 @@ def main():
 
         # ### Sixth plot
         # fig = expression_plot(expression_data_phone_feats + expression_data_salmonn_phone, paired_axes=True, minimap=True, show_legend=True,
-        #                         color= constant_color_dict(expression_data_phone_feats.functions, color='green')
-        #                             | constant_color_dict(expression_data_salmonn_phone.functions, color= 'red'),
-        #                         legend_display=legend_display_dict(expression_data_phone_feats.functions, 'Phoneme features')
-        #                             | legend_display_dict(expression_data_salmonn_phone.functions, 'SALMONN neurons'))
+        #                         color= constant_color_dict(expression_data_phone_feats.transforms, color='green')
+        #                             | constant_color_dict(expression_data_salmonn_phone.transforms, color= 'red'),
+        #                         legend_display=legend_display_dict(expression_data_phone_feats.transforms, 'Phoneme features')
+        #                             | legend_display_dict(expression_data_salmonn_phone.transforms, 'SALMONN neurons'))
         # # fig = expression_plot(all_data, paired_axes=True, minimap=True, show_legend=True)
 
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_feats_phone_source.png")        
@@ -243,7 +243,7 @@ def main():
         # Load all expression data from .nkg files
         # expression_data_salmonn = load_all_expression_data(base_folder)
 
-    elif function_family_type == 'standard':
+    elif transform_family_type == 'standard':
 
         expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
 
@@ -256,13 +256,13 @@ def main():
 
         fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
 
-    elif function_family_type == 'ANN':
+    elif transform_family_type == 'ANN':
 
         start = time.time()
 
         path_to_nkg_files = Path(path_to_nkg_files, 'whisper_large_multi')
 
-        # Function to find all files ending with _gridsearch.nkg
+        # transform to find all files ending with _gridsearch.nkg
         def find_nkg_files(directory):
             return list(directory.glob('**/*_gridsearch.nkg'))
 
