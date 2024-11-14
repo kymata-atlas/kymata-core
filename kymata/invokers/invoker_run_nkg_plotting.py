@@ -149,7 +149,7 @@ def main():
         #                             | legend_display_dict(phone_name, 'SALMONN phone features'),
         #                         display_range=(40, 55))
         # fig = expression_plot(expression_data_tvl[40:55], paired_axes=True, minimap=False, show_legend=True)
-        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=True, show_legend=True, display_latency_range=[0, 0.075])
+        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True, display_latency_range=[0, 0.075])
 
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_part_source.png")
         fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75_test.png")
