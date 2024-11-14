@@ -11,7 +11,7 @@ from kymata.plot.color import constant_color_dict
 def main():
     function_family_type = "standard"  # 'standard' or 'ANN'
     path_to_nkg_files = Path(
-        Path(path.abspath("")).parent, "kymata-core-data", "output"
+        Path(path.abspath("")).parent.parent, "kymata-core-data", "output"
     )
 
     # template invoker for printing out expression set .nkgs
