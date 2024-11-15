@@ -2,7 +2,8 @@ from copy import deepcopy
 from typing import NamedTuple, Optional
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.entities.expression import HexelExpressionSet, DIM_TRANSFORM, DIM_LATENCY, COL_LOGP_VALUE
+from kymata.entities.expression import (
+    HexelExpressionSet, DIM_TRANSFORM, DIM_LATENCY, COL_LOGP_VALUE, SensorExpressionSet)
 from kymata.math.p_values import logp_to_p
 
 
@@ -45,7 +46,7 @@ class IPPMSpike(object):
 SpikeDict = dict[str, IPPMSpike]
 
 
-def merge_hemis(spikes_left: SpikeDict, spikes_right: SpikeDict) -> SpikeDict:
+def merge_hemispheres(spikes_left: SpikeDict, spikes_right: SpikeDict) -> SpikeDict:
     """Merges the best pairings from left- and right-hemisphere spikes into a single spike."""
     spikes_both: SpikeDict = deepcopy(spikes_left)
     for transform, spikes_right in spikes_right.items():
@@ -57,7 +58,7 @@ def merge_hemis(spikes_left: SpikeDict, spikes_right: SpikeDict) -> SpikeDict:
 
 def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionSet) -> tuple[SpikeDict, SpikeDict]:
     """
-    Builds the spike dictionary from an ExpressionSet. This function builds a new dictionary
+    Builds the spike dictionary from a HexelExpressionSet. This function builds a new dictionary
     which has transform names (fast look-up) and only necessary data.
 
     Params
@@ -66,10 +67,9 @@ def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionS
 
     Returns
     -------
-        Dict of the format [trans_name, IPPMSpike(trans_name)]. Each transform will start with a single spike containing
-            all the significant hexels.
+        A pair of dicts of the format [trans_name, IPPMSpike(trans_name)], for left- and right-hemispheres respectively.
+            Each transform will start with a single spike containing all the significant hexels.
     """
-
     spikes_left = {}
     spikes_right = {}
     for hemi, best_transforms, spikes_dict in zip([HEMI_LEFT, HEMI_RIGHT], expression_set.best_transforms(), [spikes_left, spikes_right]):
@@ -81,3 +81,28 @@ def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionS
                 spikes_dict[trans] = IPPMSpike(trans)
             spikes_dict[trans].add_pairing(ExpressionPairing(latency, logp_to_p(logp)))
     return spikes_left, spikes_right
+
+
+def build_spike_dict_from_sensor_expression_set(expression_set: SensorExpressionSet) -> SpikeDict:
+    """
+    Builds the spike dictionary from a SensorExpressionSet. This function builds a new dictionary
+    which has transform names (fast look-up) and only necessary data.
+
+    Params
+    ------
+        expression_set : SensorExpressionSet from which to build the dictionary.
+
+    Returns
+    -------
+        Dict of the format [trans_name, IPPMSpike(trans_name)]. Each transform will start with a single spike containing
+            all the significant hexels.
+    """
+    spikes = {}
+    for _idx, row in expression_set.best_transforms().iterrows():
+        trans = row[DIM_TRANSFORM]
+        latency = row[DIM_LATENCY] * 1000  # convert to ms
+        logp = row[COL_LOGP_VALUE]
+        if trans not in spikes:
+            spikes[trans] = IPPMSpike(trans)
+        spikes[trans].add_pairing(ExpressionPairing(latency, logp_to_p(logp)))
+    return spikes

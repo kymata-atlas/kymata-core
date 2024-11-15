@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, TypeVar
+from typing import Sequence, Union, get_args, Tuple, TypeVar, Collection
 from warnings import warn
 
 from numpy import (
@@ -324,7 +324,7 @@ class ExpressionSet(ABC):
         return latencies[self._block_names[0]]
 
     @abstractmethod
-    def __getitem__(self, transforms: str | Sequence[str]) -> ExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> ExpressionSet:
         pass
 
     @abstractmethod
@@ -524,14 +524,17 @@ class HexelExpressionSet(ExpressionSet):
         """Right-hemisphere data."""
         return self._data[BLOCK_RIGHT]
 
-    def __getitem__(self, transforms: str | Sequence[str]) -> HexelExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> HexelExpressionSet:
         """
         Select data for specified transform(s) only.
-        Use a transform name or list/array of transform names
+        Use a transform name or collection of transform names
         """
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
         # Get indices of sliced transforms within total transform list
         transform_idxs = []
         for f in transforms:
@@ -678,14 +681,17 @@ class SensorExpressionSet(ExpressionSet):
             data=_concat_dataarrays([self.scalp, other.scalp]).data,
         )
 
-    def __getitem__(self, transforms: str | Sequence[str]) -> SensorExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> SensorExpressionSet:
         """
         Select data for specified transform(s) only.
-        Use a transform name or list/array of transform names
+        Use a transform name or collection of transform names
         """
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
         # Get indices of sliced transforms within total transform list
         transform_idxs = []
         for t in transforms:
