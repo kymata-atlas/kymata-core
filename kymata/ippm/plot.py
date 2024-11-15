@@ -14,9 +14,8 @@ from scipy.interpolate import splev
 from sklearn.metrics import euclidean_distances
 from sklearn.preprocessing import normalize
 
-from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
 from kymata.ippm.build import IPPMGraph
-from kymata.ippm.data_tools import SpikeDict, copy_hemisphere, ExpressionPairing
+from kymata.ippm.data_tools import SpikeDict, ExpressionPairing, IPPMSpike
 
 
 def plot_ippm(
@@ -270,11 +269,12 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
 
 def stem_plot(
-    spikes: SpikeDict,
+    spikes_left: SpikeDict,
+    spikes_right: SpikeDict,
     title: Optional[str] = None,
     timepoints: int = 201,
     y_limit: float = pow(10, -100),
-    number_of_spikes: int = 200000,
+    number_of_spikes: int = 200_000,
     figheight: int = 7,
     figwidth: int = 12,
 ):
@@ -293,9 +293,14 @@ def stem_plot(
     )
 
     # assign unique color to each transform
-    cycol = cycle(sns.color_palette("hls", len(spikes.keys())))
-    for _, spike in spikes.items():
-        spike.color = matplotlib.colors.to_hex(next(cycol))
+    transforms = sorted(set(spikes_left.keys()) | set(spikes_right.keys()))
+    cycol = cycle(sns.color_palette("hls", len(transforms)))
+    colors = dict()
+    for spikes in (spikes_left, spikes_right):
+        for trans, spike in spikes.items():
+            if trans not in colors:
+                colors[trans] = matplotlib.colors.to_hex(next(cycol))
+            spike.color = colors[trans]
 
     fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(
         nrows=2, ncols=1, figsize=(figwidth, figheight)
@@ -305,17 +310,19 @@ def stem_plot(
 
     custom_handles = []
     custom_labels = []
-    for key, my_transform in spikes.items():
-        color = my_transform.color
-        label = my_transform.transform
+    for trans in transforms:
+        # Use dict.get in case there is a transform only present in one hemisphere
+        left_spike = spikes_left.get(trans, IPPMSpike(trans))
+        spike_right = spikes_right.get(trans, IPPMSpike(trans))
+        color = colors[trans]
 
         custom_handles.extend(
             [Line2D([], [], marker=".", color=color, linestyle="None")]
         )
-        custom_labels.append(label)
+        custom_labels.append(trans)
 
         # left
-        left = list(zip(*(my_transform.left_best_pairings)))
+        left = list(zip(*left_spike.best_pairings))
         if len(left) != 0:
             x_left, y_left = left[0], left[1]
             left_color = np.where(
@@ -327,7 +334,7 @@ def stem_plot(
             left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
         # right
-        right = list(zip(*(my_transform.right_best_pairings)))
+        right = list(zip(*spike_right.best_pairings))
         if len(right) != 0:
             x_right, y_right = right[0], right[1]
             right_color = np.where(
@@ -407,9 +414,7 @@ def stem_plot(
     plt.show()
 
 
-def plot_k_dist_1D(
-    timings: list[ExpressionPairing], k: int = 4, normalise: bool = False
-):
+def plot_k_dist_1D(timings: list[ExpressionPairing], k: int = 4, normalise: bool = False) -> None:
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.
 
@@ -449,23 +454,3 @@ def plot_k_dist_1D(
     sorted_k_dists = sorted(k_dists, reverse=True)
     plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
     plt.show()
-
-
-def plot_denoised_vs_noisy(spikes: SpikeDict, clusterer, title: str):
-    """
-    Utility function to plot the noisy and denoised versions. It runs the supplied clusterer and then copies the denoised spikes, which
-    are fed into a stem plot.
-
-    Parameters
-    ----------
-    spikes: spikes we want to denoise then plot
-    clusterer: A child class of DenoisingStrategy that implements .cluster
-    title: title of plot
-
-    Returns
-    -------
-    Nothing but plots a graph.
-    """
-    denoised_spikes = clusterer.cluster(spikes, HEMI_RIGHT)
-    copy_hemisphere(denoised_spikes, spikes, HEMI_LEFT, HEMI_RIGHT)
-    stem_plot(denoised_spikes, title)

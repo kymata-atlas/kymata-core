@@ -9,7 +9,6 @@ from typing import NamedTuple
 
 import numpy as np
 
-from kymata.entities.constants import HEMI_RIGHT
 from kymata.ippm.data_tools import SpikeDict, ExpressionPairing
 from kymata.ippm.hierarchy import TransformHierarchy
 
@@ -50,7 +49,6 @@ class IPPMBuilder:
         spikes: SpikeDict,
         inputs: list[str],
         hierarchy: TransformHierarchy,
-        hemisphere: str,
         y_ordinate: str = YOrdinateStyle.progressive,
         serial_sequence: list[list[str]] = None,
         avoid_collinearity: bool = True,
@@ -63,7 +61,6 @@ class IPPMBuilder:
         self._spikes: SpikeDict = deepcopy(spikes)
         self._inputs: list[str] = inputs
         self._hierarchy: TransformHierarchy = hierarchy
-        self._hemisphere: str = hemisphere
 
         self._sort_spikes_by_latency_asc()
 
@@ -133,10 +130,7 @@ class IPPMBuilder:
 
     def _sort_spikes_by_latency_asc(self) -> None:
         for function in self._spikes.keys():
-            if self._hemisphere == HEMI_RIGHT:
-                self._spikes[function].right_best_pairings.sort(key=lambda x: x[0])
-            else:
-                self._spikes[function].left_best_pairings.sort(key=lambda x: x[0])
+            self._spikes[function].best_pairings.sort(key=lambda x: x[0])
 
     @classmethod
     def _get_childless_functions(cls, hierarchy: TransformHierarchy) -> set[str]:
@@ -175,7 +169,7 @@ class IPPMBuilder:
         if function_name in self._inputs:
             self.graph[function_name] = IPPMNode(100, NodePosition(0, y_ord), [])
         else:
-            childless_func_pairings = self._get_best_pairings_from_hemisphere(function_name)
+            childless_func_pairings = self._get_best_pairings(function_name)
 
             if len(childless_func_pairings) == 0:
                 return self.graph
@@ -185,13 +179,9 @@ class IPPMBuilder:
 
         return self.graph
 
-    def _get_best_pairings_from_hemisphere(self, func: str) -> list[ExpressionPairing]:
+    def _get_best_pairings(self, func: str) -> list[ExpressionPairing]:
         if func in self._spikes.keys():
-            return (
-                self._spikes[func].right_best_pairings
-                if self._hemisphere == HEMI_RIGHT
-                else self._spikes[func].left_best_pairings
-            )
+            return self._spikes[func].best_pairings
         return []
 
     def _create_nodes_for_childless_function(
@@ -224,7 +214,7 @@ class IPPMBuilder:
                 if parent in self._inputs:
                     self.graph[function_name + "-0"].inc_edges.append(parent)
                 else:
-                    parent_pairings = self._get_best_pairings_from_hemisphere(parent)
+                    parent_pairings = self._get_best_pairings(parent)
                     if len(parent_pairings) > 0:
                         self.graph[function_name + "-0"].inc_edges.append(
                             parent + "-" + str(len(parent_pairings) - 1)

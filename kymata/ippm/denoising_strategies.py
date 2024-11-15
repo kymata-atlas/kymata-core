@@ -4,7 +4,6 @@ from random import shuffle
 from statistics import NormalDist
 from typing import Optional
 
-from ..entities.constants import HEMI_RIGHT, HEMI_LEFT
 from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
@@ -19,19 +18,16 @@ class DenoisingStrategy(ABC):
 
     def __init__(
         self,
-        hemi: str,
         n_timepoints: int, n_hexels: int,
         should_normalise: bool = False,
         should_cluster_only_latency: bool = False,
         should_max_pool: bool = False,
         normal_dist_threshold: float = 5,
-        should_merge_hemis: bool = False,
         should_exclude_insignificant: bool = True,
         should_shuffle: bool = True,
         **kwargs,
     ):
         """
-        :param hemi: Either "right" or "left". Indicates which hemisphere to cluster.
         :param should_normalise:
                 Indicates whether the preprocessing step of scaling the data to be unit length should be done.
                 Unnormalised data places greater precedence on the latency dimension.
@@ -42,20 +38,14 @@ class DenoisingStrategy(ABC):
                 Indicates whether we want to enforce the constraint that each transform should have 1 spike.
                 Equivalently, we take the maximum over all clusters and discard all other points. Setting this to
                 True optimises performance in the context of IPPMs.
-        :param should_merge_hemis:
-                Indicates whether we want to combine the two hemispheres into one, then cluster. If this is True, then
-                the final expression plot is plot overwrites the "hemi" expression plot. E.g., if hemi == HEMI_RIGHT,
-                then overwrite it.
         :param should_exclude_insignificant:
                 Indicates whether we want to exclude insignificant spikes before clustering.
         """
 
         self._clusterer: CustomClusterer = None
-        self._hemi = hemi
         self._should_normalise = should_normalise
         self._should_cluster_only_latency = should_cluster_only_latency
         self._should_max_pool = should_max_pool
-        self._should_merge_hemis = should_merge_hemis
         self._should_exclude_insignificant = should_exclude_insignificant
         self._should_shuffle = should_shuffle
         self._threshold_for_significance = self._estimate_threshold_for_significance(
@@ -87,7 +77,7 @@ class DenoisingStrategy(ABC):
 
         Algorithm
         ---------
-        For each transform in hemi,
+        For each transform,
             1. We create a list of ExpressionPairings containing only significant spikes.
                 1.1) [Optional] Perform any preprocessing.
                     - should_normalise: Scale each dimension to have a total length of 1.
@@ -136,16 +126,9 @@ class DenoisingStrategy(ABC):
         :returns: a clean list of ExpressionPairings.
         """
         for trans, spike in spikes.items():
-            spike_pairings = spike.right_best_pairings if self._hemi == HEMI_RIGHT else spike.left_best_pairings
-            if self._should_merge_hemis:
-                other_hemi_spike_pairings = spike.left_best_pairings if self._hemi == HEMI_LEFT else spike.right_best_pairings
-                spike_pairings.extend(other_hemi_spike_pairings)
+            spike_pairings = spike.best_pairings
             if self._should_exclude_insignificant:
-                spike_pairings = self._filter_out_insignificant_pairings(
-                    spike_pairings
-                    if self._hemi == HEMI_RIGHT
-                    else spike.left_best_pairings,
-                )
+                spike_pairings = self._filter_out_insignificant_pairings(spike_pairings)
             if self._should_shuffle:
                 # shuffle to remove correlations between rows
                 shuffle(spike_pairings)
@@ -170,14 +153,7 @@ class DenoisingStrategy(ABC):
         :param denoised: We want to save these spikes into spike, overwriting the previous ones.
         :returns: IPPMSpike with its state updated.
         """
-        if self._hemi == HEMI_RIGHT:
-            spike.right_best_pairings = denoised
-            if self._should_merge_hemis:
-                spike.left_best_pairings = []
-        else:
-            spike.left_best_pairings = denoised
-            if self._should_merge_hemis:
-                spike.right_best_pairings = []
+        spike.best_pairings = denoised
         return spike
 
     def _preprocess(self, pairings: list[ExpressionPairing]) -> list[ExpressionPairing]:
@@ -273,39 +249,30 @@ class DenoisingStrategy(ABC):
         :returns: same spike but with only one spike.
         """
         # we take minimum because smaller is more significant.
-        if spike.left_best_pairings and self._hemi == HEMI_LEFT:
-            spike.left_best_pairings = [
-                min(spike.left_best_pairings, key=lambda x: x[1])
-            ]
-        elif spike.right_best_pairings and self._hemi == HEMI_RIGHT:
-            spike.right_best_pairings = [
-                min(spike.right_best_pairings, key=lambda x: x[1])
-            ]
+        spike.best_pairings = [
+            min(spike.best_pairings, key=lambda x: x[1])
+        ]
         return spike
 
 
 class MaxPoolingStrategy(DenoisingStrategy):
     def __init__(self,
-                 hemi: str,
                  n_timepoints: int, n_hexels: int,
                  should_normalise: bool = True,
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  normal_dist_threshold: float = 5,
-                 should_merge_hemis: bool = True,
                  should_exclude_insignificant: bool = True,
                  should_shuffle: bool = True,
                  bin_significance_threshold: int = 1,
                  bin_size: int = 1,
     ):
         super().__init__(
-            hemi,
             n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
             normal_dist_threshold,
-            should_merge_hemis,
             should_exclude_insignificant,
             should_shuffle
         )
@@ -314,25 +281,21 @@ class MaxPoolingStrategy(DenoisingStrategy):
 
 class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
     def __init__(self,
-                 hemi: str,
                  n_timepoints: int, n_hexels: int,
                  should_normalise: bool = True,
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  normal_dist_threshold: float = 5,
-                 should_merge_hemis: bool = True,
                  should_exclude_insignificant: bool = True,
                  bin_significance_threshold: int = 1,
                  base_bin_size: int = 1,
     ):
         super().__init__(
-            hemi,
             n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
             normal_dist_threshold,
-            should_merge_hemis,
             should_exclude_insignificant,
             should_shuffle=False,  # AMP assumes a sorted time series, so avoid shuffling.
         )                          # Mainly because AMP uses a sliding window algorithm to merge significant clusters.
@@ -341,13 +304,11 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
 
 class GMMStrategy(DenoisingStrategy):
     def __init__(self,
-                 hemi: str,
                  n_timepoints: int, n_hexels: int,
                  should_normalise: bool = True,
                  should_cluster_only_latency: bool = True,
                  should_max_pool: bool = False,
                  normal_dist_threshold: float = 5,
-                 should_merge_hemis: bool = True,
                  should_exclude_insignificant: bool = True,
                  should_shuffle: bool = True,
                  number_of_clusters_upper_bound: int = 2,
@@ -359,13 +320,11 @@ class GMMStrategy(DenoisingStrategy):
                  should_evaluate_using_AIC: bool = True,
     ):
         super().__init__(
-            hemi,
             n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
             normal_dist_threshold,
-            should_merge_hemis,
             should_exclude_insignificant,
             should_shuffle
         )
@@ -382,13 +341,12 @@ class GMMStrategy(DenoisingStrategy):
 
 class DBSCANStrategy(DenoisingStrategy):
     def __init__(self,
-                 hemi: str,
-                 n_timepoints: int, n_hexels: int,
+                 n_timepoints: int,
+                 n_hexels: int,
                  should_normalise: bool = False,
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  normal_dist_threshold: float = 5,
-                 should_merge_hemis: bool = False,
                  should_exclude_insignificant: bool = True,
                  should_shuffle: bool = True,
                  eps: int = 10,
@@ -398,15 +356,13 @@ class DBSCANStrategy(DenoisingStrategy):
                  leaf_size: int = 30,
                  n_jobs: int = -1,
                  metric_params: Optional[dict] = None,
-    ):
+                 ):
         super().__init__(
-            hemi,
             n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
             normal_dist_threshold,
-            should_merge_hemis,
             should_exclude_insignificant,
             should_shuffle
         )
@@ -423,13 +379,11 @@ class DBSCANStrategy(DenoisingStrategy):
 
 class MeanShiftStrategy(DenoisingStrategy):
     def __init__(self,
-                 hemi: str,
                  n_timepoints: int, n_hexels: int,
                  should_normalise: bool = True,
                  should_cluster_only_latency: bool = True,
                  should_max_pool: bool = False,
                  normal_dist_threshold: float = 5,
-                 should_merge_hemis: bool = True,
                  should_exclude_insignificant: bool = True,
                  should_shuffle: bool = True,
                  cluster_all: bool = False,
@@ -439,13 +393,11 @@ class MeanShiftStrategy(DenoisingStrategy):
                  n_jobs: int = -1,
     ):
         super().__init__(
-            hemi,
             n_timepoints, n_hexels,
             should_normalise,
             should_cluster_only_latency,
             should_max_pool,
             normal_dist_threshold,
-            should_merge_hemis,
             should_exclude_insignificant,
             should_shuffle
         )
