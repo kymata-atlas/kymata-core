@@ -43,9 +43,9 @@ class ExpressionPoint:
     """
     A single point of transform expression
     """
-    transform: str
     channel: str
     latency: float
+    transform: str
     logp_value: float
 
 

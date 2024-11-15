@@ -253,10 +253,10 @@ def test_ses_best_transform():
     )
     best_transforms = es.best_transforms()
     correct = [
-        ExpressionPoint("a", "0", 1, p_to_logp(0.1)),
-        ExpressionPoint("b", "1", 1, p_to_logp(0.1)),
-        ExpressionPoint("a", "2", 0, p_to_logp(0.1)),
-        ExpressionPoint("b", "3", 2, p_to_logp(0.1)),
+        ExpressionPoint("0", 1, "a", p_to_logp(0.1)),
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
     ]
     assert best_transforms == correct
 
@@ -299,9 +299,9 @@ def test_ses_best_transform_with_one_channel_all_1s():
     )
     best_transforms = es.best_transforms()
     correct = [
-        ExpressionPoint("b", "1", 1, p_to_logp(0.1)),
-        ExpressionPoint("1", "2", 0, p_to_logp(0.1)),
-        ExpressionPoint("b", "3", 2, p_to_logp(0.1)),
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "1", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
     ]
     assert best_transforms == correct
 
@@ -344,9 +344,9 @@ def test_ses_best_transform_with_one_channel_all_nans():
     )
     best_transforms = es.best_transforms()
     correct = [
-        ExpressionPoint("b", "1", 1, p_to_logp(0.1)),
-        ExpressionPoint("a", "2", 0, p_to_logp(0.1)),
-        ExpressionPoint("b", "3", 2, p_to_logp(0.1)),
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
     ]
     assert best_transforms == correct
 
