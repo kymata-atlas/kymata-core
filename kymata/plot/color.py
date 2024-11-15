@@ -61,3 +61,6 @@ def constant_color_dict(transforms: list[str], color) -> dict[str, str]:
     The returned dictionary is compatible with color specifications for expression plots.
     """
     return gradient_color_dict(transforms, color, color)
+
+
+transparent = (0, 0, 0, 0)
