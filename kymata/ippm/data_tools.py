@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import NamedTuple, Optional
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
@@ -42,6 +43,16 @@ class IPPMSpike(object):
 
 # transform_name → spike
 SpikeDict = dict[str, IPPMSpike]
+
+
+def merge_hemis(spikes_left: SpikeDict, spikes_right: SpikeDict) -> SpikeDict:
+    """Merges the best pairings from left- and right-hemisphere spikes into a single spike."""
+    spikes_both: SpikeDict = deepcopy(spikes_left)
+    for transform, spikes_right in spikes_right.items():
+        if transform not in spikes_left:
+            spikes_left[transform] = IPPMSpike(transform)
+        spikes_both[transform].best_pairings.extend(spikes_right.best_pairings)
+    return spikes_both
 
 
 def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionSet) -> tuple[SpikeDict, SpikeDict]:

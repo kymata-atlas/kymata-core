@@ -269,8 +269,7 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
 
 def stem_plot(
-    spikes_left: SpikeDict,
-    spikes_right: SpikeDict,
+    spikes: SpikeDict | tuple[SpikeDict, SpikeDict],
     title: Optional[str] = None,
     timepoints: int = 201,
     y_limit: float = pow(10, -100),
@@ -284,6 +283,7 @@ def stem_plot(
     Params
     ------
         spikes : Contains transform spikes in the form of a spike object. All timings are found there.
+            OR contains a pair of spike objects, one for left and one for right hemispheres
         title : Title of plot.
     """
     # estimate significance parameter
@@ -291,6 +291,14 @@ def stem_plot(
     bonferroni_corrected_alpha = 1 - (
         pow((1 - alpha), (1 / (2 * timepoints * number_of_spikes)))
     )
+
+    separate_hemis = True
+    if not isinstance(spikes, tuple):
+        # Just one provided: copy to both sides
+        spikes = (spikes, spikes)
+        separate_hemis = False
+    assert len(spikes) == 2
+    spikes_left, spikes_right = spikes
 
     # assign unique color to each transform
     transforms = sorted(set(spikes_left.keys()) | set(spikes_right.keys()))
@@ -375,20 +383,21 @@ def stem_plot(
     )
     right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
     right_hem_expression_plot.invert_yaxis()
-    left_hem_expression_plot.text(
-        -180,
-        y_limit * 10000000,
-        "left hemisphere",
-        style="italic",
-        verticalalignment="center",
-    )
-    right_hem_expression_plot.text(
-        -180,
-        y_limit * 10000000,
-        "right hemisphere",
-        style="italic",
-        verticalalignment="center",
-    )
+    if separate_hemis:
+        left_hem_expression_plot.text(
+            -180,
+            y_limit * 10000000,
+            "left hemisphere",
+            style="italic",
+            verticalalignment="center",
+        )
+        right_hem_expression_plot.text(
+            -180,
+            y_limit * 10000000,
+            "right hemisphere",
+            style="italic",
+            verticalalignment="center",
+        )
     y_axis_label = "p-value (with α at 5-sigma, Bonferroni corrected)"
     left_hem_expression_plot.text(
         -275, 1, y_axis_label, verticalalignment="center", rotation="vertical"
