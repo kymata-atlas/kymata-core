@@ -5,15 +5,14 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, TypeVar, Collection
+from typing import Sequence, Union, get_args, TypeVar, Collection, NamedTuple
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal)
+    array, array_equal, where)
 from numpy.typing import NDArray
-from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
@@ -23,7 +22,6 @@ from kymata.entities.datatypes import (
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import (
     expand_dims, densify_data_block, sparsify_log_pmatrix)
-
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -38,8 +36,12 @@ BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
-# Column names
-COL_LOGP_VALUE = "log p-value"
+
+class ExpressionPoint(NamedTuple):
+    channel: str
+    transform: str
+    latency: float
+    logp_value: float
 
 
 class ExpressionSet(ABC):
@@ -367,9 +369,9 @@ class ExpressionSet(ABC):
                 return False
         return True
 
-    def _best_transforms_for_block(self, block_name: str) -> DataFrame:
+    def _best_transforms_for_block(self, block_name: str) -> list[ExpressionPoint]:
         """
-        Return a DataFrame containing:
+        Return a list of expression points:
         for each channel in the block, the best transform and latency for that channel, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
@@ -409,16 +411,15 @@ class ExpressionSet(ABC):
         ).data
 
         # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
-        idxs = logp_vals < 0
+        idxs = where(logp_vals < 0)[0]
 
-        return DataFrame.from_dict(
-            {
-                self.channel_coord_name: self._channels[block_name][idxs],
-                DIM_TRANSFORM: best_transforms[idxs],
-                DIM_LATENCY: best_latencies[idxs],
-                COL_LOGP_VALUE: logp_vals[idxs],
-            }
-        )
+        return [
+            ExpressionPoint(channel=self._channels[block_name][idx],
+                            transform=best_transforms[idx],
+                            latency=best_latencies[idx],
+                            logp_value=logp_vals[idx])
+            for idx in idxs
+        ]
 
     def rename(self, transforms: dict[str, str] = None, channels: dict = None) -> None:
         """
@@ -466,7 +467,7 @@ class ExpressionSet(ABC):
             self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
-    def best_transforms(self) -> DataFrame | tuple[DataFrame, ...]:
+    def best_transforms(self) -> list[ExpressionPoint] | tuple[list[ExpressionPoint], ...]:
         """
         Note that channels for which the best p-value is 1 will be omitted.
         """
@@ -587,7 +588,7 @@ class HexelExpressionSet(ExpressionSet):
             return False
         return True
 
-    def best_transforms(self) -> Tuple[DataFrame, DataFrame]:
+    def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
         Return a pair of DataFrames (left, right), containing:
         for each hexel, the best transform and latency for that hexel, and the associated log p-value
@@ -707,7 +708,7 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
         )
 
-    def best_transforms(self) -> DataFrame:
+    def best_transforms(self) -> list[ExpressionPoint]:
         """
         Return a DataFrame containing:
         for each sensor, the best transform and latency for that sensor, and the associated log p-value
