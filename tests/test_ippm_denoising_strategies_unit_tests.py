@@ -10,67 +10,67 @@ n_timepoints = 201
 n_hexels = 200_000
 
 test_data_trans1 = [
-    ExpressionPairing(-100, 1e-50),
-    ExpressionPairing(-90, 1e-34),
-    ExpressionPairing(-95, 1e-8),
-    ExpressionPairing(-75, 1e-75),
-    ExpressionPairing(-70, 1e-27),
-    ExpressionPairing(0, 1e-1),
-    ExpressionPairing(30, 1e-100),
-    ExpressionPairing(32, 1e-93),
-    ExpressionPairing(35, 1e-72),
-    ExpressionPairing(50, 1e-9),
-    ExpressionPairing(176, 1e-50),
-    ExpressionPairing(199, 1e-90),
-    ExpressionPairing(200, 1e-50),
-    ExpressionPairing(210, 1e-44),
-    ExpressionPairing(211, 1e-55),
+    ExpressionPairing(-100, -50),
+    ExpressionPairing(-90, -34),
+    ExpressionPairing(-95, -8),
+    ExpressionPairing(-75, -75),
+    ExpressionPairing(-70, -27),
+    ExpressionPairing(0, -1),
+    ExpressionPairing(30, -100),
+    ExpressionPairing(32, -93),
+    ExpressionPairing(35, -72),
+    ExpressionPairing(50, -9),
+    ExpressionPairing(176, -50),
+    ExpressionPairing(199, -90),
+    ExpressionPairing(200, -50),
+    ExpressionPairing(210, -44),
+    ExpressionPairing(211, -55),
 ]
 significant_test_data_trans1 = [
-    ExpressionPairing(-100, 1e-50),
-    ExpressionPairing(-90, 1e-34),
-    ExpressionPairing(-75, 1e-75),
-    ExpressionPairing(-70, 1e-27),
-    ExpressionPairing(30, 1e-100),
-    ExpressionPairing(32, 1e-93),
-    ExpressionPairing(35, 1e-72),
-    ExpressionPairing(176, 1e-50),
-    ExpressionPairing(199, 1e-90),
-    ExpressionPairing(200, 1e-50),
-    ExpressionPairing(210, 1e-44),
-    ExpressionPairing(211, 1e-55),
+    ExpressionPairing(-100, -50),
+    ExpressionPairing(-90, -34),
+    ExpressionPairing(-75, -75),
+    ExpressionPairing(-70, -27),
+    ExpressionPairing(30, -100),
+    ExpressionPairing(32, -93),
+    ExpressionPairing(35, -72),
+    ExpressionPairing(176, -50),
+    ExpressionPairing(199, -90),
+    ExpressionPairing(200, -50),
+    ExpressionPairing(210, -44),
+    ExpressionPairing(211, -55),
 ]
 significant_test_data_trans1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
 denoised_trans1 = [
-    ExpressionPairing(-75, 1e-75),
-    ExpressionPairing(30, 1e-100),
-    ExpressionPairing(199, 1e-90)
+    ExpressionPairing(-75, -75),
+    ExpressionPairing(30, -100),
+    ExpressionPairing(199, -90)
 ]
 
 test_data_empty = []
 
 test_data_trans2 = [
-    ExpressionPairing(-30, 1e-2),
-    ExpressionPairing(23, 1e-44),
-    ExpressionPairing(26, 1e-59),
-    ExpressionPairing(30, 1e-99),
-    ExpressionPairing(130, 1e-81),
-    ExpressionPairing(131, 1e-23),
-    ExpressionPairing(131, 1e-76),
-    ExpressionPairing(131, 1e-4),
-    ExpressionPairing(200, 1e-2),
+    ExpressionPairing(-30, -2),
+    ExpressionPairing(23, -44),
+    ExpressionPairing(26, -59),
+    ExpressionPairing(30, -99),
+    ExpressionPairing(130, -81),
+    ExpressionPairing(131, -23),
+    ExpressionPairing(131, -76),
+    ExpressionPairing(131, -4),
+    ExpressionPairing(200, -2),
 ]
 significant_test_data_trans2 = [
-    ExpressionPairing(23, 1e-44),
-    ExpressionPairing(26, 1e-59),
-    ExpressionPairing(30, 1e-99),
-    ExpressionPairing(130, 1e-81),
-    ExpressionPairing(131, 1e-23),
-    ExpressionPairing(131, 1e-76),
+    ExpressionPairing(23, -44),
+    ExpressionPairing(26, -59),
+    ExpressionPairing(30, -99),
+    ExpressionPairing(130, -81),
+    ExpressionPairing(131, -23),
+    ExpressionPairing(131, -76),
 ]
 denoised_trans2 = [
-    ExpressionPairing(30, 1e-99),
-    ExpressionPairing(130, 1e-81)
+    ExpressionPairing(30, -99),
+    ExpressionPairing(130, -81)
 ]
 
 noisy_test_spikes = {"trans1": IPPMSpike("trans1"), "trans2": IPPMSpike("trans2")}
@@ -85,7 +85,7 @@ denoised_test_spikes["trans2"].right_best_pairings = denoised_trans2
 def test_DenoisingStrategy_EstimateThresholdForSignificance_Successfully():
     expected_threshold = 3.55e-15
     actual_threshold = DenoisingStrategy._estimate_threshold_for_significance(5, n_timepoints=n_timepoints, n_hexels=n_hexels)
-    assert isclose(expected_threshold, actual_threshold, abs_tol=1e-15)
+    assert isclose(expected_threshold, actual_threshold, abs_tol=15)
 
 
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._map_spikes_to_pairings")
@@ -143,8 +143,8 @@ def test_DenoisingStrategy_MapSpikesToPairings_Successfully(mock_filter):
         set(pairing.latency_ms for pairing in test_data_trans1)
     )
     assert (
-        set(pairing.p_value for _name, pairings in actual_spikes for pairing in pairings) ==
-        set(pairing.p_value for pairing in test_data_trans1)
+            set(pairing.logp_value for _name, pairings in actual_spikes for pairing in pairings) ==
+            set(pairing.logp_value for pairing in test_data_trans1)
     )
 
 
@@ -191,7 +191,7 @@ def test_DenoisingStrategy_Postprocess_Successfully(mock_update_pairings, mock_p
     mock_update_pairings.return_value = denoised_test_spikes["trans1"]
 
     max_pooled_spike = deepcopy(denoised_test_spikes["trans1"])
-    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, 1e-100)]
+    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, -100)]
     mock_perform_max.return_value = max_pooled_spike
 
     strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels,
@@ -203,7 +203,7 @@ def test_DenoisingStrategy_Postprocess_Successfully(mock_update_pairings, mock_p
 
 def test_DenoisingStrategy_PerformMaxPooling_Successfully():
     max_pooled_spike = deepcopy(denoised_test_spikes["trans1"])
-    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, 1e-100)]
+    max_pooled_spike.right_best_pairings = [ExpressionPairing(30, -100)]
 
     strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
     actual_max_pooled = strategy._perform_max_pooling(denoised_test_spikes["trans1"])

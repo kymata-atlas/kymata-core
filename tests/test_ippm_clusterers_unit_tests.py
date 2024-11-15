@@ -4,21 +4,21 @@ from kymata.ippm.data_tools import ExpressionPairing
 from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 
 test_data = [
-    ExpressionPairing(-100, 1e-50),
-    ExpressionPairing(-90, 1e-34),
-    ExpressionPairing(-95, 1e-8),
-    ExpressionPairing(-75, 1e-75),
-    ExpressionPairing(-70, 1e-27),
-    ExpressionPairing(0, 1e-1),
-    ExpressionPairing(30, 1e-100),
-    ExpressionPairing(32, 1e-93),
-    ExpressionPairing(35, 1e-72),
-    ExpressionPairing(50, 1e-9),
-    ExpressionPairing(176, 1e-50),
-    ExpressionPairing(199, 1e-90),
-    ExpressionPairing(200, 1e-50),
-    ExpressionPairing(210, 1e-44),
-    ExpressionPairing(211, 1e-55),
+    ExpressionPairing(-100, -50),
+    ExpressionPairing(-90, -34),
+    ExpressionPairing(-95, -8),
+    ExpressionPairing(-75, -75),
+    ExpressionPairing(-70, -27),
+    ExpressionPairing(0, -1),
+    ExpressionPairing(30, -100),
+    ExpressionPairing(32, -93),
+    ExpressionPairing(35, -72),
+    ExpressionPairing(50, -9),
+    ExpressionPairing(176, -50),
+    ExpressionPairing(199, -90),
+    ExpressionPairing(200, -50),
+    ExpressionPairing(210, -44),
+    ExpressionPairing(211, -55),
 ]
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 

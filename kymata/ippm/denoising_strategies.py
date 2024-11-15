@@ -4,10 +4,11 @@ from random import shuffle
 from statistics import NormalDist
 from typing import Optional
 
-from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
+from .data_tools import IPPMSpike, SpikeDict, ExpressionPairing
+from ..math.p_values import logp_to_p, p_to_logp
 
 
 class DenoisingStrategy(ABC):
@@ -180,11 +181,11 @@ class DenoisingStrategy(ABC):
         if latency_only:
             pval_sum = 1
         else:
-            pval_sum = sum(p.p_value for p in parings)
+            pval_sum = sum(logp_to_p(p.logp_value) for p in parings)
 
         return [
             ExpressionPairing(latency_ms=p.latency_ms / latency_sum,
-                              p_value=p.p_value / pval_sum)
+                              logp_value=p_to_logp(logp_to_p(p.logp_value) / pval_sum))
             for p in parings
         ]
 
@@ -210,10 +211,10 @@ class DenoisingStrategy(ABC):
             assert len(pairings) == len(labels)
 
             df = DataFrame({
-                "pvalue":  [p.p_value for p in pairings],
+                "logp":  [p.logp_value for p in pairings],
                 "label":   labels,
             })
-            idxs = df.groupby("label")["pvalue"].idxmin()
+            idxs = df.groupby("label")["logp"].idxmin()
 
             return (
                 [pairings[i] for i in idxs],  # Filtered pairings

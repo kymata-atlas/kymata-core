@@ -4,15 +4,14 @@ from typing import NamedTuple, Optional
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.expression import (
     HexelExpressionSet, DIM_TRANSFORM, DIM_LATENCY, COL_LOGP_VALUE, SensorExpressionSet)
-from kymata.math.p_values import logp_to_p
 
 
 class ExpressionPairing(NamedTuple):
     """
-    A temporal location representing evidence of expression with an associated p-value.
+    A temporal location representing evidence of expression with an associated log p-value.
     """
     latency_ms: float  # [0]
-    p_value: float     # [1]
+    logp_value: float   # [1]
 
 
 class IPPMSpike(object):
@@ -79,7 +78,7 @@ def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionS
             logp = row[COL_LOGP_VALUE]
             if trans not in spikes_dict:
                 spikes_dict[trans] = IPPMSpike(trans)
-            spikes_dict[trans].add_pairing(ExpressionPairing(latency, logp_to_p(logp)))
+            spikes_dict[trans].add_pairing(ExpressionPairing(latency, logp))
     return spikes_left, spikes_right
 
 
@@ -104,5 +103,5 @@ def build_spike_dict_from_sensor_expression_set(expression_set: SensorExpression
         logp = row[COL_LOGP_VALUE]
         if trans not in spikes:
             spikes[trans] = IPPMSpike(trans)
-        spikes[trans].add_pairing(ExpressionPairing(latency, logp_to_p(logp)))
+        spikes[trans].add_pairing(ExpressionPairing(latency, logp))
     return spikes

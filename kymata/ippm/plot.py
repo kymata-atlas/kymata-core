@@ -16,6 +16,7 @@ from sklearn.preprocessing import normalize
 
 from kymata.ippm.build import IPPMGraph
 from kymata.ippm.data_tools import SpikeDict, ExpressionPairing, IPPMSpike
+from kymata.math.p_values import logp_to_p
 
 
 def plot_ippm(
@@ -333,6 +334,7 @@ def stem_plot(
         left = list(zip(*left_spike.best_pairings))
         if len(left) != 0:
             x_left, y_left = left[0], left[1]
+            x_left = logp_to_p(x_left)
             left_color = np.where(
                 np.array(y_left) <= bonferroni_corrected_alpha, color, "black"
             )  # set all insignificant spikes to black
@@ -345,6 +347,7 @@ def stem_plot(
         right = list(zip(*spike_right.best_pairings))
         if len(right) != 0:
             x_right, y_right = right[0], right[1]
+            x_right = logp_to_p(x_right)
             right_color = np.where(
                 np.array(y_right) <= bonferroni_corrected_alpha, color, "black"
             )  # set all insignificant spikes to black
