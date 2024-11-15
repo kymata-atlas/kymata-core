@@ -2,8 +2,7 @@ from copy import deepcopy
 from typing import NamedTuple, Optional
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.entities.expression import (
-    HexelExpressionSet, DIM_TRANSFORM, DIM_LATENCY, COL_LOGP_VALUE, SensorExpressionSet)
+from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
 
 
 class ExpressionPairing(NamedTuple):
@@ -72,13 +71,10 @@ def build_spike_dicts_from_hexel_expression_set(expression_set: HexelExpressionS
     spikes_left = {}
     spikes_right = {}
     for hemi, best_transforms, spikes_dict in zip([HEMI_LEFT, HEMI_RIGHT], expression_set.best_transforms(), [spikes_left, spikes_right]):
-        for _idx, row in best_transforms.iterrows():
-            trans = row[DIM_TRANSFORM]
-            latency = row[DIM_LATENCY] * 1000  # convert to ms
-            logp = row[COL_LOGP_VALUE]
-            if trans not in spikes_dict:
-                spikes_dict[trans] = IPPMSpike(trans)
-            spikes_dict[trans].add_pairing(ExpressionPairing(latency, logp))
+        for ep in best_transforms:
+            if ep.transform not in spikes_dict:
+                spikes_dict[ep.transform] = IPPMSpike(ep.transform)
+            spikes_dict[ep.transform].add_pairing(ExpressionPairing(ep.latency, ep.logp_value))
     return spikes_left, spikes_right
 
 
@@ -97,11 +93,8 @@ def build_spike_dict_from_sensor_expression_set(expression_set: SensorExpression
             all the significant hexels.
     """
     spikes = {}
-    for _idx, row in expression_set.best_transforms().iterrows():
-        trans = row[DIM_TRANSFORM]
-        latency = row[DIM_LATENCY] * 1000  # convert to ms
-        logp = row[COL_LOGP_VALUE]
-        if trans not in spikes:
-            spikes[trans] = IPPMSpike(trans)
-        spikes[trans].add_pairing(ExpressionPairing(latency, logp))
+    for ep in expression_set.best_transforms():
+        if ep.transform not in spikes:
+            spikes[ep.transform] = IPPMSpike(ep.transform)
+        spikes[ep.transform].add_pairing(ExpressionPairing(ep.latency, ep.logp_value))
     return spikes

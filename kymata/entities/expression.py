@@ -5,6 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Sequence, Union, get_args, TypeVar, Collection, NamedTuple
 from warnings import warn
 
@@ -37,9 +38,13 @@ BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
 
-class ExpressionPoint(NamedTuple):
-    channel: str
+@dataclass(frozen=True)
+class ExpressionPoint:
+    """
+    A single point of transform expression
+    """
     transform: str
+    channel: str
     latency: float
     logp_value: float
 
