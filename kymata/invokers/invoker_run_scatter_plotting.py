@@ -124,7 +124,7 @@ def main():
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*n_channels*n_transforms)))))
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
 
     # import ipdb;ipdb.set_trace()
 
@@ -198,8 +198,10 @@ def main():
     # Reorder the unique_labels dictionary according to the desired order
     ordered_unique_labels = {label: unique_labels[label] for label in desired_order if label in unique_labels}
 
+    plt.axvline(x=0, color='k', linestyle='dotted')
+
     # Set the legend with unique labels in the desired order
-    plt.legend(ordered_unique_labels.values(), ordered_unique_labels.keys(), bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=5)
+    plt.legend(ordered_unique_labels.values(), ordered_unique_labels.keys(), bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=7)
 
     # Add padding around the data points
     plt.margins(x=0.05, y=0.05)
@@ -207,7 +209,7 @@ def main():
     # Automatically adjust subplot parameters to give some padding
     plt.tight_layout()
 
-    plt.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_scatter_interpret.png", dpi=1200)
+    plt.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_scatter_interpret.png", dpi=1200)
 
 if __name__ == '__main__':
     main()
