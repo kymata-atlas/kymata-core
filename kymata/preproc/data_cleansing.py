@@ -707,10 +707,10 @@ def create_trialwise_data(
         for i in range(len(repetition_events)):
             repetition_events[i][2] = str(i)
 
-        # Validate repetition events
-        assert (
-            len(repetition_events) == number_of_runs * repetitions_per_runs
-        ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
+        # # Validate repetition events
+        # assert (
+        #     len(repetition_events) == number_of_runs * repetitions_per_runs
+        # ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed

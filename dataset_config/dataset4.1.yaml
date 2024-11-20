@@ -10,8 +10,8 @@ random_seed: 17
 participants: [
                 # 'pilot_01',
                 'pilot_02',
-                'pilot_03',
-                'pilot_04',
+                # 'pilot_03',
+                # 'pilot_04',
               ]
 number_of_runs: 4                    # number of runs
 repetitions_per_runs: 2              # number of repetitions per run
