@@ -975,12 +975,12 @@ def plot_top_five_channels_of_gridsearch(
     peak_lat_ind = np.argmin(log_pvalues) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-    print(f'{function.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+    print(f'{transform.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
 
     if save_to is not None:
 
         figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
-        figure.suptitle(f'{function.name}: Plotting corrs and pvalues for top five channels')
+        figure.suptitle(f'{transform.name}: Plotting corrs and pvalues for top five channels')
 
         axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, 'r-', label=amax)
         axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
@@ -1007,7 +1007,7 @@ def plot_top_five_channels_of_gridsearch(
         axis[1].set_ylabel('p-values')
 
         pyplot.rcParams['savefig.dpi'] = 300
-        save_to = Path(save_to, function.name + '_gridsearch_top_five_channels.png')
+        save_to = Path(save_to, transform.name + '_gridsearch_top_five_channels.png')
 
         if overwrite or not save_to.exists():
             pyplot.savefig(Path(save_to))

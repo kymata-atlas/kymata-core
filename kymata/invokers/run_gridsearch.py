@@ -62,7 +62,7 @@ def main():
     parser.add_argument('--asr-option', type=str, default="ave",
                         help='Whether to get the output from all neurons (all) or do the average (ave) or with only one neuron (one) or with some neurons (some)')
     parser.add_argument('--num-neurons', type=int, nargs='+', default=[512],
-                        help='Number of neurons in each layer')
+                        help='Number of neurons in each layer / list of neurons to be used (depending on the asr_option)')
     parser.add_argument('--mfa', type=bool, default=True,
                         help='Whether to use timestamps from mfa')
     # For source space
@@ -71,7 +71,7 @@ def main():
     parser.add_argument('--inverse-operator-suffix', type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif", help='inverse solution suffix')
 
     parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
-    parser.add_argument('--downsample-rate', type=int,   default=5, help='downsample_rate - DR=5 is equivalent to 200Hz, DR=2 => 500Hz, DR=1 => 1kHz')
+    parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
 
     parser.add_argument('--seconds-per-split', type=float, default=1, help='seconds in each split of the recording, also maximum range of latencies being checked')
     parser.add_argument('--n-splits',          type=int, default=400, help='number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)')
@@ -101,6 +101,7 @@ def main():
     participants = dataset_config.get('participants')
     base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english_narratives'))
     inverse_operator_dir = dataset_config.get('inverse_operator')
+    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
     os.makedirs(args.save_plot_location, exist_ok=True)
     os.makedirs(args.save_expression_set_location, exist_ok=True)
@@ -151,7 +152,7 @@ def main():
         _logger.info(f"Loading TVL functions to replace the EMEG data")
         for i, transform_name in enumerate(ch_names):
             func = load_transform(Path(base_dir, 'predicted_function_contours/GMSloudness/stimulisig'),
-                                            func_name=transform_name,
+                                            trans_name=transform_name,
                                             replace_nans=args.replace_nans,
                                             bruce_neurons=(5, 10),
                                             mfa=args.mfa,)
@@ -247,29 +248,30 @@ def main():
 
     if (args.asr_option == 'all' and 'asr' in args.transform_path) or 'linguistics' in args.transform_path:
 
-        for nn_i in range(0, args.num_neurons):
+        for nn_i in range(0, args.num_neurons[0]):
             # func = load_transform(Path(args.base_dir, args.transform_path),
             function_values = load_transform(args.transform_path,
-                                func_name=args.transform_name[0],
+                                trans_name=args.transform_name[0],
                                 nn_neuron=nn_i,
                                 mfa=args.mfa,
                                 )
         # func = load_transform(args.transform_path,
-        #                      func_name=args.transform_name,
+        #                      trans_name=args.transform_name,
         #                      bruce_neurons=(5, 10))
         
-            function_values = function_values.downsampled(args.downsample_rate)
+            function_values = function_values.resampled(args.resample)
 
             if nn_i == 0:
                 es = do_gridsearch(
                     emeg_values=emeg_values,
                     channel_names=ch_names,
                     channel_space=channel_space,
-                    function=function_values,
+                    transform=function_values,
                     seconds_per_split=args.seconds_per_split,
                     n_derangements=args.n_derangements,
                     n_splits=args.n_splits,
                     n_reps=n_reps,
+                    emeg_sample_rate=emeg_sample_rate,
                     start_latency=args.start_latency,
                     plot_location=args.save_plot_location,
                     emeg_t_start=args.emeg_t_start,
@@ -284,11 +286,12 @@ def main():
                     emeg_values=emeg_values,
                     channel_names=ch_names,
                     channel_space=channel_space,
-                    function=function_values,
+                    transform=function_values,
                     seconds_per_split=args.seconds_per_split,
                     n_derangements=args.n_derangements,
                     n_splits=args.n_splits,
                     n_reps=n_reps,
+                    emeg_sample_rate=emeg_sample_rate,
                     start_latency=args.start_latency,
                     plot_location=args.save_plot_location,
                     emeg_t_start=args.emeg_t_start,
@@ -313,21 +316,22 @@ def main():
             nn_i = args.num_neurons[num]
             _logger.info(f"Running gridsearch on {transform_name}, neuron {nn_i}")
             function_values = load_transform(args.transform_path,
-                                func_name=transform_name,
+                                trans_name=transform_name,
                                 nn_neuron=nn_i,
                                 mfa=args.mfa,
                                 )
-            function_values = function_values.downsampled(args.downsample_rate)
+            function_values = function_values.resampled(args.resample)
 
             es = do_gridsearch(
                 emeg_values=emeg_values,
                 channel_names=ch_names,
                 channel_space=channel_space,
-                function=function_values,
+                transform=function_values,
                 seconds_per_split=args.seconds_per_split,
                 n_derangements=args.n_derangements,
                 n_splits=args.n_splits,
                 n_reps=n_reps,
+                emeg_sample_rate=emeg_sample_rate,
                 start_latency=args.start_latency,
                 plot_location=args.save_plot_location,
                 emeg_t_start=args.emeg_t_start,
@@ -356,22 +360,23 @@ def main():
     elif args.asr_option == 'one' and 'asr' in args.transform_path:
 
         function_values = load_transform(args.transform_path,
-                            func_name=args.transform_name[0],
-                            nn_neuron=args.num_neurons,
+                            trans_name=args.transform_name[0],
+                            nn_neuron=args.num_neurons[0],
                             mfa=args.mfa,
                             )
     
-        function_values = function_values.downsampled(args.downsample_rate)
+        function_values = function_values.resampled(args.resample)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
             channel_names=ch_names,
             channel_space=channel_space,
-            function=function_values,
+            transform=function_values,
             seconds_per_split=args.seconds_per_split,
             n_derangements=args.n_derangements,
             n_splits=args.n_splits,
             n_reps=n_reps,
+            emeg_sample_rate=emeg_sample_rate,
             start_latency=args.start_latency,
             plot_location=args.save_plot_location,
             emeg_t_start=args.emeg_t_start,
@@ -394,21 +399,22 @@ def main():
         for transform_name in args.transform_name:
             _logger.info(f"Running gridsearch on {transform_name}")
             function_values = load_transform(Path(base_dir, args.transform_path),
-                                            func_name=transform_name,
+                                            trans_name=transform_name,
                                             replace_nans=args.replace_nans,
                                             bruce_neurons=(5, 10),
                                             mfa=args.mfa,)
-            function_values = function_values.downsampled(args.downsample_rate)
+            function_values = function_values.resampled(args.resample)
 
             es = do_gridsearch(
                 emeg_values=emeg_values,
                 channel_names=ch_names,
                 channel_space=channel_space,
-                function=function_values,
+                transform=function_values,
                 seconds_per_split=args.seconds_per_split,
                 n_derangements=args.n_derangements,
                 n_splits=args.n_splits,
                 n_reps=n_reps,
+                emeg_sample_rate=emeg_sample_rate,
                 start_latency=args.start_latency,
                 plot_location=args.save_plot_location,
                 emeg_t_start=args.emeg_t_start,
