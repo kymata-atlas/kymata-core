@@ -7,6 +7,7 @@ from pathlib import Path
 from statistics import NormalDist
 from typing import Optional, Sequence, NamedTuple, Any, Type, Literal
 from warnings import warn
+from logging import getLogger
 
 import numpy as np
 from matplotlib import pyplot
@@ -952,6 +953,7 @@ def plot_top_five_channels_of_gridsearch(
         - The first subplot shows the correlation coefficients over latencies for the top five channels.
         - The second subplot shows the corresponding p-values for these channels.
     """
+    _logger = getLogger(__name__)
 
     figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
     figure.suptitle(
@@ -975,7 +977,8 @@ def plot_top_five_channels_of_gridsearch(
     peak_lat_ind = np.argmin(log_pvalues) % (n_samples_per_split // 2)
     peak_lat = latencies[peak_lat_ind]
     peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-    print(f'{transform.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+    # print(f'{transform.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
+    _logger.info(f'{transform.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}')
 
     if save_to is not None:
 

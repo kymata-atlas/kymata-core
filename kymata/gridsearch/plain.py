@@ -91,10 +91,10 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the transform's sample rate
-    if emeg_sample_rate != transform.sample_rate:
-        _logger.warning(f"Data sample rate ({emeg_sample_rate} Hz) and "
-                        f"transform sample rate ({transform.sample_rate} Hz) differ. "
-                        f"Data will be down-sampled.")
+    # if emeg_sample_rate != transform.sample_rate:
+    #     _logger.warning(f"Data sample rate ({emeg_sample_rate} Hz) and "
+    #                     f"transform sample rate ({transform.sample_rate} Hz) differ. "
+    #                     f"Data will be down-sampled.")
     downsample_ratio = emeg_sample_rate / transform.sample_rate
     if downsample_ratio.is_integer():
         downsample_rate: int = int(emeg_sample_rate / transform.sample_rate)
@@ -107,10 +107,10 @@ def do_gridsearch(
     # the number of samples in the transform 'trial' which is half that needed for the EMEG
     n_trans_samples_per_split = n_samples_per_split // 2
 
-    _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
-                 f" @ {emeg_sample_rate} Hz")
-    _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate:.2f} s"
-                 f" @ {transform.sample_rate} Hz")
+    # _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
+    #              f" @ {emeg_sample_rate} Hz")
+    # _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate:.2f} s"
+    #              f" @ {transform.sample_rate} Hz")
 
     trans_length = n_splits * n_trans_samples_per_split
     if trans_length < transform.values.shape[0]:
