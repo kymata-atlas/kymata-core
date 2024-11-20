@@ -8,7 +8,7 @@ from kymata.preproc.data_cleansing import estimate_noise_cov
 
 def main(config_filename: str):
     config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
+        str(Path(Path(__file__).parent.parent.parent, "dataset_config", config_filename))
     )
 
     estimate_noise_cov(

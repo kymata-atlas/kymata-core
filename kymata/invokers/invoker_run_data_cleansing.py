@@ -11,7 +11,7 @@ from kymata.preproc.data_cleansing import (
 
 # noinspection DuplicatedCode
 def main(config_filename: str):
-    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config_filename)))
+    config = load_config(str(Path(Path(__file__).parent.parent.parent, "dataset_config", config_filename)))
 
     data_root_dir = get_root_dir(config)
 
