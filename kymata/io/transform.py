@@ -1,5 +1,6 @@
 from logging import getLogger
 from pathlib import Path
+import os
 from typing import Optional
 
 import numpy as np
@@ -9,6 +10,7 @@ from scipy.io import loadmat
 from kymata.entities.transform import Transform
 from kymata.io.file import PathType
 
+import torch
 
 _logger = getLogger(__file__)
 
@@ -378,3 +380,8 @@ def convert_stimulisig_on_disk_mat_to_npz(transform_path_without_suffix):
         trans_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
         trans_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
     np.savez(str(transform_path_without_suffix.with_suffix(".npz")), **trans_dict)
+
+def load_txt(filepath):
+    with open(filepath, 'r') as file:
+        lines = file.readlines()
+        return [x.strip().lower() for x in lines]    
