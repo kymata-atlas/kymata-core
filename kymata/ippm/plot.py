@@ -14,8 +14,8 @@ from scipy.interpolate import splev
 from sklearn.metrics import euclidean_distances
 from sklearn.preprocessing import normalize
 
-from kymata.ippm.build import IPPMGraph
-from kymata.ippm.data_tools import SpikeDict, ExpressionPairing, IPPMSpike
+from kymata.entities.expression import ExpressionPoint
+from kymata.ippm.build import IPPMGraph, SpikeDict
 from kymata.math.p_values import logp_to_p
 
 
@@ -309,7 +309,6 @@ def stem_plot(
         for trans, spike in spikes.items():
             if trans not in colors:
                 colors[trans] = matplotlib.colors.to_hex(next(cycol))
-            spike.color = colors[trans]
 
     fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(
         nrows=2, ncols=1, figsize=(figwidth, figheight)
@@ -321,8 +320,8 @@ def stem_plot(
     custom_labels = []
     for trans in transforms:
         # Use dict.get in case there is a transform only present in one hemisphere
-        left_spike = spikes_left.get(trans, IPPMSpike(trans))
-        spike_right = spikes_right.get(trans, IPPMSpike(trans))
+        left_spike = spikes_left.get(trans, [])
+        spike_right = spikes_right.get(trans, [])
         color = colors[trans]
 
         custom_handles.extend(
@@ -331,7 +330,7 @@ def stem_plot(
         custom_labels.append(trans)
 
         # left
-        left = list(zip(*left_spike.best_pairings))
+        left = list(zip(*left_spike))
         if len(left) != 0:
             x_left, y_left = left[0], left[1]
             x_left = logp_to_p(x_left)
@@ -344,7 +343,7 @@ def stem_plot(
             left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
 
         # right
-        right = list(zip(*spike_right.best_pairings))
+        right = list(zip(*spike_right))
         if len(right) != 0:
             x_right, y_right = right[0], right[1]
             x_right = logp_to_p(x_right)
@@ -426,7 +425,7 @@ def stem_plot(
     plt.show()
 
 
-def plot_k_dist_1D(timings: list[ExpressionPairing], k: int = 4, normalise: bool = False) -> None:
+def plot_k_dist_1D(points: list[ExpressionPoint], k: int = 4, normalise: bool = False) -> None:
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.
 
@@ -438,7 +437,7 @@ def plot_k_dist_1D(timings: list[ExpressionPairing], k: int = 4, normalise: bool
 
     Parameters
     ----------
-    timings: list of timings extracted from a spikes. It contains the timings for one transform and one hemisphere
+    points: list of timings extracted from a spikes. It contains the timings for one transform and one hemisphere
     k: the k we use to find the kth neighbour. Paper above advises to use k=4.
     normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
 
@@ -449,9 +448,9 @@ def plot_k_dist_1D(timings: list[ExpressionPairing], k: int = 4, normalise: bool
 
     alpha = 3.55e-15
     X = pd.DataFrame(columns=["Latency"])
-    for latency, spike in timings:
-        if spike <= alpha:
-            X.loc[len(X)] = [latency]
+    for point in points:
+        if point.logp_value <= alpha:
+            X.loc[len(X)] = [point.latency]
 
     if normalise:
         X = normalize(X)

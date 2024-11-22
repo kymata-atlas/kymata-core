@@ -2,10 +2,7 @@ from typing import Optional
 from warnings import warn
 
 from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet
-from kymata.ippm.build import IPPMBuilder
-from kymata.ippm.data_tools import (
-    SpikeDict, build_spike_dict_from_sensor_expression_set, build_spike_dicts_from_hexel_expression_set,
-    merge_hemispheres)
+from kymata.ippm.build import IPPMBuilder, SpikeDict
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 from kymata.ippm.plot import plot_ippm
@@ -47,11 +44,14 @@ class IPPM:
                  spikes: SpikeDict | tuple[SpikeDict, SpikeDict],
                  inputs: list[str],
                  hierarchy: TransformHierarchy):
+
+        # Deal with multiple hemispheres
         if isinstance(spikes, tuple):
             spikes_left, spikes_right = spikes
             warn("IPPM not implemented for multiple hemispheres yet. "
-                    "Just using left hemisphere.")
+                 "Just using left hemisphere.")
             spikes = spikes_left
+
         self._builder = IPPMBuilder(spikes, inputs, hierarchy)
 
     @classmethod
@@ -99,27 +99,15 @@ class IPPM:
         else:
             denoising_strategy = None
 
-        if isinstance(expression_set, HexelExpressionSet):
-            spikes_left, spikes_right = build_spike_dicts_from_hexel_expression_set(expression_set)
-            if denoising_strategy is not None:
-                spikes_left = denoising_strategy.denoise(spikes_left)
-                spikes_right = denoising_strategy.denoise(spikes_right)
-            spikes = (spikes_left, spikes_right)
-            if merge_hemis:
-                spikes = merge_hemispheres(*spikes)
+        if denoising_strategy is not None:
+            expression_set = denoising_strategy.denoise(expression_set)
 
-        elif isinstance(expression_set, SensorExpressionSet):
-            spikes = build_spike_dict_from_sensor_expression_set(expression_set)
-            if denoising_strategy is not None:
-                spikes = denoising_strategy.denoise(spikes)
-
-        else:
-            raise NotImplementedError()
-
-        return cls(spikes, [h.name for h in hierarchy.inputs], hierarchy, **builder_kwargs)
-
+        return cls(spikes=expression_set.best_transforms(),
+                   inputs=[h.name for h in hierarchy.inputs],
+                   hierarchy=hierarchy,
+                   **builder_kwargs)
 
     def plot(self, colors: Optional[dict[str, str]] = None):
         if colors is None:
-            colours = dict()
+            colors = dict()
         plot_ippm(self._builder.graph, colors)

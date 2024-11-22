@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from kymata.entities.constants import HEMI_RIGHT
-from kymata.ippm.data_tools import IPPMSpike, ExpressionPairing
+from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, DBSCANStrategy, MeanShiftStrategy)
 
@@ -9,61 +9,62 @@ n_timepoints = 201
 n_hexels = 200_000
 
 test_data_trans1 = [
-    (-100, 1e-50),
-    (-90, 1e-34),
-    (-95, 1e-8),
-    (-75, 1e-75),
-    (-70, 1e-27),
-    (0, 1e-1),
-    (30, 1e-100),
-    (32, 1e-93),
-    (35, 1e-72),
-    (50, 1e-9),
-    (176, 1e-50),
-    (199, 1e-90),
-    (200, 1e-50),
-    (210, 1e-44),
-    (211, 1e-55),
+    ExpressionPoint("c", -100, "f1", -50),
+    ExpressionPoint("c",  -90, "f1", -34),
+    ExpressionPoint("c",  -95, "f1", -8),
+    ExpressionPoint("c",  -75, "f1", -75),
+    ExpressionPoint("c",  -70, "f1", -27),
+    ExpressionPoint("c",    0, "f1", -1),
+    ExpressionPoint("c",   30, "f1", -100),
+    ExpressionPoint("c",   32, "f1", -93),
+    ExpressionPoint("c",   35, "f1", -72),
+    ExpressionPoint("c",   50, "f1", -9),
+    ExpressionPoint("c",  176, "f1", -50),
+    ExpressionPoint("c",  199, "f1", -90),
+    ExpressionPoint("c",  200, "f1", -50),
+    ExpressionPoint("c",  210, "f1", -44),
+    ExpressionPoint("c",  211, "f1", -55),
 ]
 significant_test_data_trans1 = [
-    (-100, 1e-50),
-    (-90, 1e-34),
-    (-75, 1e-75),
-    (-70, 1e-27),
-    (30, 1e-100),
-    (32, 1e-93),
-    (35, 1e-72),
-    (176, 1e-50),
-    (199, 1e-90),
-    (200, 1e-50),
-    (210, 1e-44),
-    (211, 1e-55),
+    ExpressionPoint("c", -100, "f1", -50),
+    ExpressionPoint("c",  -90, "f1", -34),
+    ExpressionPoint("c",  -75, "f1", -75),
+    ExpressionPoint("c",  -70, "f1", -27),
+    ExpressionPoint("c",   30, "f1", -100),
+    ExpressionPoint("c",   32, "f1", -93),
+    ExpressionPoint("c",   35, "f1", -72),
+    ExpressionPoint("c",  176, "f1", -50),
+    ExpressionPoint("c",  199, "f1", -90),
+    ExpressionPoint("c",  200, "f1", -50),
+    ExpressionPoint("c",  210, "f1", -44),
+    ExpressionPoint("c",  211, "f1", -55),
 ]
 significant_test_data_trans1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
 
 test_data_trans2 = [
-    (-30, 1e-2),
-    (23, 1e-44),
-    (26, 1e-59),
-    (30, 1e-99),
-    (130, 1e-81),
-    (131, 1e-23),
-    (131, 1e-76),
-    (131, 1e-4),
-    (200, 1e-2),
+    ExpressionPoint("c", -30, "f2", -2),
+    ExpressionPoint("c",  23, "f2", -44),
+    ExpressionPoint("c",  26, "f2", -59),
+    ExpressionPoint("c",  30, "f2", -99),
+    ExpressionPoint("c", 130, "f2", -81),
+    ExpressionPoint("c", 131, "f2", -23),
+    ExpressionPoint("c", 131, "f2", -76),
+    ExpressionPoint("c", 131, "f2", -4),
+    ExpressionPoint("c", 200, "f2", -2),
 ]
 significant_test_data_trans2 = [
-    (23, 1e-44),
-    (26, 1e-59),
-    (30, 1e-99),
-    (130, 1e-81),
-    (131, 1e-23),
-    (131, 1e-76),
+    ExpressionPoint("c",  23, "f2", -44),
+    ExpressionPoint("c",  26, "f2", -59),
+    ExpressionPoint("c",  30, "f2", -99),
+    ExpressionPoint("c", 130, "f2", -81),
+    ExpressionPoint("c", 131, "f2", -23),
+    ExpressionPoint("c", 131, "f2", -76),
 ]
 
-noisy_test_hexels = {"trans1": IPPMSpike("trans1"), "trans2": IPPMSpike("trans2")}
-noisy_test_hexels["trans1"].right_best_pairings = test_data_trans1
-noisy_test_hexels["trans2"].right_best_pairings = test_data_trans2
+noisy_test_hexels = {
+    "trans1":  test_data_trans1,
+    "trans2":  test_data_trans2,
+}
 
 
 # NOTE: Max Pooling is set to true in the first integ test only. IF we set it to true, then they all do same thing.
@@ -74,8 +75,8 @@ noisy_test_hexels["trans2"].right_best_pairings = test_data_trans2
 
 def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [ExpressionPairing(30, 1e-100)]
-    expected_denoised["trans2"].right_best_pairings = [ExpressionPairing(30, 1e-99)]
+    expected_denoised["trans1"] = [ExpressionPoint("c", 30, "f", 1e-100)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "f", 1e-99)]
 
     strategy = MaxPoolingStrategy(
         hemi=HEMI_RIGHT,
@@ -88,40 +89,40 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_MaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (-75, 1e-75),
-        (30, 1e-100),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99)]
+    expected_denoised["trans2"] = [("c", 30, "trans2", -99)]
 
     strategy = MaxPoolingStrategy(HEMI_RIGHT)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [(30, 1e-100)]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99)]
+    expected_denoised["trans1"] = [("c", 30, "trans1", -100)]
+    expected_denoised["trans2"] = [("c", 30, "trans2", -99)]
 
     strategy = AdaptiveMaxPoolingStrategy(
         hemi=HEMI_RIGHT,
@@ -133,23 +134,23 @@ def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_AdaptiveMaxPoolingStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (-75, 1e-75),
-        (30, 1e-100),
-        (199, 1e-90),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
+        ExpressionPoint("c", 199, "trans1", -90),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
 
     strategy = AdaptiveMaxPoolingStrategy(
         HEMI_RIGHT,
@@ -159,25 +160,25 @@ def test_AdaptiveMaxPoolingStrategy_AllDefault_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_GMMStrategy_AllTrue_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (176, 1e-50),
-        (30, 1e-100),
-        (199, 1e-90),
-        (-75, 1e-75),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c1", 176, "trans1", -50),
+        ExpressionPoint("c1", 30, "trans1", -100),
+        ExpressionPoint("c1", 199, "trans1", -90),
+        ExpressionPoint("c1", -75, "trans1", -75),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
 
     strategy = GMMStrategy(
         HEMI_RIGHT,
@@ -190,27 +191,27 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_GMMStrategy_AllDefault_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (30, 1e-100),
-        (199, 1e-90),
-        (-75, 1e-75),
-        (176, 1e-50),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", 30, "trans1", -100),
+        ExpressionPoint("c", 199, "trans1", -90),
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 176, "trans1", -50),
     ]
-    expected_denoised["trans2"].right_best_pairings = [
-        (30, 1e-99),
-        (130, 1e-81),
+    expected_denoised["trans2"] = [
+        ExpressionPoint("c", 30, "trans2", -99),
+        ExpressionPoint("c", 130, "trans2", -81),
     ]
 
     strategy = GMMStrategy(HEMI_RIGHT,
@@ -219,23 +220,23 @@ def test_GMMStrategy_AllDefault_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (-75, 1e-75),
-        (30, 1e-100),
-        (199, 1e-90),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
+        ExpressionPoint("c", 199, "trans1", -90),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
 
     strategy = DBSCANStrategy(
         HEMI_RIGHT,
@@ -247,46 +248,46 @@ def test_DBSCANStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_DBSCANStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (-100, 1e-50),
-        (-75, 1e-75),
-        (30, 1e-100),
-        (199, 1e-90),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", -100, "trans1", -50),
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
+        ExpressionPoint("c", 199, "trans1", -90),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
 
     strategy = DBSCANStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (199, 1e-90),
-        (-75, 1e-75),
-        (30, 1e-100),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", 199, "trans1", -90),
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 130, "trans2", -81), ExpressionPoint("c", 30, "trans2", -99)]
 
     strategy = MeanShiftStrategy(
         HEMI_RIGHT,
@@ -296,23 +297,23 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )
 
 
 def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"].right_best_pairings = [
-        (199, 1e-90),
-        (-75, 1e-75),
-        (30, 1e-100),
+    expected_denoised["trans1"] = [
+        ExpressionPoint("c", 199, "trans1", -90),
+        ExpressionPoint("c", -75, "trans1", -75),
+        ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"].right_best_pairings = [(130, 1e-81), (30, 1e-99)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 130, "trans2", -81), ExpressionPoint("c", 30, "trans2", -99)]
 
     strategy = MeanShiftStrategy(HEMI_RIGHT,
                                  n_timepoints=n_timepoints, n_hexels=n_hexels,
@@ -320,10 +321,10 @@ def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
-        set(actual_denoised["trans1"].right_best_pairings)
-        == set(expected_denoised["trans1"].right_best_pairings)
+        set(actual_denoised["trans1"])
+        == set(expected_denoised["trans1"])
     )
     assert (
-        set(actual_denoised["trans2"].right_best_pairings)
-        == set(expected_denoised["trans2"].right_best_pairings)
+        set(actual_denoised["trans2"])
+        == set(expected_denoised["trans2"])
     )

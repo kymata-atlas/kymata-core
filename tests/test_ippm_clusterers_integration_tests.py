@@ -1,4 +1,4 @@
-from kymata.ippm.data_tools import ExpressionPairing
+from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 
 # no data
@@ -6,64 +6,64 @@ test_case_no_data = []
 
 # starting with insignificant bin
 test_case_start_insignif = [
-    ExpressionPairing(-110, -35),
-    ExpressionPairing(10, -45),
-    ExpressionPairing(15, -80),
-    ExpressionPairing(25, -22),
-    ExpressionPairing(36, -65),
-    ExpressionPairing(70, -12),
-    ExpressionPairing(200, -99),
-    ExpressionPairing(213, -78),
+    ExpressionPoint("c", -110, "f", -35),
+    ExpressionPoint("c", 10, "f", -45),
+    ExpressionPoint("c", 15, "f", -80),
+    ExpressionPoint("c", 25, "f", -22),
+    ExpressionPoint("c", 36, "f", -65),
+    ExpressionPoint("c", 70, "f", -12),
+    ExpressionPoint("c", 200, "f", -99),
+    ExpressionPoint("c", 213, "f", -78),
 ]
 
 # ending with insignificant bin
 test_case_end_insignif = [
-    ExpressionPairing(10, -33),
-    ExpressionPairing(11, -45),
-    ExpressionPairing(33, -45),
-    ExpressionPairing(47, -33),
-    ExpressionPairing(50, -44),
-    ExpressionPairing(100, -34),
-    ExpressionPairing(111, -77),
-    ExpressionPairing(125, -55),
+    ExpressionPoint("c", 10, "f", -33),
+    ExpressionPoint("c", 11, "f", -45),
+    ExpressionPoint("c", 33, "f", -45),
+    ExpressionPoint("c", 47, "f", -33),
+    ExpressionPoint("c", 50, "f", -44),
+    ExpressionPoint("c", 100, "f", -34),
+    ExpressionPoint("c", 111, "f", -77),
+    ExpressionPoint("c", 125, "f", -55),
 ]
 
 # all insignificant
 test_case_all_insignif = [
-    ExpressionPairing(10, 44), -
-    ExpressionPairing(25, 66), -
-    ExpressionPairing(58, 94), -
-    ExpressionPairing(100, -32),
+    ExpressionPoint("c", 10, "f", -44),
+    ExpressionPoint("c", 25, "f", -66),
+    ExpressionPoint("c", 58, "f", -94),
+    ExpressionPoint("c", 100, "f", -32),
 ]
 
 # significant at the start and end
 test_case_start_end_signif = [
-    ExpressionPairing(4, -99),
-    ExpressionPairing(19, -32),
-    ExpressionPairing(26, -86),
-    ExpressionPairing(42, -22),
-    ExpressionPairing(50, -39),
-    ExpressionPairing(68, -67),
-    ExpressionPairing(99, -90),
-    ExpressionPairing(100, -100),
-    ExpressionPairing(101, -99),
-    ExpressionPairing(242, -32),
-    ExpressionPairing(249, -55),
+    ExpressionPoint("c", 4, "f", -99),
+    ExpressionPoint("c", 19, "f", -32),
+    ExpressionPoint("c", 26, "f", -86),
+    ExpressionPoint("c", 42, "f", -22),
+    ExpressionPoint("c", 50, "f", -39),
+    ExpressionPoint("c", 68, "f", -67),
+    ExpressionPoint("c", 99, "f", -90),
+    ExpressionPoint("c", 100, "f", -100),
+    ExpressionPoint("c", 101, "f", -99),
+    ExpressionPoint("c", 242, "f", -32),
+    ExpressionPoint("c", 249, "f", -55),
 ]
 
 # all significant bins
 test_case_all_signif = [
-    ExpressionPairing(11, -11),
-    ExpressionPairing(19, -44),
-    ExpressionPairing(23, -50),
-    ExpressionPairing(25, -44),
-    ExpressionPairing(28, -50),
-    ExpressionPairing(50, -70),
-    ExpressionPairing(55, -44),
-    ExpressionPairing(200, -80),
-    ExpressionPairing(210, -99),
-    ExpressionPairing(519, -99),
-    ExpressionPairing(524, -42),
+    ExpressionPoint("c", 11, "f", -11),
+    ExpressionPoint("c", 19, "f", -44),
+    ExpressionPoint("c", 23, "f", -50),
+    ExpressionPoint("c", 25, "f", -44),
+    ExpressionPoint("c", 28, "f", -50),
+    ExpressionPoint("c", 50, "f", -70),
+    ExpressionPoint("c", 55, "f", -44),
+    ExpressionPoint("c", 200, "f", -80),
+    ExpressionPoint("c", 210, "f", -99),
+    ExpressionPoint("c", 519, "f", -99),
+    ExpressionPoint("c", 524, "f", -42),
 ]
 
 

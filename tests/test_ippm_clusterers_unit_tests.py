@@ -1,24 +1,24 @@
 from unittest.mock import patch, MagicMock
 
-from kymata.ippm.data_tools import ExpressionPairing
+from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
 
 test_data = [
-    ExpressionPairing(-100, -50),
-    ExpressionPairing(-90, -34),
-    ExpressionPairing(-95, -8),
-    ExpressionPairing(-75, -75),
-    ExpressionPairing(-70, -27),
-    ExpressionPairing(0, -1),
-    ExpressionPairing(30, -100),
-    ExpressionPairing(32, -93),
-    ExpressionPairing(35, -72),
-    ExpressionPairing(50, -9),
-    ExpressionPairing(176, -50),
-    ExpressionPairing(199, -90),
-    ExpressionPairing(200, -50),
-    ExpressionPairing(210, -44),
-    ExpressionPairing(211, -55),
+    ExpressionPoint("c", -100, "f", -50),
+    ExpressionPoint("c", -90, "f", -34),
+    ExpressionPoint("c", -95, "f", -8),
+    ExpressionPoint("c", -75, "f", -75),
+    ExpressionPoint("c", -70, "f", -27),
+    ExpressionPoint("c", 0, "f", -1),
+    ExpressionPoint("c", 30, "f", -100),
+    ExpressionPoint("c", 32, "f", -93),
+    ExpressionPoint("c", 35, "f", -72),
+    ExpressionPoint("c", 50, "f", -9),
+    ExpressionPoint("c", 176, "f", -50),
+    ExpressionPoint("c", 199, "f", -90),
+    ExpressionPoint("c", 200, "f", -50),
+    ExpressionPoint("c", 210, "f", -44),
+    ExpressionPoint("c", 211, "f", -55),
 ]
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 

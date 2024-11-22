@@ -11,7 +11,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.mixture import GaussianMixture
 from sklearn.utils._testing import ignore_warnings
 
-from kymata.ippm.data_tools import ExpressionPairing
+from kymata.entities.expression import ExpressionPoint
 
 ANOMALOUS_CLUSTER_TAG = -1
 
@@ -28,7 +28,7 @@ class CustomClusterer(ABC):
         self.labels_: list[int] = []
 
     @abstractmethod
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
+    def fit(self, points: list[ExpressionPoint]) -> Self:
         """
         Mutates self.labels to a list whose elements correspond to the elements of `pairings`, 
         assigning an integer cluster label to each pairing.
@@ -49,8 +49,8 @@ class MaxPoolClusterer(CustomClusterer):
         self._label_size = label_size
         self._latency_offset_ms: float = latency_offset_ms
 
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
-        labels = self._assign_points_to_labels(pairings)
+    def fit(self, points: list[ExpressionPairing]) -> Self:
+        labels = self._assign_points_to_labels(points)
         count_of_data_per_label = Counter(labels)
         self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
         return self
@@ -85,11 +85,11 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
         self.labels_ = []
         self._base_label_size = base_label_size
 
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
-        labels = self._assign_points_to_labels(pairings)
+    def fit(self, points: list[ExpressionPairing]) -> Self:
+        labels = self._assign_points_to_labels(points)
         count_of_data_per_label = Counter(labels)
         labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
-        self.labels_ = self._merge_significant_labels(labels, pairings)
+        self.labels_ = self._merge_significant_labels(labels, points)
         return self
 
     def _merge_significant_labels(self, labels: list[int], pairings: list[ExpressionPairing]) -> list[int]:
@@ -182,11 +182,11 @@ class GMMClusterer(CustomClusterer):
         self._random_state = random_state
         self._should_evaluate_using_AIC = should_evaluate_using_AIC
 
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
-        optimal_model = self._grid_search_for_optimal_number_of_clusters(pairings)
+    def fit(self, points: list[ExpressionPairing]) -> Self:
+        optimal_model = self._grid_search_for_optimal_number_of_clusters(points)
         if optimal_model is not None:
             # None if no data.
-            self.labels_ = optimal_model.predict(np.array(pairings))
+            self.labels_ = optimal_model.predict(np.array(points))
             # do not remove anomalies for now
             # self.labels = self._tag_low_loglikelihood_points_as_anomalous(df, optimal_model)
         return self
@@ -298,9 +298,9 @@ class DBSCANClusterer(CustomClusterer):
             leaf_size=leaf_size,
             n_jobs=n_jobs)
 
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
+    def fit(self, points: list[ExpressionPairing]) -> Self:
         # A thin wrapper around DBSCAN
-        self._dbscan.fit(pairings)
+        self._dbscan.fit(points)
         self.labels_ = self._dbscan.labels_
         return self
 
@@ -320,8 +320,8 @@ class MeanShiftClusterer(CustomClusterer):
             cluster_all=cluster_all,
             n_jobs=n_jobs)
 
-    def fit(self, pairings: list[ExpressionPairing]) -> Self:
+    def fit(self, points: list[ExpressionPairing]) -> Self:
         # A thin wrapper around MeanShift
-        self._meanshift.fit(np.array(pairings))
+        self._meanshift.fit(np.array(points))
         self.labels_ = self._meanshift.labels_
         return self

@@ -9,8 +9,22 @@ from typing import NamedTuple
 
 import numpy as np
 
-from kymata.ippm.data_tools import SpikeDict, ExpressionPairing
+from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.hierarchy import TransformHierarchy
+
+
+# transform_name → points
+SpikeDict = dict[str, list[ExpressionPoint]]
+
+
+def merge_hemispheres(points_left: SpikeDict, points_right: SpikeDict) -> SpikeDict:
+    """Merges the best pairings from left- and right-hemisphere spikes into a single spike."""
+    points_both: SpikeDict = deepcopy(points_left)
+    for transform, points_right in points_right.items():
+        if transform not in points_left:
+            points_left[transform] = []
+        points_both[transform].extend(points_right)
+    return points_both
 
 
 class NodePosition(NamedTuple):
@@ -65,11 +79,9 @@ class IPPMBuilder:
         self._sort_spikes_by_latency_asc()
 
         self.graph: IPPMGraph = dict()
-        self.graph = self._build_graph_dict(deepcopy(self._hierarchy),
-                                            y_ordinate, serial_sequence, avoid_collinearity)
+        self.graph = self._build_graph_dict(y_ordinate, serial_sequence, avoid_collinearity)
 
     def _build_graph_dict(self,
-                          hierarchy: TransformHierarchy,
                           y_ordinate_method: str,
                           serial_sequence: list[list[str]],
                           avoid_collinearity: bool,
@@ -80,6 +92,7 @@ class IPPMBuilder:
                              hierarchy
         levels: maps node names in the hierarchy to level-idxs of vertically centred nodes
         """
+        hierarchy = deepcopy(self._hierarchy)
         graph = dict()
         if y_ordinate_method == YOrdinateStyle.progressive:
             y_axis_partition_size = (
@@ -129,8 +142,12 @@ class IPPMBuilder:
         return graph
 
     def _sort_spikes_by_latency_asc(self) -> None:
-        for function in self._spikes.keys():
-            self._spikes[function].best_pairings.sort(key=lambda x: x[0])
+        """
+        Mutates self._spikes to be sorted by latency (ascending)
+        """
+        points: list[ExpressionPoint]
+        for points in self._spikes.values():
+            points.sort(key=lambda x: x.latency)
 
     @classmethod
     def _get_childless_functions(cls, hierarchy: TransformHierarchy) -> set[str]:
@@ -169,7 +186,7 @@ class IPPMBuilder:
         if function_name in self._inputs:
             self.graph[function_name] = IPPMNode(100, NodePosition(0, y_ord), [])
         else:
-            childless_func_pairings = self._get_best_pairings(function_name)
+            childless_func_pairings = self._get_points_or_empty(function_name)
 
             if len(childless_func_pairings) == 0:
                 return self.graph
@@ -179,26 +196,29 @@ class IPPMBuilder:
 
         return self.graph
 
-    def _get_best_pairings(self, func: str) -> list[ExpressionPairing]:
-        if func in self._spikes.keys():
-            return self._spikes[func].best_pairings
+    def _get_points_or_empty(self, trans: str) -> list[ExpressionPoint]:
+        """
+        Returns the list of expression points associated with a transform, if the transform is present (otherwise an
+        empty list).
+        """
+        if trans in self._spikes:
+            return self._spikes[trans]
         return []
 
     def _create_nodes_for_childless_function(
         self,
         y_ord: float,
-        childless_func_pairings: list[ExpressionPairing],
+        childless_func_points: list[ExpressionPoint],
         function_name: str,
     ):
         def __map_magnitude_to_node_size(magnitude: float) -> float:
             return -10 * np.log10(magnitude)
 
-        for idx, pair in enumerate(childless_func_pairings):
-            latency, magnitude = pair
+        for idx, point in enumerate(childless_func_points):
             parent_function = [function_name + "-" + str(idx - 1)] if idx != 0 else []
             self.graph[function_name + "-" + str(idx)] = IPPMNode(
-                __map_magnitude_to_node_size(magnitude),
-                NodePosition(latency, y_ord),
+                __map_magnitude_to_node_size(point.logp_value),
+                NodePosition(point.latency, y_ord),
                 parent_function,
             )
 
@@ -214,7 +234,7 @@ class IPPMBuilder:
                 if parent in self._inputs:
                     self.graph[function_name + "-0"].inc_edges.append(parent)
                 else:
-                    parent_pairings = self._get_best_pairings(parent)
+                    parent_pairings = self._get_points_or_empty(parent)
                     if len(parent_pairings) > 0:
                         self.graph[function_name + "-0"].inc_edges.append(
                             parent + "-" + str(len(parent_pairings) - 1)

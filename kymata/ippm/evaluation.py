@@ -4,9 +4,9 @@ Metrics for evaluating IPPMs
 from statistics import NormalDist
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.ippm.data_tools import SpikeDict, IPPMSpike
+from kymata.entities.expression import ExpressionPoint
+from kymata.ippm.build import IPPMGraph, SpikeDict
 from kymata.ippm.hierarchy import TransformHierarchy
-from kymata.ippm.build import IPPMGraph
 
 
 def causality_violation_score(
@@ -37,38 +37,38 @@ def causality_violation_score(
 
     assert hemi == HEMI_LEFT or hemi == HEMI_RIGHT
 
-    def get_latency(func_spikes: IPPMSpike, mini: bool):
+    def get_latency(trans_points: list[ExpressionPoint], mini: bool):
         return (
             (
-                min(func_spikes.left_best_pairings, key=lambda x: x[0])
+                min(trans_points, key=lambda x: x.latency)
                 if hemi == HEMI_LEFT
-                else min(func_spikes.right_best_pairings, key=lambda x: x[0])
+                else min(trans_points, key=lambda x: x.latency)
             )
             if mini
             else (
-                max(func_spikes.left_best_pairings, key=lambda x: x[0])
+                max(trans_points, key=lambda x: x.latency)
                 if hemi == HEMI_LEFT
-                else max(func_spikes.right_best_pairings, key=lambda x: x[0])
+                else max(trans_points, key=lambda x: x.latency)
             )
         )
 
     causality_violations = 0
     total_arrows = 0
-    for func, inc_edges in hierarchy.items():
+    for trans, inc_edges in hierarchy.items():
         # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in time.
         # arrows go from latest inc_edge spike to the earliest func spike
 
-        if func in inputs:
+        if trans in inputs:
             continue
 
         if hemi == HEMI_LEFT:
-            if len(denoised_spikes[func].left_best_pairings) == 0:
+            if len(denoised_spikes[trans]) == 0:
                 continue
         else:
-            if len(denoised_spikes[func].right_best_pairings) == 0:
+            if len(denoised_spikes[trans]) == 0:
                 continue
 
-        child_latency = get_latency(denoised_spikes[func], mini=True)[0]
+        child_latency = get_latency(denoised_spikes[trans], mini=True)[0]
         for inc_edge in inc_edges:
             if inc_edge in inputs:
                 # input node, so parent latency is 0
@@ -80,10 +80,10 @@ def causality_violation_score(
 
             # We need to ensure the function has significant spikes
             if hemi == HEMI_LEFT:
-                if len(denoised_spikes[inc_edge].left_best_pairings) == 0:
+                if len(denoised_spikes[inc_edge]) == 0:
                     continue
             else:
-                if len(denoised_spikes[inc_edge].right_best_pairings) == 0:
+                if len(denoised_spikes[inc_edge]) == 0:
                     continue
 
             parent_latency = get_latency(denoised_spikes[inc_edge], mini=False)[0]
@@ -100,7 +100,7 @@ def causality_violation_score(
 
 def transform_recall(
     noisy_spikes: SpikeDict,
-    funcs: list[str],
+    transforms: list[str],
     ippm_dict: IPPMGraph,
     hemi: str,
 ) -> tuple[float, int, int]:
@@ -130,24 +130,22 @@ def transform_recall(
     assert hemi == HEMI_RIGHT or hemi == HEMI_LEFT
 
     # Step 1: Calculate significance level
+    # TODO: hard-coded alpha
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    # TODO: hard-coded correction
     bonferroni_corrected_alpha = 1 - (pow((1 - alpha), (1 / (2 * 201 * 200000))))
     funcs_present_in_data = 0
     detected_funcs = 0
-    for func in funcs:
-        pairings = (
-            noisy_spikes[func].right_best_pairings
-            if hemi == HEMI_RIGHT
-            else noisy_spikes[func].left_best_pairings
-        )
-        for latency, spike in pairings:
+    for trans in transforms:
+        point: ExpressionPoint
+        for point in noisy_spikes[trans]:
             # Step 2: Find a pairing that is significant
-            if spike <= bonferroni_corrected_alpha:
+            if point.logp_value <= bonferroni_corrected_alpha:
                 funcs_present_in_data += 1
 
                 # Step 3: Found a function, look in ippm_dict.keys() for the function.
                 for node_name in ippm_dict.keys():
-                    if func in node_name:
+                    if trans in node_name:
                         # Step 4: If found, then increment detected_funcs. Also increment funcs_pressent
                         detected_funcs += 1
                         break
