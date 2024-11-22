@@ -82,7 +82,7 @@ def main():
     parser.add_argument("--n-splits", type=int, default=400,
                         help="Number of splits to split the recording into, "
                              "(set to stimulus_length/seconds_per_split for full file)")
-    parser.add_argument("--n-derangements", type=int, default=5,
+    parser.add_argument("--n-derangements", type=int, default=6,
                         help="Number of deragements for the null distribution")
     parser.add_argument("--start-latency", type=float, default=-200,
                         help="Earliest latency to check in cross correlation")
@@ -105,7 +105,7 @@ def main():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent.parent, "dataset_config", args.config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 

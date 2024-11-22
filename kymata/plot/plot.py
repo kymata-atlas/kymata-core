@@ -120,9 +120,10 @@ def _minimap_mosaic(
     )
 
 
-def _hexel_minimap_data(
-    expression_set: HexelExpressionSet, alpha_logp: float, show_transforms: list[str]
-) -> tuple[NDArray, NDArray]:
+def _hexel_minimap_data(expression_set: HexelExpressionSet,
+                        alpha_logp: float,
+                        show_transforms: list[str]
+                        ) -> tuple[NDArray, NDArray]:
     """
     Generates data arrays for a minimap visualization of significant hexels in a HexelExpressionSet.
 
@@ -342,6 +343,7 @@ def expression_plot(
     minimap_view: str = "lateral",
     minimap_surface: str = "inflated",
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
+    display_latency_range: Optional[tuple[float | None, float | None]] = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -392,6 +394,10 @@ def expression_plot(
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
+        display_latency_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
+            minimap view to only the specified time window, and highlight the time window on the expression plot.
+            Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for half-open
+            intervals.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -429,6 +435,10 @@ def expression_plot(
         # List specified, then pair up in order
         assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
+
+    if display_latency_range is None:
+        display_latency_range = (None, None)
+    assert len(display_latency_range) == 2
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -629,18 +639,32 @@ def expression_plot(
         ]
         ax.set_yticklabels(pval_labels)
 
+        # Show highlighted range
+        if display_latency_range != (None, None):
+            start, stop = display_latency_range
+            if start is None:
+                start = ax.get_xlim()[0]
+            else:
+                start = start * 1000  # Convert to ms
+            if stop is None:
+                stop = ax.get_xlim()[1]
+            else:
+                stop = stop * 1000  # Convert to ms
+
+            ax.axvspan(xmin=start, xmax=stop, color="y", alpha=0.5, lw=0, zorder=-10)
+
     # Plot minimap
     if minimap:
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
-                expression_set,
+                expression_set.crop(*display_latency_range),
                 minimap_axis=axes[_AxName.minimap_main],
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
             )
         elif isinstance(expression_set, HexelExpressionSet):
             _plot_minimap_hexel(
-                expression_set,
+                expression_set.crop(*display_latency_range),
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_top],
                 rh_minimap_axis=axes[_AxName.minimap_bottom],
