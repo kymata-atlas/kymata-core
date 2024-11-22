@@ -263,30 +263,29 @@ def test_ses_best_transform():
 
 def test_ses_best_transform_with_one_channel_all_1s():
     from numpy import array
-    from numpy.typing import NDArray
     
     sensors = [str(i) for i in range(4)]
-    transform_a_data: NDArray = array(
+    transform_a_data = array(
         p_to_logp(
             array(
                 [
-                    #  0    1    2  latencies
-                    [1, 1, 1],  # 0  <-- set sensor 0 to 1 for some reason
-                    [1, 1, 0.2],  # 1
-                    [0.1, 1, 1],  # 2
-                    [0.2, 1, 1],  # 3 sensors
+                    #  0    1    2 latencies
+                    [  1,   1,   1],  # 0  <-- set sensor 0 to 1 for some reason
+                    [  1,   1, 0.2],  # 1
+                    [0.1,   1,   1],  # 2
+                    [0.2,   1,   1],  # 3 sensors
                 ]
             )
         )
     )
-    transform_b_data: NDArray = array(
+    transform_b_data = array(
         p_to_logp(
             array(
                 [
-                    [1, 1, 1],
-                    [1, 0.1, 1],
-                    [1, 0.2, 1],
-                    [1, 1, 0.1],
+                    [  1,   1,    1],
+                    [  1, 0.1,    1],
+                    [  1, 0.2,    1],
+                    [  1,   1,  0.1],
                 ]
             )
         )
@@ -300,7 +299,7 @@ def test_ses_best_transform_with_one_channel_all_1s():
     best_transforms = es.best_transforms()
     correct = [
         ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
-        ExpressionPoint("2", 0, "1", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
         ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
     ]
     assert best_transforms == correct
