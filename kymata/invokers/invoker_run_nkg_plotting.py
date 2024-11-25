@@ -40,7 +40,6 @@ def main():
             ylim=-200,
         )
 
-        fig.show()
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
 
     elif function_family_type == "ANN":

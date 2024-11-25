@@ -21,11 +21,13 @@ ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 module load apptainer
 apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
-  /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
+  /imaging/local/software/singularity_images/ubuntu/ubuntu_22.04.5.sif \
   bash -c \
     " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-core/ ; \
       export VENV_PATH=~/poetry/ ; \
-      \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
+      export PYVISTA_OFF_SCREEN=true ;
+      export PYVISTA_USE_IPYVTK=true ;
+      xvfb-run \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
         --config dataset4.yaml \
         --input-stream auditory \
         --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
