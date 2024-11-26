@@ -1,5 +1,4 @@
 from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet
-from kymata.ippm.build import IPPMBuilder
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList
@@ -85,5 +84,4 @@ class IPPM:
             expression_set = denoising_strategy.denoise(expression_set)
 
         # Build the graph
-        self._builder = IPPMBuilder(expression_set.best_transforms(), hierarchy, **builder_kwargs)
         self.graph = IPPMGraph(hierarchy, expression_set.best_transforms())

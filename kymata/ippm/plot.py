@@ -19,15 +19,6 @@ from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.ippm import IPPM
 
 
-class PlottableNode(NamedTuple):
-    label: str
-    x: float
-    y: float
-    color: str
-    size: float
-    is_terminal: bool
-
-
 class _YOrdinateStyle(StrEnum):
     """
     Enumeration for Y-ordinate plotting styles.
@@ -40,9 +31,18 @@ class _YOrdinateStyle(StrEnum):
     centered    = "centered"
 
 
+class _PlottableNode(NamedTuple):
+    x: float
+    y: float
+    label: str
+    color: str
+    size: float
+    is_terminal: bool
+
+
 class _PlottableIPPMGraph:
     """
-    An IPPMGraph, with coordinates, colours and annotations attached to each node.
+    An IPPMGraph, with coordinates, colours, annotations, etc. attached to each node.
     """
     def __init__(self,
                  ippm_graph: IPPMGraph,
@@ -50,7 +50,7 @@ class _PlottableIPPMGraph:
                  y_ordinate_style: str,
                  avoid_collinearity: bool,
                  serial_sequence: Optional[list[list[str]]],
-                 scale_nodes: bool
+                 scale_nodes: bool,
                  ):
 
         ippm_graph = copy(ippm_graph)
@@ -105,7 +105,7 @@ class _PlottableIPPMGraph:
         self.graph: DiGraph = relabel_nodes(
             ippm_graph.graph_last_to_first,
             {
-                point: PlottableNode(
+                point: _PlottableNode(
                     label=trans,
                     x=point.latency,
                     y=y_ordinates[point.transform],
@@ -169,7 +169,7 @@ def plot_ippm(
     edge_colors = []
     bsplines = []
     edge_labels = []
-    node: PlottableNode
+    node: _PlottableNode
     for i, node in enumerate(plottable_graph.graph.nodes):
         node_colors.append(node.color)
         node_sizes.append(node.size)
@@ -177,7 +177,7 @@ def plot_ippm(
         node_y.append(node.y)
 
         incoming_edge_endpoints = []
-        pred: PlottableNode
+        pred: _PlottableNode
         for pred in plottable_graph.graph.predecessors(node):
             # save edge coordinates and color the edge the same color as the finishing node.
             incoming_edge_endpoints.append(
