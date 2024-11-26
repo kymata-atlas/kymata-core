@@ -9,7 +9,7 @@ TransformHierarchy = dict[str, list[str]]
 
 
 # transform_name → points
-PointCloud = dict[str, list[ExpressionPoint]]
+GroupedPoints = dict[str, list[ExpressionPoint]]
 
 
 class CandidateTransformList:
@@ -67,8 +67,8 @@ class CandidateTransformList:
         return seq
 
 
-def group_points_by_transform(points: list[ExpressionPoint], ctl: Optional[CandidateTransformList] = None) -> PointCloud:
-    d: PointCloud = dict()
+def group_points_by_transform(points: list[ExpressionPoint], ctl: Optional[CandidateTransformList] = None) -> GroupedPoints:
+    d: GroupedPoints = dict()
     if ctl is not None:
         # Initialise with empty lists for transforms with no points
         for t in ctl.transforms:

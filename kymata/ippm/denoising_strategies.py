@@ -8,7 +8,7 @@ from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
 from ..entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
-from .hierarchy import group_points_by_transform, PointCloud
+from .hierarchy import group_points_by_transform, GroupedPoints
 from ..math.p_values import logp_to_p, p_to_logp
 
 
@@ -131,7 +131,7 @@ class DenoisingStrategy(ABC):
 
         return expression_set
 
-    def _denoise_spikes(self, spikes: PointCloud) -> PointCloud:
+    def _denoise_spikes(self, spikes: GroupedPoints) -> GroupedPoints:
         """
         For a set of transforms, cluster their significant points and retain the most significant points per cluster.
 

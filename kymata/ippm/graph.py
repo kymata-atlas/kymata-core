@@ -3,7 +3,7 @@ from copy import deepcopy, copy
 from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.hierarchy import PointCloud, CandidateTransformList, group_points_by_transform
+from kymata.ippm.hierarchy import GroupedPoints, CandidateTransformList, group_points_by_transform
 
 
 class IPPMGraph:
@@ -42,7 +42,7 @@ class IPPMGraph:
                     graph.add_edge(node, other_node)
 
         self.candidate_transform_list: CandidateTransformList = ctl
-        self.points: PointCloud = points_by_transform
+        self.points: GroupedPoints = points_by_transform
         self._graph_full: DiGraph = graph
 
     def __copy__(self):
