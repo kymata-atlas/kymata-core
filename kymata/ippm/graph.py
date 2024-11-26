@@ -3,7 +3,7 @@ from copy import deepcopy, copy
 from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.hierarchy import PointCloud, CandidateTransformList
+from kymata.ippm.hierarchy import PointCloud, CandidateTransformList, group_points_by_transform
 
 
 class IPPMGraph:
@@ -12,20 +12,21 @@ class IPPMGraph:
 
     IPPMGraph.graph nodes are IPPMNode2 objects
     """
-    def __init__(self, ctl: CandidateTransformList, points: PointCloud):
+    def __init__(self, ctl: CandidateTransformList, points: list[ExpressionPoint]):
 
         graph = DiGraph()
 
         # Sort points by latency ascending
         points = deepcopy(points)
-        for trans in points.keys():
-            points[trans].sort(key=lambda p: p.latency)
+        points_by_transform = group_points_by_transform(points)
+        for trans in points_by_transform.keys():
+            points_by_transform[trans].sort(key=lambda p: p.latency)
 
         # Copy the nodes for each instance of a point
         # Note: if the transform is not present in the data, it will
         #       not be added to the graph
         for ctl_transform in ctl.transforms:
-            for point in points[ctl_transform]:
+            for point in points_by_transform[ctl_transform]:
                 graph.add_node(point)
 
         # Add ALL relevant edges
@@ -41,11 +42,12 @@ class IPPMGraph:
                     graph.add_edge(node, other_node)
 
         self.candidate_transform_list: CandidateTransformList = ctl
-        self.points: PointCloud = points
+        self.points: PointCloud = points_by_transform
         self._graph_full: DiGraph = graph
 
     def __copy__(self):
-        return IPPMGraph(ctl=copy(self.candidate_transform_list), points=copy(self.points))
+        return IPPMGraph(ctl=copy(self.candidate_transform_list),
+                         points=[p for _, points in self.points.items() for p in points])
 
     @property
     def transforms(self) -> set[str]:

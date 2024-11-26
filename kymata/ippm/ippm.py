@@ -1,8 +1,8 @@
-from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet
+from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, \
+    BLOCK_RIGHT
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList
-
 
 _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
@@ -84,4 +84,12 @@ class IPPM:
             expression_set = denoising_strategy.denoise(expression_set)
 
         # Build the graph
-        self.graph = IPPMGraph(hierarchy, expression_set.best_transforms())
+        self.graphs: dict[str, IPPMGraph] = dict()
+        if isinstance(expression_set, HexelExpressionSet):
+            btl, btr = expression_set.best_transforms()
+            self.graphs[BLOCK_LEFT] = IPPMGraph(hierarchy, btl)
+            self.graphs[BLOCK_RIGHT] = IPPMGraph(hierarchy, btr)
+        elif isinstance(expression_set, SensorExpressionSet):
+            self.graphs[BLOCK_SCALP] = IPPMGraph(hierarchy, expression_set.best_transforms())
+        else:
+            raise NotImplementedError()

@@ -79,6 +79,10 @@ class DenoisingStrategy(ABC):
     def denoise(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
         ...
 
+    @overload
+    def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+        ...
+
     def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
         if isinstance(expression_set, HexelExpressionSet):
             return self._denoise_hexel_expression_set(expression_set)

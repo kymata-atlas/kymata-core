@@ -2,6 +2,7 @@ from collections import defaultdict, Counter
 from copy import copy
 from enum import StrEnum
 from typing import Optional, NamedTuple
+from warnings import warn
 
 import matplotlib.patheffects as pe
 import numpy as np
@@ -14,7 +15,7 @@ from scipy.interpolate import splev
 from sklearn.metrics import euclidean_distances
 from sklearn.preprocessing import normalize
 
-from kymata.entities.expression import ExpressionPoint
+from kymata.entities.expression import ExpressionPoint, BLOCK_LEFT, BLOCK_SCALP
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.ippm import IPPM
 
@@ -121,6 +122,7 @@ class _PlottableIPPMGraph:
 def plot_ippm(
     ippm: IPPM,
     colors: dict[str, str],
+    hemisphere: Optional[str] = None,
     title: Optional[str] = None,
     y_ordinate_style: str = _YOrdinateStyle.centered,
     scale_nodes: bool = False,
@@ -133,13 +135,14 @@ def plot_ippm(
     serial_sequence: Optional[list[list[str]]] = None
 ):
     """
-    Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
+    Plots an IPPM graph.
 
     Args:
-        graph (NodeDict): Dictionary with keys as node names and values as IPPMNode objects.
-            Contains nodes as keys and magnitude, position, and incoming edges in the IPPMNode object.
+        ippm (IPPM): IPPM object to plot.
         colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each transform. The nodes and edges are colored accordingly.
+        hemisphere (str): When generating from a HexelExpressionSet, specify whether the left or the right hemisphere
+            should be used.
         title (str): Title of the plot.
         scale_nodes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
@@ -147,7 +150,14 @@ def plot_ippm(
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
     """
 
-    plottable_graph = _PlottableIPPMGraph(ippm.graph,
+    if hemisphere is None:
+        if BLOCK_LEFT in ippm.graphs:
+            hemisphere = BLOCK_LEFT
+            warn(f"No hemisphere specified, using {hemisphere}")
+        elif BLOCK_SCALP in ippm.graphs:
+            hemisphere = BLOCK_SCALP
+
+    plottable_graph = _PlottableIPPMGraph(ippm.graphs[hemisphere],
                                           avoid_collinearity=avoid_collinearity,
                                           serial_sequence=serial_sequence,
                                           colors=colors,
@@ -353,6 +363,8 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
     tck = [t, [x, y], 3]
     u3 = np.linspace(0, 1, (max(length * 2, 70)), endpoint=True)
+    # Don't know why this is raising a warning
+    # noinspection PyTypeChecker
     bspline_path: list[NDArray] = splev(u3, tck)
 
     return bspline_path
