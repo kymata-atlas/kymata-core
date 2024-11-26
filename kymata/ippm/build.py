@@ -4,35 +4,16 @@ information to construct a dict containing node names as keys and Node objects (
 """
 from collections import defaultdict, Counter
 from copy import deepcopy
-from enum import StrEnum
 from typing import NamedTuple
 
 import numpy as np
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.hierarchy import TransformHierarchy
+from kymata.ippm.graph import NodePosition, YOrdinateStyle
+from kymata.ippm.hierarchy import group_points_by_transform, TransformHierarchy, PointCloud
 
 
-# transform_name → points
-SpikeDict = dict[str, list[ExpressionPoint]]
-
-
-def merge_hemispheres(points_left: SpikeDict, points_right: SpikeDict) -> SpikeDict:
-    """Merges the best pairings from left- and right-hemisphere spikes into a single spike."""
-    points_both: SpikeDict = deepcopy(points_left)
-    for transform, points_right in points_right.items():
-        if transform not in points_left:
-            points_left[transform] = []
-        points_both[transform].extend(points_right)
-    return points_both
-
-
-class NodePosition(NamedTuple):
-    x: float
-    y: float
-
-
-class IPPMNode(NamedTuple):
+class IPPMNode_OLD(NamedTuple):
     """
     A node to be drawn in an IPPM graph.
     """
@@ -42,25 +23,16 @@ class IPPMNode(NamedTuple):
 
 
 # Maps function names to nodes
-IPPMGraph = dict[str, IPPMNode]
-
-
-class YOrdinateStyle(StrEnum):
-    """
-    Enumeration for Y-ordinate plotting styles.
-
-    Attributes:
-        progressive: Points are plotted with increasing y ordinates.
-        centered: Points are vertically centered.
-    """
-    progressive = "progressive"
-    centered    = "centered"
+IPPMGraphDict = dict[str, IPPMNode_OLD]
 
 
 class IPPMBuilder:
+    """
+    Class responsible for building IPPM graphs from ExpressionPoints
+    """
     def __init__(
         self,
-        spikes: SpikeDict,
+        points: list[ExpressionPoint],
         inputs: list[str],
         hierarchy: TransformHierarchy,
         y_ordinate: str = YOrdinateStyle.progressive,
@@ -72,20 +44,20 @@ class IPPMBuilder:
                          second entry is list of all functions immediately downstream of inputs, etc.
         avoid_collinearity: if True, vertically nudges each successive serial step to prevent steps from overlapping
         """
-        self._spikes: SpikeDict = deepcopy(spikes)
+        self._points: PointCloud = group_points_by_transform(points, hierarchy)
         self._inputs: list[str] = inputs
         self._hierarchy: TransformHierarchy = hierarchy
 
         self._sort_spikes_by_latency_asc()
 
-        self.graph: IPPMGraph = dict()
+        self.graph: IPPMGraphDict = dict()
         self.graph = self._build_graph_dict(y_ordinate, serial_sequence, avoid_collinearity)
 
     def _build_graph_dict(self,
                           y_ordinate_method: str,
                           serial_sequence: list[list[str]],
                           avoid_collinearity: bool,
-                          ) -> IPPMGraph:
+                          ) -> IPPMGraphDict:
         """
         y_ordinate_method == "progressive" for y ordinates to be selected progressively from the input
         y_ordinate_method == "centred" for y ordinates to be centred vertically based on assigned levels in the
@@ -146,7 +118,7 @@ class IPPMBuilder:
         Mutates self._spikes to be sorted by latency (ascending)
         """
         points: list[ExpressionPoint]
-        for points in self._spikes.values():
+        for points in self._points.values():
             points.sort(key=lambda x: x.latency)
 
     @classmethod
@@ -181,10 +153,10 @@ class IPPMBuilder:
         y_ord += positive_nudge_frac * spacing / 2
         return y_ord
 
-    def _create_nodes_and_edges_for_function(self, function_name: str, y_ord: float) -> IPPMGraph:
+    def _create_nodes_and_edges_for_function(self, function_name: str, y_ord: float) -> IPPMGraphDict:
         func_parents = self._hierarchy[function_name]
         if function_name in self._inputs:
-            self.graph[function_name] = IPPMNode(100, NodePosition(0, y_ord), [])
+            self.graph[function_name] = IPPMNode_OLD(100, NodePosition(0, y_ord), [])
         else:
             childless_func_pairings = self._get_points_or_empty(function_name)
 
@@ -201,8 +173,8 @@ class IPPMBuilder:
         Returns the list of expression points associated with a transform, if the transform is present (otherwise an
         empty list).
         """
-        if trans in self._spikes:
-            return self._spikes[trans]
+        if trans in self._points:
+            return self._points[trans]
         return []
 
     def _create_nodes_for_childless_function(
@@ -216,7 +188,7 @@ class IPPMBuilder:
 
         for idx, point in enumerate(childless_func_points):
             parent_function = [function_name + "-" + str(idx - 1)] if idx != 0 else []
-            self.graph[function_name + "-" + str(idx)] = IPPMNode(
+            self.graph[function_name + "-" + str(idx)] = IPPMNode_OLD(
                 __map_magnitude_to_node_size(point.logp_value),
                 NodePosition(point.latency, y_ord),
                 parent_function,
@@ -228,8 +200,8 @@ class IPPMBuilder:
         self,
         parents: list[str],
         function_name: str,
-    ) -> IPPMGraph:
-        if function_name in self._spikes.keys():
+    ) -> IPPMGraphDict:
+        if function_name in self._points.keys():
             for parent in parents:
                 if parent in self._inputs:
                     self.graph[function_name + "-0"].inc_edges.append(parent)
@@ -241,3 +213,5 @@ class IPPMBuilder:
                         )
 
         return self.graph
+
+

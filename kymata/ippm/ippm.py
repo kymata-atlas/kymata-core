@@ -1,12 +1,11 @@
 from typing import Optional
-from warnings import warn
 
 from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet
-from kymata.ippm.build import IPPMBuilder, SpikeDict
+from kymata.ippm.build import IPPMBuilder
+from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.hierarchy import CandidateTransformList
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
-from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 from kymata.ippm.plot import plot_ippm
-
 
 _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
@@ -41,26 +40,10 @@ def _get_n_channels(es: ExpressionSet):
 
 class IPPM:
     def __init__(self,
-                 spikes: SpikeDict | tuple[SpikeDict, SpikeDict],
-                 inputs: list[str],
-                 hierarchy: TransformHierarchy):
-
-        # Deal with multiple hemispheres
-        if isinstance(spikes, tuple):
-            spikes_left, spikes_right = spikes
-            warn("IPPM not implemented for multiple hemispheres yet. "
-                 "Just using left hemisphere.")
-            spikes = spikes_left
-
-        self._builder = IPPMBuilder(spikes, inputs, hierarchy)
-
-    @classmethod
-    def from_expression_set(cls,
-                            expression_set: ExpressionSet,
-                            hierarchy: CandidateTransformList,
-                            merge_hemis: bool = False,
-                            denoiser: str | None = _default_denoiser,
-                            **kwargs):
+                 expression_set: ExpressionSet,
+                 hierarchy: CandidateTransformList,
+                 denoiser: str | None = _default_denoiser,
+                 **kwargs):
 
         # update kwargs
         for kw, arg in _default_denoiser_kwargs.items():
@@ -99,15 +82,15 @@ class IPPM:
         else:
             denoising_strategy = None
 
+        # Do the denoising
         if denoising_strategy is not None:
             expression_set = denoising_strategy.denoise(expression_set)
 
-        return cls(spikes=expression_set.best_transforms(),
-                   inputs=[h.name for h in hierarchy.inputs],
-                   hierarchy=hierarchy,
-                   **builder_kwargs)
+        # Build the graph
+        self._builder = IPPMBuilder(expression_set.best_transforms(), hierarchy, **builder_kwargs)
+        self.graph = IPPMGraph(hierarchy, expression_set.best_transforms())
 
     def plot(self, colors: Optional[dict[str, str]] = None):
         if colors is None:
             colors = dict()
-        plot_ippm(self._builder.graph, colors)
+        plot_ippm(self.graph, colors)

@@ -2,13 +2,13 @@ from abc import ABC
 from copy import deepcopy, copy
 from random import shuffle
 from statistics import NormalDist
-from typing import Optional
+from typing import Optional, overload
 
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
-from .build import SpikeDict
-from ..entities.expression import ExpressionPoint
+from ..entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
+from .hierarchy import group_points_by_transform, PointCloud
 from ..math.p_values import logp_to_p, p_to_logp
 
 
@@ -43,7 +43,7 @@ class DenoisingStrategy(ABC):
                 Indicates whether we want to exclude insignificant spikes before clustering.
         """
 
-        self._clusterer: CustomClusterer = None
+        self._clusterer: CustomClusterer
         self._should_normalise = should_normalise
         self._should_cluster_only_latency = should_cluster_only_latency
         self._should_max_pool = should_max_pool
@@ -71,14 +71,70 @@ class DenoisingStrategy(ABC):
         )
         return threshold_for_significance
 
-    def denoise(self, spikes: SpikeDict) -> SpikeDict:
+    @overload
+    def denoise(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
+        ...
+
+    @overload
+    def denoise(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
+        ...
+
+    def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+        if isinstance(expression_set, HexelExpressionSet):
+            return self._denoise_hexel_expression_set(expression_set)
+        elif isinstance(expression_set, SensorExpressionSet):
+            return self._denoise_sensor_expression_set(expression_set)
+        else:
+            raise NotImplementedError()
+
+    def _denoise_sensor_expression_set(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
+        expression_set = copy(expression_set)
+        # Get the denoised spikes from the expression set's data
+        expression_points = expression_set.best_transforms()
+        original_spikes = group_points_by_transform(expression_points)
+        denoised_spikes = self._denoise_spikes(original_spikes)
+
+        for transform in expression_set.transforms:
+            denoised_points = denoised_spikes.get(transform, [])
+            # For any points which didn't make it to the denoised set, set their logp values to 0
+            for point in original_spikes[transform]:
+                if point in denoised_points:
+                    continue
+                expression_set.clear_point(point.channel, point.latency)
+
+        return expression_set
+
+    def _denoise_hexel_expression_set(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
+        expression_set = copy(expression_set)
+        expression_points_left, expression_points_right = expression_set.best_transforms()
+        original_spikes_left = group_points_by_transform(expression_points_left)
+        original_spikes_right = group_points_by_transform(expression_points_right)
+        denoised_spikes_left = self._denoise_spikes(original_spikes_left)
+        denoised_spikes_right = self._denoise_spikes(original_spikes_right)
+
+        for transform in expression_set.transforms:
+            denoised_points_left = denoised_spikes_left.get(transform, [])
+            denoised_points_right = denoised_spikes_right.get(transform, [])
+            for point in original_spikes_left[transform]:
+                # For any points which didn't make it to the denoised set, set their logp values to 0
+                if point in denoised_points_left:
+                    continue
+                expression_set.clear_point_left(point.channel, point.latency)
+            for point in original_spikes_right[transform]:
+                if point in denoised_points_right:
+                    continue
+                expression_set.clear_point_right(point.channel, point.latency)
+
+        return expression_set
+
+    def _denoise_spikes(self, spikes: PointCloud) -> PointCloud:
         """
-        For a set of transforms, cluster their IPPMSpike and retain the most significant spikes per cluster.
+        For a set of transforms, cluster their significant points and retain the most significant points per cluster.
 
         Algorithm
         ---------
         For each transform,
-            1. We create a list of ExpressionPairings containing only significant spikes.
+            1. We create a list of ExpressionPoints containing only significant points.
                 1.1) [Optional] Perform any preprocessing.
                     - should_normalise: Scale each dimension to have a total length of 1.
                     - cluster_only_latency: Remove magnitude dimension.
@@ -94,19 +150,26 @@ class DenoisingStrategy(ABC):
             hemisphere.
         :return: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
         """
-        for func, points in spikes.items():
+
+        spikes = deepcopy(spikes)
+
+        for trans, points in spikes.items():
 
             points = copy(points)
             # Apply filters
             if self._should_exclude_insignificant:
-                points = self._filter_out_insignificant_pairings(points)
+                threshold = self._estimate_threshold_for_significance(
+                    self._normal_dist_threshold,
+                    n_timepoints=n_timepoints,
+                    n_hexels=n_hexels
+                )
+                points = self._filter_out_insignificant_pairings(points, threshold)
             if self._should_shuffle:
                 # shuffle to remove correlations between rows
                 shuffle(points)
 
-
             if len(points) == 0:
-                spikes[func] = points
+                spikes[trans] = points
                 continue
 
             preprocessed_points = self._preprocess(points)
@@ -114,16 +177,16 @@ class DenoisingStrategy(ABC):
             self._clusterer: CustomClusterer = self._clusterer.fit(preprocessed_points)
             # It is important you don't use the preprocessed_df to get the denoised because
             # we do not want to plot the preprocessed latencies and magnitudes.
-            spikes[func] = self._get_denoised_time_series(points)
+            spikes[trans] = self._get_denoised_time_series(points)
 
             if self._should_max_pool:
-                spikes[func] = self._perform_max_pooling(spikes[func])
+                spikes[trans] = self._perform_max_pooling(spikes[trans])
 
             self._clusterer.reset()
 
         return spikes
 
-    def _filter_out_insignificant_pairings(self, points: list[ExpressionPoint]) -> list[ExpressionPoint]:
+    def _filter_out_insignificant_pairings(self, points: list[ExpressionPoint], threshold: float) -> list[ExpressionPoint]:
         """
         For a list of ExpressionPoints, remove all that are not statistically significant and return a list of those
         that remain.
@@ -133,11 +196,8 @@ class DenoisingStrategy(ABC):
         """
         return [
             p for p in points
-            if logp_to_p(p.logp_value) <= self._estimate_threshold_for_significance(
-                self._normal_dist_threshold,
-                n_timepoints=n_timepoints,
-                n_hexels=n_hexels
-            )
+            # Lower is better
+            if logp_to_p(p.logp_value) < threshold
         ]
 
     def _preprocess(self, points: list[ExpressionPoint]) -> list[ExpressionPoint]:

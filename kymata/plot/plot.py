@@ -544,7 +544,7 @@ def expression_plot(
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
             bottom_chans -= both_chans
-            for ax, best_funs_this_ax, chans_this_ax in zip(
+            for ax, best_trans_this_ax, chans_this_ax in zip(
                 expression_axes_list, best_transforms, (top_chans, bottom_chans)
             ):
                 # Plot filled
@@ -555,7 +555,7 @@ def expression_plot(
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
                     transform_data=[ep
-                                    for ep in best_funs_this_ax
+                                    for ep in best_trans_this_ax
                                     if ep.transform == transform
                                     and ep.channel in chans_this_ax],
                     color=color[transform],
@@ -574,7 +574,7 @@ def expression_plot(
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
                     transform_data=[ep
-                                    for ep in best_funs_this_ax
+                                    for ep in best_trans_this_ax
                                     if ep.transform == transform
                                     and ep.channel in both_chans],
                     color=color[transform],
@@ -589,7 +589,7 @@ def expression_plot(
         # With non-sensor data, or non-paired axes, we can treat these cases together
         else:
             # As normal, plot appropriate filled points in each axis
-            for ax, best_funs_this_ax in zip(expression_axes_list, best_transforms):
+            for ax, best_trans_this_ax in zip(expression_axes_list, best_transforms):
                 (
                     x_min,
                     x_max,
@@ -597,7 +597,7 @@ def expression_plot(
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
                     transform_data=[ep
-                                    for ep in best_funs_this_ax
+                                    for ep in best_trans_this_ax
                                     if ep.transform == transform
                                     and ep.channel in chosen_channels],
                     color=color[transform],
