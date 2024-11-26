@@ -10,7 +10,7 @@ class IPPMGraph:
     """
     Represents an actual IPPM graph, with nodes relating to actual expression points.
 
-    IPPMGraph.graph nodes are IPPMNode2 objects
+    IPPMGraph.graph nodes are ExpressionPoints.
     """
     def __init__(self, ctl: CandidateTransformList, points: list[ExpressionPoint]):
 

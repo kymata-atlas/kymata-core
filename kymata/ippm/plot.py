@@ -151,13 +151,13 @@ def plot_ippm(
     """
 
     if hemisphere is None:
-        if BLOCK_LEFT in ippm.graphs:
+        if BLOCK_LEFT in ippm:
             hemisphere = BLOCK_LEFT
             warn(f"No hemisphere specified, using {hemisphere}")
-        elif BLOCK_SCALP in ippm.graphs:
+        elif BLOCK_SCALP in ippm:
             hemisphere = BLOCK_SCALP
 
-    plottable_graph = _PlottableIPPMGraph(ippm.graphs[hemisphere],
+    plottable_graph = _PlottableIPPMGraph(ippm[hemisphere],
                                           avoid_collinearity=avoid_collinearity,
                                           serial_sequence=serial_sequence,
                                           colors=colors,

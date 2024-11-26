@@ -84,12 +84,18 @@ class IPPM:
             expression_set = denoising_strategy.denoise(expression_set)
 
         # Build the graph
-        self.graphs: dict[str, IPPMGraph] = dict()
+        self._graphs: dict[str, IPPMGraph] = dict()
         if isinstance(expression_set, HexelExpressionSet):
             btl, btr = expression_set.best_transforms()
-            self.graphs[BLOCK_LEFT] = IPPMGraph(hierarchy, btl)
-            self.graphs[BLOCK_RIGHT] = IPPMGraph(hierarchy, btr)
+            self._graphs[BLOCK_LEFT] = IPPMGraph(hierarchy, btl)
+            self._graphs[BLOCK_RIGHT] = IPPMGraph(hierarchy, btr)
         elif isinstance(expression_set, SensorExpressionSet):
-            self.graphs[BLOCK_SCALP] = IPPMGraph(hierarchy, expression_set.best_transforms())
+            self._graphs[BLOCK_SCALP] = IPPMGraph(hierarchy, expression_set.best_transforms())
         else:
             raise NotImplementedError()
+
+    def __getitem__(self, block: str) -> IPPMGraph:
+        return self._graphs[block]
+    
+    def __contains__(self, block: str) -> bool:
+        return block in self._graphs
