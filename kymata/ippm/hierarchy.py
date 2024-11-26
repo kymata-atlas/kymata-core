@@ -66,6 +66,7 @@ class CandidateTransformList:
             seq.append(sorted(batch))
         return seq
 
+
 def group_points_by_transform(points: list[ExpressionPoint], ctl: Optional[CandidateTransformList] = None) -> PointCloud:
     d: PointCloud = dict()
     if ctl is not None:

@@ -1,11 +1,9 @@
-from typing import Optional
-
 from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet
 from kymata.ippm.build import IPPMBuilder
+from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList
-from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
-from kymata.ippm.plot import plot_ippm
+
 
 _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
@@ -59,6 +57,7 @@ class IPPM:
         builder_kwargs = {
             k: v
             for k, v in kwargs.items()
+            # Remaining
             if not k.startswith("denoise_")
         }
         # Set remaining needed kwargs
@@ -67,15 +66,14 @@ class IPPM:
 
         # Validate CTL
         for transform in hierarchy.transforms:
-            if transform.name not in expression_set.transforms:
-                raise ValueError(f"Transform {transform.name} from hierarchy not in expression set")
-        expression_set = expression_set[[h.name for h in hierarchy.transforms]]
+            if transform not in expression_set.transforms:
+                raise ValueError(f"Transform {transform} from hierarchy not in expression set")
+        expression_set = expression_set[hierarchy.transforms]
 
         denoising_strategy: DenoisingStrategy | None
         if denoiser is not None:
             try:
-                denoising_strategy = _denoiser_classes[denoiser.lower()](
-                    **denoiser_kwargs)
+                denoising_strategy = _denoiser_classes[denoiser.lower()](**denoiser_kwargs)
             except KeyError:
                 # Argument included inappropriate denoiser name
                 raise ValueError(denoiser)
@@ -89,8 +87,3 @@ class IPPM:
         # Build the graph
         self._builder = IPPMBuilder(expression_set.best_transforms(), hierarchy, **builder_kwargs)
         self.graph = IPPMGraph(hierarchy, expression_set.best_transforms())
-
-    def plot(self, colors: Optional[dict[str, str]] = None):
-        if colors is None:
-            colors = dict()
-        plot_ippm(self.graph, colors)

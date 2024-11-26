@@ -1,28 +1,9 @@
-from copy import deepcopy
-from enum import StrEnum
-from typing import NamedTuple
+from copy import deepcopy, copy
 
 from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.hierarchy import PointCloud, CandidateTransformList
-
-
-class NodePosition(NamedTuple):
-    x: float
-    y: float
-
-
-class YOrdinateStyle(StrEnum):
-    """
-    Enumeration for Y-ordinate plotting styles.
-
-    Attributes:
-        progressive: Points are plotted with increasing y ordinates.
-        centered: Points are vertically centered.
-    """
-    progressive = "progressive"
-    centered    = "centered"
 
 
 class IPPMGraph:

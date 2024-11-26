@@ -1,34 +1,136 @@
-from itertools import cycle
-from statistics import NormalDist
-from typing import Optional
+from collections import defaultdict, Counter
+from copy import copy
+from enum import StrEnum
+from typing import Optional, NamedTuple
 
-import matplotlib.colors
 import matplotlib.patheffects as pe
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
+from networkx.classes import DiGraph
+from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 from sklearn.metrics import euclidean_distances
 from sklearn.preprocessing import normalize
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.build import IPPMGraph, SpikeDict
-from kymata.math.p_values import logp_to_p
+from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.ippm import IPPM
+
+
+class PlottableNode(NamedTuple):
+    label: str
+    x: float
+    y: float
+    color: str
+    size: float
+    is_terminal: bool
+
+
+class _YOrdinateStyle(StrEnum):
+    """
+    Enumeration for Y-ordinate plotting styles.
+
+    Attributes:
+        progressive: Points are plotted with increasing y ordinates.
+        centered: Points are vertically centered.
+    """
+    progressive = "progressive"
+    centered    = "centered"
+
+
+class _PlottableIPPMGraph:
+    """
+    An IPPMGraph, with coordinates, colours and annotations attached to each node.
+    """
+    def __init__(self,
+                 ippm_graph: IPPMGraph,
+                 colors: dict[str, str],
+                 y_ordinate_style: str,
+                 avoid_collinearity: bool,
+                 serial_sequence: Optional[list[list[str]]],
+                 scale_nodes: bool
+                 ):
+
+        ippm_graph = copy(ippm_graph)
+        if serial_sequence is None:
+            serial_sequence = ippm_graph.serial_sequence
+
+        y_ordinates: dict[str, float] = dict()
+
+        if y_ordinate_style == _YOrdinateStyle.progressive:
+
+            # Stack inputs
+            n_transforms = len(ippm_graph.candidate_transform_list.inputs)
+            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
+            partition_ptr = 0
+            for input_transform in ippm_graph.inputs:
+                y_ordinates[input_transform] = _get_y_coordinate_progressive(
+                    partition_number=partition_ptr, partition_size=y_axis_partition_size)
+                partition_ptr += 1
+
+            # Stack others
+            n_transforms = len(ippm_graph.transforms - ippm_graph.candidate_transform_list.inputs)
+            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
+            partition_ptr = 0
+            # Non-input transforms step upwards
+            for transform in ippm_graph.transforms - ippm_graph.inputs:
+                y_ordinates[transform] = _get_y_coordinate_progressive(
+                    partition_number=partition_ptr, partition_size=y_axis_partition_size)
+                partition_ptr += 1
+
+        elif y_ordinate_style == _YOrdinateStyle.centered:
+
+            # Build dictionary mapping function names to sequence steps
+            step_idxs = dict()
+            for step_i, step in enumerate(serial_sequence):
+                for function in step:
+                    step_idxs[function] = step_i
+            totals_within_serial_step = Counter(step_idxs.values())
+            idxs_within_level = defaultdict(int)
+            for transform in ippm_graph.transforms:
+                y_ordinates[transform] = _get_y_coordinate_centered(
+                            function_idx_within_level=idxs_within_level[step_idxs[transform]],
+                            function_total_within_level=totals_within_serial_step[step_idxs[transform]],
+                            max_function_total_within_level=max(totals_within_serial_step.values()),
+                            # Nudge each step up progressively more to avoid collinearity
+                            positive_nudge_frac=(step_idxs[transform] / len(serial_sequence)
+                                                 if avoid_collinearity
+                                                 else 0))
+
+        else:
+            raise NotImplementedError()
+
+        self.graph: DiGraph = relabel_nodes(
+            ippm_graph.graph_last_to_first,
+            {
+                point: PlottableNode(
+                    label=trans,
+                    x=point.latency,
+                    y=y_ordinates[point.transform],
+                    color=colors[trans],
+                    is_terminal=trans in ippm_graph.terminals,
+                    size=-1*point.logp_value if scale_nodes else 150,
+                )
+                for trans, points in ippm_graph.points.items()
+                for point in points
+            })
 
 
 def plot_ippm(
-    graph: IPPMGraph,
+    ippm: IPPM,
     colors: dict[str, str],
     title: Optional[str] = None,
-    scale_spikes: bool = False,
+    y_ordinate_style: str = _YOrdinateStyle.centered,
+    scale_nodes: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
     arrowhead_dims: tuple[float, float] = None,
     linewidth: float = 3,
     show_labels: bool = True,
+    avoid_collinearity: bool = True,
+    serial_sequence: Optional[list[list[str]]] = None
 ):
     """
     Plots an acyclic, directed graph using the graph held in graph. Edges are generated using BSplines.
@@ -39,69 +141,57 @@ def plot_ippm(
         colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each transform. The nodes and edges are colored accordingly.
         title (str): Title of the plot.
-        scale_spikes (bool, optional): scales the node by the significance. Default is False
+        scale_nodes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
     """
 
+    plottable_graph = _PlottableIPPMGraph(ippm.graph,
+                                          avoid_collinearity=avoid_collinearity,
+                                          serial_sequence=serial_sequence,
+                                          colors=colors,
+                                          y_ordinate_style=y_ordinate_style,
+                                          scale_nodes=scale_nodes)
+
     if arrowhead_dims is None:
         # Scale arrowheads by size of graph
         arrowhead_dims = (
-            max(node.position.y for node in graph.values()) / 30,  # width
-            max(node.position.x for node in graph.values()) / 30,  # length
+            max(node.y for node in plottable_graph.graph.nodes) / 30,  # width
+            max(node.x for node in plottable_graph.graph.nodes) / 30,  # length
         )
-
-    def __get_label(inc_edge: str) -> str:
-        try:
-            # assumes inc edge is named as transform-x.
-            label = inc_edge[:inc_edge.rindex("-")]
-            return label
-        except ValueError:
-            # "-" not found in inc_edge. Therefore, it must be input transform.
-            return inc_edge
-
-    non_terminal = set()
-    for node in graph.values():
-        non_terminal.update(node.inc_edges)
-
-    def __is_terminal_node(inc_edge: str) -> bool:
-        """Returns whether the named node is a terminal node in the graph"""
-        return inc_edge not in non_terminal
         
     # first lets aggregate all the information.
-    node_x      = list(range(len(graph.keys())))  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
-    node_y      = list(range(len(graph.keys())))  # y coordinates for nodes
-    node_colors = list(range(len(graph.keys())))  # color for nodes
-    node_sizes  = list(range(len(graph.keys())))  # size of nodes
+    node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
+    node_y      = []  # y coordinates for nodes
+    node_colors = []  # color for nodes
+    node_sizes  = []  # size of nodes
     edge_colors = []
     bsplines = []
     edge_labels = []
-    for i, node in enumerate(graph.keys()):
-        for transform, color in colors.items():
-            # search for transform color.
-            if transform in node:
-                node_colors[i] = color
-                break
+    node: PlottableNode
+    for i, node in enumerate(plottable_graph.graph.nodes):
+        node_colors.append(node.color)
+        node_sizes.append(node.size)
+        node_x.append(node.x)
+        node_y.append(node.y)
 
-        node_sizes[i] = graph[node].magnitude
-        node_x[i], node_y[i] = graph[node].position
-
-        pairs = []
-        for inc_edge in graph[node].inc_edges:
+        incoming_edge_endpoints = []
+        pred: PlottableNode
+        for pred in plottable_graph.graph.predecessors(node):
             # save edge coordinates and color the edge the same color as the finishing node.
-            start = graph[inc_edge].position
-            end = graph[node].position
-            pairs.append([(start[0], start[1]), (end[0], end[1])])
+            incoming_edge_endpoints.append(
+                (
+                    # Start
+                    (pred.x, pred.y),
+                    # End
+                    (node.x, node.y)
+                )
+            )
             edge_colors.append(node_colors[i])
-            label = __get_label(node)
-            edge_labels.append(label)
+            edge_labels.append(node.label)
             
-        bsplines += _make_bspline_paths(pairs)
-
-    # override node size
-    if not scale_spikes:
-        node_sizes = [150] * len(graph.keys())
+        bsplines += _make_bspline_paths(incoming_edge_endpoints)
 
     fig, ax = plt.subplots()
 
@@ -129,12 +219,12 @@ def plot_ippm(
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 20  # ms
-    for node in graph.keys():
-        if __is_terminal_node(node):
+    for node in plottable_graph.graph.nodes:
+        if node.is_terminal:
             step_1 = max(node_x) + future_width / 2
             step_2 = max(node_x) + future_width
-            ax.plot([graph[node].position.x, step_1], [graph[node].position.y, graph[node].position.y], color=colors[__get_label(node)], linewidth=linewidth, linestyle="solid")
-            ax.plot([step_1, step_2], [graph[node].position.y, graph[node].position.y], color=colors[__get_label(node)], linewidth=linewidth, linestyle="dotted")
+            ax.plot([node.x, step_1], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
+            ax.plot([step_1, step_2], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
 
     if title is not None:
         plt.title(title)
@@ -151,9 +241,10 @@ def plot_ippm(
     fig.set_figwidth(figwidth)
 
 
-def _make_bspline_paths(
-    spike_coordinate_pairs: list[list[tuple[float, float]]],
-) -> list[list[np.array]]:
+_XY = tuple[float, float]
+
+
+def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -188,9 +279,7 @@ def _make_bspline_paths(
     return bspline_path_array
 
 
-def _make_bspline_ctr_points(
-    start_and_end_node_coordinates: list[tuple[float, float]],
-) -> np.array:
+def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> np.array:
     """
     Given the position of a start spike and an end spike, create
     a set of 6 control points needed for a b-spline.
@@ -218,10 +307,10 @@ def _make_bspline_ctr_points(
     # Offset points: chosen for aesthetics, but with a squish down to evenly-spaced when nodes are too small
     x_diff = end_X - start_X
     offsets = [
-        min(5,  1 * x_diff / 5),
-        min(10, 2 * x_diff / 5),
-        min(20, 3 * x_diff / 5),
-        min(30, 4 * x_diff / 5),
+        min(5.0,  1 * x_diff / 5),
+        min(10.0, 2 * x_diff / 5),
+        min(20.0, 3 * x_diff / 5),
+        min(30.0, 4 * x_diff / 5),
     ]
 
     ctr_points = np.array(
@@ -269,162 +358,6 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
     return bspline_path
 
 
-def stem_plot(
-    spikes: SpikeDict | tuple[SpikeDict, SpikeDict],
-    title: Optional[str] = None,
-    timepoints: int = 201,
-    y_limit: float = pow(10, -100),
-    number_of_spikes: int = 200_000,
-    figheight: int = 7,
-    figwidth: int = 12,
-):
-    """
-    Plots a stem plot using spikes.
-
-    Params
-    ------
-        spikes : Contains transform spikes in the form of a spike object. All timings are found there.
-            OR contains a pair of spike objects, one for left and one for right hemispheres
-        title : Title of plot.
-    """
-    # estimate significance parameter
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)  # 5-sigma
-    bonferroni_corrected_alpha = 1 - (
-        pow((1 - alpha), (1 / (2 * timepoints * number_of_spikes)))
-    )
-
-    separate_hemis = True
-    if not isinstance(spikes, tuple):
-        # Just one provided: copy to both sides
-        spikes = (spikes, spikes)
-        separate_hemis = False
-    assert len(spikes) == 2
-    spikes_left, spikes_right = spikes
-
-    # assign unique color to each transform
-    transforms = sorted(set(spikes_left.keys()) | set(spikes_right.keys()))
-    cycol = cycle(sns.color_palette("hls", len(transforms)))
-    colors = dict()
-    for spikes in (spikes_left, spikes_right):
-        for trans, spike in spikes.items():
-            if trans not in colors:
-                colors[trans] = matplotlib.colors.to_hex(next(cycol))
-
-    fig, (left_hem_expression_plot, right_hem_expression_plot) = plt.subplots(
-        nrows=2, ncols=1, figsize=(figwidth, figheight)
-    )
-    fig.subplots_adjust(hspace=0)
-    fig.subplots_adjust(right=0.84, left=0.08)
-
-    custom_handles = []
-    custom_labels = []
-    for trans in transforms:
-        # Use dict.get in case there is a transform only present in one hemisphere
-        left_spike = spikes_left.get(trans, [])
-        spike_right = spikes_right.get(trans, [])
-        color = colors[trans]
-
-        custom_handles.extend(
-            [Line2D([], [], marker=".", color=color, linestyle="None")]
-        )
-        custom_labels.append(trans)
-
-        # left
-        left = list(zip(*left_spike))
-        if len(left) != 0:
-            x_left, y_left = left[0], left[1]
-            x_left = logp_to_p(x_left)
-            left_color = np.where(
-                np.array(y_left) <= bonferroni_corrected_alpha, color, "black"
-            )  # set all insignificant spikes to black
-            left_hem_expression_plot.vlines(
-                x=x_left, ymin=1, ymax=y_left, color=left_color
-            )
-            left_hem_expression_plot.scatter(x_left, y_left, color=left_color, s=20)
-
-        # right
-        right = list(zip(*spike_right))
-        if len(right) != 0:
-            x_right, y_right = right[0], right[1]
-            x_right = logp_to_p(x_right)
-            right_color = np.where(
-                np.array(y_right) <= bonferroni_corrected_alpha, color, "black"
-            )  # set all insignificant spikes to black
-            right_hem_expression_plot.vlines(
-                x=x_right, ymin=1, ymax=y_right, color=right_color
-            )
-            right_hem_expression_plot.scatter(x_right, y_right, color=right_color, s=20)
-
-    for plot in [right_hem_expression_plot, left_hem_expression_plot]:
-        plot.set_yscale("log")
-        plot.set_xlim(-200, 800)
-        plot.set_ylim(1, y_limit)
-        plot.axvline(x=0, color="k", linestyle="dotted")
-        plot.axhline(y=bonferroni_corrected_alpha, color="k", linestyle="dotted")
-        plot.text(
-            -100,
-            bonferroni_corrected_alpha,
-            "α*",
-            bbox={"facecolor": "white", "edgecolor": "none"},
-            verticalalignment="center",
-        )
-        plot.text(
-            600,
-            bonferroni_corrected_alpha,
-            "α*",
-            bbox={"facecolor": "white", "edgecolor": "none"},
-            verticalalignment="center",
-        )
-        plot.set_yticks([1, pow(10, -50), pow(10, -100)])
-
-    if title is not None:
-        left_hem_expression_plot.set_title(title)
-    left_hem_expression_plot.set_xticklabels([])
-    right_hem_expression_plot.set_xlabel(
-        "Latency (ms) relative to onset of the environment"
-    )
-    right_hem_expression_plot.xaxis.set_ticks(np.arange(-200, 800 + 1, 100))
-    right_hem_expression_plot.invert_yaxis()
-    if separate_hemis:
-        left_hem_expression_plot.text(
-            -180,
-            y_limit * 10000000,
-            "left hemisphere",
-            style="italic",
-            verticalalignment="center",
-        )
-        right_hem_expression_plot.text(
-            -180,
-            y_limit * 10000000,
-            "right hemisphere",
-            style="italic",
-            verticalalignment="center",
-        )
-    y_axis_label = "p-value (with α at 5-sigma, Bonferroni corrected)"
-    left_hem_expression_plot.text(
-        -275, 1, y_axis_label, verticalalignment="center", rotation="vertical"
-    )
-    right_hem_expression_plot.text(
-        0,
-        1,
-        "   onset of environment   ",
-        color="white",
-        fontsize="x-small",
-        bbox={"facecolor": "grey", "edgecolor": "none"},
-        verticalalignment="center",
-        horizontalalignment="center",
-        rotation="vertical",
-    )
-    left_hem_expression_plot.legend(
-        handles=custom_handles,
-        labels=custom_labels,
-        fontsize="x-small",
-        bbox_to_anchor=(1.2, 1),
-    )
-
-    plt.show()
-
-
 def plot_k_dist_1D(points: list[ExpressionPoint], k: int = 4, normalise: bool = False) -> None:
     """
     This could be optimised further but since we aren't using it, we can leave it as it is.
@@ -465,3 +398,25 @@ def plot_k_dist_1D(points: list[ExpressionPoint], k: int = 4, normalise: bool = 
     sorted_k_dists = sorted(k_dists, reverse=True)
     plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
     plt.show()
+
+
+def _get_y_coordinate_progressive(
+        partition_number: int,
+        partition_size: float) -> float:
+    return 1 - partition_size * partition_number
+
+
+def _get_y_coordinate_centered(
+        function_idx_within_level: int,
+        function_total_within_level: int,
+        max_function_total_within_level: int,
+        positive_nudge_frac: float,
+        spacing: float = 1) -> float:
+    total_height = (max_function_total_within_level - 1) * spacing
+    this_height = (function_total_within_level - 1) * spacing
+    baseline = (total_height - this_height) / 2
+    y_ord = baseline + function_idx_within_level * spacing
+    # / 2 because sometimes there's a 1/2-spacing offset between consecutive steps depending on parity, which can
+    # inadvertently cause collinearity again, which we're trying to avoid
+    y_ord += positive_nudge_frac * spacing / 2
+    return y_ord
