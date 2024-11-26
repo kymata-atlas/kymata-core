@@ -159,7 +159,7 @@ class GMMClusterer(CustomClusterer):
         n_init: int = 8,
         init_params: str = "kmeans",
         random_state: Optional[int] = None,
-        should_evaluate_using_AIC: bool = False,
+        should_evaluate_using_aic: bool = False,
     ):
         """
         Akaike Information Criterion: -2 * log(L) + 2 * k where L = likelihood
@@ -173,7 +173,7 @@ class GMMClusterer(CustomClusterer):
         :param n_init:
         :param init_params:
         :param random_state:
-        :param should_evaluate_using_AIC:
+        :param should_evaluate_using_aic:
         """
         super().__init__()
         self._number_of_clusters_upper_bound = number_of_clusters_upper_bound
@@ -182,7 +182,7 @@ class GMMClusterer(CustomClusterer):
         self._n_init = n_init
         self._init_params = init_params
         self._random_state = random_state
-        self._should_evaluate_using_AIC = should_evaluate_using_AIC
+        self._should_evaluate_using_AIC = should_evaluate_using_aic
 
     def fit(self, points: list[ExpressionPoint]) -> Self:
         optimal_model = self._grid_search_for_optimal_number_of_clusters(points)

@@ -5,7 +5,7 @@ import numpy as np
 
 from kymata.entities.expression import (
     SensorExpressionSet, HexelExpressionSet, combine, ExpressionPoint)
-from kymata.math.p_values import p_to_logp, logp_to_p
+from kymata.math.probability import p_to_logp, logp_to_p
 
 
 def test_log_p_single_value():

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from statistics import NormalDist
+
 from numpy import log10
 from numpy.typing import ArrayLike
 
@@ -34,3 +38,17 @@ def surprisal_to_logp(arraylike: ArrayLike) -> ArrayLike:
 def surprisal_to_p(arraylike: ArrayLike) -> ArrayLike:
     """Converts surprisal values to p-values."""
     return logp_to_p(surprisal_to_logp(arraylike))
+
+
+def p_threshold_for_sigmas(sigmas: float) -> float:
+    """Threshold for "n-sigma" tests."""
+    assert sigmas > 0
+    return 1 - NormalDist(mu=0, sigma=1).cdf(sigmas)
+
+
+def sidak_correct(alpha: float, n_comparisons: int) -> float:
+    """Applies Šidák correction to an alpha threshold"""
+    return 1 - (
+        (1 - alpha)
+        ** (1 / (2 * n_comparisons))
+    )

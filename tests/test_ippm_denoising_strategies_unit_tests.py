@@ -151,7 +151,7 @@ def test_DenoisingStrategy_MapSpikesToPairings_Successfully(mock_filter):
 
 def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():
     strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
-    actual_datapoints = strategy._filter_out_insignificant_pairings(test_data_trans1)
+    actual_datapoints = strategy._filter_out_insignificant_points(test_data_trans1)
     expected_datapoints = significant_test_data_trans1
     assert actual_datapoints == expected_datapoints
 

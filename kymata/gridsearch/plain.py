@@ -10,7 +10,7 @@ from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
-from kymata.math.p_values import log_base, p_to_logp
+from kymata.math.probability import log_base, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 _logger = getLogger(__name__)

@@ -21,7 +21,7 @@ from seaborn import color_palette
 from kymata.entities.expression import (
     HexelExpressionSet, SensorExpressionSet, ExpressionSet, ExpressionPoint)
 from kymata.entities.transform import Transform
-from kymata.math.p_values import p_to_logp
+from kymata.math.probability import p_to_logp, sidak_correct
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent
 from kymata.plot.layouts import (
@@ -479,11 +479,7 @@ def expression_plot(
 
     chosen_channels = _restrict_channels(expression_set, best_transforms, show_only_sensors)
 
-    sidak_corrected_alpha = 1 - (
-        (1 - alpha)
-        ** (1 / (2 * len(expression_set.latencies) * n_channels * len(show_only)))
-    )
-
+    sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=len(expression_set.latencies) * n_channels * len(show_only))
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
     def _custom_label(transform_name):

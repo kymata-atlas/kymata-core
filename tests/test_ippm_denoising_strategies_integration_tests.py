@@ -216,7 +216,7 @@ def test_GMMStrategy_AllDefault_Fit_Successfully():
 
     strategy = GMMStrategy(HEMI_RIGHT,
                            n_timepoints=n_timepoints, n_hexels=n_hexels,
-                           number_of_clusters_upper_bound=5, random_state=random_seed, should_evaluate_using_AIC=False)
+                           number_of_clusters_upper_bound=5, random_state=random_seed, should_evaluate_using_aic=False)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (

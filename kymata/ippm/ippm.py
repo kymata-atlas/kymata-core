@@ -3,6 +3,7 @@ from kymata.entities.expression import ExpressionSet, HexelExpressionSet, Sensor
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList
+from kymata.math.probability import sidak_correct, p_threshold_for_sigmas, p_to_logp
 
 _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
@@ -14,8 +15,7 @@ _default_denoiser_kwargs = {
         "denoise_should_normalise": True,
         "denoise_should_cluster_only_latency": True,
         "denoise_should_max_pool": False,
-        "denoise_normal_dist_threshold": 5,
-        "denoise_should_exclude_insignificant": True,
+        # "denoise_exclude_logp_vals_above": 5-sigma,  # Default value set below
         "denoise_should_shuffle": True,
         "denoise_eps": 0.005,
         "denoise_min_samples": 1,
@@ -59,9 +59,10 @@ class IPPM:
             # Remaining
             if not k.startswith("denoise_")
         }
-        # Set remaining needed kwargs
-        denoiser_kwargs["denoise_n_timepoints"] = len(expression_set.latencies)
-        denoiser_kwargs["denoise_n_channels"] = _get_n_channels(expression_set)
+        # Set remaining needed default values
+        if "denoise_exclude_logp_vals_above" not in denoiser_kwargs:
+            n_comparisons = len(expression_set.transforms) * len(expression_set.latencies) * _get_n_channels(expression_set)
+            denoiser_kwargs["denoise_exclude_logp_vals_above"] = p_to_logp(sidak_correct(p_threshold_for_sigmas(5), n_comparisons=n_comparisons))
 
         # Validate CTL
         for transform in hierarchy.transforms:
@@ -96,6 +97,6 @@ class IPPM:
 
     def __getitem__(self, block: str) -> IPPMGraph:
         return self._graphs[block]
-    
+
     def __contains__(self, block: str) -> bool:
         return block in self._graphs
