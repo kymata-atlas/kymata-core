@@ -12,7 +12,7 @@ TransformNameDType = str_
 
 # For method inputs
 # (to be permissive)
-Hexel = int
-Sensor = str
+Hexel = Union[int, HexelDType]
+Sensor = Union[str, SensorDType]
 Channel = Union[Hexel, Sensor]
-Latency = float
+Latency = Union[float, LatencyDType]
