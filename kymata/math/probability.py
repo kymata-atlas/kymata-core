@@ -46,8 +46,13 @@ def p_threshold_for_sigmas(sigmas: float) -> float:
     return 1 - NormalDist(mu=0, sigma=1).cdf(sigmas)
 
 
+def bonferroni_correct(alpha: float, n_comparisions: int) -> float:
+    """Applies Bonferroni correction to an alpha threshold."""
+    return 1 - ((1 - alpha) ** n_comparisions)
+
+
 def sidak_correct(alpha: float, n_comparisons: int) -> float:
-    """Applies Šidák correction to an alpha threshold"""
+    """Applies Šidák correction to an alpha threshold."""
     return 1 - (
         (1 - alpha)
         ** (1 / (2 * n_comparisons))
