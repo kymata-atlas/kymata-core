@@ -20,7 +20,7 @@ from xarray import DataArray, concat
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
-    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency)
+    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import (
     expand_dims, densify_data_block, sparsify_log_pmatrix)
