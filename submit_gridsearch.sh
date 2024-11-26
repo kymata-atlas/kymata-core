@@ -27,7 +27,7 @@ apptainer exec \
       export VENV_PATH=~/poetry/ ; \
       export PYVISTA_OFF_SCREEN=true ;
       export PYVISTA_USE_IPYVTK=true ;
-      xvfb-run \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
+      xvfb-run -a \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
         --config dataset4.yaml \
         --input-stream auditory \
         --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
