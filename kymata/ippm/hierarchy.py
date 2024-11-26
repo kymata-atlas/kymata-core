@@ -23,7 +23,7 @@ class CandidateTransformList:
         for trans, parents in hierarchy.items():
             for parent_name in parents:
                 parent = parent_name
-                if parent not in self.transforms:
+                if parent not in graph.nodes:
                     raise ValueError(f"{parent_name=} not in transform list")
                 graph.add_edge(parent, trans)
 
@@ -46,6 +46,25 @@ class CandidateTransformList:
         # noinspection PyUnresolvedReferences
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
+    @property
+    def serial_sequence(self) -> list[list[str]]:
+        """The serial sequence of parallel transforms"""
+        # Add input nodes
+        seq = [sorted(self.inputs)]
+        # Recursively add children
+        all_transforms = self.transforms - self.inputs
+        while len(all_transforms) > 0:
+            batch = set()
+            # Previous step
+            for transform in seq[-1]:
+                for successor in  self.graph.successors(transform):
+                    batch.add(successor)
+                    try:
+                        all_transforms.remove(successor)
+                    except KeyError:
+                        pass
+            seq.append(sorted(batch))
+        return seq
 
 def group_points_by_transform(points: list[ExpressionPoint], ctl: Optional[CandidateTransformList] = None) -> PointCloud:
     d: PointCloud = dict()

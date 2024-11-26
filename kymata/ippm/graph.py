@@ -61,7 +61,32 @@ class IPPMGraph:
 
         self.candidate_transform_list: CandidateTransformList = ctl
         self.points: PointCloud = points
-        self.graph_full: DiGraph = graph
+        self._graph_full: DiGraph = graph
+
+    def __copy__(self):
+        return IPPMGraph(ctl=copy(self.candidate_transform_list), points=copy(self.points))
+
+    @property
+    def transforms(self) -> set[str]:
+        """All transforms with nodes in the IPPM graph."""
+        return set(self._graph_full.nodes)
+
+    @property
+    def inputs(self) -> set[str]:
+        """All input transforms with nodes in the IPPM graph."""
+        return self.candidate_transform_list.inputs & self.transforms
+
+    @property
+    def terminals(self) -> set[str]:
+        """Terminal transforms (those with no successors) with nodes in the IPPM graph."""
+        return self.candidate_transform_list.terminals & self.transforms
+
+    @property
+    def serial_sequence(self) -> list[list[str]]:
+        return [
+            [t for t in step if t in self.transforms]
+            for step in self.candidate_transform_list.serial_sequence
+        ]
 
     @property
     def graph_last_to_first(self) -> DiGraph:
@@ -71,17 +96,17 @@ class IPPMGraph:
         def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
             # If there's an available predecessor, don't keep
             pred: ExpressionPoint
-            for pred in self.graph_full.predecessors(source):
+            for pred in self._graph_full.predecessors(source):
                 if pred.transform == source.transform:
                     return False
             # If there's a successor, don't keep
             succ: ExpressionPoint
-            for succ in self.graph_full.successors(dest):
+            for succ in self._graph_full.successors(dest):
                 if succ.transform == dest.transform:
                     return False
             return True
 
-        subgraph = self.graph_full.edge_subgraph([(s, d) for s, d in self.graph_full.edges if __keep_edge(s, d)])
+        subgraph = self._graph_full.edge_subgraph([(s, d) for s, d in self._graph_full.edges if __keep_edge(s, d)])
         assert isinstance(subgraph, DiGraph)
 
         return subgraph
