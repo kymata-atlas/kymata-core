@@ -19,8 +19,7 @@ from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.entities.datatypes import (
-    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency)
+from kymata.entities.datatypes import HexelDType, SensorDType, LatencyDType, TransformNameDType
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import (
     expand_dims, densify_data_block, sparsify_log_pmatrix)
@@ -44,9 +43,9 @@ class ExpressionPoint:
     """
     A single point of transform expression
     """
-    channel: str
-    latency: float
-    transform: str
+    channel: SensorDType | HexelDType
+    latency: LatencyDType
+    transform: TransformNameDType
     logp_value: float
 
 
@@ -60,7 +59,7 @@ class ExpressionSet(ABC):
             self,
             transforms: str | Sequence[str],
             # Metadata
-            latencies: Sequence[Latency],
+            latencies: Sequence[LatencyDType],
             # In general, we will combine flipped and non-flipped versions.
             data_blocks: dict[str, _InputDataArray | Sequence[_InputDataArray]],
             channel_coord_name: str,
@@ -522,9 +521,9 @@ class HexelExpressionSet(ExpressionSet):
         self,
         transforms: str | Sequence[str],
         # Metadata
-        hexels_lh: Sequence[Hexel],
-        hexels_rh: Sequence[Hexel],
-        latencies: Sequence[Latency],
+        hexels_lh: Sequence[HexelDType],
+        hexels_rh: Sequence[HexelDType],
+        latencies: Sequence[LatencyDType],
         # log p-values
         # In general, we will combine flipped and non-flipped versions
         data_lh: _InputDataArray | Sequence[_InputDataArray],
@@ -673,8 +672,8 @@ class SensorExpressionSet(ExpressionSet):
         self,
         transforms: str | Sequence[str],
         # Metadata
-        sensors: Sequence[Sensor],
-        latencies: Sequence[Latency],
+        sensors: Sequence[SensorDType],
+        latencies: Sequence[LatencyDType],
         # log p-values
         # In general, we will combine flipped and non-flipped versions
         data: _InputDataArray | Sequence[_InputDataArray],
