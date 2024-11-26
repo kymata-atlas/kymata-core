@@ -1,14 +1,15 @@
 from abc import ABC
 from copy import deepcopy, copy
 from random import shuffle
-from typing import Optional, overload
+from typing import Optional, overload, Callable
 
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
-from ..entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
+from ..entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, \
+    get_n_channels
 from .hierarchy import group_points_by_transform, GroupedPoints
-from ..math.probability import logp_to_p, p_to_logp
+from ..math.probability import logp_to_p, p_to_logp, sidak_correct, p_threshold_for_sigmas
 
 
 class DenoisingStrategy(ABC):
@@ -23,6 +24,7 @@ class DenoisingStrategy(ABC):
         should_cluster_only_latency: bool,
         should_max_pool: bool,
         exclude_logp_vals_above: float | None,
+        exclude_points_above_n_sigma: float | None,
         should_shuffle: bool,
         **kwargs,
     ):
@@ -41,10 +43,25 @@ class DenoisingStrategy(ABC):
                 Supply a log p-value threshold to test for significance for this exclusion. Supply none to not exclude.
         """
 
+        if exclude_logp_vals_above is not None and exclude_points_above_n_sigma is not None:
+            raise ValueError("Supply only one of `exclude_logp_vals_above` and `exclude_points_above_n_sigma`.")
+        if exclude_points_above_n_sigma is not None:
+            def get_threshold(es: ExpressionSet) -> float:
+                """Get Šidák n-sigma threshold"""
+                n_comparisons = len(es.transforms) * len(es.latencies) + get_n_channels(es)
+                return p_to_logp(sidak_correct(p_threshold_for_sigmas(exclude_points_above_n_sigma),
+                                               n_comparisons=n_comparisons))
+        else:
+            # Will return either the fixed threshold, or constant None where exclude_logp_vals_above was None
+            def get_threshold(_es: ExpressionSet) -> float:
+                """Get fixed threshold"""
+                return exclude_logp_vals_above
+
         self._clusterer: CustomClusterer
         self._should_normalise = should_normalise
         self._should_cluster_only_latency = should_cluster_only_latency
         self._should_max_pool = should_max_pool
+        self._logp_threshold_from_expression_set: Callable[[ExpressionSet], float | None] = get_threshold
         self._exclude_logp_vals_above = exclude_logp_vals_above
         self._should_shuffle = should_shuffle
 
@@ -73,7 +90,7 @@ class DenoisingStrategy(ABC):
         # Get the denoised spikes from the expression set's data
         expression_points = expression_set.best_transforms()
         original_spikes = group_points_by_transform(expression_points)
-        denoised_spikes = self._denoise_spikes(original_spikes)
+        denoised_spikes = self._denoise_spikes(original_spikes, self._logp_threshold_from_expression_set(expression_set))
 
         for transform in expression_set.transforms:
             denoised_points = denoised_spikes.get(transform, [])
@@ -90,8 +107,8 @@ class DenoisingStrategy(ABC):
         expression_points_left, expression_points_right = expression_set.best_transforms()
         original_spikes_left = group_points_by_transform(expression_points_left)
         original_spikes_right = group_points_by_transform(expression_points_right)
-        denoised_spikes_left = self._denoise_spikes(original_spikes_left)
-        denoised_spikes_right = self._denoise_spikes(original_spikes_right)
+        denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
+        denoised_spikes_right = self._denoise_spikes(original_spikes_right, self._logp_threshold_from_expression_set(expression_set))
 
         for transform in expression_set.transforms:
             denoised_points_left = denoised_spikes_left.get(transform, [])
@@ -108,7 +125,7 @@ class DenoisingStrategy(ABC):
 
         return expression_set
 
-    def _denoise_spikes(self, spikes: GroupedPoints) -> GroupedPoints:
+    def _denoise_spikes(self, spikes: GroupedPoints, logp_threshold: float | None) -> GroupedPoints:
         """
         For a set of transforms, cluster their significant points and retain the most significant points per cluster.
 
@@ -138,8 +155,8 @@ class DenoisingStrategy(ABC):
 
             points = copy(points)
             # Apply filters
-            if self._exclude_logp_vals_above is not None:
-                points = self._filter_out_insignificant_points(points, self._exclude_logp_vals_above)
+            if logp_threshold is not None:
+                points = self._filter_out_insignificant_points(points, logp_threshold)
             if self._should_shuffle:
                 # shuffle to remove correlations between rows
                 shuffle(points)
@@ -162,7 +179,7 @@ class DenoisingStrategy(ABC):
 
         return spikes
 
-    def _filter_out_insignificant_points(self, points: list[ExpressionPoint], threshold: float) -> list[ExpressionPoint]:
+    def _filter_out_insignificant_points(self, points: list[ExpressionPoint], threshold_logp: float) -> list[ExpressionPoint]:
         """
         For a list of ExpressionPoints, remove all that are not statistically significant and return a list of those
         that remain.
@@ -173,7 +190,7 @@ class DenoisingStrategy(ABC):
         return [
             p for p in points
             # Lower is better
-            if logp_to_p(p.logp_value) < threshold
+            if logp_to_p(p.logp_value) < threshold_logp
         ]
 
     def _preprocess(self, points: list[ExpressionPoint]) -> list[ExpressionPoint]:
@@ -267,6 +284,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  exclude_logp_vals_above: float | None = None,
+                 exclude_points_above_n_sigma: float | None = None,
                  should_shuffle: bool = True,
                  bin_significance_threshold: int = 1,
                  bin_size: int = 1,
@@ -276,6 +294,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_cluster_only_latency,
             should_max_pool,
             exclude_logp_vals_above,
+            exclude_points_above_n_sigma,
             should_shuffle
         )
         self._clusterer = MaxPoolClusterer(bin_significance_threshold, bin_size)
@@ -287,6 +306,7 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  exclude_logp_vals_above: float | None = None,
+                 exclude_points_above_n_sigma: float | None = None,
                  bin_significance_threshold: int = 1,
                  base_bin_size: int = 1,
                  ):
@@ -295,6 +315,7 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             should_cluster_only_latency,
             should_max_pool,
             exclude_logp_vals_above,
+            exclude_points_above_n_sigma,
             should_shuffle=False,  # AMP assumes a sorted time series, so avoid shuffling.
         )                          # Mainly because AMP uses a sliding window algorithm to merge significant clusters.
         self._clusterer = AdaptiveMaxPoolClusterer(bin_significance_threshold, base_bin_size)
@@ -306,6 +327,7 @@ class GMMStrategy(DenoisingStrategy):
                  should_cluster_only_latency: bool = True,
                  should_max_pool: bool = False,
                  exclude_logp_vals_above: float | None = None,
+                 exclude_points_above_n_sigma: float | None = None,
                  should_shuffle: bool = True,
                  number_of_clusters_upper_bound: int = 2,
                  covariance_type: str = "full",
@@ -320,6 +342,7 @@ class GMMStrategy(DenoisingStrategy):
             should_cluster_only_latency,
             should_max_pool,
             exclude_logp_vals_above,
+            exclude_points_above_n_sigma,
             should_shuffle
         )
         self._clusterer = GMMClusterer(
@@ -339,6 +362,7 @@ class DBSCANStrategy(DenoisingStrategy):
                  should_cluster_only_latency: bool = False,
                  should_max_pool: bool = False,
                  exclude_logp_vals_above: float | None = None,
+                 exclude_points_above_n_sigma: float | None = None,
                  should_shuffle: bool = True,
                  eps: int = 10,
                  min_samples: int = 2,
@@ -353,6 +377,7 @@ class DBSCANStrategy(DenoisingStrategy):
             should_cluster_only_latency,
             should_max_pool,
             exclude_logp_vals_above,
+            exclude_points_above_n_sigma,
             should_shuffle
         )
         self._clusterer = DBSCANClusterer(
@@ -372,6 +397,7 @@ class MeanShiftStrategy(DenoisingStrategy):
                  should_cluster_only_latency: bool = True,
                  should_max_pool: bool = False,
                  exclude_logp_vals_above: float | None = None,
+                 exclude_points_above_n_sigma: float | None = None,
                  should_shuffle: bool = True,
                  cluster_all: bool = False,
                  bandwidth: float = 0.5,
@@ -384,6 +410,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             should_cluster_only_latency,
             should_max_pool,
             exclude_logp_vals_above,
+            exclude_points_above_n_sigma,
             should_shuffle
         )
         self._clusterer = MeanShiftClusterer(

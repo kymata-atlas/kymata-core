@@ -864,3 +864,11 @@ def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
         dim=DIM_TRANSFORM,
         data_vars="all",  # Required by concat of DataArrays
     )
+
+
+def get_n_channels(es: ExpressionSet) -> int:
+    if isinstance(es, SensorExpressionSet):
+        return len(es.sensors)
+    if isinstance(es, HexelExpressionSet):
+        return len(es.hexels_left) + len(es.hexels_right)
+    raise NotImplementedError()
