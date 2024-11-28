@@ -347,7 +347,7 @@ def expression_plot(
     ylim: Optional[float] = None,
     xlims: Optional[tuple[float | None, float | None]] = None,
     hidden_transforms_in_legend: bool = True,
-    title: str = "Transform expression",
+    title: str = None,
     fig_size: tuple[float, float] = (12, 7),
     # Display options
     minimap: bool = False,
@@ -380,7 +380,7 @@ def expression_plot(
             default values, or set either entry to None to use the default for that value. Default is (-100, 800).
         hidden_transforms_in_legend (bool, optional): If True, includes non-plotted transforms in the legend.
             Default is True.
-        title (str, optional): Title over the top axis in the figure. Default is "Transform expression".
+        title (str, optional): Title over the top axis in the figure. Default is none.
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
