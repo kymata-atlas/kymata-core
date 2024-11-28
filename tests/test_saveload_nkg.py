@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from kymata.entities.expression import HexelExpressionSet, SensorExpressionSet
-from kymata.io.nkg import save_expression_set, load_expression_set, _load_data
+from kymata.io.nkg2 import save_expression_set, load_expression_set, _load_data
 
 
 def test_save_and_load_is_equal():

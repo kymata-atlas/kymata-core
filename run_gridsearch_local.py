@@ -74,7 +74,7 @@ def main():
 
     args = parser.parse_args()
 
-    dataset_config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", args.config)))
+    dataset_config = load_config(str(Path(Path(__file__).parent, "dataset_config", args.config)))
 
     # Config defaults
     participants = dataset_config.get('participants')

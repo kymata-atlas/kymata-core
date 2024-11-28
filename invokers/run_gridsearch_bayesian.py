@@ -5,7 +5,7 @@ import time
 from sys import stdout
 
 from kymata.datasets.data_root import data_root_path
-from kymata.gridsearch.plain import do_gridsearch
+from kymata.gridsearch.bayesian import do_gridsearch
 from kymata.io.functions import load_function
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
@@ -162,36 +162,39 @@ def main():
 
     combined_expression_set = None
 
+    function_data = {}
     for function_name in args.function_name:
-        _logger.info(f"Running gridsearch on {function_name}")
+        _logger.info(f"Extracting data for {function_name}")
         function_values = load_function(Path(base_dir, args.function_path),
                                         func_name=function_name,
                                         replace_nans=args.replace_nans,
                                         bruce_neurons=(5, 10))
-        function_values = function_values.downsampled(args.downsample_rate)
+        # function_values = function_values.downsampled(args.downsample_rate)
+        function_data[function_name] = function_values.values
 
-        es = do_gridsearch(
-            emeg_values=emeg_values,
-            channel_names=ch_names,
-            channel_space=channel_space,
-            function=function_values,
-            seconds_per_split=args.seconds_per_split,
-            n_derangements=args.n_derangements,
-            n_splits=args.n_splits,
-            n_reps=n_reps,
-            start_latency=args.start_latency,
-            plot_location=args.save_plot_location,
-            emeg_t_start=args.emeg_t_start,
-            stimulus_shift_correction=stimulus_shift_correction,
-            stimulus_delivery_latency=stimulus_delivery_latency,
-            plot_top_five_channels=args.plot_top_channels,
-            overwrite=args.overwrite,
-        )
 
-        if combined_expression_set is None:
-            combined_expression_set = es
-        else:
-            combined_expression_set += es
+    es = do_gridsearch(
+        emeg_values=emeg_values,
+        channel_names=ch_names,
+        channel_space=channel_space,
+        function_data=function_data,
+        seconds_per_split=args.seconds_per_split,
+        n_derangements=args.n_derangements,
+        n_splits=args.n_splits,
+        n_reps=n_reps,
+        start_latency=args.start_latency,
+        plot_location=args.save_plot_location,
+        emeg_t_start=args.emeg_t_start,
+        stimulus_shift_correction=stimulus_shift_correction,
+        stimulus_delivery_latency=stimulus_delivery_latency,
+        plot_top_five_channels=args.plot_top_channels,
+        overwrite=args.overwrite,
+    )
+
+    if combined_expression_set is None:
+        combined_expression_set = es
+    else:
+        combined_expression_set += es
 
     assert combined_expression_set is not None
 

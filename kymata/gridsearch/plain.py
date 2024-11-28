@@ -92,6 +92,7 @@ def do_gridsearch(
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
     # the number of samples in the function 'trial' which is half that needed for the EMEG
+    # shall be the length of each split
     n_func_samples_per_split = n_samples_per_split // 2
 
     func_length = n_splits * n_func_samples_per_split
@@ -111,6 +112,7 @@ def do_gridsearch(
         for i in range(n_splits)
     ]
 
+    # stretching the splits (of emeg)
     emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
     for j in range(n_reps):
         for split_i in range(n_splits):
