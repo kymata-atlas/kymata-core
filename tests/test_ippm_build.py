@@ -3,19 +3,15 @@ from copy import deepcopy
 import numpy as np
 
 from kymata.entities.constants import HEMI_RIGHT
+from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.build import IPPMBuilder
-from kymata.ippm.data_tools import IPPMSpike
 
 test_hexels = {
-    "func1": IPPMSpike("func1"),
-    "func2": IPPMSpike("func2"),
-    "func3": IPPMSpike("func3"),
-    "func4": IPPMSpike("func4"),
+    "func1": [ExpressionPoint("c", 10, "func1", -28), ("c", 25, "func1", -79)],
+    "func2": [ExpressionPoint("c", 50, "func2", -61)],
+    "func3": [ExpressionPoint("c", 60, "func3", -92), ExpressionPoint("c", 65, "func3", -12)],
+    "func4": [ExpressionPoint("c", 70, "func4", -42)],
 }
-test_hexels["func1"].right_best_pairings = [(10, 1e-28), (25, 1e-79)]
-test_hexels["func2"].right_best_pairings = [(50, 1e-61)]
-test_hexels["func3"].right_best_pairings = [(60, 1e-92), (65, 1e-12)]
-test_hexels["func4"].right_best_pairings = [(70, 1e-42)]
 test_hierarchy = {
     "input": [],
     "func1": ["input"],

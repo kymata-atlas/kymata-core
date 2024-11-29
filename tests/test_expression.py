@@ -4,13 +4,8 @@ import pytest
 import numpy as np
 
 from kymata.entities.expression import (
-    SensorExpressionSet,
-    HexelExpressionSet,
-    DIM_TRANSFORM,
-    DIM_LATENCY,
-    combine, COL_LOGP_VALUE, DIM_SENSOR,
-)
-from kymata.math.p_values import p_to_logp, logp_to_p
+    SensorExpressionSet, HexelExpressionSet, combine, ExpressionPoint)
+from kymata.math.probability import p_to_logp, logp_to_p
 
 
 def test_log_p_single_value():
@@ -222,11 +217,9 @@ def test_hes_hexels_left_equals_right(hexel_expression_set_5_hexels):
 
 def test_ses_best_transform():
     from numpy import array
-    from numpy.typing import NDArray
-    from pandas import DataFrame
 
     sensors = [str(i) for i in range(4)]
-    transform_a_data: NDArray = array(
+    transform_a_data = array(
         p_to_logp(
             array(
                 [
@@ -239,7 +232,7 @@ def test_ses_best_transform():
             )
         )
     )
-    transform_b_data: NDArray = array(
+    transform_b_data = array(
         p_to_logp(
             array(
                 [
@@ -257,45 +250,41 @@ def test_ses_best_transform():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["0", "1", "2", "3"],
-            DIM_TRANSFORM: ["a", "b", "a", "b"],
-            DIM_LATENCY: [1, 1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("0", 1, "a", p_to_logp(0.1)),
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 def test_ses_best_transform_with_one_channel_all_1s():
     from numpy import array
-    from numpy.typing import NDArray
-    from pandas import DataFrame
-
+    
     sensors = [str(i) for i in range(4)]
-    transform_a_data: NDArray = array(
+    transform_a_data = array(
         p_to_logp(
             array(
                 [
-                    #  0    1    2  latencies
-                    [1, 1, 1],  # 0  <-- set sensor 0 to 1 for some reason
-                    [1, 1, 0.2],  # 1
-                    [0.1, 1, 1],  # 2
-                    [0.2, 1, 1],  # 3 sensors
+                    #  0    1    2 latencies
+                    [  1,   1,   1],  # 0  <-- set sensor 0 to 1 for some reason
+                    [  1,   1, 0.2],  # 1
+                    [0.1,   1,   1],  # 2
+                    [0.2,   1,   1],  # 3 sensors
                 ]
             )
         )
     )
-    transform_b_data: NDArray = array(
+    transform_b_data = array(
         p_to_logp(
             array(
                 [
-                    [1, 1, 1],
-                    [1, 0.1, 1],
-                    [1, 0.2, 1],
-                    [1, 1, 0.1],
+                    [  1,   1,    1],
+                    [  1, 0.1,    1],
+                    [  1, 0.2,    1],
+                    [  1,   1,  0.1],
                 ]
             )
         )
@@ -306,23 +295,19 @@ def test_ses_best_transform_with_one_channel_all_1s():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["1", "2", "3"],
-            DIM_TRANSFORM: ["b", "a", "b"],
-            DIM_LATENCY: [1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 def test_ses_best_transform_with_one_channel_all_nans():
     from numpy import array, nan
     from numpy.typing import NDArray
-    from pandas import DataFrame
-
+    
     sensors = [str(i) for i in range(4)]
     transform_a_data: NDArray = array(
         p_to_logp(
@@ -355,16 +340,13 @@ def test_ses_best_transform_with_one_channel_all_nans():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["1", "2", "3"],
-            DIM_TRANSFORM: ["b", "a", "b"],
-            DIM_LATENCY: [1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 # Test ExpressionSet arg validations
@@ -971,3 +953,66 @@ def test_latency_crop_outside_range():
 
     with pytest.raises(IndexError):
         es.crop(1, 2)
+
+
+def test_clear_point_ses():
+    from numpy import array
+
+    sensors = [str(i) for i in range(4)]
+    transform_a_data = array(
+        array(
+            [
+                #  0   1   2  latencies
+                [ -9, -1, -5],  # 0
+                [-10, -2, -6],  # 1
+                [-11, -3, -7],  # 2
+                [-12, -4, -8],  # 3 sensors
+            ]
+        )
+    )
+    transform_b_data = array(
+        array(
+            [
+                #  0    1    2  latencies
+                [-21, -25, -29],  # 0
+                [-22, -26, -30],  # 1
+                [-23, -27, -31],  # 2
+                [-24, -28, -32],  # 3 sensors
+            ]
+        )
+    )
+    es = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[copy(transform_a_data), copy(transform_b_data)],
+    )
+
+    # Clear the best overall value
+    es.clear_point(sensor="3", latency=2)
+    a_data_cleared = es["a"].scalp.data.todense()
+    b_data_cleared = es["b"].scalp.data.todense()
+
+    assert np.array_equal(
+        a_data_cleared.squeeze(),
+        array(
+            [  # - v----- This latency was always best for all sensors,
+                [ -9, 0, 0],  # so other cols have been zeroed out
+                [-10, 0, 0],
+                [-11, 0, 0],
+                [-12, 0, 0],
+            ]
+        )
+    )
+
+    assert np.array_equal(
+        b_data_cleared.squeeze(),
+        array(
+            [  # -       v----- This latency was always best for all sensors,
+                [0, 0, -29],  # so other cols have been zeroed out
+                [0, 0, -30],
+                [0, 0, -31],
+                [0, 0,   0],  # <--- This value now cleared
+            ]
+        )
+    )
