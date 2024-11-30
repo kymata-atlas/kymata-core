@@ -18,7 +18,7 @@ def main():
 
     if function_family_type == "standard":
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, "english_TVL_family_source_baseline_derangments_6.nkg")
+            Path(path_to_nkg_files, "combined_TVL_gridsearch.nkg")
         )
 
         fig = expression_plot(
@@ -37,7 +37,6 @@ def main():
                 "STL": "#d388b5",
             },
             minimap=True,
-            minimap_latency_range=(0.13,0.2),
             ylim=-200,
         )
 
