@@ -676,7 +676,7 @@ def expression_plot(
             else:
                 stop = stop * 1000  # Convert to ms
 
-            ax.axvspan(xmin=start, xmax=stop, color="y", alpha=0.5, lw=0, zorder=-10)
+            ax.axvspan(xmin=start, xmax=stop, color="grey", alpha=0.2, lw=0, zorder=-10)
 
     # Plot minimap
     if minimap:
