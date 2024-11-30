@@ -131,7 +131,8 @@ def _minimap_mosaic(
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
                         alpha_logp: float,
-                        show_transforms: list[str]
+                        show_transforms: list[str],
+                        minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
                         ) -> tuple[NDArray, NDArray]:
     """
     Generates data arrays for a minimap visualization of significant hexels in a HexelExpressionSet.
@@ -142,6 +143,8 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
             below this threshold are considered significant.
         show_transforms (list[str]): A list of transform names to consider for significance. Only these
             transforms will be checked for significant hexels.
+        minimap_latency_range: tuple[float | None, float | None]: The latency range to use in the minimap.
+            Defaults to None.
 
     Returns:
         tuple[NDArray, NDArray]: A tuple containing two arrays (one for the left hemisphere and one for
@@ -161,9 +164,13 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
     data_right = np.zeros((len(expression_set.hexels_right),))
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
-    best_transforms_right = best_transforms_right[
-        best_transforms_right[COL_LOGP_VALUE] < alpha_logp
-    ]
+    best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
+    if minimap_latency_range is not None or (None, None):
+        # Filter the dataframe to keep rows where 'latency' is within the range
+        best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
+                                                    (best_transforms_left['latency'] <= minimap_latency_range[1])]
+        best_transforms_right = best_transforms_right[(best_transforms_right['latency'] >= minimap_latency_range[0]) &
+                                                    (best_transforms_right['latency'] <= minimap_latency_range[1])]
     for trans_i, transform in enumerate(
         expression_set.transforms,
         # 1-indexed, as 0 will refer to transparent
@@ -248,6 +255,7 @@ def _plot_minimap_sensor(
     minimap_axis: pyplot.Axes,
     colors: dict[str, str],
     alpha_logp: float,
+    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
 ):
     raise NotImplementedError("Minimap not yet implemented for sensor data")
 
@@ -261,6 +269,7 @@ def _plot_minimap_hexel(
     surface: str,
     colors: dict[str, Any],
     alpha_logp: float,
+    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
 ):
     # Ensure we have the FSAverage dataset downloaded
     from kymata.datasets.fsaverage import FSAverageDataset
@@ -285,7 +294,7 @@ def _plot_minimap_hexel(
         N=len(expression_set.transforms) + 1,
     )
     data_left, data_right = _hexel_minimap_data(
-        expression_set, alpha_logp=alpha_logp, show_transforms=show_transforms
+        expression_set, alpha_logp=alpha_logp, show_transforms=show_transforms, minimap_latency_range=minimap_latency_range
     )
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
@@ -354,7 +363,7 @@ def expression_plot(
     minimap_view: str = "lateral",
     minimap_surface: str = "inflated",
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
-    display_latency_range: Optional[tuple[float | None, float | None]] = None,
+    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -405,7 +414,7 @@ def expression_plot(
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
-        display_latency_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
+        minimap_latency_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
             minimap view to only the specified time window, and highlight the time window on the expression plot.
             Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for half-open
             intervals.
@@ -447,9 +456,9 @@ def expression_plot(
         assert len(color) == len(show_only)
         color = {f: c for f, c in zip(show_only, color)}
 
-    if display_latency_range is None:
-        display_latency_range = (None, None)
-    assert len(display_latency_range) == 2
+    if minimap_latency_range is None:
+        minimap_latency_range = (None, None)
+    assert len(minimap_latency_range) == 2
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -665,8 +674,8 @@ def expression_plot(
         ax.set_yticklabels(pval_labels)
 
         # Show highlighted range
-        if display_latency_range != (None, None):
-            start, stop = display_latency_range
+        if minimap_latency_range != (None, None):
+            start, stop = minimap_latency_range
             if start is None:
                 start = ax.get_xlim()[0]
             else:
@@ -676,20 +685,21 @@ def expression_plot(
             else:
                 stop = stop * 1000  # Convert to ms
 
-            ax.axvspan(xmin=start, xmax=stop, color="y", alpha=0.5, lw=0, zorder=-10)
+            ax.axvspan(xmin=start, xmax=stop, color="grey", alpha=0.2, lw=0, zorder=-10)
 
     # Plot minimap
     if minimap:
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
-                expression_set.crop(*display_latency_range),
+                expression_set,
                 minimap_axis=axes[_AxName.minimap_main],
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
+                minimap_latency_range=minimap_latency_range,
             )
         elif isinstance(expression_set, HexelExpressionSet):
             _plot_minimap_hexel(
-                expression_set.crop(*display_latency_range),
+                expression_set,
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_top],
                 rh_minimap_axis=axes[_AxName.minimap_bottom],
@@ -697,6 +707,7 @@ def expression_plot(
                 surface=minimap_surface,
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
+                minimap_latency_range=minimap_latency_range,
             )
         else:
             raise NotImplementedError()
