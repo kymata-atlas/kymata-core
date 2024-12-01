@@ -734,7 +734,7 @@ def expression_plot(
     if show_legend:
         split_legend_at_n_transforms = 15
         legend_n_col = 2 if len(custom_handles) > split_legend_at_n_transforms else 1
-        if hidden_transforms_in_legend and len(not_shown) > 0:
+        if hidden_transforms_in_legend and len(not_shown) > 0 and legend_display is None:
             if len(not_shown) > split_legend_at_n_transforms:
                 legend_n_col = 2
             # Plot dummy legend for other transforms which are included in model selection but not plotted
