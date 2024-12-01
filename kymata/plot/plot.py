@@ -165,7 +165,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
     best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
-    if minimap_latency_range is not None or (None, None):
+    if minimap_latency_range is not None and not (None, None):
         # Filter the dataframe to keep rows where 'latency' is within the range
         best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
                                                     (best_transforms_left['latency'] <= minimap_latency_range[1])]
