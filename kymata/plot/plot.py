@@ -770,7 +770,7 @@ def expression_plot(
         )
         legends.append(top_legend)
 
-    __reposition_axes_for_legends(fig, legends)
+        __reposition_axes_for_legends(fig, legends)
 
     __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
 
