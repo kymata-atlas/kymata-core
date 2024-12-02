@@ -23,8 +23,7 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
   bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/andy/kymata-core/ ; \
-      export VENV_PATH=~/poetry/ ; \
+    " export VENV_PATH=~/poetry/ ; \
       \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
         --config dataset4.yaml \
         --input-stream auditory \
