@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
+    transform_family_type = 'ANN' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -138,21 +138,25 @@ def main():
         tvl_name = expression_data_tvl.transforms
         IL_name = [i for i in tvl_name if i != 'STL']
         STL_name = ['STL']
-        fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=True,
-                                color=constant_color_dict(word_name, color= 'red')
-                                    # | constant_color_dict(tvl_name, color= 'yellow')
-                                    | constant_color_dict(IL_name, color= 'purple')
-                                    | constant_color_dict(STL_name, color= 'pink')
-                                    | constant_color_dict(phone_name, color='green'),
-                                legend_display=legend_display_dict(word_name, 'SALMONN word features')
-                                    # | legend_display_dict(tvl_name, 'TVL transforms')
-                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
-                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
-                                    | legend_display_dict(phone_name, 'SALMONN phone features'))
+        # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=True,
+        #                         color=constant_color_dict(word_name, color= 'red')
+        #                             # | constant_color_dict(tvl_name, color= 'yellow')
+        #                             | constant_color_dict(IL_name, color= 'purple')
+        #                             | constant_color_dict(STL_name, color= 'pink')
+        #                             | constant_color_dict(phone_name, color='green'),
+        #                         legend_display=legend_display_dict(word_name, 'SALMONN word features')
+        #                             # | legend_display_dict(tvl_name, 'TVL transforms')
+        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+        #                             | legend_display_dict(STL_name, 'Short Term Loudness transform')
+        #                             | legend_display_dict(phone_name, 'SALMONN phone features'))
         # fig = expression_plot(expression_data_tvl[40:55], paired_axes=True, minimap=False, show_legend=True)
-        # fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True, display_latency_range=[0, 0.075])
+        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True,
+                                color=constant_color_dict(IL_name, color= 'purple')
+                                    | constant_color_dict(STL_name, color= 'pink'),
+                                legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_part_source_der_6.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tvl_source_der_6.png")
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75_test.png")
 
 
@@ -261,7 +265,7 @@ def main():
 
         start = time.time()
 
-        path_to_nkg_files = Path(path_to_nkg_files, 'whisper_large_multi')
+        path_to_nkg_files = Path('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/expression_set')
 
         # transform to find all files ending with _gridsearch.nkg
         def find_nkg_files(directory):
@@ -289,6 +293,19 @@ def main():
         # encoder3_list = []
         # encoder4_list = []
         # encoder5_list = []
+
+        decoder_list = []
+        encoder_list = []
+
+        for i in range(32):
+            for j in range(1280):
+                decoder = f"model.decoder.layers.{i}.fc2_{j}_gridsearch"
+                decoder_list.append(decoder)
+
+        for i in range(32):
+            for j in range(1280):
+                encoder = f"model.encoder.layers.{i}.fc2_{j}_gridsearch"
+                encoder_list.append(encoder)
 
         # # Loop through the range from 0 to 511
         # for i in range(512):
@@ -324,10 +341,14 @@ def main():
         #     encoder5_list.append(encoder5)
 
         expression_plot(expression_data,
-                        ylim=-400,
+                        # ylim=-400,
                         xlims=(-200, 800),
-                        save_to=Path(Path(path.abspath("")).parent, "kymata-core/kymata-core-data", "output/whisper_large_all_expression.jpg"),
-                        show_legend=False,)
+                        save_to='/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/ru_en_all_pilots.png',
+                        show_legend=False,
+                        color=constant_color_dict(decoder_list, color='red')
+                            | constant_color_dict(encoder_list, color='green'),
+                        legend_display=legend_display_dict(decoder_list, 'Decoder')
+                            | legend_display_dict(encoder_list, 'Encoder'))
                         # color= constant_color_dict(conv1_list, color='red')
                         #         | constant_color_dict(conv2_list, color='green')
                         #         | constant_color_dict(encoder0_list, color='blue')

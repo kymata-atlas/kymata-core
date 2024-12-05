@@ -24,7 +24,7 @@ apptainer exec \
     " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ; \
       export VENV_PATH=~/poetry/ ; \
       export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
-      \$VENV_PATH/bin/poetry run python -m invokers.invoker_run_nkg_plotting \
+      \$VENV_PATH/bin/poetry run python -m kymata.invokers.invoker_run_nkg_plotting \
   "
 
 # -B /imaging/projects/cbu/kymata/ \

@@ -26,13 +26,14 @@ def asr_models_loop_full():
 
     size = 'large'
 
-    neuron_selection = True
+    neuron_selection = False
     
     n = 1
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
     
-    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ru_narr_en_native/language_pilots_all/fake_log/'
+    # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/log/'
+    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large-v2/fc2/log/'
     file_list = list_files_in_directory(log_dir_1)
 
     # log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
@@ -44,11 +45,12 @@ def asr_models_loop_full():
         with open(log_dir_1 + file_name, 'r') as f:
             a = f.readlines()
             for ia in range(len(a)):
-                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
+                if 'layer' in a[ia] and 'Transforms to be tested' not in a[ia] and 'Functions to be tested' not in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
                         # import ipdb;ipdb.set_trace()
                         # lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        # lat_sig[i % n, i // n, k] = [float(_a[10][:-1]), 0, float(_a[13][:-1]), float(_a[-1]), i // n, float(_a[7].split('_')[-1].rstrip(':'))]
                         lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
@@ -150,7 +152,7 @@ def asr_models_loop_full():
     # plt.legend()
     # plt.xlim(-10, 60)
     # plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/fc2/all_layer_select', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large-v2/fc2/en_de.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
