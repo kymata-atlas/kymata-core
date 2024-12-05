@@ -503,8 +503,10 @@ def expression_plot(
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
-        ** (1 / (2 * len(expression_set.latencies) * n_channels * len(show_only)))
-    )
+        ** np.float128(1 / (2
+                 * len(expression_set.latencies)
+                 * n_channels
+                 * len(show_only))))
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
