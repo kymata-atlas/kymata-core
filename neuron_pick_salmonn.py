@@ -111,10 +111,13 @@ def read_log_file_asr(n, log_dir, layer, neuron):
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
             for ia in range(len(a)):
-                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
+                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia] and 'Transforms to be tested' not in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        try:
+                            lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        except:
+                            lat_sig[i % n, i // n, k] = [float(_a[10][:-1]), 0, float(_a[16][:-1]), float(_a[-1]), i // n, float(_a[7].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 

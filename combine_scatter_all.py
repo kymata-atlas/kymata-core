@@ -50,8 +50,8 @@ def asr_models_loop_full():
                         _a = [j for j in a[ia].split()]
                         # import ipdb;ipdb.set_trace()
                         # lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
-                        # lat_sig[i % n, i // n, k] = [float(_a[10][:-1]), 0, float(_a[13][:-1]), float(_a[-1]), i // n, float(_a[7].split('_')[-1].rstrip(':'))]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), 0, float(_a[6][:-1]), float(_a[-1]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        # lat_sig[i % n, i // n, k] = [float(_a[10][:-1]), 0, float(_a[16][:-1]), float(_a[-1]), i // n, float(_a[7].split('_')[-1].rstrip(':'))]
+                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), 0, float(_a[9][:-1]), float(_a[-1]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
