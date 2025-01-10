@@ -107,7 +107,7 @@ class CandidateTransformList:
             batch = set()
             # Previous step
             for transform in seq[-1]:
-                for successor in  self.graph.successors(transform):
+                for successor in self.graph.successors(transform):
                     batch.add(successor)
                     try:
                         all_transforms.remove(successor)
@@ -115,6 +115,24 @@ class CandidateTransformList:
                         pass
             seq.append(sorted(batch))
         return seq
+
+    def immediately_upstream(self, transform: str) -> set[str]:
+        """
+        The set of transforms which are immediately upstream of the specified transform.
+        """
+        if transform not in self.transforms:
+            raise ValueError(transform)
+
+        return set(self.graph.predecessors(transform))
+
+    def immediately_downstream(self, transform: str) -> set[str]:
+        """
+        The set of transforms which are immediately downstream of the specified transform.
+        """
+        if transform not in self.transforms:
+            raise ValueError(transform)
+
+        return set(self.graph.successors(transform))
 
 
 def group_points_by_transform(points: list[ExpressionPoint],

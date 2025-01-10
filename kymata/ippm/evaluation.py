@@ -9,12 +9,12 @@ from kymata.ippm.hierarchy import group_points_by_transform
 
 def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
     """
-    Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy
-    spikes.
+    Assumption: expression points are denoised. Otherwise, it doesn't really make sense to check the min/max latency of
+    noisy expression points.
 
-    A score calculated on denoised spikes that calculates the proportion of arrows in IPPM that are going backward in
-    time. It assumes that the function hierarchy is correct, which may not always be correct, so you must use it with
-    caution.
+    A score calculated on denoised expression points that calculates the proportion of arrows in IPPM that are going
+    backward in time. It assumes that the function hierarchy is correct, which may not always be correct, so you must
+    use it with caution.
 
     Algorithm
     ----------
@@ -33,33 +33,36 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
 
     causality_violations = 0
     total_arrows = 0
-    for trans in ippm.candidate_transform_list.transforms:
-        inc_edges = ippm.candidate_transform_list.graph.in_edges(trans)
+    for transform in ippm.candidate_transform_list.transforms:
         # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in
         # time.
         # arrows go from latest inc_edge spike to the earliest func spike
 
-        if trans in ippm.candidate_transform_list.inputs:
+        # Inputs can't cause a causality violation
+        if transform in ippm.candidate_transform_list.inputs:
             continue
-        if len(ippm.points[trans]) == 0:
+
+        points_this_trans = ippm.points[transform]
+
+        # If there aren't any points for this transform it can't cause a causality violation
+        if len(points_this_trans) == 0:
             continue
 
-        child_latency = _point_with_min_latency(ippm.points[trans]).latency
-        for inc_edge in inc_edges:
-            if inc_edge in ippm.candidate_transform_list.inputs:
-                # input node, so parent latency is 0
-                parent_latency = 0
-                if child_latency < parent_latency:
-                    causality_violations += 1
-                total_arrows += 1
-                continue
+        earliest_latency_this_trans = _point_with_min_latency(points_this_trans)
 
-            # We need to ensure the function has significant spikes
-            if len(ippm.points[inc_edge]) == 0:
-                continue
+        upstream_transforms = ippm.candidate_transform_list.immediately_upstream(transform)
+        for upstream in upstream_transforms:
+            # Get latest upstream latency
+            if upstream in ippm.candidate_transform_list.inputs:
+                latest_latency_upstream = 0
+            else:
+                upstream_points = ippm.points[upstream]
+                if len(upstream_points) == 0:
+                    continue
+                latest_latency_upstream = _point_with_max_latency(upstream_points).latency
 
-            parent_latency = _point_with_max_latency(ippm.points[trans]).latency
-            if child_latency < parent_latency:
+            # Check for causality violation
+            if earliest_latency_this_trans.latency < latest_latency_upstream:
                 causality_violations += 1
             total_arrows += 1
 
