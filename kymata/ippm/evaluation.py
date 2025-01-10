@@ -78,7 +78,7 @@ def _point_with_max_latency(trans_points: list[ExpressionPoint]) -> ExpressionPo
     return max(trans_points, key=lambda p: p.latency)
 
 
-def transform_recall(ippm: IPPMGraph, noisy_points: list[ExpressionPoint]) -> tuple[float, int, int]:
+def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint]) -> tuple[float, int, int]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
     noisy spikes are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
@@ -100,19 +100,25 @@ def transform_recall(ippm: IPPMGraph, noisy_points: list[ExpressionPoint]) -> tu
     -------
     A ratio indicating how many transforms were incorporated into the IPPM out of all relevant transforms.
     (ratio, num, denom)
+
+    In case the denominator is 0, the ratio will be set to 0 rather than raise an exception.
     """
 
-    trans_present_in_data = set(
+    trans_present_in_original_data = set(
         trans
         for trans, points in group_points_by_transform(noisy_points).items()
         if len(points) > 0
     )
+    trans_present_in_graph = set(
+        n.transform
+        for n in ippm_graph.graph_last_to_first.nodes
+    )
 
-    n_detected_transforms = len(ippm.graph_last_to_first.nodes)
-    n_transforms_in_data = len(trans_present_in_data)
+    n_detected_transforms = len(trans_present_in_graph)
+    n_transforms_in_data = len(trans_present_in_original_data)
 
     return (
-        n_detected_transforms / n_transforms_in_data if n_transforms_in_data > 0 else 0,
-        n_detected_transforms,
-        n_transforms_in_data,
+        n_detected_transforms / n_transforms_in_data if n_transforms_in_data > 0 else 0,  # ratio
+        n_detected_transforms,  # num
+        n_transforms_in_data,   # denom
     )

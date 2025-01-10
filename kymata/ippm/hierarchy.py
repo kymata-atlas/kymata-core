@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Optional
 
 from networkx import DiGraph
@@ -137,11 +138,11 @@ def group_points_by_transform(points: list[ExpressionPoint],
         GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
             transform.
     """
-    d: GroupedPoints = dict()
+    d: GroupedPoints = defaultdict(list)
     if ctl is not None:
         # Initialise with empty lists for transforms with no points
         for t in ctl.transforms:
             d[t] = []
     for point in points:
         d[point.transform].append(point)
-    return d
+    return dict(d)

@@ -1,9 +1,9 @@
-from copy import deepcopy, copy
+from copy import copy
 
 from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.hierarchy import GroupedPoints, CandidateTransformList, group_points_by_transform
+from kymata.ippm.hierarchy import GroupedPoints, CandidateTransformList, group_points_by_transform, TransformHierarchy
 
 
 class IPPMGraph:
@@ -16,36 +16,36 @@ class IPPMGraph:
     and adding edges according to the predecessors and successors of the transforms.
 
     Args:
-        ctl (CandidateTransformList): A list of candidate transforms that define the transformation steps.
-        points (list[ExpressionPoint]): A list of expression points that will be used to build the graph.
+        ctl (CandidateTransformList or TransformHierarchy): A CTL that defines the transformation hierarchy.
+        original_points (list[ExpressionPoint]): A list of expression points that will be used to build the graph.
 
     Attributes:
         candidate_transform_list (CandidateTransformList): The candidate transform list used to create the graph.
         points (GroupedPoints): A dictionary grouping points by their associated transforms.
     """
     def __init__(self,
-                 ctl: CandidateTransformList,
-                 points: list[ExpressionPoint]):
+                 ctl: CandidateTransformList | TransformHierarchy,
+                 original_points: list[ExpressionPoint]):
         """
         Initializes an IPPMGraph object by constructing a directed graph from a list of expression points and
         a candidate transform list.
 
         Args:
             ctl (CandidateTransformList): A CTL defining the transform hierarchy.
-            points (list[ExpressionPoint]): A actual evidential expression points from data.
+            original_points (list[ExpressionPoint]): A actual evidential expression points from data.
         """
+        if not isinstance(ctl, CandidateTransformList):
+            ctl = CandidateTransformList(ctl)
 
         graph = DiGraph()
 
         # Sort points by latency ascending
-        points = deepcopy(points)
-        points_by_transform = group_points_by_transform(points)
+        points_by_transform = group_points_by_transform(original_points)
         for trans in points_by_transform.keys():
             points_by_transform[trans].sort(key=lambda p: p.latency)
 
         # Copy the nodes for each instance of a point
-        # Note: if the transform is not present in the data, it will
-        #       not be added to the graph
+        # Note: if the transform is not present in the data, it will not be added to the graph
         for ctl_transform in ctl.transforms:
             for point in points_by_transform[ctl_transform]:
                 graph.add_node(point)
@@ -61,6 +61,12 @@ class IPPMGraph:
                     graph.add_edge(other_node, node)
                 if other_node.transform in ctl_successors:
                     graph.add_edge(node, other_node)
+                # Add sequential edges between same-transform nodes
+                if node.transform == other_node.transform:
+                    if node.latency < other_node.latency:
+                        graph.add_edge(node, other_node)
+                    elif node.latency > other_node.latency:
+                        graph.add_edge(other_node, node)
 
         self.candidate_transform_list: CandidateTransformList = ctl
         self.points: GroupedPoints = points_by_transform
@@ -78,7 +84,7 @@ class IPPMGraph:
             IPPMGraph: A new IPPMGraph instance with the same candidate transform list and expression points.
         """
         return IPPMGraph(ctl=copy(self.candidate_transform_list),
-                         points=[p for _, points in self.points.items() for p in points])
+                         original_points=[p for _, points in self.points.items() for p in points])
 
     @property
     def transforms(self) -> set[str]:
@@ -88,7 +94,7 @@ class IPPMGraph:
         Returns:
             set[str]: A set of transform names present in the graph.
         """
-        return set(self._graph_full.nodes)
+        return set(n.transform for n in self._graph_full.nodes)
 
     @property
     def inputs(self) -> set[str]:
@@ -136,17 +142,30 @@ class IPPMGraph:
             DiGraph: A directed graph representing this version of the graph.
         """
         def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
-            # If there's an available predecessor, don't keep
-            pred: ExpressionPoint
-            for pred in self._graph_full.predecessors(source):
-                if pred.transform == source.transform:
-                    return False
-            # If there's a successor, don't keep
-            succ: ExpressionPoint
-            for succ in self._graph_full.successors(dest):
-                if succ.transform == dest.transform:
-                    return False
-            return True
+            # Deal with repeated-transform edges
+            if source.transform == dest.transform:
+                # Only want to keep single path of edges from first to last incidence of a transform
+                # So search for intermediate points and reject the edge if any are found
+                potential_intermediates = self._graph_full.successors(source)
+                pred: ExpressionPoint
+                for pred in self._graph_full.predecessors(dest):
+                    if pred in potential_intermediates:
+                        return False
+                return True
+
+            # Deal with other edges
+            else:
+                # If there's an available predecessor, don't keep
+                pred: ExpressionPoint
+                for pred in self._graph_full.predecessors(source):
+                    if pred.transform == source.transform:
+                        return False
+                # If there's a successor, don't keep
+                succ: ExpressionPoint
+                for succ in self._graph_full.successors(dest):
+                    if succ.transform == dest.transform:
+                        return False
+                return True
 
         subgraph = self._graph_full.edge_subgraph([(s, d) for s, d in self._graph_full.edges if __keep_edge(s, d)])
         assert isinstance(subgraph, DiGraph)
