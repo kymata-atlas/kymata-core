@@ -56,53 +56,52 @@ def test_causality_violation_with_single_edge_should_return_0():
     ) == (0, 0, 1)
 
 
-def test_transform_recall_with_no_funcs_should_return_0():
-    test_hexels = {
-        "f1": [],
-        "f2": [ExpressionPoint("c1", 10, "f2", 1e-1)],  # should be > alpha, so not significant
-    }
-    test_ippm = {}
-    funcs = ["f1", "f2"]
-    ratio, numer, denom = transform_recall(
-        test_hexels, funcs, test_ippm, HEMI_LEFT
-    )
+def test_transform_recall_with_no_trans_should_return_0():
+    noisy_points = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 15, "f1", -35),
+        ExpressionPoint("c3", 25, "f2", -50),
+        ExpressionPoint("c3", 30, "f2", -2),
+    ]
+    denoised_points = []
+
+    test_graph = IPPMGraph(dict(), denoised_points)
+
+    ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
     assert ratio == 0
     assert numer == 0
-    assert denom == 0
 
 
-def test_transform_recall_with_all_funcs_found_should_return_1():
-    test_hexels = {
-        "f1": [(10, 1e-30), (15, 1e-35)],
-        "f2": [(25, 1e-50), (30, 1e-2)],
-    }
-    test_ippm = {
-        "f1-0": IPPMNode(1e-30, 10, []),
-        "f1-1": IPPMNode(1e-35, 15, ["f1-0"]),
-        "f2-0": IPPMNode(1e-50, 25, ["f1-1"]),
-    }
-    funcs = ["f1", "f2"]
-    ratio, numer, denom = transform_recall(
-        test_hexels, funcs, test_ippm, HEMI_LEFT
-    )
+def test_transform_recall_with_all_trans_found_should_return_1():
+    noisy_points = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 15, "f1", -35),
+        ExpressionPoint("c3", 25, "f2", -50),
+        ExpressionPoint("c3", 30, "f2", -2),
+    ]
+    denoised_points = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 15, "f1", -35),
+        ExpressionPoint("c3", 25, "f2", -50),
+        ExpressionPoint("c3", 30, "f2", -2),
+    ]
+
+    test_graph = IPPMGraph({"f1": [], "f2": ["f1"]}, denoised_points)
+
+    ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
     assert ratio == 1
     assert numer == 2
     assert denom == 2
 
 
-def test_transform_recall_with_invalid_hemi_input_should_raise_exception():
-    with pytest.raises(AssertionError):
-        transform_recall({}, [], {}, "invalidHemisphere")
-
-
-def test_transform_recall_with_valid_input_should_return_correct_ratio():
+def test_transform_recall_with_half_trans_found_should_return_correct_ratio():
     noisy_points = [
         ExpressionPoint("c1", 10, "f1", -30),
         ExpressionPoint("c2", 15, "f1", -35),
         ExpressionPoint("c3", 25, "f2", -50),
-        ExpressionPoint("c3", 30, "f2", -2)
+        ExpressionPoint("c3", 30, "f2", -2),
     ]
     denoised_points = [
         ExpressionPoint("c1", 10, "f1", -30),
