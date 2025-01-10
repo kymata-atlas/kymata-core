@@ -1,5 +1,5 @@
-from kymata.entities.expression import ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, \
-    BLOCK_RIGHT
+from kymata.entities.expression import (
+    ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList
@@ -8,7 +8,6 @@ _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
     "dbscan": DBSCANStrategy,
 }
-_default_denoiser = "maxpooler"
 _default_denoiser_kwargs = {
     "dbscan": {
         "should_normalise": True,
@@ -24,14 +23,36 @@ _default_denoiser_kwargs = {
         "n_jobs": -1,
     }
 }
+_default_denoiser = "maxpooler"
 
 
 class IPPM:
+    """
+    IPPM container object.
+
+    Contains one IPPMGraph for each block of data (e.g. left and right hemisphere, or scalp sensors).  Access the graph
+    object using indexing. E.g.:
+
+        ippm = IPPM(...)
+        left_graph = ippm[BLOCK_LEFT]  # "left"
+    """
     def __init__(self,
                  expression_set: ExpressionSet,
                  hierarchy: CandidateTransformList,
                  denoiser: str | None = _default_denoiser,
                  **kwargs):
+        """
+        Args:
+           expression_set (ExpressionSet): The expressionset from which to build the IPPM.
+           hierarchy (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied to the
+            expression set.
+           denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
+           **kwargs: Additional arguments passed to the denoiser.
+
+       Raises:
+           ValueError: If any transform in the hierarchy is not found in the expression set, or if the provided denoiser
+            is invalid.
+       """
 
         # Update kwargs
         for kw, arg in _default_denoiser_kwargs.items():

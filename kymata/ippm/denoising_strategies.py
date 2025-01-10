@@ -14,8 +14,13 @@ from ..math.probability import logp_to_p, p_to_logp, sidak_correct, p_threshold_
 
 class DenoisingStrategy(ABC):
     """
-    Superclass for unsupervised clustering algorithms.
+    Abstract base class for unsupervised clustering algorithms used in denoising expression sets.
+
     Strategies should conform to this interface.
+
+    This class defines the common interface and functionality for denoising strategies that use clustering
+    methods to remove noise from expression data, focusing on significant spikes and clustering points
+    based on latency or other relevant dimensions.
     """
 
     def __init__(
@@ -29,18 +34,23 @@ class DenoisingStrategy(ABC):
         **kwargs,
     ):
         """
-        :param should_normalise:
-                Indicates whether the preprocessing step of scaling the data to be unit length should be done.
-                Unnormalised data places greater precedence on the latency dimension.
-        :param cluster_only_latency:
-                Indicates whether we should discard the magnitude dimension from the clustering algorithm.
-                We can term this "density-based clustering" as it focuses on the density of points in time only.
-        :param should_max_pool:
-                Indicates whether we want to enforce the constraint that each transform should have 1 spike.
-                Equivalently, we take the maximum over all clusters and discard all other points. Setting this to
-                True optimises performance in the context of IPPMs.
-        :param exclude_logp_vals_above:
-                Supply a log p-value threshold to test for significance for this exclusion. Supply none to not exclude.
+        Initializes a DenoisingStrategy object with the specified parameters.
+
+        Args:
+            should_normalise (bool): Indicates whether the preprocessing step of scaling the data to be unit length
+                should be done. Unnormalised data places greater precedence on the latency dimension.
+            should_cluster_only_latency (bool): Indicates whether we should discard the magnitude dimension from the
+                clustering algorithm. We can term this "density-based clustering" as it focuses on the density of points
+                in time only.
+            should_max_pool (bool): Indicates whether we want to enforce the constraint that each transform should have
+                1 spike.
+                Equivalently, we take the maximum over all clusters and discard all other points. Setting this to True
+                optimises performance in the context of IPPMs.
+            exclude_logp_vals_above (float | None): Supply a log p-value threshold to test for significance for this
+                exclusion. Supply None to not exclude.
+            exclude_points_above_n_sigma (float | None): Sigma threshold for excluding points.  Supply None to not
+                exclude.
+            should_shuffle (bool): Whether to shuffle the points before clustering.
         """
 
         if exclude_logp_vals_above is not None and exclude_points_above_n_sigma is not None:
@@ -67,17 +77,29 @@ class DenoisingStrategy(ABC):
 
     @overload
     def denoise(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
+        """Denoise a HexelExpressionSet."""
         ...
 
     @overload
     def denoise(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
+        """Denoise a SensorExpressionSet."""
         ...
 
     @overload
     def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+        """Denoise a general ExpressionSet."""
         ...
 
     def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+        """
+        Denoises an expression set by applying the appropriate denoising method based on the type of the expression set.
+
+        Args:
+            expression_set (ExpressionSet): The expression set to denoise.
+
+        Returns:
+            ExpressionSet: The denoised expression set.
+        """
         if isinstance(expression_set, HexelExpressionSet):
             return self._denoise_hexel_expression_set(expression_set)
         elif isinstance(expression_set, SensorExpressionSet):
@@ -142,11 +164,15 @@ class DenoisingStrategy(ABC):
                     - should_max_pool: Take the most significant point over all the clusters. I.e., only 1
                                              spike per transform.
 
-        :param spikes:
-            The key is the transform name and the IPPMSpike contains information about the transform. Specifically,
-            it contains a list of (Latency (ms), Magnitude (^10-x)) for each hemisphere. We cluster over one
-            hemisphere.
-        :return: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
+        Args:
+            spikes (GroupedPoints): A dictionary of spikes grouped by transform name. The key is the transform name and
+                the IPPMSpike contains information about the transform. Specifically, it contains a list of
+                    (Latency (ms), Magnitude (^10-x))
+                for each hemisphere. We cluster over one hemisphere.
+            logp_threshold (float | None): The log p-value threshold for excluding insignificant points.
+
+        Returns:
+            GroupedPoints: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
         """
 
         spikes = deepcopy(spikes)
@@ -184,8 +210,12 @@ class DenoisingStrategy(ABC):
         For a list of ExpressionPoints, remove all that are not statistically significant and return a list of those
         that remain.
 
-        :param points: points we want to filter based on their statistical significance.
-        :returns: a new list containing points with significant p-values.
+        Args:
+            points (list[ExpressionPoint]): Points we want to filter based on their statistical significance.
+            threshold_logp (float): The log p-value threshold below which points are considered significant.
+
+        Returns:
+            list[ExpressionPoint]: A new list containing points with significant log p-values.
         """
         return [
             p for p in points
@@ -197,8 +227,11 @@ class DenoisingStrategy(ABC):
         """
         Currently, this can normalise or remove the magnitude dimension.
 
-        :param points: points we want to preprocess.
-        :return: if we cluster_only_latency, we return a numpy array. Else, a list of ExpressionPoint.
+        Args:
+            points (list[ExpressionPoint]): Points we want to preprocess.
+
+        Returns:
+            list[ExpressionPoint]: If we cluster_only_latency, we return a numpy array. Else, a list of ExpressionPoint.
         """
 
         points = deepcopy(points)
@@ -212,6 +245,17 @@ class DenoisingStrategy(ABC):
     
     @staticmethod
     def _normalize(points: list[ExpressionPoint], latency_only: bool) -> list[ExpressionPoint]:
+        """
+        Normalizes points by scaling the latency and magnitude dimensions, depending on whether only latency is
+        considered.
+
+        Args:
+            points (list[ExpressionPoint]): A list of points to normalize.
+            latency_only (bool): Whether to normalize only the latency dimension.
+
+        Returns:
+            list[ExpressionPoint]: The normalized points.
+        """
         # Normalise latency
         latency_sum = sum(p.latency for p in points)
         if latency_only:

@@ -13,25 +13,34 @@ from sklearn.utils._testing import ignore_warnings
 
 from kymata.entities.expression import ExpressionPoint
 
+
 ANOMALOUS_CLUSTER_TAG = -1
 
 
 class CustomClusterer(ABC):
     """
-    You need to override these methods to create a new clusterer. self.labels_ assigns each datapoint
-    in df to a cluster. Set anomalies to ANOMALOUS_TAG.
-
-    self.labels is a list of cluster labels. It has the same size as the dataset.
+    Abstract base class for a clustering algorithm. Custom clustering algorithms should subclass this and override the
+    `fit` method. The clustering algorithm assigns a label to each data point in the dataset, with anomalies tagged as
+    `ANOMALOUS_TAG`. The `labels_` attribute stores the cluster labels, where each label corresponds to a point in the
+    dataset.
     """
 
     def __init__(self):
+        """
+        Initializes the CustomClusterer instance with an empty list of labels.
+        """
+        # A list of cluster labels assigned to each point, where each element corresponds to a point in the input data.
+        # Anomalies are assigned the label `ANOMALOUS_TAG`.
         self.labels_: list[int] = []
 
     @abstractmethod
     def fit(self, points: list[ExpressionPoint]) -> Self:
         """
-        Mutates self.labels to a list whose elements correspond to the elements of `points`,
+        Mutates `self.labels` to a list whose elements correspond to the elements of `points`,
         assigning an integer cluster label to each point.
+
+        Args:
+            points (list[ExpressionPoint]): The list of points to be clustered.
         """
         raise NotImplementedError()
 

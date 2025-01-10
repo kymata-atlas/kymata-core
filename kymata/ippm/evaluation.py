@@ -9,10 +9,12 @@ from kymata.ippm.hierarchy import group_points_by_transform
 
 def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
     """
-    Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy spikes.
+    Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy
+    spikes.
 
-    A score calculated on denoised spikes that calculates the proportion of arrows in IPPM that are going backward in time.
-    It assumes that the function hierarchy is correct, which may not always be correct, so you must use it with caution.
+    A score calculated on denoised spikes that calculates the proportion of arrows in IPPM that are going backward in
+    time. It assumes that the function hierarchy is correct, which may not always be correct, so you must use it with
+    caution.
 
     Algorithm
     ----------
@@ -33,7 +35,8 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
     total_arrows = 0
     for trans in ippm.candidate_transform_list.transforms:
         inc_edges = ippm.candidate_transform_list.graph.in_edges(trans)
-        # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in time.
+        # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in
+        # time.
         # arrows go from latest inc_edge spike to the earliest func spike
 
         if trans in ippm.candidate_transform_list.inputs:

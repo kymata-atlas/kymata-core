@@ -42,7 +42,7 @@ BLOCK_SCALP = "scalp"
 @dataclass(frozen=True)
 class ExpressionPoint:
     """
-    A single point of transform expression
+    A single point of transform expression evidence.
     """
     channel: Channel
     latency: Latency

@@ -32,6 +32,9 @@ class _YOrdinateStyle(StrEnum):
     centered    = "centered"
 
 
+_XY = tuple[float, float]
+
+
 class _PlottableNode(NamedTuple):
     x: float
     y: float
@@ -43,7 +46,12 @@ class _PlottableNode(NamedTuple):
 
 class _PlottableIPPMGraph:
     """
-    An IPPMGraph, with coordinates, colours, annotations, etc. attached to each node.
+    An extension of `IPPMGrap`h that associates coordinates, colors, annotations, etc. attached to each node in the
+    graph. This enables visual representation of the IPPMGraph with customizable layout and appearance.
+
+    Attributes:
+        graph (DiGraph): A directed graph with additional attributes for visualization, such as node positions and
+        colors.
     """
     def __init__(self,
                  ippm_graph: IPPMGraph,
@@ -53,6 +61,21 @@ class _PlottableIPPMGraph:
                  serial_sequence: Optional[list[list[str]]],
                  scale_nodes: bool,
                  ):
+        """
+        Initializes the _PlottableIPPMGraph by assigning coordinates, colors, and other visual attributes to each node.
+
+        Args:
+            ippm_graph (IPPMGraph): The source IPPMGraph to be visualized.
+            colors (dict[str, str]): A dictionary mapping transform names to colors for node visualization.
+            y_ordinate_style (str): Defines the style for the vertical positioning of nodes.
+                Options include "progressive" or "centered" (members of `_YOrdinateStyle`).
+            avoid_collinearity (bool): Whether to apply a small offset to avoid collinearity between nodes in the same
+                serial step.
+            serial_sequence (Optional[list[list[str]]]): A list representing the serial execution order of transforms.
+                If None, the default serial sequence from ippm_graph is used.
+            scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
+                points.
+        """
 
         ippm_graph = copy(ippm_graph)
         if serial_sequence is None:
@@ -249,9 +272,6 @@ def plot_ippm(
 
     fig.set_figheight(figheight)
     fig.set_figwidth(figwidth)
-
-
-_XY = tuple[float, float]
 
 
 def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
