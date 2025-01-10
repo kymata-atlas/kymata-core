@@ -11,7 +11,7 @@ from kymata.plot.color import constant_color_dict
 def main():
     function_family_type = "standard"  # 'standard' or 'ANN'
     path_to_nkg_files = Path(
-        Path(path.abspath("")).parent.parent, "kymata-core-data", "output"
+        Path(__file__).parent.parent.parent, "kymata-core-data", "output"
     )
 
     # template invoker for printing out expression set .nkgs
@@ -40,7 +40,6 @@ def main():
             ylim=-200,
         )
 
-        fig.show()
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
 
     elif function_family_type == "ANN":
@@ -131,7 +130,7 @@ def main():
             encoder5 = f"model.encoder.layers.5.final_layer_norm_{i}"
             encoder5_list.append(encoder5)
 
-        expression_plot(
+        fig = expression_plot(
             expression_data,
             ylim=-400,
             xlims=(-200, 800),
@@ -159,6 +158,9 @@ def main():
             | legend_display_dict(encoder4_list, "Encoder layer 5")
             | legend_display_dict(encoder5_list, "Encoder layer 6"),
         )
+
+        fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
+
 
 
 if __name__ == "__main__":
