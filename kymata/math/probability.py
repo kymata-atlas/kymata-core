@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from statistics import NormalDist
 
-from numpy import log10, float128
+from numpy import log10, longdouble
 from numpy.typing import ArrayLike
 
 
@@ -55,5 +55,5 @@ def sidak_correct(alpha: float, n_comparisons: int) -> float:
     """Applies Šidák correction to an alpha threshold."""
     return 1 - (
         (1 - alpha)
-        ** float128(1 / (2 * n_comparisons))
+        ** longdouble(1 / (2 * n_comparisons))
     )
