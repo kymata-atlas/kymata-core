@@ -157,8 +157,8 @@ def asr_models_loop_full():
     neuron_selection = 'layer_sep'
     margin = 0
     n = 1
-    figure_opt = 'phone'
-    thres_feats = 0.001
+    figure_opt = 'word_with_class_syntax'
+    thres_feats = 0.01
     occur_thres = 0
 
     log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_13b_phone/fc2/log/'
