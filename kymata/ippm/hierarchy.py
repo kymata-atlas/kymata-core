@@ -101,19 +101,24 @@ class CandidateTransformList:
         """
         # Add input nodes
         seq = [sorted(self.inputs)]
+        parsed_transforms = self.inputs
         # Recursively add children
-        all_transforms = self.transforms - self.inputs
-        while len(all_transforms) > 0:
+        remaining_transforms = self.transforms - self.inputs
+        while len(remaining_transforms) > 0:
             batch = set()
             # Previous step
             for transform in seq[-1]:
-                for successor in self.graph.successors(transform):
-                    batch.add(successor)
-                    try:
-                        all_transforms.remove(successor)
-                    except KeyError:
-                        pass
+                candidates = self.graph.successors(transform)
+                for candidate in candidates:
+                    if set(self.graph.predecessors(candidate)) <= parsed_transforms:
+                        # All upstream transforms accounted for, so can add to the batch
+                        batch.add(candidate)
+                        try:
+                            remaining_transforms.remove(candidate)
+                        except KeyError:
+                            pass
             seq.append(sorted(batch))
+            parsed_transforms.update(batch)
         return seq
 
     def immediately_upstream(self, transform: str) -> set[str]:

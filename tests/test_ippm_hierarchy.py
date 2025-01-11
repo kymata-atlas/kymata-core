@@ -51,3 +51,28 @@ def test_ctl_serial_sequence(ctl):
         ['Vel'],
         ['Acc'],
     ]
+
+
+def test_ctl_serial_sequence_more_complex():
+    # Not sure if this is realistic, but it should still be treated well
+    ctl = CandidateTransformList({
+        "input": [],
+        "func1": ["input"],
+        # "func2" also depends on "func1" so can't come in parallel with it, though it's a successor of "input"
+        "func2": ["input", "func1"],
+        "func3": ["func2"],
+        "func4": ["func2"],
+    })
+
+    #       --- func1 ---       --- func3
+    #      /             \     /
+    # input ------------- func2
+    #                          \
+    #                           --- func4
+
+    assert ctl.serial_sequence == [
+        ["input"],
+        ["func1"],
+        ["func2"],
+        ["func3", "func4"],
+    ]
