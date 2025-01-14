@@ -25,8 +25,8 @@ def do_gridsearch(
     transform: Transform,
     channel_names: list,
     channel_space: str,
-    start_latency: float,  # ms
-    emeg_t_start: float,  # ms
+    start_latency: float,  # seconds
+    emeg_t_start: float,  # seconds
     stimulus_shift_correction: float,  # seconds/second
     stimulus_delivery_latency: float,  # seconds
     emeg_sample_rate: float,  # Hertz
@@ -54,8 +54,8 @@ def do_gridsearch(
             it is a flat list of sensor names. For 'source' space, it is a list containing two lists:
             left hemisphere and right hemisphere hexel names.
         channel_space (str): The type of channel space used, either 'sensor' or 'source'.
-        start_latency (float): The starting latency for the grid search in milliseconds.
-        emeg_t_start (float): The starting time of the EMEG data in milliseconds.
+        start_latency (float): The starting latency for the grid search in seconds.
+        emeg_t_start (float): The starting time of the EMEG data in seconds.
         stimulus_shift_correction (float): Correction factor for stimulus shift in seconds per second.
         stimulus_delivery_latency (float): Correction offset for stimulus delivery in seconds.
         plot_location (Optional[Path], optional): Path to save the plot of the top five channels of the
@@ -138,13 +138,13 @@ def do_gridsearch(
     # Reshape EMEG into splits of `seconds_per_split` s
     split_initial_timesteps = [
         int(
-            start_latency
-            - emeg_t_start
+            (start_latency * emeg_sample_rate)
+            - (emeg_t_start * emeg_sample_rate)
             + round(
                 i
                 * emeg_sample_rate
-                * seconds_per_split
-                * (1 + stimulus_shift_correction)
+                * seconds_per_split #seconds
+                * (1 + stimulus_shift_correction) #seconds
             )  # splits, stretched by the shift correction
             + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
         )
@@ -196,8 +196,8 @@ def do_gridsearch(
     log_pvalues = _ttest(corrs)
 
     latencies_ms = np.linspace(
-        start_latency,
-        start_latency + (seconds_per_split * 1000),
+        (start_latency * emeg_sample_rate),
+        (start_latency * emeg_sample_rate) + (seconds_per_split * 1000),
         n_trans_samples_per_split + 1,
     )[:-1]
 
