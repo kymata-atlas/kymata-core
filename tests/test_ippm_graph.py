@@ -1,8 +1,10 @@
+from copy import deepcopy, copy
+
 import pytest
 
 from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.graph import IPPMGraph, input_stream_pseudo_expression_point
-from kymata.ippm.hierarchy import TransformHierarchy
+from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 
 
 @pytest.fixture
@@ -90,6 +92,25 @@ def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_po
     assert len(graph.points) == 0
 
 
+def test_ippmgraph_copy():
+    ctl = CandidateTransformList({
+        "in": [],
+        "A": ["in"],
+        "B": ["A"],
+        "C": ["A"],
+    })
+    points = [
+        ExpressionPoint("c1", 1, "A", -50),
+        ExpressionPoint("c2", 2, "A", -50),
+        ExpressionPoint("c3", 3, "A", -50),
+        ExpressionPoint("c4", 4, "B", -50),
+        ExpressionPoint("c5", 5, "C", -50),
+    ]
+    graph_1 = IPPMGraph(deepcopy(ctl), deepcopy(points))
+    graph_2 = IPPMGraph(deepcopy(ctl), deepcopy(points))
+    assert copy(graph_1) == graph_2
+
+
 def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
     graph = IPPMGraph(sample_hierarchy,
                       # Delete func1
@@ -117,3 +138,33 @@ def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
         ["func3"],
         ["func4"],
     ]
+
+
+def test_ippmgraph_last_to_first():
+    ctl = CandidateTransformList({
+        "in": [],
+        "A": ["in"],
+        "B": ["A"],
+        "C": ["A"],
+    })
+    points = [
+        ExpressionPoint("c1", 1, "A", -50),
+        ExpressionPoint("c2", 2, "A", -50),
+        ExpressionPoint("c3", 3, "A", -50),
+        ExpressionPoint("c4", 4, "B", -50),
+        ExpressionPoint("c5", 5, "C", -50),
+    ]
+    graph = IPPMGraph(ctl=ctl, points=points)
+    ftl = graph.graph_last_to_first
+    inputs = graph.inputs
+    for p in points:
+        assert p in ftl.nodes
+    for inp in inputs:
+        assert inp in {n.transform for n in ftl.nodes}
+    assert set(ftl.successors(input_stream_pseudo_expression_point("in"))) == {ExpressionPoint("c1", 1, "A", -50)}
+    assert set(ftl.successors(ExpressionPoint("c1", 1, "A", -50))) == {ExpressionPoint("c2", 2, "A", -50)}
+    assert set(ftl.successors(ExpressionPoint("c2", 2, "A", -50))) == {ExpressionPoint("c3", 3, "A", -50)}
+    assert set(ftl.successors(ExpressionPoint("c3", 3, "A", -50))) == {ExpressionPoint("c4", 4, "B", -50),
+                                                                       ExpressionPoint("c5", 5, "C", -50)}
+    assert set(ftl.successors(ExpressionPoint("c4", 4, "B", -50))) == set()
+    assert set(ftl.successors(ExpressionPoint("c5", 5, "C", -50))) == set()

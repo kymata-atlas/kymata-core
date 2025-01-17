@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import Optional
 
@@ -55,6 +57,14 @@ class CandidateTransformList:
                 graph.add_edge(parent, trans)
 
         self.graph: DiGraph = graph
+
+    def __eq__(self, other: CandidateTransformList) -> bool:
+        # Check nodes and edges
+        if set(self.graph.nodes) != set(other.graph.nodes):
+            return False
+        if set(self.graph.edges) != set(other.graph.edges):
+            return False
+        return True
 
     @property
     def transforms(self) -> set[str]:

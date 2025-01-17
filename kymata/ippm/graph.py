@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from copy import copy
 from logging import getLogger
 
@@ -105,7 +107,7 @@ class IPPMGraph:
         # e.g. self.graph_last_to_first.
         self.graph_full: DiGraph = graph
 
-    def __copy__(self):
+    def __copy__(self) -> IPPMGraph:
         """
         Creates a shallow copy of the current IPPMGraph instance.
 
@@ -114,6 +116,20 @@ class IPPMGraph:
         """
         return IPPMGraph(ctl=copy(self.candidate_transform_list),
                          points=[p for _, points in self.points.items() for p in points])
+
+    def __eq__(self, other: IPPMGraph) -> bool:
+        """
+        Tests for equality of graphs.
+
+        Graphs are defined to be equal if they have equal CTL and equal points.
+
+        Note that equality tests are exact, so be aware of floating-point comparisons on latencies and log p-values.
+        """
+        if self.candidate_transform_list != other.candidate_transform_list:
+            return False
+        if self.points != other.points:
+            return False
+        return True
 
     @property
     def transforms(self) -> set[str]:
@@ -176,26 +192,25 @@ class IPPMGraph:
         def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
             # Deal with repeated-transform edges
             if source.transform == dest.transform:
-                # Only want to keep single path of edges from first to last incidence of a transform
-                # So search for intermediate points and reject the edge if any are found
-                potential_intermediates = self.graph_full.successors(source)
-                pred: ExpressionPoint
-                for pred in self.graph_full.predecessors(dest):
-                    if pred in potential_intermediates:
-                        return False
-                return True
+                # Only want to keep single path of edges from first to last incidence of a transform, so reject edge
+                # when there are other points wihch could serve as intermediates
+                intermediates = set(self.graph_full.successors(source)) & set(self.graph_full.predecessors(dest))
+                return len(intermediates) == 0
 
             # Deal with other edges
             else:
-                # If there's an available predecessor, don't keep
+                # We only want edges between the LAST point in a string of same-transform points for the upstream
+                # transform, to the FIRST point in the string of same-transform points for the downstream transform
+                # (hence "last to first").
+                # So if there's an available predecessor in the destination, don't keep
                 pred: ExpressionPoint
-                for pred in self.graph_full.predecessors(source):
-                    if pred.transform == source.transform:
+                for pred in self.graph_full.predecessors(dest):
+                    if pred.transform == dest.transform:
                         return False
-                # If there's a successor, don't keep
+                # If there's a successor to the source, don't keep
                 succ: ExpressionPoint
-                for succ in self.graph_full.successors(dest):
-                    if succ.transform == dest.transform:
+                for succ in self.graph_full.successors(source):
+                    if succ.transform == source.transform:
                         return False
                 return True
 
