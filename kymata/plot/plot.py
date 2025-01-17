@@ -56,6 +56,7 @@ class _AxName:
 class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
+    height_ratios: list[float] | None
     fig_size: tuple[float, float]
     subplots_adjust_kwargs: dict[str, float] = None
 
@@ -64,8 +65,9 @@ class _MosaicSpec:
             self.subplots_adjust_kwargs = dict()
 
     def to_subplots(self) -> tuple[pyplot.Figure, dict[str, pyplot.Axes]]:
+        print(self.mosaic)
         return pyplot.subplot_mosaic(
-            self.mosaic, width_ratios=self.width_ratios, figsize=self.fig_size
+            self.mosaic, width_ratios=self.width_ratios, height_ratios=self.height_ratios, figsize=self.fig_size
         )
 
 
@@ -78,6 +80,7 @@ def _minimap_mosaic(
     # Set defaults:
     if minimap_option is None:
         width_ratios = None
+        height_ratios = None
         subplots_adjust = {
             "hspace": 0,
             "left": 0.08,
@@ -85,6 +88,7 @@ def _minimap_mosaic(
         }
     elif minimap_option.lower() == "show":
         width_ratios = [1, 3]
+        height_ratios = None
         subplots_adjust = {
             "hspace": 0,
             "wspace": 0.25,
@@ -93,6 +97,7 @@ def _minimap_mosaic(
         }
     elif minimap_option.lower() == "large":
         width_ratios = None
+        height_ratios = [4, 1, 1]
         subplots_adjust = {
             "hspace": 0,
             "wspace": 0.25,
@@ -158,6 +163,7 @@ def _minimap_mosaic(
     return _MosaicSpec(
         mosaic=spec,
         width_ratios=width_ratios,
+        height_ratios=height_ratios,
         fig_size=fig_size,
         subplots_adjust_kwargs=subplots_adjust,
     )
@@ -347,9 +353,6 @@ def _plot_minimap_hexel(
         smoothing_steps=2,
         background="white",
         spacing="ico5",
-        brain_kwargs={
-            "offscreen": True,  # offscreen here appears to not actually do anything in mne
-        },
         time_viewer=False,
         colorbar=False,
         transparent=False,
