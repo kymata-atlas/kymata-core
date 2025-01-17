@@ -6,16 +6,13 @@ from warnings import warn
 
 import matplotlib.patheffects as pe
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
-from sklearn.metrics import euclidean_distances
-from sklearn.preprocessing import normalize
 
-from kymata.entities.expression import ExpressionPoint, BLOCK_LEFT, BLOCK_SCALP
+from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.ippm import IPPM
 
@@ -46,7 +43,7 @@ class _PlottableNode(NamedTuple):
 
 class _PlottableIPPMGraph:
     """
-    An extension of `IPPMGrap`h that associates coordinates, colors, annotations, etc. attached to each node in the
+    An extension of an `IPPMGraph` that associates coordinates, colors, annotations, etc. attached to each node in the
     graph. This enables visual representation of the IPPMGraph with customizable layout and appearance.
 
     Attributes:
@@ -388,48 +385,6 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
     bspline_path: list[NDArray] = splev(u3, tck)
 
     return bspline_path
-
-
-def plot_k_dist_1D(points: list[ExpressionPoint], k: int = 4, normalise: bool = False) -> None:
-    """
-    This could be optimised further but since we aren't using it, we can leave it as it is.
-
-    A utility function to plot the k-dist graph for a set of timings. Essentially, the k dist graph plots the distance
-    to the kth neighbour for each point. By inspecting the gradient of the graph, we can gain some intuition behind the density of
-    points within the dataset, which can feed into selecting the optimal DBSCAN hyperparameters.
-
-    For more details refer to section 4.2 in https://www.dbs.ifi.lmu.de/Publikationen/Papers/KDD-96.final.frame.pdf
-
-    Parameters
-    ----------
-    points: list of timings extracted from a spikes. It contains the timings for one transform and one hemisphere
-    k: the k we use to find the kth neighbour. Paper above advises to use k=4.
-    normalise: whether to normalise before plotting the k-dist. It is important because the k-dist then equally weights both dimensions.
-
-    Returns
-    -------
-    Nothing but plots a graph.
-    """
-
-    alpha = 3.55e-15
-    X = pd.DataFrame(columns=["Latency"])
-    for point in points:
-        if point.logp_value <= alpha:
-            X.loc[len(X)] = [point.latency]
-
-    if normalise:
-        X = normalize(X)
-
-    distance_M = euclidean_distances(
-        X
-    )  # rows are points, columns are other points same order with values as distances
-    k_dists = []
-    for r in range(len(distance_M)):
-        sorted_dists = sorted(distance_M[r], reverse=True)  # descending order
-        k_dists.append(sorted_dists[k])  # store k-dist
-    sorted_k_dists = sorted(k_dists, reverse=True)
-    plt.plot(list(range(0, len(sorted_k_dists))), sorted_k_dists)
-    plt.show()
 
 
 def _get_y_coordinate_progressive(

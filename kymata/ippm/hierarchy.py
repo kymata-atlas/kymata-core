@@ -16,8 +16,8 @@ GroupedPoints = dict[str, list[ExpressionPoint]]
 
 
 class CandidateTransformList:
-    """A theoretical IPPM graph, in absence of data."""
-    """
+    """A theoretical IPPM graph, in absence of data.
+
     Candidate Transform List ("CTL"). A theoretical IPPM graph, constructed in the absence of data.
 
     This class models the structure of an IPPM graph using a directed graph (DiGraph) where nodes represent
@@ -30,12 +30,6 @@ class CandidateTransformList:
 
     Attributes:
         graph (DiGraph): A directed graph representing the transforms and their dependencies.
-
-    Methods:
-        transforms: Returns all transforms in the CTL.
-        inputs: Returns input transforms (those with no predecessors).
-        terminals: Returns terminal transforms (those with no successors).
-        serial_sequence: Returns a serial sequence of transforms grouped by parallelism.
     """
     def __init__(self, hierarchy: TransformHierarchy):
         """
@@ -171,7 +165,7 @@ def group_points_by_transform(points: list[ExpressionPoint],
         GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
             transform.
     """
-    d: GroupedPoints = defaultdict(list)
+    d = defaultdict(list)
     if ctl is not None:
         # Initialise with empty lists for transforms with no points
         for t in ctl.transforms:

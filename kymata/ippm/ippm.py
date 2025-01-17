@@ -28,13 +28,13 @@ _default_denoiser = "maxpooler"
 
 class IPPM:
     """
-    IPPM container object.
+    IPPM container/constructor object.  Use this class as an interface to build IPPMs from ExpresionSets.
 
     Contains one IPPMGraph for each block of data (e.g. left and right hemisphere, or scalp sensors).  Access the graph
     object using indexing. E.g.:
 
         ippm = IPPM(...)
-        left_graph = ippm[BLOCK_LEFT]  # "left"
+        left_graph = ippm["lef"]  # BLOCK_LEFT
     """
     def __init__(self,
                  expression_set: ExpressionSet,
