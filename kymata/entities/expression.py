@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection
 from warnings import warn
 
-import numpy as np
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
