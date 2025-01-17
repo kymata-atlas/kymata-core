@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from collections import Counter
-from copy import deepcopy
 from math import floor
 from typing import Self, Optional
 
@@ -159,6 +158,24 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
         return labels
 
 
+def points_to_matrix(points: list[ExpressionPoint]) -> NDArray:
+    """
+    Convert a set of points to a data matrix for clustering.
+
+    Args:
+        points (list[ExpressionPoint]): Collection of points, all for the same transform.
+
+    Returns:
+        array which has two columns — latency and logp value — and a row for each point.
+    """
+    assert len({p.transform for p in points}) == 1, "Supply points for one transform only"
+
+    return np.array([
+        (p.latency, p.logp_value)
+        for p in points
+    ])
+
+
 class GMMClusterer(CustomClusterer):
     def __init__(
         self,
@@ -197,7 +214,7 @@ class GMMClusterer(CustomClusterer):
         optimal_model = self._grid_search_for_optimal_number_of_clusters(points)
         if optimal_model is not None:
             # None if no data.
-            self.labels_ = optimal_model.predict(np.array(points))
+            self.labels_ = optimal_model.predict(points_to_matrix(points))
             # do not remove anomalies for now
             # self.labels = self._tag_low_loglikelihood_points_as_anomalous(df, optimal_model)
         return self
@@ -218,10 +235,11 @@ class GMMClusterer(CustomClusterer):
         """
 
         def __evaluate_fit(points: list[ExpressionPoint], fitted_model: GaussianMixture) -> float:
+            data = points_to_matrix(points)
             return (
-                fitted_model.aic(np.array(points))
+                fitted_model.aic(data)
                 if self._should_evaluate_using_AIC
-                else fitted_model.bic(np.array(points))
+                else fitted_model.bic(data)
             )
 
         optimal_penalised_loglikelihood = np.inf
@@ -230,8 +248,6 @@ class GMMClusterer(CustomClusterer):
             if number_of_clusters > len(points) or len(points) == 1:
                 self.labels_ = [0 for _ in range(len(points))]  # default label == 0.
                 break
-
-            copy_of_points = deepcopy(points)
 
             model = GaussianMixture(
                 n_components=number_of_clusters,
@@ -244,12 +260,12 @@ class GMMClusterer(CustomClusterer):
 
             max_retries = 3
             for _ in range(max_retries):
-                model.fit(copy_of_points)
+                model.fit(points_to_matrix(points))
                 covar_matrices = model.covariances_
                 if self._all_matrices_invertible(covar_matrices):
                     break
 
-            penalised_loglikelihood = __evaluate_fit(copy_of_points, model)
+            penalised_loglikelihood = __evaluate_fit(points, model)
             if penalised_loglikelihood < optimal_penalised_loglikelihood:
                 optimal_penalised_loglikelihood = penalised_loglikelihood
                 optimal_model = model
@@ -311,7 +327,7 @@ class DBSCANClusterer(CustomClusterer):
 
     def fit(self, points: list[ExpressionPoint]) -> Self:
         # A thin wrapper around DBSCAN
-        self._dbscan.fit(points)
+        self._dbscan.fit(points_to_matrix(points))
         self.labels_ = self._dbscan.labels_
         return self
 
@@ -333,6 +349,6 @@ class MeanShiftClusterer(CustomClusterer):
 
     def fit(self, points: list[ExpressionPoint]) -> Self:
         # A thin wrapper around MeanShift
-        self._meanshift.fit(np.array(points))
+        self._meanshift.fit(points_to_matrix(points))
         self.labels_ = self._meanshift.labels_
         return self

@@ -129,11 +129,11 @@ class ExpressionSet(ABC):
         if set(self._block_names) != set(channel_coord_values.keys()):
             raise ValueError("Ensure data block names match channel block names")
 
-        data_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
+        data_was_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
 
         # If only one transform supplied, ensure that the other arguments are appropriately specified
         if isinstance(transforms, str):
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 raise ValueError("Single transform name provided but data came as a sequence")
             # Only one transform, so no matter what format the data is in, we don't expect a sequence
             # Wrap transform names and data blocks to ensure we have sequences from now on
@@ -142,7 +142,7 @@ class ExpressionSet(ABC):
         self._validate_transforms_no_duplicates(transforms)
 
         # If data was specified as sequence, ensure all arrays in the sequence have the same shape
-        if data_supplied_as_sequence:
+        if data_was_supplied_as_sequence:
             if not all_equal([
                 # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
                 # is only one transform per item in the sequence
@@ -173,7 +173,7 @@ class ExpressionSet(ABC):
         transforms = array(transforms, dtype=TransformNameDType)
 
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 for trans_name, data in zip(transforms, block_data):
                     if len(channels[block_name]) != data.shape[0]:
                         raise ValueError(f"{channel_coord_name} mismatch for {trans_name}: "
@@ -223,7 +223,7 @@ class ExpressionSet(ABC):
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 # Build DataArray by concatenating sequence
                 data_array: DataArray = _concat_dataarrays(
                     [
