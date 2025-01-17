@@ -86,7 +86,7 @@ def _minimap_mosaic(
             "left": 0.08,
             "right": 0.84,
         }
-    elif minimap_option.lower() == "show":
+    elif minimap_option.lower() == "standard":
         width_ratios = [1, 3]
         height_ratios = None
         subplots_adjust = {
@@ -113,7 +113,7 @@ def _minimap_mosaic(
                 [_AxName.top],
                 [_AxName.bottom],
             ]
-        elif minimap_option.lower() == "show":
+        elif minimap_option.lower() == "standard":
             if expression_set_type == HexelExpressionSet:
                 spec = [
                     [_AxName.minimap_top, _AxName.top],
@@ -205,7 +205,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
     best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
-    if minimap_latency_range is not None and not (None, None):
+    if minimap_latency_range != (None, None):
         # Filter the dataframe to keep rows where 'latency' is within the range
         best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
                                                     (best_transforms_left['latency'] <= minimap_latency_range[1])]
