@@ -5,11 +5,10 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Self
-from typing import Sequence, Union, get_args, TypeVar, Collection
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection
 from warnings import warn
 
+import numpy as np
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
@@ -39,8 +38,7 @@ BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
 
-@dataclass(frozen=True)
-class ExpressionPoint:
+class ExpressionPoint(NamedTuple):
     """
     A single point of transform expression evidence.
     """
@@ -867,6 +865,7 @@ def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
 
 
 def get_n_channels(es: ExpressionSet) -> int:
+    """Returns the number of channels represented in an ExpressionSet."""
     if isinstance(es, SensorExpressionSet):
         return len(es.sensors)
     if isinstance(es, HexelExpressionSet):

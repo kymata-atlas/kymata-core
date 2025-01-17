@@ -86,7 +86,7 @@ class MaxPoolClusterer(CustomClusterer):
 
 class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
     """
-    NOTE: AMP assumes a sorted time-series, so shuffling is not ideal.
+    NOTE: AdaptiveMaxPoolClusterer assumes a sorted time-series, so shuffling is not ideal.
     """
     def __init__(self,
                  label_significance_threshold: int = 5,

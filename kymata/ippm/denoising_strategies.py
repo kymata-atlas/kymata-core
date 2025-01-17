@@ -3,13 +3,13 @@ from copy import deepcopy, copy
 from random import shuffle
 from typing import Optional, overload, Callable
 
+from ..math.probability import logp_to_p, p_to_logp, sidak_correct, p_threshold_for_sigmas
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
-from ..entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, \
-    get_n_channels
+from ..entities.expression import (
+    ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels)
 from .hierarchy import group_points_by_transform, GroupedPoints
-from ..math.probability import logp_to_p, p_to_logp, sidak_correct, p_threshold_for_sigmas
 
 
 class DenoisingStrategy(ABC):
@@ -149,7 +149,7 @@ class DenoisingStrategy(ABC):
 
     def _denoise_spikes(self, spikes: GroupedPoints, logp_threshold: float | None) -> GroupedPoints:
         """
-        For a set of transforms, cluster their significant points and retain the most significant points per cluster.
+        For a set of transforms, cluster their significant points and retain the most significant point per cluster.
 
         Algorithm
         ---------
@@ -165,14 +165,12 @@ class DenoisingStrategy(ABC):
                                              spike per transform.
 
         Args:
-            spikes (GroupedPoints): A dictionary of spikes grouped by transform name. The key is the transform name and
-                the IPPMSpike contains information about the transform. Specifically, it contains a list of
-                    (Latency (ms), Magnitude (^10-x))
-                for each hemisphere. We cluster over one hemisphere.
+            spikes (GroupedPoints): A dictionary of ExpressionPoints grouped by transform name.
             logp_threshold (float | None): The log p-value threshold for excluding insignificant points.
 
         Returns:
-            GroupedPoints: A dictionary of transforms as keys and a IPPMSpike containing the clustered time-series.
+            GroupedPoints: A dictionary of ExpressionPoints grouped by transform name, containing the clustered
+                time-series.
         """
 
         spikes = deepcopy(spikes)
@@ -191,13 +189,14 @@ class DenoisingStrategy(ABC):
                 spikes[trans] = points
                 continue
 
-            preprocessed_points = self._preprocess(points)
+            # We use the preprocessed points to fit the clusterer, but it is important not to use them to actually get
+            # the denoised points because the latencies and logp values have been altered
+            #
+            # Short text on normalisation for future reference.
+            # https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
+            self._clusterer: CustomClusterer = self._clusterer.fit(self._preprocess(points))
 
-            self._clusterer: CustomClusterer = self._clusterer.fit(preprocessed_points)
-            # It is important you don't use the preprocessed_df to get the denoised because
-            # we do not want to plot the preprocessed latencies and magnitudes.
             spikes[trans] = self._get_denoised_time_series(points)
-
             if self._should_max_pool:
                 spikes[trans] = self._perform_max_pooling(spikes[trans])
 
@@ -205,7 +204,8 @@ class DenoisingStrategy(ABC):
 
         return spikes
 
-    def _filter_out_insignificant_points(self, points: list[ExpressionPoint], threshold_logp: float) -> list[ExpressionPoint]:
+    @staticmethod
+    def _filter_out_insignificant_points(points: list[ExpressionPoint], threshold_logp: float) -> list[ExpressionPoint]:
         """
         For a list of ExpressionPoints, remove all that are not statistically significant and return a list of those
         that remain.
@@ -231,44 +231,56 @@ class DenoisingStrategy(ABC):
             points (list[ExpressionPoint]): Points we want to preprocess.
 
         Returns:
-            list[ExpressionPoint]: If we cluster_only_latency, we return a numpy array. Else, a list of ExpressionPoint.
+            list[ExpressionPoint]: The preprocessed ExpressionPoints.
+                NOTE that these points are NOT true representations of the original data — they can be used for
+                clustering only but should not be interpreted directly.
         """
 
         points = deepcopy(points)
         if self._should_normalise:
-            """
-            Short text on normalisation for future reference.
-            https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
-            """
-            points = self._normalize(points, self._should_cluster_only_latency)
+            points = self._normalize(points)
+        if self._should_cluster_only_latency:
+            points = self._flatten_logp(points)
         return points
+
+    @staticmethod
+    def _flatten_logp(points: list[ExpressionPoint]) -> list[ExpressionPoint]:
+        """
+        Sets all the logp values in `points` to be equal to 0, in order that they are not used for clustering.
+        """
+        return [
+            ExpressionPoint(
+                channel=p.channel,
+                latency=p.latency,
+                transform=p.transform,
+                logp_value=0,
+            )
+            for p in points
+        ]
     
     @staticmethod
-    def _normalize(points: list[ExpressionPoint], latency_only: bool) -> list[ExpressionPoint]:
+    def _normalize(points: list[ExpressionPoint]) -> list[ExpressionPoint]:
         """
         Normalizes points by scaling the latency and magnitude dimensions, depending on whether only latency is
         considered.
 
         Args:
             points (list[ExpressionPoint]): A list of points to normalize.
-            latency_only (bool): Whether to normalize only the latency dimension.
 
         Returns:
             list[ExpressionPoint]: The normalized points.
         """
+
         # Normalise latency
         latency_sum = sum(p.latency for p in points)
-        if latency_only:
-            pval_sum = 1
-        else:
-            pval_sum = sum(logp_to_p(p.logp_value) for p in points)
+        log_pval_sum = sum(p.logp_value for p in points)
 
         return [
             ExpressionPoint(
                 channel=p.channel,
                 latency=p.latency / latency_sum,
                 transform=p.transform,
-                logp_value=p_to_logp(logp_to_p(p.logp_value) / pval_sum))
+                logp_value=p.logp_value / log_pval_sum)
             for p in points
         ]
 
@@ -323,16 +335,17 @@ class DenoisingStrategy(ABC):
 
 
 class MaxPoolingStrategy(DenoisingStrategy):
-    def __init__(self,
-                 should_normalise: bool = True,
-                 should_cluster_only_latency: bool = False,
-                 should_max_pool: bool = False,
-                 exclude_logp_vals_above: float | None = None,
-                 exclude_points_above_n_sigma: float | None = None,
-                 should_shuffle: bool = True,
-                 bin_significance_threshold: int = 1,
-                 bin_size: int = 1,
-                 ):
+    def __init__(
+            self,
+            should_normalise: bool = True,
+            should_cluster_only_latency: bool = False,
+            should_max_pool: bool = False,
+            exclude_logp_vals_above: float | None = None,
+            exclude_points_above_n_sigma: float | None = None,
+            should_shuffle: bool = True,
+            bin_significance_threshold: int = 1,
+            bin_size: int = 1,
+    ):
         super().__init__(
             should_normalise,
             should_cluster_only_latency,
@@ -345,15 +358,16 @@ class MaxPoolingStrategy(DenoisingStrategy):
 
 
 class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
-    def __init__(self,
-                 should_normalise: bool = True,
-                 should_cluster_only_latency: bool = False,
-                 should_max_pool: bool = False,
-                 exclude_logp_vals_above: float | None = None,
-                 exclude_points_above_n_sigma: float | None = None,
-                 bin_significance_threshold: int = 1,
-                 base_bin_size: int = 1,
-                 ):
+    def __init__(
+            self,
+            should_normalise: bool = True,
+            should_cluster_only_latency: bool = False,
+            should_max_pool: bool = False,
+            exclude_logp_vals_above: float | None = None,
+            exclude_points_above_n_sigma: float | None = None,
+            bin_significance_threshold: int = 1,
+            base_bin_size: int = 1,
+    ):
         super().__init__(
             should_normalise,
             should_cluster_only_latency,
@@ -366,21 +380,22 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
 
 
 class GMMStrategy(DenoisingStrategy):
-    def __init__(self,
-                 should_normalise: bool = True,
-                 should_cluster_only_latency: bool = True,
-                 should_max_pool: bool = False,
-                 exclude_logp_vals_above: float | None = None,
-                 exclude_points_above_n_sigma: float | None = None,
-                 should_shuffle: bool = True,
-                 number_of_clusters_upper_bound: int = 2,
-                 covariance_type: str = "full",
-                 max_iter: int = 1000,
-                 n_init: int = 5,
-                 init_params: str = "kmeans",
-                 random_state: Optional[int] = None,
-                 should_evaluate_using_aic: bool = True,
-                 ):
+    def __init__(
+            self,
+            should_normalise: bool = True,
+            should_cluster_only_latency: bool = True,
+            should_max_pool: bool = False,
+            exclude_logp_vals_above: float | None = None,
+            exclude_points_above_n_sigma: float | None = None,
+            should_shuffle: bool = True,
+            number_of_clusters_upper_bound: int = 2,
+            covariance_type: str = "full",
+            max_iter: int = 1000,
+            n_init: int = 5,
+            init_params: str = "kmeans",
+            random_state: Optional[int] = None,
+            should_evaluate_using_aic: bool = True,
+    ):
         super().__init__(
             should_normalise,
             should_cluster_only_latency,
@@ -401,21 +416,22 @@ class GMMStrategy(DenoisingStrategy):
 
 
 class DBSCANStrategy(DenoisingStrategy):
-    def __init__(self,
-                 should_normalise: bool = False,
-                 should_cluster_only_latency: bool = False,
-                 should_max_pool: bool = False,
-                 exclude_logp_vals_above: float | None = None,
-                 exclude_points_above_n_sigma: float | None = None,
-                 should_shuffle: bool = True,
-                 eps: int = 10,
-                 min_samples: int = 2,
-                 metric: str = "euclidean",
-                 algorithm: str = "auto",
-                 leaf_size: int = 30,
-                 n_jobs: int = -1,
-                 metric_params: Optional[dict] = None,
-                 ):
+    def __init__(
+            self,
+            should_normalise: bool = False,
+            should_cluster_only_latency: bool = False,
+            should_max_pool: bool = False,
+            exclude_logp_vals_above: float | None = None,
+            exclude_points_above_n_sigma: float | None = None,
+            should_shuffle: bool = True,
+            eps: int = 10,
+            min_samples: int = 2,
+            metric: str = "euclidean",
+            algorithm: str = "auto",
+            leaf_size: int = 30,
+            n_jobs: int = -1,
+            metric_params: Optional[dict] = None,
+    ):
         super().__init__(
             should_normalise,
             should_cluster_only_latency,
@@ -436,19 +452,20 @@ class DBSCANStrategy(DenoisingStrategy):
 
 
 class MeanShiftStrategy(DenoisingStrategy):
-    def __init__(self,
-                 should_normalise: bool = True,
-                 should_cluster_only_latency: bool = True,
-                 should_max_pool: bool = False,
-                 exclude_logp_vals_above: float | None = None,
-                 exclude_points_above_n_sigma: float | None = None,
-                 should_shuffle: bool = True,
-                 cluster_all: bool = False,
-                 bandwidth: float = 0.5,
-                 seeds: Optional[int] = None,
-                 min_bin_freq: int = 1,
-                 n_jobs: int = -1,
-                 ):
+    def __init__(
+            self,
+            should_normalise: bool = True,
+            should_cluster_only_latency: bool = True,
+            should_max_pool: bool = False,
+            exclude_logp_vals_above: float | None = None,
+            exclude_points_above_n_sigma: float | None = None,
+            should_shuffle: bool = True,
+            cluster_all: bool = False,
+            bandwidth: float = 0.5,
+            seeds: Optional[int] = None,
+            min_bin_freq: int = 1,
+            n_jobs: int = -1,
+    ):
         super().__init__(
             should_normalise,
             should_cluster_only_latency,
