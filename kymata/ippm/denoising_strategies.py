@@ -116,11 +116,12 @@ class DenoisingStrategy(ABC):
 
         for transform in expression_set.transforms:
             denoised_points = denoised_spikes.get(transform, [])
-            # For any points which didn't make it to the denoised set, set their logp values to 0
-            for point in original_spikes[transform]:
-                if point in denoised_points:
-                    continue
-                expression_set.clear_point(point.channel, point.latency)
+            # For any points which didn't make it to the denoised set, delete them
+            expression_set.clear_points([
+                (p.channel, p.latency)
+                for p in original_spikes[transform]
+                if p not in denoised_points
+            ])
 
         return expression_set
 
@@ -132,19 +133,20 @@ class DenoisingStrategy(ABC):
         denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
         denoised_spikes_right = self._denoise_spikes(original_spikes_right, self._logp_threshold_from_expression_set(expression_set))
 
-        for transform in expression_set.transforms:
-            denoised_points_left = denoised_spikes_left.get(transform, [])
-            denoised_points_right = denoised_spikes_right.get(transform, [])
-            # Not all transforms will be on both the left and the right
-            if transform in original_spikes_left.keys():
-                for point in original_spikes_left[transform]:
-                    # For any points which didn't make it to the denoised set, delete them from the expression set
-                    if point not in denoised_points_left:
-                        expression_set.clear_point_left(point.channel, point.latency)
-            if transform in original_spikes_right.keys():
-                for point in original_spikes_right[transform]:
-                    if point not in denoised_points_right:
-                        expression_set.clear_point_right(point.channel, point.latency)
+        denoised_points_left = [p for trans, points in denoised_spikes_left.items() for p in points]
+        denoised_points_right = [p for trans, points in denoised_spikes_right.items() for p in points]
+
+        # For any points which didn't make it to the denoised sets, delete them
+        expression_set.clear_points_left([
+            (p.channel, p.latency)
+            for p in expression_points_left
+            if p not in denoised_points_left
+        ])
+        expression_set.clear_points_right([
+            (p.channel, p.latency)
+            for p in expression_points_right
+            if p not in denoised_points_right
+        ])
 
         return expression_set
 

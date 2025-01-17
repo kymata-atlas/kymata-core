@@ -11,7 +11,7 @@ from warnings import warn
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, where, inf, argmax, all as np_all, any as np_any, arange, full_like, vstack)
+    array, array_equal, where, inf, argmax, all as np_all, any as np_any, arange, full_like, vstack, hstack)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
@@ -500,28 +500,35 @@ class ExpressionSet(ABC):
                     new_channels.append(old_channel)
             self._data[bn][self.channel_coord_name] = new_channels
 
-    def _clear_point(self,
-                     channel: Channel, latency: Latency,
-                     block_name: str):
-        if channel not in self._channels[block_name]:
-            raise ValueError(f"No {self.channel_coord_name} {channel}")
-        if latency not in self.latencies:
-            raise ValueError(f"No latency {latency}"
-                             + (". Check for floating-point issues?" if not isinstance(latency, LatencyDType) else ""))
-        if block_name not in self._block_names:
-            raise ValueError(f"Invalid block name {block_name}")
+    def _clear_points(self,
+                      points: list[tuple[Channel, Latency]],
+                      block_name: str):
+        coords = []
+        for channel, latency in points:
+            if channel not in self._channels[block_name]:
+                raise ValueError(f"No {self.channel_coord_name} {channel}")
+            if latency not in self.latencies:
+                raise ValueError(f"No latency {latency}"
+                                 + (". Check for floating-point issues?" if not isinstance(latency, LatencyDType) else ""))
+            if block_name not in self._block_names:
+                raise ValueError(f"Invalid block name {block_name}")
 
-        # Get the coordinates of the value to change in the data array
-        channel_i = argmax(self._channels[block_name] == channel)
-        latency_i = argmax(self.latencies == latency)
+            # Get the coordinates of the value to change in the data array
+            channel_i = argmax(self._channels[block_name] == channel)
+            latency_i = argmax(self.latencies == latency)
 
-        transform_indices = arange(len(self.transforms))
-        # Cols of coords are (channel_i, latency_i, transform_i) triplets covering all transforms
-        coords = vstack([
-            full_like(transform_indices, channel_i),
-            full_like(transform_indices, latency_i),
-            transform_indices,
-        ])
+            transform_indices = arange(len(self.transforms))
+            # Cols of point_coords are (channel_i, latency_i, transform_i) triplets covering all transforms for this
+            # point
+            point_coords = vstack([
+                full_like(transform_indices, channel_i),
+                full_like(transform_indices, latency_i),
+                transform_indices,
+            ])
+            coords.append(point_coords)
+
+        # Cols of coords are (channel_i, latency_i, transform_i) triplets covering all transforms for all points
+        coords = hstack(coords)
 
         # Get the linear indices in the sparse array
 
@@ -699,17 +706,31 @@ class HexelExpressionSet(ExpressionSet):
             return False
         return True
 
+    def clear_points_left(self, points: list[tuple[Hexel, Latency]]) -> None:
+        """
+        Clears datapoints in the left hemisphere at the specified hexel–latency pairs.
+
+        Args:
+            points: [ (hexel, latency) ]
+        """
+        self._clear_points(points, BLOCK_LEFT)
+
+    def clear_points_right(self, points: list[tuple[Hexel, Latency]]) -> None:
+        """
+        Clears datapoints in the right hemisphere at the specified hexel–latency pairs.
+
+        Args:
+            points: [ (hexel, latency) ]
+        """
+        self._clear_points(points, BLOCK_RIGHT)
+
     def clear_point_left(self, hexel: Hexel, latency: Latency):
-        """
-        Clears a datapoint in the left hemisphere at the specified hexel and latency.
-        """
-        self._clear_point(hexel, latency, BLOCK_LEFT)
+        """Clears a datapoint in the left hemisphere at the specified hexel and latency."""
+        self.clear_points_left([(hexel, latency)])
 
     def clear_point_right(self, hexel: Hexel, latency: Latency):
-        """
-        Clears a datapoint in the right hemisphere at the specified hexel and latency.
-        """
-        self._clear_point(hexel, latency, BLOCK_RIGHT)
+        """Clears a datapoint in the right hemisphere at the specified hexel and latency."""
+        self.clear_points_right([(hexel, latency)])
 
     def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
@@ -853,11 +874,18 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
         )
 
-    def clear_point(self, sensor: Sensor, latency: Latency):
+    def clear_points(self, points: list[tuple[Sensor, Latency]]) -> None:
         """
-        Clears a datapoint at the specified sensor and latency.
+        Clears datapoints at the specified sensor–latency pairs.
+
+        Args:
+            points: [ (sensor, latency) ]
         """
-        self._clear_point(sensor, latency, BLOCK_SCALP)
+        self._clear_points(points, BLOCK_SCALP)
+
+    def clear_point(self, hexel: Sensor, latency: Latency):
+        """Clears a datapoint iat the specified sensor and latency."""
+        self.clear_points([(hexel, latency)])
 
     def best_transforms(self) -> list[ExpressionPoint]:
         """
