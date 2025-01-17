@@ -997,10 +997,10 @@ def test_clear_point_ses():
         a_data_cleared.squeeze(),
         array(
             [  # - v----- This latency was always best for all sensors,
-                [ -9, 0, 0],  # so other cols have been zeroed out
+                [ -9, 0, 0],  # so other cols have been zeroed out in the sparse array
                 [-10, 0, 0],
                 [-11, 0, 0],
-                [-12, 0, 0],
+                [-12, 0, 0],  # <--- This corner value would have been cleared if it was there, but it's not
             ]
         )
     )
@@ -1012,7 +1012,7 @@ def test_clear_point_ses():
                 [0, 0, -29],  # so other cols have been zeroed out
                 [0, 0, -30],
                 [0, 0, -31],
-                [0, 0,   0],  # <--- This value now cleared
+                [0, 0,   0],  # <--- This corner value now cleared
             ]
         )
     )

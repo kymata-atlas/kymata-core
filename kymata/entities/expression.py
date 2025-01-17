@@ -11,7 +11,7 @@ from warnings import warn
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, where, inf, argmax, all as np_all)
+    array, array_equal, where, inf, argmax, all as np_all, any as np_any, arange, full_like, vstack)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
@@ -514,15 +514,44 @@ class ExpressionSet(ABC):
         # Get the coordinates of the value to change in the data array
         channel_i = argmax(self._channels[block_name] == channel)
         latency_i = argmax(self.latencies == latency)
-        for transform_i, transform in enumerate(self.transforms):
-            coords = array([channel_i, latency_i, transform_i])
 
-            # Get the linear index in the sparse array
-            coords_idx = where(np_all(self._data[block_name].data.coords == coords[:, None], axis=0))[0]
+        transform_indices = arange(len(self.transforms))
+        # Cols of coords are (channel_i, latency_i, transform_i) triplets covering all transforms
+        coords = vstack([
+            full_like(transform_indices, channel_i),
+            full_like(transform_indices, latency_i),
+            transform_indices,
+        ])
 
-            # Clear it if it's there
-            if coords_idx:
-                self._data[block_name].data.data[coords_idx] = 0
+        # Get the linear indices in the sparse array
+
+        coords_mask = np_any(self._data[block_name].data.coords[:, :, None] == coords[:, None, :], axis=2)
+        # `coords_mask` has the same shape as `self._data[block_name].data.coords`, with Trues wherever there's a match
+        # with the corresponding entry in *any* col of `coords`.
+        #
+        # Suppose
+        # self._data[block_name].data.coords == array([[0, 0, 1, 1, 2, 2, 3, 3],
+        #                                              [0, 2, 0, 2, 0, 2, 0, 2],
+        #                                              [0, 1, 0, 1, 0, 1, 0, 1]])
+        # and
+        # coords == array([[3, 3],
+        #                  [2, 2],
+        #                  [0, 1]])
+        # Then
+        # coords_mask == array([[False, False, False, False, False, False,  True,  True],
+        #                       [False,  True, False,  True, False,  True, False,  True],
+        #                       [ True,  True,  True,  True,  True,  True,  True,  True]])
+        coords_mask = np_all(coords_mask, axis=0)
+        # `coords_mask` now is a vector corresponding to the cols of `self._data[block_name].data.coords`, with a True
+        # whenever that col matches.
+        #
+        # coords_mask == array([False, False, False, False, False, False, False,  True])
+        coords_idx = where(coords_mask)[0]
+        # Now `coords_idx` is just the linear index of that.  E.g.
+
+        # Clear if here
+        if len(coords_idx) > 0:
+            self._data[block_name].data.data[coords_idx] = 0
 
     @abstractmethod
     def best_transforms(self) -> list[ExpressionPoint] | tuple[list[ExpressionPoint], ...]:

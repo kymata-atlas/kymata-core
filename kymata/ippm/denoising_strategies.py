@@ -135,15 +135,16 @@ class DenoisingStrategy(ABC):
         for transform in expression_set.transforms:
             denoised_points_left = denoised_spikes_left.get(transform, [])
             denoised_points_right = denoised_spikes_right.get(transform, [])
-            for point in original_spikes_left[transform]:
-                # For any points which didn't make it to the denoised set, set their logp values to 0
-                if point in denoised_points_left:
-                    continue
-                expression_set.clear_point_left(point.channel, point.latency)
-            for point in original_spikes_right[transform]:
-                if point in denoised_points_right:
-                    continue
-                expression_set.clear_point_right(point.channel, point.latency)
+            # Not all transforms will be on both the left and the right
+            if transform in original_spikes_left.keys():
+                for point in original_spikes_left[transform]:
+                    # For any points which didn't make it to the denoised set, delete them from the expression set
+                    if point not in denoised_points_left:
+                        expression_set.clear_point_left(point.channel, point.latency)
+            if transform in original_spikes_right.keys():
+                for point in original_spikes_right[transform]:
+                    if point not in denoised_points_right:
+                        expression_set.clear_point_right(point.channel, point.latency)
 
         return expression_set
 
