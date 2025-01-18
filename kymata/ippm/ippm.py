@@ -2,7 +2,7 @@ from kymata.entities.expression import (
     ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
 from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
 from kymata.ippm.graph import IPPMGraph
-from kymata.ippm.hierarchy import CandidateTransformList
+from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
 
 _denoiser_classes = {
     "maxpooler": MaxPoolingStrategy,
@@ -38,7 +38,7 @@ class IPPM:
     """
     def __init__(self,
                  expression_set: ExpressionSet,
-                 hierarchy: CandidateTransformList,
+                 hierarchy: CandidateTransformList | TransformHierarchy,
                  denoiser: str | None = _default_denoiser,
                  **kwargs):
         """
@@ -60,8 +60,10 @@ class IPPM:
                 kwargs[kw] = arg
 
         # Validate CTL
+        if not isinstance(hierarchy, CandidateTransformList):
+            hierarchy = CandidateTransformList(hierarchy)
         for transform in hierarchy.transforms:
-            if transform not in expression_set.transforms:
+            if transform not in hierarchy.inputs and transform not in expression_set.transforms:
                 raise ValueError(f"Transform {transform} from hierarchy not in expression set")
         expression_set = expression_set[hierarchy.transforms]
 
