@@ -1016,3 +1016,64 @@ def test_clear_point_ses():
             ]
         )
     )
+
+
+def test_clear_points_ses():
+    # see test_clear_point_ses for comments
+    from numpy import array
+
+    sensors = [str(i) for i in range(4)]
+    transform_a_data = array(
+        array(
+            [
+                [ -9, -1, -5],
+                [-10, -2, -6],
+                [-11, -3, -7],
+                [-12, -4, -8],
+            ]
+        )
+    )
+    transform_b_data = array(
+        array(
+            [
+                [-21, -25, -29],
+                [-22, -26, -30],
+                [-23, -27, -31],
+                [-24, -28, -32],
+            ]
+        )
+    )
+    es = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=sensors,  # 4
+        latencies=range(3),
+        data=[copy(transform_a_data), copy(transform_b_data)],
+    )
+
+    es.clear_points([("3", 2), ("0", 0), ("2", 1)])
+    a_data_cleared = es["a"].scalp.data.todense()
+    b_data_cleared = es["b"].scalp.data.todense()
+
+    assert np.array_equal(
+        a_data_cleared.squeeze(),
+        array(
+            [
+                [  0, 0, 0],
+                [-10, 0, 0],
+                [-11, 0, 0],
+                [-12, 0, 0],
+            ]
+        )
+    )
+
+    assert np.array_equal(
+        b_data_cleared.squeeze(),
+        array(
+            [
+                [0, 0, -29],
+                [0, 0, -30],
+                [0, 0, -31],
+                [0, 0,   0],
+            ]
+        )
+    )

@@ -517,44 +517,24 @@ class ExpressionSet(ABC):
             channel_i = argmax(self._channels[block_name] == channel)
             latency_i = argmax(self.latencies == latency)
 
-            transform_indices = arange(len(self.transforms))
-            # Cols of point_coords are (channel_i, latency_i, transform_i) triplets covering all transforms for this
-            # point
-            point_coords = vstack([
-                full_like(transform_indices, channel_i),
-                full_like(transform_indices, latency_i),
-                transform_indices,
-            ])
+            # Cols of point_coords are (channel_i, latency_i) pairs covering all transforms for this point
+            point_coords = array([channel_i, latency_i], ndmin=2).T
             coords.append(point_coords)
 
-        # Cols of coords are (channel_i, latency_i, transform_i) triplets covering all transforms for all points
+        # Cols of coords are (channel_i, latency_i) pairs covering all transforms for all points
         coords = hstack(coords)
 
         # Get the linear indices in the sparse array
 
-        coords_mask = np_any(self._data[block_name].data.coords[:, :, None] == coords[:, None, :], axis=2)
-        # `coords_mask` has the same shape as `self._data[block_name].data.coords`, with Trues wherever there's a match
-        # with the corresponding entry in *any* col of `coords`.
-        #
-        # Suppose
-        # self._data[block_name].data.coords == array([[0, 0, 1, 1, 2, 2, 3, 3],
-        #                                              [0, 2, 0, 2, 0, 2, 0, 2],
-        #                                              [0, 1, 0, 1, 0, 1, 0, 1]])
-        # and
-        # coords == array([[3, 3],
-        #                  [2, 2],
-        #                  [0, 1]])
-        # Then
-        # coords_mask == array([[False, False, False, False, False, False,  True,  True],
-        #                       [False,  True, False,  True, False,  True, False,  True],
-        #                       [ True,  True,  True,  True,  True,  True,  True,  True]])
-        coords_mask = np_all(coords_mask, axis=0)
-        # `coords_mask` now is a vector corresponding to the cols of `self._data[block_name].data.coords`, with a True
-        # whenever that col matches.
-        #
-        # coords_mask == array([False, False, False, False, False, False, False,  True])
+        # -                                     Slice to :2 to consider only channel and latency
+        coords_mask = self._data[block_name].data.coords[:2, None].T == coords.T
+        # `coords_mask` has shape (n_cols_in_data_coords, n_cols_in_coords, 2), [i.e. the 2 is a match on chanel or
+        # latency] with a True whenever a col matches in the specified coordinate.
+        coords_mask = np_all(coords_mask, axis=2)
+        # Now `coords_mask` is size (n_cols_in_data_coords, n_cols_in_coords), with True wherever entire columns match
         coords_idx = where(coords_mask)[0]
-        # Now `coords_idx` is just the linear index of that.  E.g.
+        # Now `coords_idx` is just the linear index of that, corresponding to columns of
+        # self._data[block_name].data.coords.
 
         # Clear if here
         if len(coords_idx) > 0:
@@ -883,9 +863,9 @@ class SensorExpressionSet(ExpressionSet):
         """
         self._clear_points(points, BLOCK_SCALP)
 
-    def clear_point(self, hexel: Sensor, latency: Latency):
+    def clear_point(self, sensor: Sensor, latency: Latency):
         """Clears a datapoint iat the specified sensor and latency."""
-        self.clear_points([(hexel, latency)])
+        self.clear_points([(sensor, latency)])
 
     def best_transforms(self) -> list[ExpressionPoint]:
         """
