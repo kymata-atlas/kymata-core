@@ -1,0 +1,51 @@
+# Config file for Kymata Dataset 4.00
+
+# General
+data_location: "cbu"                # local | cbu | cbu-local
+dataset_directory_name: "open-source/RADBOUD_MUSIC/kymata-format/standardised_data/Kern_et_al_RADBOUD_MUSIC/emeg/"
+mri_structurals_directory: "raw_mri_structurals"
+
+
+# General information related to the dataset
+participants:
+  - "sub001"
+  - "sub002"
+  - "sub003"
+  - "sub004"
+  - "sub005"
+  - "sub006"
+
+number_of_runs: 1                    # number of runs
+repetitions_per_runs: 1              # number of repetitions per run
+stimulus_length: 1700                # seconds
+mri_structural_type: "T1"            # T1 | flash
+sample_rate: 1000                    # Hz
+
+# Preprocessing pipeline
+emeg_machine_used_to_record_data: "CTF"
+skip_maxfilter_if_previous_runs_exist: True
+skip_ica_if_previous_runs_exist: True
+remove_VEOH_and_HEOG: True
+remove_ECG: True
+automatic_bad_channel_detection_requested: False
+supress_excessive_plots_and_prompts: True
+
+# Inverse operator
+eeg: False
+meg: True
+inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/inverse-operators"
+
+# Method to estimate noise covariance matrix
+cov_method: 'fusion'               # grandave | emptyroom | runstart | fusion
+duration:   1                      # in seconds for the duration of the empty room condition used, can be None for whole duration
+reg_method: 'empirical'            # None | 'auto'
+
+# Creation of evoked trial pipeline
+
+audio_delivery_latency:   1.3     # the audio stimulus is delayed by this amount in seconds
+visual_delivery_latency:  null     # the visual stimulus is delayed by this amount in seconds
+tactile_delivery_latency: null      # the tactile stimulus is delayed by this amount in seconds
+audio_delivery_drift_correction:   0.00039074  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
+visual_delivery_drift_correction:  null  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
+tactile_delivery_drift_correction: null       # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
+latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
