@@ -11,7 +11,7 @@ from warnings import warn
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, where, inf, argmax, all as np_all, any as np_any, arange, full_like, vstack, hstack)
+    array, array_equal, where, inf, argmax, all as np_all, hstack)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
