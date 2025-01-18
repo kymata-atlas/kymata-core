@@ -55,17 +55,18 @@ class IPPM:
        """
 
         # Update kwargs
-        for kw, arg in _default_denoiser_kwargs.items():
-            if kw not in kwargs:
-                kwargs[kw] = arg
+        if denoiser is not None:
+            for kw, arg in _default_denoiser_kwargs[denoiser].items():
+                if kw not in kwargs:
+                    kwargs[kw] = arg
 
         # Validate CTL
         if not isinstance(hierarchy, CandidateTransformList):
             hierarchy = CandidateTransformList(hierarchy)
-        for transform in hierarchy.transforms:
-            if transform not in hierarchy.inputs and transform not in expression_set.transforms:
+        for transform in hierarchy.transforms - hierarchy.inputs:
+            if transform not in expression_set.transforms:
                 raise ValueError(f"Transform {transform} from hierarchy not in expression set")
-        expression_set = expression_set[hierarchy.transforms]
+        expression_set = expression_set[hierarchy.transforms & set(expression_set.transforms)]
 
         denoising_strategy: DenoisingStrategy | None
         if denoiser is not None:
