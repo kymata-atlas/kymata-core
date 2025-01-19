@@ -244,7 +244,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             mfa_time = np.array(load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
             mfa_time_samples = (mfa_time * 1000).astype(int)
             mfa_time_samples = np.append(mfa_time_samples, 402_000)
-            special_tokens = ['</s>']
+            special_tokens = ['</s>', '-']
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 for j in range(place_holder.shape[0]):
                     k = 0       # k is the index for salmonn space, and i is the index for mfa space
