@@ -324,7 +324,10 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
     elif 'linguistics' in str(transform_path_without_suffix):
         func = np.load(transform_path_without_suffix.with_suffix(".npy"))
         trans_name += f'_{nn_neuron}'
-        func = func[:400_000, nn_neuron]
+        try:
+            func = func[:400_000, nn_neuron]
+        except:
+            func = func[:400_000]
 
     else:
         if not transform_path_without_suffix.with_suffix(".npz").exists():
