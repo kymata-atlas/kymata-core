@@ -36,7 +36,7 @@ def main():
                 "IL9": "#a201e9",
                 "STL": "#d388b5",
             },
-            minimap=True,
+            minimap="standard",
             ylim=-200,
         )
 

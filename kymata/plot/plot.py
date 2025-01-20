@@ -56,6 +56,7 @@ class _AxName:
 class _MosaicSpec:
     mosaic: list[list[str]]
     width_ratios: list[float] | None
+    height_ratios: list[float] | None
     fig_size: tuple[float, float]
     subplots_adjust_kwargs: dict[str, float] = None
 
@@ -64,20 +65,39 @@ class _MosaicSpec:
             self.subplots_adjust_kwargs = dict()
 
     def to_subplots(self) -> tuple[pyplot.Figure, dict[str, pyplot.Axes]]:
+        print(self.mosaic)
         return pyplot.subplot_mosaic(
-            self.mosaic, width_ratios=self.width_ratios, figsize=self.fig_size
+            self.mosaic, width_ratios=self.width_ratios, height_ratios=self.height_ratios, figsize=self.fig_size
         )
 
 
 def _minimap_mosaic(
     paired_axes: bool,
-    show_minimap: bool,
+    minimap_option: str | None,
     expression_set_type: Type[ExpressionSet],
     fig_size: tuple[float, float],
 ) -> _MosaicSpec:
     # Set defaults:
-    if show_minimap:
+    if minimap_option is None:
+        width_ratios = None
+        height_ratios = None
+        subplots_adjust = {
+            "hspace": 0,
+            "left": 0.08,
+            "right": 0.84,
+        }
+    elif minimap_option.lower() == "standard":
         width_ratios = [1, 3]
+        height_ratios = None
+        subplots_adjust = {
+            "hspace": 0,
+            "wspace": 0.25,
+            "left": 0.02,
+            "right": 0.8,
+        }
+    elif minimap_option.lower() == "large":
+        width_ratios = None
+        height_ratios = [4, 1, 1]
         subplots_adjust = {
             "hspace": 0,
             "wspace": 0.25,
@@ -85,15 +105,15 @@ def _minimap_mosaic(
             "right": 0.8,
         }
     else:
-        width_ratios = None
-        subplots_adjust = {
-            "hspace": 0,
-            "left": 0.08,
-            "right": 0.84,
-        }
+        raise NotImplementedError()
 
     if paired_axes:
-        if show_minimap:
+        if minimap_option is None:
+            spec = [
+                [_AxName.top],
+                [_AxName.bottom],
+            ]
+        elif minimap_option.lower() == "standard":
             if expression_set_type == HexelExpressionSet:
                 spec = [
                     [_AxName.minimap_top, _AxName.top],
@@ -106,24 +126,44 @@ def _minimap_mosaic(
                 ]
             else:
                 raise NotImplementedError()
+        elif minimap_option.lower() == "large":
+            if expression_set_type == HexelExpressionSet:
+                spec = [
+                    [_AxName.minimap_top, _AxName.minimap_bottom],
+                    [_AxName.top,         _AxName.top],
+                    [_AxName.bottom,      _AxName.bottom]
+                ]
+            elif expression_set_type == SensorExpressionSet:
+                spec = [
+                    [_AxName.minimap_main],
+                    [_AxName.top],
+                    [_AxName.bottom],
+                ]
+            else:
+                raise NotImplementedError()
         else:
-            spec = [
-                [_AxName.top],
-                [_AxName.bottom],
-            ]
+            raise NotImplementedError()
     else:
-        if show_minimap:
-            spec = [
-                [_AxName.minimap_main, _AxName.main],
-            ]
-        else:
+        if minimap_option is None:
             spec = [
                 [_AxName.main],
             ]
+        elif minimap_option.lower() == "show":
+            spec = [
+                [_AxName.minimap_main, _AxName.main],
+            ]
+        elif minimap_option.lower() == "large":
+            spec = [
+                [_AxName.minimap_main],
+                [_AxName.main],
+            ]
+        else:
+            raise NotImplementedError()
 
     return _MosaicSpec(
         mosaic=spec,
         width_ratios=width_ratios,
+        height_ratios=height_ratios,
         fig_size=fig_size,
         subplots_adjust_kwargs=subplots_adjust,
     )
@@ -165,7 +205,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
     best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
-    if minimap_latency_range is not None and not (None, None):
+    if minimap_latency_range != (None, None):
         # Filter the dataframe to keep rows where 'latency' is within the range
         best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
                                                     (best_transforms_left['latency'] <= minimap_latency_range[1])]
@@ -313,9 +353,6 @@ def _plot_minimap_hexel(
         smoothing_steps=2,
         background="white",
         spacing="ico5",
-        brain_kwargs={
-            "offscreen": True,  # offscreen here appears to not actually do anything in mne
-        },
         time_viewer=False,
         colorbar=False,
         transparent=False,
@@ -359,7 +396,7 @@ def expression_plot(
     title: str = None,
     fig_size: tuple[float, float] = (12, 7),
     # Display options
-    minimap: bool = False,
+    minimap: str | None = None,
     minimap_view: str = "lateral",
     minimap_surface: str = "inflated",
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
@@ -389,9 +426,12 @@ def expression_plot(
             default values, or set either entry to None to use the default for that value. Default is (-100, 800).
         hidden_transforms_in_legend (bool, optional): If True, includes non-plotted transforms in the legend.
             Default is True.
-        title (str, optional): Title over the top axis in the figure. Default is none.
+        title (str, optional): Title over the top axis in the figure. Default is None.
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
-        minimap (bool, optional): If True, displays a minimap of the expression data. Default is False.
+        minimap (str, optional): If None, no minimap is shown. Other options are:
+            `"show"`: Show small minimal.
+            `"large"`: Show a large minimal with smaller expression plot.
+            Default is None.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
             `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is
@@ -516,7 +556,7 @@ def expression_plot(
 
     mosaic = _minimap_mosaic(
         paired_axes=paired_axes,
-        show_minimap=minimap,
+        minimap_option=minimap,
         expression_set_type=type(expression_set),
         fig_size=fig_size,
     )
@@ -688,7 +728,7 @@ def expression_plot(
             ax.axvspan(xmin=start, xmax=stop, color="grey", alpha=0.2, lw=0, zorder=-10)
 
     # Plot minimap
-    if minimap:
+    if minimap is not None:
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
                 expression_set,
