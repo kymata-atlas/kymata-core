@@ -27,6 +27,4 @@ def test_repeatability():
     derangement1 = generate_derangement(n)
     derangement2 = generate_derangement(n)
     assert len(derangement1) == len(derangement2)
-    assert (
-        not derangement1.tolist() == derangement2.tolist()
-    ), "Derangements should not be identical"
+    assert not derangement1.tolist() == derangement2.tolist(), "Derangements should not be identical"
