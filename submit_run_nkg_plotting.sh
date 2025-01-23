@@ -10,7 +10,7 @@
 #SBATCH --output=logs/slurm_log-%x.%j.out.txt
 #SBATCH --error=logs/slurm_log-%x.%j.trace.txt
 #SBATCH --ntasks=1
-#SBATCH --time=05:00:00
+#SBATCH --time=100:00:00
 #SBATCH --mem=240G
 #SBATCH --array=1-1
 #SBATCH --exclusive
@@ -23,8 +23,9 @@ apptainer exec \
   -B /imaging/projects/cbu/kymata/ \
   /imaging/local/software/singularity_images/ubuntu/ubuntu_22.04.5.sif \
   bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ; \
-      export VENV_PATH=~/poetry/ ; \
+    " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ;
+      export VENV_PATH=~/poetry_ubuntu2204/ ;
+      export VIRTUAL_ENV=/home/cy02/.cache/pypoetry/virtualenvs/kymata-9k73k5Tx-py3.11 ;
       export PYVISTA_OFF_SCREEN=true ;
       export PYVISTA_USE_IPYVTK=true ;
       xvfb-run -a \$VENV_PATH/bin/poetry run python -m kymata.invokers.invoker_run_nkg_plotting
