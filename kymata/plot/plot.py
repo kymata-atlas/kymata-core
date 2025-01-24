@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple, Any, Type, Literal
+from typing import Optional, Sequence, NamedTuple, Any, Type, Literal, Callable
 from warnings import warn
 
 import numpy as np
 from matplotlib import pyplot
-from matplotlib.colors import to_hex, LinearSegmentedColormap
+from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator
@@ -22,10 +22,10 @@ from seaborn import color_palette
 from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import (
     HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY)
-from kymata.entities.iterables import interleave
 from kymata.entities.transform import Transform
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
+from kymata.plot.color import DiscreteListedColormap
 from kymata.plot.layouts import (
     get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors)
 
@@ -324,7 +324,7 @@ def _plot_minimap_hexel(
         # Default value
         smoothing_steps = 2
 
-    colormap, colour_idx_lookup = _get_segmented_colormap_for_cortical_minimap(colors, show_transforms, smoothing_steps)
+    colormap, colour_idx_lookup, n_colors = _get_colormap_for_cortical_minimap(colors, show_transforms)
 
     data_left, data_right = _hexel_minimap_data(
         expression_set,
@@ -354,8 +354,7 @@ def _plot_minimap_hexel(
         transparent=False,
         clim=dict(
             kind="value",
-            # There are two colormap entries for each transform: the transform itself and the interleaved transparency
-            lims=[0, len(show_transforms) * smoothing_steps / 2, len(show_transforms) * smoothing_steps],
+            lims=[0, n_colors / 2, n_colors],
         ),
     )
     # Override plot kwargs with those passed
@@ -374,10 +373,9 @@ def _plot_minimap_hexel(
     pyplot.close(rh_brain_fig)
 
 
-def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
-                                                 show_transforms: list[str],
-                                                 smoothing_steps: int,
-                                                 ) -> tuple[LinearSegmentedColormap, dict[TransformNameDType, int]]:
+def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
+                                       show_transforms: list[str],
+                                       ) -> tuple[Callable, dict[TransformNameDType, int], int]:
     """
     Get a colormap appropriate for displaying transforms on a brain minimap.
 
@@ -391,48 +389,28 @@ def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
         colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
             strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
         show_transforms (list[str]): The transforms which will be shown
-        smoothing_steps (int): The number of smoothing steps to compensate for
 
     Returns: Tuple of the following items
         (
-            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency.
+            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency
             dict[TransformNameDType, int]: Dictionary mapping transform names to indices within the colourmap for the
-                appropriate colour.
+                appropriate colour
+            int: the total number of colours in the colourmap, including the initial and interleaved transparency
         )
 
     """
-    if smoothing_steps < 0:
-        raise ValueError("smoothing_steps must be non-negative")
 
-    base_colours = [colors[f] for f in show_transforms]  # Not including transparent
-    transparent_copy = len(base_colours) * [transparent]
-    interleaved_colours: list = (
-        # Start with transparent at index 0
-        [transparent]
-        # weave in enough extra transparency between colours to account for smoothing
-        + interleave(*[transparent_copy for _ in range(smoothing_steps)], transparent_copy, base_colours)
-    )
+    base_colours = [transparent] + [colors[f] for f in show_transforms]
 
     colour_idx_lookup = {
         # Map the colour to its corresponding index in the colourmap
-        # E.g. if
-        # [transparent] → 0
-        # [colour_0] → 3
-        # [colour_1] → 6
-        TransformNameDType(transform): (smoothing_steps + 1) * (transform_idx + 1)
-        for transform_idx, transform in enumerate(show_transforms)
+        TransformNameDType(transform): transform_idx
+        for transform_idx, transform in enumerate(show_transforms, start=1)
     }
 
-    # segment at index 0 will map to transparent
-    # segment at index i will map to transform of index i-1
-    colormap = LinearSegmentedColormap.from_list(
-        "custom",
-        # Insert transparent for index 0
-        colors=interleaved_colours,
-        N=len(interleaved_colours),
-    )
+    colormap = DiscreteListedColormap(colors=base_colours, scale01=True)
 
-    return colormap, colour_idx_lookup
+    return colormap, colour_idx_lookup, max(colour_idx_lookup.values())
 
 
 def hide_axes(axes: pyplot.Axes):
