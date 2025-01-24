@@ -142,7 +142,7 @@ def _minimap_mosaic(
             spec = [
                 [_AxName.main],
             ]
-        elif minimap_option.lower() == "show":
+        elif minimap_option.lower() == "standard":
             spec = [
                 [_AxName.minimap_main, _AxName.main],
             ]
@@ -469,7 +469,7 @@ def expression_plot(
         title (str, optional): Title over the top axis in the figure. Default is None.
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (str, optional): If None, no minimap is shown. Other options are:
-            `"show"`: Show small minimal.
+            `"standard"`: Show small minimal.
             `"large"`: Show a large minimal with smaller expression plot.
             Default is None.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
@@ -857,7 +857,7 @@ def expression_plot(
 
     __reposition_axes_for_legends(fig, legends)
 
-    __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
+    __add_axis_name_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim, minimap)
 
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
@@ -886,30 +886,38 @@ def __reposition_axes_for_legends(fig, legends):
                                / max_extent_inches))
 
 
-def __add_text_annotations(axes_names: Sequence[str],
-                           top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
-                           paired_axes: bool, ylim: float):
+def __add_axis_name_annotations(axes_names: Sequence[str],
+                                top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
+                                paired_axes: bool, ylim: float,
+                                minimap: str | None):
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     if paired_axes:
+        # Label each axis in the pair
+        offset_x_abs = 20
+        if minimap == "large":
+            offset_y_rel = 0.85
+        else:
+            offset_y_rel = 0.95
         assert len(axes_names) >= 2
         top_ax.text(
             s=axes_names[0],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
+            x=bottom_ax_xmin + offset_x_abs,
+            y=ylim * offset_y_rel,
             style="italic",
             verticalalignment="center",
         )
         bottom_ax.text(
             s=axes_names[1],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
+            x=bottom_ax_xmin + offset_x_abs,
+            y=ylim * offset_y_rel,
             style="italic",
             verticalalignment="center",
         )
+    # p-val label
     fig.text(
-        x=top_ax.get_position().xmin - 0.05,
-        y=0.5,
-        s="p-value (with α at 5-sigma, Šidák corrected)",
+        x=top_ax.get_position().xmin - 0.06,
+        y=top_ax.get_position().ymin,
+        s="p-value\n(α at 5-sigma, Šidák corrected)",
         ha="center",
         va="center",
         rotation="vertical",
