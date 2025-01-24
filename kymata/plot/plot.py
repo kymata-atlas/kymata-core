@@ -191,7 +191,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         the right hemisphere). Each array has a length equal to the number of hexels in the respective
         hemisphere, with entries:
             - 0, if no transform is ever significant for this hexel.
-            - i + 1, where i is the index of the transform (from show_transforms) that is significant
+            - i+1, where i is the index of the transform (within `show_transforms`) that is significant
               for this hexel.
 
     Notes:
@@ -200,26 +200,31 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         indicates whether the hexel is significant for any transform and, if so, which transform it is
         significant for.
     """
+    # Initialise with zeros: transparent everywhere
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
+
+    # Get best transforms which survive alpha threshold
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
     best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
+
+    # Apply latency range if appropriate
     if minimap_latency_range != (None, None):
         # Filter the dataframe to keep rows where 'latency' is within the range
         best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
                                                     (best_transforms_left['latency'] <= minimap_latency_range[1])]
         best_transforms_right = best_transforms_right[(best_transforms_right['latency'] >= minimap_latency_range[0]) &
-                                                    (best_transforms_right['latency'] <= minimap_latency_range[1])]
+                                                      (best_transforms_right['latency'] <= minimap_latency_range[1])]
+
+    # Apply colour index to each shown transform
     for trans_i, transform in enumerate(
-        expression_set.transforms,
+        show_transforms,
         # 1-indexed, as 0 will refer to transparent
         start=1,
     ):
-        if transform not in show_transforms:
-            continue
         significant_hexel_names_left = best_transforms_left[
-            best_transforms_left[DIM_TRANSFORM] == transform
+                best_transforms_left[DIM_TRANSFORM] == transform
             ][expression_set.channel_coord_name]
         hexel_idxs_left = np.searchsorted(
             expression_set.hexels_left, significant_hexel_names_left.to_numpy()
@@ -227,7 +232,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         data_left[hexel_idxs_left] = trans_i
 
         significant_hexel_names_right = best_transforms_right[
-            best_transforms_right[DIM_TRANSFORM] == transform
+                best_transforms_right[DIM_TRANSFORM] == transform
             ][expression_set.channel_coord_name]
         hexel_idxs_right = np.searchsorted(
             expression_set.hexels_right, significant_hexel_names_right.to_numpy()
@@ -318,7 +323,7 @@ def _plot_minimap_hexel(
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    colormap = _get_segmented_colormap_for_minimap(colors, expression_set, show_transforms)
+    colormap = _get_segmented_colormap_for_minimap(colors, show_transforms)
 
     data_left, data_right = _hexel_minimap_data(
         expression_set,
@@ -346,7 +351,7 @@ def _plot_minimap_hexel(
         transparent=False,
         clim=dict(
             kind="value",
-            lims=[0, len(expression_set.transforms) / 2, len(expression_set.transforms)],
+            lims=[0, len(show_transforms) / 2, len(show_transforms)],
         ),
     )
     # Override plot kwargs with those passed
@@ -365,21 +370,16 @@ def _plot_minimap_hexel(
     pyplot.close(rh_brain_fig)
 
 
-def _get_segmented_colormap_for_minimap(colors, expression_set: ExpressionSet, show_transforms: list[str]):
-    # Transforms which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
-    # as transparent
-    colors = colors.copy()
-    for transform in expression_set.transforms:
-        if transform not in show_transforms:
-            colors[transform] = transparent
+def _get_segmented_colormap_for_minimap(colors: dict[str, Any], show_transforms: list[str]):
+    """Index point to transform position within `show_transforms` (1-indexed)."""
     # segment at index 0 will map to transparent
     # segment at index i will map to transform of index i-1
     colormap = LinearSegmentedColormap.from_list(
         "custom",
         # Insert transparent for index 0
-        colors=[transparent] + [colors[f] for f in expression_set.transforms],
+        colors=[transparent] + [colors[f] for f in show_transforms],
         # +1 for the transparency
-        N=len(expression_set.transforms) + 1,
+        N=len(show_transforms) + 1,
     )
     return colormap
 
