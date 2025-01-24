@@ -19,21 +19,15 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
+from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import (
-    HexelExpressionSet,
-    SensorExpressionSet,
-    ExpressionSet,
-    DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY,
-)
+    HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY)
+from kymata.entities.iterables import interleave
 from kymata.entities.transform import Transform
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import (
-    get_meg_sensor_xy,
-    get_eeg_sensor_xy,
-    get_meg_sensors,
-    get_eeg_sensors,
-)
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors)
 
 transparent = (0, 0, 0, 0)
 
@@ -172,6 +166,7 @@ def _minimap_mosaic(
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
                         alpha_logp: float,
                         show_transforms: list[str],
+                        value_lookup: dict[str, int | float],
                         minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
                         ) -> tuple[NDArray, NDArray]:
     """
@@ -183,6 +178,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
             below this threshold are considered significant.
         show_transforms (list[str]): A list of transform names to consider for significance. Only these
             transforms will be checked for significant hexels.
+        value_lookup (dict[str, int]): A dictionary mapping transform names to values to set in the data arrays.
         minimap_latency_range: tuple[float | None, float | None]: The latency range to use in the minimap.
             Defaults to None.
 
@@ -218,18 +214,14 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
                                                       (best_transforms_right['latency'] <= minimap_latency_range[1])]
 
     # Apply colour index to each shown transform
-    for trans_i, transform in enumerate(
-        show_transforms,
-        # 1-indexed, as 0 will refer to transparent
-        start=1,
-    ):
+    for transform in show_transforms:
         significant_hexel_names_left = best_transforms_left[
                 best_transforms_left[DIM_TRANSFORM] == transform
             ][expression_set.channel_coord_name]
         hexel_idxs_left = np.searchsorted(
             expression_set.hexels_left, significant_hexel_names_left.to_numpy()
         )
-        data_left[hexel_idxs_left] = trans_i
+        data_left[hexel_idxs_left] = value_lookup[transform]
 
         significant_hexel_names_right = best_transforms_right[
                 best_transforms_right[DIM_TRANSFORM] == transform
@@ -237,7 +229,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         hexel_idxs_right = np.searchsorted(
             expression_set.hexels_right, significant_hexel_names_right.to_numpy()
         )
-        data_right[hexel_idxs_right] = trans_i
+        data_right[hexel_idxs_right] = value_lookup[transform]
 
     return data_left, data_right
 
@@ -323,13 +315,14 @@ def _plot_minimap_hexel(
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    colormap = _get_segmented_colormap_for_minimap(colors, show_transforms)
+    colormap, colour_idx_lookup = _get_segmented_colormap_for_cortical_minimap(colors, show_transforms)
 
     data_left, data_right = _hexel_minimap_data(
         expression_set,
         alpha_logp=alpha_logp,
         show_transforms=show_transforms,
-        minimap_latency_range=minimap_latency_range
+        value_lookup=colour_idx_lookup,
+        minimap_latency_range=minimap_latency_range,
     )
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
@@ -352,7 +345,8 @@ def _plot_minimap_hexel(
         transparent=False,
         clim=dict(
             kind="value",
-            lims=[0, len(show_transforms) / 2, len(show_transforms)],
+            # There are two colormap entries for each transform: the transform itself and the interleaved transparency
+            lims=[0, len(show_transforms), len(show_transforms) * 2],
         ),
     )
     # Override plot kwargs with those passed
@@ -371,18 +365,57 @@ def _plot_minimap_hexel(
     pyplot.close(rh_brain_fig)
 
 
-def _get_segmented_colormap_for_minimap(colors: dict[str, Any], show_transforms: list[str]):
-    """Index point to transform position within `show_transforms` (1-indexed)."""
+def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
+                                                 show_transforms: list[str],
+                                                 ) -> tuple[LinearSegmentedColormap, dict[TransformNameDType, int]]:
+    """
+    Get a colormap appropriate for displaying transforms on a brain minimap.
+
+    Colormap will have specified colours for the transforms, interleaved with transparency. The transparency
+    interleaving is necessary to remove false-colour "halos" appearing around the edge of significant hexel patches when
+    smoothing is >1.
+
+    Index point to transform position within `show_transforms` (1-indexed).
+
+    Args:
+        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
+            strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
+        show_transforms (list[str]):
+
+    Returns: Tuple of the following items
+        (
+            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency.
+            dict[TransformNameDType, int]: Dictionary mapping transform names to indices within the colourmap for the
+                appropriate colour.
+        )
+
+    """
+    base_colours = [colors[f] for f in show_transforms]  # Not including transparent
+    transparent_copy = len(base_colours) * [transparent]
+    interleaved_colours: list = [
+        # Start with transparent at index 0
+        transparent
+    ] + interleave(transparent_copy, transparent_copy, base_colours)
+
+    colour_idx_lookup = {
+        # Map the colour to its corresponding index in the colourmap
+        # [transparent] → 0
+        # [colour_0] → 3
+        # [colour_1] → 6
+        TransformNameDType(transform): 3 * (transform_idx + 1)
+        for transform_idx, transform in enumerate(show_transforms)
+    }
+
     # segment at index 0 will map to transparent
     # segment at index i will map to transform of index i-1
     colormap = LinearSegmentedColormap.from_list(
         "custom",
         # Insert transparent for index 0
-        colors=[transparent] + [colors[f] for f in show_transforms],
-        # +1 for the transparency
-        N=len(show_transforms) + 1,
+        colors=interleaved_colours,
+        N=len(interleaved_colours),
     )
-    return colormap
+
+    return colormap, colour_idx_lookup
 
 
 def hide_axes(axes: pyplot.Axes):
