@@ -33,4 +33,4 @@ docs/_build/
 .vscode
 
 # Stratch file
-scratch.py
+scratch.*
