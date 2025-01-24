@@ -355,7 +355,7 @@ def _plot_minimap_hexel(
         clim=dict(
             kind="value",
             # There are two colormap entries for each transform: the transform itself and the interleaved transparency
-            lims=[0, len(show_transforms), len(show_transforms) * 2],
+            lims=[0, len(show_transforms) * smoothing_steps / 2, len(show_transforms) * smoothing_steps],
         ),
     )
     # Override plot kwargs with those passed
