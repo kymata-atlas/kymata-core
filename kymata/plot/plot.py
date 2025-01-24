@@ -344,6 +344,7 @@ def _plot_minimap_hexel(
         views=view,
         colormap=colormap,
         smoothing_steps=2,
+        cortex=dict(colormap="Greys", vmin=-3, vmax=6),
         background="white",
         spacing="ico5",
         time_viewer=False,
