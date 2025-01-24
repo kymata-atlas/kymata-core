@@ -309,6 +309,7 @@ def _plot_minimap_hexel(
     surface: str,
     colors: dict[str, Any],
     alpha_logp: float,
+    minimap_kwargs: dict,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
 ):
     # Ensure we have the FSAverage dataset downloaded
@@ -342,9 +343,7 @@ def _plot_minimap_hexel(
         tmin=0,
         tstep=1,
     )
-    warn(
-        "Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain."
-    )
+    warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
     plot_kwargs = dict(
         subject="fsaverage",
         surface=surface,
@@ -361,6 +360,8 @@ def _plot_minimap_hexel(
             lims=[0, len(expression_set.transforms) / 2, len(expression_set.transforms)],
         ),
     )
+    # Override plot kwargs with those passed
+    plot_kwargs.update(minimap_kwargs)
     # Plot left view
     lh_brain = stc.plot(hemi="lh", **plot_kwargs)
     lh_brain_fig = pyplot.gcf()
@@ -406,6 +407,8 @@ def expression_plot(
     overwrite: bool = True,
     show_legend: bool = True,
     legend_display: dict[str, str] | None = None,
+    # Extra kwargs
+    minimap_kwargs: Optional[dict] = None
 ) -> pyplot.Figure:
     """
     Generates a plot of transform expressions over time with optional display customizations.
@@ -465,6 +468,7 @@ def expression_plot(
         legend_display (dict[str, str] | None, optional): Allows grouping of multiple transforms under the same legend
             item. Provide a dictionary mapping true transform names to display names. None applies no grouping.
             Default is None.
+        minimap_kwargs (Optional[dict]): Keyword argument overrides for minimap plotting. Deafault is None.
 
     Returns:
         pyplot.Figure: The matplotlib figure object containing the generated plot.
@@ -499,6 +503,9 @@ def expression_plot(
     if minimap_latency_range is None:
         minimap_latency_range = (None, None)
     assert len(minimap_latency_range) == 2
+
+    if minimap_kwargs is None:
+        minimap_kwargs = dict()
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -748,6 +755,7 @@ def expression_plot(
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
                 minimap_latency_range=minimap_latency_range,
+                minimap_kwargs=minimap_kwargs,
             )
         else:
             raise NotImplementedError()
