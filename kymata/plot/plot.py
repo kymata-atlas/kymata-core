@@ -91,12 +91,12 @@ def _minimap_mosaic(
         }
     elif minimap_option.lower() == "large":
         width_ratios = None
-        height_ratios = [4, 1, 1]
+        height_ratios = [6, 1, 1]
         subplots_adjust = {
             "hspace": 0,
-            "wspace": 0.25,
-            "left": 0.02,
-            "right": 0.8,
+            "wspace": 0.1,
+            "left": 0.08,
+            "right": 0.92,
         }
     else:
         raise NotImplementedError()
