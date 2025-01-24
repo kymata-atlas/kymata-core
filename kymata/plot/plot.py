@@ -318,24 +318,13 @@ def _plot_minimap_hexel(
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    # Transforms which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
-    # as transparent
-    colors = colors.copy()
-    for transform in expression_set.transforms:
-        if transform not in show_transforms:
-            colors[transform] = transparent
+    colormap = _get_segmented_colormap_for_minimap(colors, expression_set, show_transforms)
 
-    # segment at index 0 will map to transparent
-    # segment at index i will map to transform of index i-1
-    colormap = LinearSegmentedColormap.from_list(
-        "custom",
-        # Insert transparent for index 0
-        colors=[transparent] + [colors[f] for f in expression_set.transforms],
-        # +1 for the transparency
-        N=len(expression_set.transforms) + 1,
-    )
     data_left, data_right = _hexel_minimap_data(
-        expression_set, alpha_logp=alpha_logp, show_transforms=show_transforms, minimap_latency_range=minimap_latency_range
+        expression_set,
+        alpha_logp=alpha_logp,
+        show_transforms=show_transforms,
+        minimap_latency_range=minimap_latency_range
     )
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
@@ -374,6 +363,25 @@ def _plot_minimap_hexel(
     rh_minimap_axis.imshow(rh_brain.screenshot())
     hide_axes(rh_minimap_axis)
     pyplot.close(rh_brain_fig)
+
+
+def _get_segmented_colormap_for_minimap(colors, expression_set: ExpressionSet, show_transforms: list[str]):
+    # Transforms which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
+    # as transparent
+    colors = colors.copy()
+    for transform in expression_set.transforms:
+        if transform not in show_transforms:
+            colors[transform] = transparent
+    # segment at index 0 will map to transparent
+    # segment at index i will map to transform of index i-1
+    colormap = LinearSegmentedColormap.from_list(
+        "custom",
+        # Insert transparent for index 0
+        colors=[transparent] + [colors[f] for f in expression_set.transforms],
+        # +1 for the transparency
+        N=len(expression_set.transforms) + 1,
+    )
+    return colormap
 
 
 def hide_axes(axes: pyplot.Axes):
