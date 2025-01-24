@@ -402,7 +402,7 @@ def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
 
     """
     if smoothing_steps < 0:
-        raise ValueError(f"smoothing_steps must be non-negative")
+        raise ValueError("smoothing_steps must be non-negative")
 
     base_colours = [colors[f] for f in show_transforms]  # Not including transparent
     transparent_copy = len(base_colours) * [transparent]
