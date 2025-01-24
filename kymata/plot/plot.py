@@ -315,7 +315,16 @@ def _plot_minimap_hexel(
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    colormap, colour_idx_lookup = _get_segmented_colormap_for_cortical_minimap(colors, show_transforms)
+    # There is a little circular dependency between the smoothing_steps in plot_kwargs below, which gets created after
+    # the colormap, and the colormap, which depends on the smoothing steps. So we short-circuit that here by pulling out
+    # the relevant value, if it's there so it doesn't get out of sync
+    if "smoothing_steps" in minimap_kwargs:
+        smoothing_steps = minimap_kwargs["smoothing_steps"]
+    else:
+        # Default value
+        smoothing_steps = 2
+
+    colormap, colour_idx_lookup = _get_segmented_colormap_for_cortical_minimap(colors, show_transforms, smoothing_steps)
 
     data_left, data_right = _hexel_minimap_data(
         expression_set,
@@ -336,7 +345,7 @@ def _plot_minimap_hexel(
         surface=surface,
         views=view,
         colormap=colormap,
-        smoothing_steps=2,
+        smoothing_steps=smoothing_steps,
         cortex=dict(colormap="Greys", vmin=-3, vmax=6),
         background="white",
         spacing="ico5",
@@ -367,6 +376,7 @@ def _plot_minimap_hexel(
 
 def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
                                                  show_transforms: list[str],
+                                                 smoothing_steps: int,
                                                  ) -> tuple[LinearSegmentedColormap, dict[TransformNameDType, int]]:
     """
     Get a colormap appropriate for displaying transforms on a brain minimap.
@@ -380,7 +390,8 @@ def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
     Args:
         colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
             strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
-        show_transforms (list[str]):
+        show_transforms (list[str]): The transforms which will be shown
+        smoothing_steps (int): The number of smoothing steps to compensate for
 
     Returns: Tuple of the following items
         (
@@ -390,19 +401,25 @@ def _get_segmented_colormap_for_cortical_minimap(colors: dict[str, Any],
         )
 
     """
+    if smoothing_steps < 0:
+        raise ValueError(f"smoothing_steps must be non-negative")
+
     base_colours = [colors[f] for f in show_transforms]  # Not including transparent
     transparent_copy = len(base_colours) * [transparent]
-    interleaved_colours: list = [
+    interleaved_colours: list = (
         # Start with transparent at index 0
-        transparent
-    ] + interleave(transparent_copy, transparent_copy, base_colours)
+        [transparent]
+        # weave in enough extra transparency between colours to account for smoothing
+        + interleave(*[transparent_copy for _ in range(smoothing_steps)], transparent_copy, base_colours)
+    )
 
     colour_idx_lookup = {
         # Map the colour to its corresponding index in the colourmap
+        # E.g. if
         # [transparent] → 0
         # [colour_0] → 3
         # [colour_1] → 6
-        TransformNameDType(transform): 3 * (transform_idx + 1)
+        TransformNameDType(transform): (smoothing_steps + 1) * (transform_idx + 1)
         for transform_idx, transform in enumerate(show_transforms)
     }
 
