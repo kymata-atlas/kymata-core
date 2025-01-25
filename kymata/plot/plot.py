@@ -97,12 +97,12 @@ def _minimap_mosaic(
         }
     elif minimap_option.lower() == "large":
         width_ratios = None
-        height_ratios = [4, 1, 1]
+        height_ratios = [6, 1, 1]
         subplots_adjust = {
             "hspace": 0,
-            "wspace": 0.25,
-            "left": 0.02,
-            "right": 0.8,
+            "wspace": 0.1,
+            "left": 0.08,
+            "right": 0.92,
         }
     else:
         raise NotImplementedError()
@@ -764,6 +764,17 @@ def expression_plot(
         top_ax = bottom_ax = axes[_AxName.main]
     top_ax.set_title(title)
     bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
+    if minimap == "large":
+        bottom_ax.set_ylabel("p-value")
+    else:
+        fig.text(
+            x=top_ax.get_position().xmin - 0.05,
+            y=0.5,
+            s="p-value (with α at 5-sigma, Šidák corrected)",
+            ha="center",
+            va="center",
+            rotation="vertical",
+        )
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     bottom_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
@@ -861,14 +872,6 @@ def __add_text_annotations(axes_names: Sequence[str],
             style="italic",
             verticalalignment="center",
         )
-    fig.text(
-        x=top_ax.get_position().xmin - 0.05,
-        y=0.5,
-        s="p-value (with α at 5-sigma, Šidák corrected)",
-        ha="center",
-        va="center",
-        rotation="vertical",
-    )
     if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
         bottom_ax.text(
             s="   onset of environment   ",

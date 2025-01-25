@@ -5,7 +5,7 @@ from os import path
 import numpy as np
 
 from kymata.io.logging import log_message, date_format
-from kymata.io.nkg import load_expression_set
+from kymata.io.nkg import load_expression_set, save_expression_set
 from kymata.plot.plot import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict, gradient_color_dict
 
@@ -58,12 +58,12 @@ def main():
 
     if transform_family_type == 'simple':
 
-        # colours = {'Lexical Features': (0.4, 0, 0.6), 
-        #     'Semantic Features': (0.6, 0, 0.4), 
-        #     'Part of Speech': (0.8, 0, 0.2), 
-        #     'Syntactic Features': (1, 0, 0),
-        #     'Articulatory Features': (0, 0.6, 0.4), 
-        #     'Phoneme Identities': (0, 1, 0)}
+        colours = {'Lexical Features': (0.4, 0, 0.6), 
+            'Semantic Features': (0.6, 0, 0.4), 
+            'Part of Speech': (0.8, 0, 0.2), 
+            'Syntactic Features': (1, 0, 0),
+            'Articulatory Features': (0, 0.6, 0.4), 
+            'Phoneme Identities': (0, 1, 0)}
 
         # morpheme_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme/sensor/is_root_0_gridsearch.nkg')
         # morpheme_manual_name = morpheme_manual.transforms
@@ -88,46 +88,27 @@ def main():
         # expression_data_salmonn_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
         # expression_data_salmonn_phone = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
         salmonn_phone_name = expression_data_salmonn_phone.transforms
-        expression_data_salmonn_morpheme = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source/layer22_4054_gridsearch.nkg')
+        expression_data_salmonn_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source')
         salmonn_morpheme_name = expression_data_salmonn_morpheme.transforms
 
-        import ipdb;ipdb.set_trace()
+        # import ipdb;ipdb.set_trace()
 
-        # expression_data_word_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
-        # expression_data_word_manual += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
-        # expression_data_phone_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
-        # expression_data_morpheme_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme/source/is_root_0_gridsearch.nkg')
-        # manual_word_name = expression_data_word_manual.transforms
-        # manual_phone_name = expression_data_phone_manual.transforms
-        # manual_morpheme_name = expression_data_morpheme_manual.transforms
+        expression_data_word_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
+        expression_data_word_manual += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
+        expression_data_phone_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
+        expression_data_morpheme_manual = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme')
+        manual_word_name = expression_data_word_manual.transforms
+        manual_phone_name = expression_data_phone_manual.transforms
+        manual_morpheme_name = expression_data_morpheme_manual.transforms
 
-        # expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
-        # tvl_name = expression_data_tvl.transforms
+        # import ipdb;ipdb.set_trace()
 
-        # IL_name = ['IL']
-        # STL_name = ['STL']
-        # IL_channel_name = [i for i in tvl_name if i != 'STL' and i != 'IL']
+        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
+        tvl_name = expression_data_tvl.transforms
 
-        # fig = expression_plot(expression_data_tvl +  expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_salmonn_morpheme
-        #                       + expression_data_word_manual + expression_data_phone_manual + expression_data_morpheme_manual,
-        #                       paired_axes=True, minimap=True, show_legend=True, show_only=manual_word_name+manual_phone_name+manual_morpheme_name, ylim=-100,
-        #                     color=constant_color_dict(manual_word_name, color= 'red')
-        #                         | constant_color_dict(IL_channel_name, color= '#941de0')
-        #                         | constant_color_dict(IL_name, color= '#4320aa')
-        #                         | constant_color_dict(STL_name, color= '#ca8bb5')
-        #                         | constant_color_dict(manual_phone_name, color='green')
-        #                         | constant_color_dict(manual_morpheme_name, color='blue'),
-        #                     legend_display=legend_display_dict(manual_word_name, 'Manual word features')
-        #                         | legend_display_dict(IL_channel_name, 'Tonotopic Instantaneous Loudness transforms')
-        #                         | legend_display_dict(IL_name, 'Instantaneous Loudness transform')
-        #                         | legend_display_dict(STL_name, 'Short-Term Loudness transform')
-        #                         | legend_display_dict(manual_phone_name, 'Manual phone features')
-        #                         | legend_display_dict(manual_morpheme_name, 'Manual morpheme features'))
-
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_manual_show_manual.png")
-
-        # fig = expression_plot(expression_data_salmonn_morpheme, paired_axes=True, minimap=True, show_legend=True)
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source/salmonn_morpheme.png")
+        IL_name = ['IL']
+        STL_name = ['STL']
+        IL_channel_name = [i for i in tvl_name if i != 'STL' and i != 'IL']
 
         # art_npy = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/art_sig.npy')
         # art_name = [f'layer{i[0]}_{i[1]}' for i in art_npy.tolist()]
@@ -142,21 +123,36 @@ def main():
         # syn_npy = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/syn_sig.npy')
         # syn_name = [f'layer{i[0]}_{i[1]}' for i in syn_npy.tolist()]
 
-        # fig = expression_plot(expression_data_tvl +  expression_data_word_manual + expression_data_phone_manual + expression_data_morpheme_manual, paired_axes=True, minimap=True, show_legend=True,
-        #                         color=constant_color_dict(manual_word_name, color= 'red')
-        #                             | constant_color_dict(IL_channel_name, color= '#941de0')
-        #                             | constant_color_dict(IL_name, color= '#4320aa')
-        #                             | constant_color_dict(STL_name, color= '#ca8bb5')
-        #                             | constant_color_dict(manual_phone_name, color='green')
-        #                             | constant_color_dict(manual_morpheme_name, color='blue'),
-        #                         legend_display=legend_display_dict(manual_word_name, 'Manual word features')
-        #                             | legend_display_dict(IL_channel_name, 'Tonotopic Instantaneous Loudness transforms')
-        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness transform')
-        #                             | legend_display_dict(STL_name, 'Short-Term Loudness transform')
-        #                             | legend_display_dict(manual_phone_name, 'Manual phone features')
-        #                             | legend_display_dict(manual_morpheme_name, 'Manual morpheme features'))
+        # save_expression_set(expression_data_tvl +  expression_data_salmonn_word + expression_data_salmonn_phone
+        #                       + expression_data_word_manual + expression_data_phone_manual, '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/all_feats.nkg')
 
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/all_manual_source.png")
+        # fig = expression_plot(expression_data_tvl +  expression_data_salmonn_word + expression_data_salmonn_phone
+        #                       + expression_data_word_manual + expression_data_phone_manual,
+        #                       paired_axes=True, minimap_view='ventral' , minimap='large', show_legend=False, show_only=syn_name, ylim=-125,
+        #                     color=constant_color_dict(syn_name, color= colours['Syntactic Features']),)
+
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/all_feats_syn_ventral.png")
+
+        # fig = expression_plot(expression_data_salmonn_morpheme, paired_axes=True, minimap=True, show_legend=True)
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source/salmonn_morpheme.png")
+
+        fig = expression_plot(expression_data_tvl +  expression_data_word_manual + expression_data_phone_manual + expression_data_morpheme_manual + 
+                              expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_salmonn_morpheme,
+                              paired_axes=True, minimap='standard', show_legend=True, show_only=salmonn_word_name+salmonn_phone_name+salmonn_morpheme_name, ylim=-100,
+                                color=constant_color_dict(salmonn_word_name, color= 'red')
+                                    | constant_color_dict(IL_channel_name, color= '#941de0')
+                                    | constant_color_dict(IL_name, color= '#4320aa')
+                                    | constant_color_dict(STL_name, color= '#ca8bb5')
+                                    | constant_color_dict(salmonn_phone_name, color='green')
+                                    | constant_color_dict(salmonn_morpheme_name, color='blue'),
+                                legend_display=legend_display_dict(salmonn_word_name, 'Salmonn word features')
+                                    | legend_display_dict(IL_channel_name, 'Tonotopic Instantaneous Loudness transforms')
+                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transform')
+                                    | legend_display_dict(STL_name, 'Short-Term Loudness transform')
+                                    | legend_display_dict(salmonn_phone_name, 'Salmonn phone features')
+                                    | legend_display_dict(salmonn_morpheme_name, 'Salmonn morpheme features'))
+
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_manual_show_salmonn_incl_morph.png")
         
 
         # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone + expression_data_word_manual + expression_data_phone_manual, paired_axes=True, minimap=True, show_legend=True, show_only=manual_word_name+manual_phone_name, ylim=-100,
