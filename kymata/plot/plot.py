@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from statistics import NormalDist
-from typing import Optional, Sequence, NamedTuple, Any, Type, Literal
+from typing import Optional, Sequence, NamedTuple, Any, Type, Literal, Callable
 from warnings import warn
 
 import numpy as np
 from matplotlib import pyplot
-from matplotlib.colors import to_hex, LinearSegmentedColormap
+from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator
@@ -19,21 +19,15 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from seaborn import color_palette
 
+from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import (
-    HexelExpressionSet,
-    SensorExpressionSet,
-    ExpressionSet,
-    DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY,
-)
+    HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY)
 from kymata.entities.transform import Transform
 from kymata.math.p_values import p_to_logp
 from kymata.math.rounding import round_down, round_up
+from kymata.plot.color import DiscreteListedColormap
 from kymata.plot.layouts import (
-    get_meg_sensor_xy,
-    get_eeg_sensor_xy,
-    get_meg_sensors,
-    get_eeg_sensors,
-)
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors)
 
 transparent = (0, 0, 0, 0)
 
@@ -148,7 +142,7 @@ def _minimap_mosaic(
             spec = [
                 [_AxName.main],
             ]
-        elif minimap_option.lower() == "show":
+        elif minimap_option.lower() == "standard":
             spec = [
                 [_AxName.minimap_main, _AxName.main],
             ]
@@ -172,6 +166,7 @@ def _minimap_mosaic(
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
                         alpha_logp: float,
                         show_transforms: list[str],
+                        value_lookup: dict[str, int | float],
                         minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
                         ) -> tuple[NDArray, NDArray]:
     """
@@ -183,6 +178,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
             below this threshold are considered significant.
         show_transforms (list[str]): A list of transform names to consider for significance. Only these
             transforms will be checked for significant hexels.
+        value_lookup (dict[str, int]): A dictionary mapping transform names to values to set in the data arrays.
         minimap_latency_range: tuple[float | None, float | None]: The latency range to use in the minimap.
             Defaults to None.
 
@@ -191,7 +187,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         the right hemisphere). Each array has a length equal to the number of hexels in the respective
         hemisphere, with entries:
             - 0, if no transform is ever significant for this hexel.
-            - i + 1, where i is the index of the transform (from show_transforms) that is significant
+            - i+1, where i is the index of the transform (within `show_transforms`) that is significant
               for this hexel.
 
     Notes:
@@ -200,39 +196,40 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         indicates whether the hexel is significant for any transform and, if so, which transform it is
         significant for.
     """
+    # Initialise with zeros: transparent everywhere
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
+
+    # Get best transforms which survive alpha threshold
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
     best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
     best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
+
+    # Apply latency range if appropriate
     if minimap_latency_range != (None, None):
         # Filter the dataframe to keep rows where 'latency' is within the range
         best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
                                                     (best_transforms_left['latency'] <= minimap_latency_range[1])]
         best_transforms_right = best_transforms_right[(best_transforms_right['latency'] >= minimap_latency_range[0]) &
-                                                    (best_transforms_right['latency'] <= minimap_latency_range[1])]
-    for trans_i, transform in enumerate(
-        expression_set.transforms,
-        # 1-indexed, as 0 will refer to transparent
-        start=1,
-    ):
-        if transform not in show_transforms:
-            continue
+                                                      (best_transforms_right['latency'] <= minimap_latency_range[1])]
+
+    # Apply colour index to each shown transform
+    for transform in show_transforms:
         significant_hexel_names_left = best_transforms_left[
-            best_transforms_left[DIM_TRANSFORM] == transform
+                best_transforms_left[DIM_TRANSFORM] == transform
             ][expression_set.channel_coord_name]
         hexel_idxs_left = np.searchsorted(
             expression_set.hexels_left, significant_hexel_names_left.to_numpy()
         )
-        data_left[hexel_idxs_left] = trans_i
+        data_left[hexel_idxs_left] = value_lookup[transform]
 
         significant_hexel_names_right = best_transforms_right[
-            best_transforms_right[DIM_TRANSFORM] == transform
+                best_transforms_right[DIM_TRANSFORM] == transform
             ][expression_set.channel_coord_name]
         hexel_idxs_right = np.searchsorted(
             expression_set.hexels_right, significant_hexel_names_right.to_numpy()
         )
-        data_right[hexel_idxs_right] = trans_i
+        data_right[hexel_idxs_right] = value_lookup[transform]
 
     return data_left, data_right
 
@@ -309,6 +306,7 @@ def _plot_minimap_hexel(
     surface: str,
     colors: dict[str, Any],
     alpha_logp: float,
+    minimap_kwargs: dict,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
 ):
     # Ensure we have the FSAverage dataset downloaded
@@ -317,24 +315,23 @@ def _plot_minimap_hexel(
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
 
-    # Transforms which aren't being shown need to be padded into the colormap, for indexing purposes, but should show up
-    # as transparent
-    colors = colors.copy()
-    for transform in expression_set.transforms:
-        if transform not in show_transforms:
-            colors[transform] = transparent
+    # There is a little circular dependency between the smoothing_steps in plot_kwargs below, which gets created after
+    # the colormap, and the colormap, which depends on the smoothing steps. So we short-circuit that here by pulling out
+    # the relevant value, if it's there so it doesn't get out of sync
+    if "smoothing_steps" in minimap_kwargs:
+        smoothing_steps = minimap_kwargs["smoothing_steps"]
+    else:
+        # Default value
+        smoothing_steps = 2
 
-    # segment at index 0 will map to transparent
-    # segment at index i will map to transform of index i-1
-    colormap = LinearSegmentedColormap.from_list(
-        "custom",
-        # Insert transparent for index 0
-        colors=[transparent] + [colors[f] for f in expression_set.transforms],
-        # +1 for the transparency
-        N=len(expression_set.transforms) + 1,
-    )
+    colormap, colour_idx_lookup, n_colors = _get_colormap_for_cortical_minimap(colors, show_transforms)
+
     data_left, data_right = _hexel_minimap_data(
-        expression_set, alpha_logp=alpha_logp, show_transforms=show_transforms, minimap_latency_range=minimap_latency_range
+        expression_set,
+        alpha_logp=alpha_logp,
+        show_transforms=show_transforms,
+        value_lookup=colour_idx_lookup,
+        minimap_latency_range=minimap_latency_range,
     )
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
@@ -342,15 +339,14 @@ def _plot_minimap_hexel(
         tmin=0,
         tstep=1,
     )
-    warn(
-        "Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain."
-    )
+    warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
     plot_kwargs = dict(
         subject="fsaverage",
         surface=surface,
         views=view,
         colormap=colormap,
-        smoothing_steps=2,
+        smoothing_steps=smoothing_steps,
+        cortex=dict(colormap="Greys", vmin=-3, vmax=6),
         background="white",
         spacing="ico5",
         time_viewer=False,
@@ -358,9 +354,11 @@ def _plot_minimap_hexel(
         transparent=False,
         clim=dict(
             kind="value",
-            lims=[0, len(expression_set.transforms) / 2, len(expression_set.transforms)],
+            lims=[0, n_colors / 2, n_colors],
         ),
     )
+    # Override plot kwargs with those passed
+    plot_kwargs.update(minimap_kwargs)
     # Plot left view
     lh_brain = stc.plot(hemi="lh", **plot_kwargs)
     lh_brain_fig = pyplot.gcf()
@@ -373,6 +371,46 @@ def _plot_minimap_hexel(
     rh_minimap_axis.imshow(rh_brain.screenshot())
     hide_axes(rh_minimap_axis)
     pyplot.close(rh_brain_fig)
+
+
+def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
+                                       show_transforms: list[str],
+                                       ) -> tuple[Callable, dict[TransformNameDType, int], int]:
+    """
+    Get a colormap appropriate for displaying transforms on a brain minimap.
+
+    Colormap will have specified colours for the transforms, interleaved with transparency. The transparency
+    interleaving is necessary to remove false-colour "halos" appearing around the edge of significant hexel patches when
+    smoothing is >1.
+
+    Index point to transform position within `show_transforms` (1-indexed).
+
+    Args:
+        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
+            strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
+        show_transforms (list[str]): The transforms which will be shown
+
+    Returns: Tuple of the following items
+        (
+            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency
+            dict[TransformNameDType, int]: Dictionary mapping transform names to indices within the colourmap for the
+                appropriate colour
+            int: the total number of colours in the colourmap, including the initial and interleaved transparency
+        )
+
+    """
+
+    base_colours = [transparent] + [colors[f] for f in show_transforms]
+
+    colour_idx_lookup = {
+        # Map the colour to its corresponding index in the colourmap
+        TransformNameDType(transform): transform_idx
+        for transform_idx, transform in enumerate(show_transforms, start=1)
+    }
+
+    colormap = DiscreteListedColormap(colors=base_colours, scale01=True)
+
+    return colormap, colour_idx_lookup, max(colour_idx_lookup.values())
 
 
 def hide_axes(axes: pyplot.Axes):
@@ -406,6 +444,8 @@ def expression_plot(
     overwrite: bool = True,
     show_legend: bool = True,
     legend_display: dict[str, str] | None = None,
+    # Extra kwargs
+    minimap_kwargs: Optional[dict] = None
 ) -> pyplot.Figure:
     """
     Generates a plot of transform expressions over time with optional display customizations.
@@ -429,7 +469,7 @@ def expression_plot(
         title (str, optional): Title over the top axis in the figure. Default is None.
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (str, optional): If None, no minimap is shown. Other options are:
-            `"show"`: Show small minimal.
+            `"standard"`: Show small minimal.
             `"large"`: Show a large minimal with smaller expression plot.
             Default is None.
         minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
@@ -465,6 +505,7 @@ def expression_plot(
         legend_display (dict[str, str] | None, optional): Allows grouping of multiple transforms under the same legend
             item. Provide a dictionary mapping true transform names to display names. None applies no grouping.
             Default is None.
+        minimap_kwargs (Optional[dict]): Keyword argument overrides for minimap plotting. Deafault is None.
 
     Returns:
         pyplot.Figure: The matplotlib figure object containing the generated plot.
@@ -499,6 +540,9 @@ def expression_plot(
     if minimap_latency_range is None:
         minimap_latency_range = (None, None)
     assert len(minimap_latency_range) == 2
+
+    if minimap_kwargs is None:
+        minimap_kwargs = dict()
 
     # Default colours
     cycol = cycle(color_palette("Set1"))
@@ -543,7 +587,7 @@ def expression_plot(
 
     sidak_corrected_alpha = 1 - (
         (1 - alpha)
-        ** np.float128(1 / (2 * len(expression_set.latencies) * n_channels * len(show_only)))
+        ** np.longdouble(1 / (2 * len(expression_set.latencies) * n_channels * len(show_only)))
     )
 
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
@@ -748,6 +792,7 @@ def expression_plot(
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
                 minimap_latency_range=minimap_latency_range,
+                minimap_kwargs=minimap_kwargs,
             )
         else:
             raise NotImplementedError()
@@ -823,7 +868,7 @@ def expression_plot(
 
         __reposition_axes_for_legends(fig, legends)
 
-    __add_text_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim)
+    __add_axis_name_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim, minimap)
 
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
@@ -852,26 +897,42 @@ def __reposition_axes_for_legends(fig, legends):
                                / max_extent_inches))
 
 
-def __add_text_annotations(axes_names: Sequence[str],
-                           top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
-                           paired_axes: bool, ylim: float):
+def __add_axis_name_annotations(axes_names: Sequence[str],
+                                top_ax: pyplot.Axes, bottom_ax: pyplot.Axes, fig: pyplot.Figure,
+                                paired_axes: bool, ylim: float,
+                                minimap: str | None):
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     if paired_axes:
+        # Label each axis in the pair
+        offset_x_abs = 20
+        if minimap == "large":
+            offset_y_rel = 0.85
+        else:
+            offset_y_rel = 0.95
         assert len(axes_names) >= 2
         top_ax.text(
             s=axes_names[0],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
+            x=bottom_ax_xmin + offset_x_abs,
+            y=ylim * offset_y_rel,
             style="italic",
             verticalalignment="center",
         )
         bottom_ax.text(
             s=axes_names[1],
-            x=bottom_ax_xmin + 20,
-            y=ylim * 0.95,
+            x=bottom_ax_xmin + offset_x_abs,
+            y=ylim * offset_y_rel,
             style="italic",
             verticalalignment="center",
         )
+    # p-val label
+    fig.text(
+        x=top_ax.get_position().xmin - 0.06,
+        y=top_ax.get_position().ymin,
+        s="p-value\n(α at 5-sigma, Šidák corrected)",
+        ha="center",
+        va="center",
+        rotation="vertical",
+    )
     if bottom_ax_xmin <= 0 <= bottom_ax_xmax:
         bottom_ax.text(
             s="   onset of environment   ",
