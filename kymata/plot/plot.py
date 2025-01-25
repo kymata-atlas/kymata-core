@@ -809,17 +809,17 @@ def expression_plot(
         top_ax = bottom_ax = axes[_AxName.main]
     top_ax.set_title(title)
     bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
-    if minimap == "large":
-        bottom_ax.set_ylabel("p-value")
-    else:
-        fig.text(
-            x=top_ax.get_position().xmin - 0.05,
-            y=0.5,
-            s="p-value (with α at 5-sigma, Šidák corrected)",
-            ha="center",
-            va="center",
-            rotation="vertical",
-        )
+    # if minimap == "large":
+    #     bottom_ax.set_ylabel("p-value")
+    # else:
+    #     fig.text(
+    #         x=top_ax.get_position().xmin - 0.05,
+    #         y=0.5,
+    #         s="p-value (with α at 5-sigma, Šidák corrected)",
+    #         ha="center",
+    #         va="center",
+    #         rotation="vertical",
+    #     )
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
     bottom_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
