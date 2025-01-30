@@ -6,8 +6,8 @@
 ###
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/paper/feats/morpheme/slurm_log_morpheme.txt
-#SBATCH --error=kymata-core-data/output/paper/feats/morpheme/slurm_log_morpheme.txt
+#SBATCH --output=kymata-core-data/output/paper/feats/morpheme/is_suffix/slurm_log_morpheme.txt
+#SBATCH --error=kymata-core-data/output/paper/feats/morpheme/is_suffix/slurm_log_morpheme.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=200G
@@ -27,12 +27,12 @@ apptainer exec \
         --config dataset4.yaml \
         --input-stream auditory \
         --plot-top-channels \
-        --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/is_root_time' \
+        --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/linguistics/is_suffix_time' \
         --num-neurons 1 \
-        --transform-name is_root \
+        --transform-name is_suffix \
         --n-derangements 5 \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme' \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme/is_suffix' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme/is_suffix' \
         --use-inverse-operator \
         --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
         --morph \
