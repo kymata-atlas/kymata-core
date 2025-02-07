@@ -115,7 +115,7 @@ See also `demos/demo_plotting.ipynb`.
 
 !!! notes 
 
-    If plotting on the CBU cluster, use `xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting` to plot offscreen.
+    If plotting on the CBU cluster, use `xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting` to plot and save offscreen.
 
 ### 5. Visualise processing pathways
 
