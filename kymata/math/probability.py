@@ -7,37 +7,37 @@ from numpy.typing import ArrayLike
 
 
 # The canonical log base
-log_base = 10
+LOGP_BASE = 10
 
 
-def p_to_logp(arraylike: ArrayLike) -> ArrayLike:
+def p_to_logp(p: ArrayLike) -> ArrayLike:
     """The one-stop shop for converting from p-values to log p-values."""
-    return log10(arraylike)
+    return log10(p)
 
 
-def logp_to_p(arraylike: ArrayLike) -> ArrayLike:
+def logp_to_p(logp: ArrayLike) -> ArrayLike:
     """The one-stop shop for converting from log p-values to p-values."""
-    return float(10) ** arraylike
+    return float(10) ** logp
 
 
-def p_to_surprisal(arraylike: ArrayLike) -> ArrayLike:
+def p_to_surprisal(p: ArrayLike) -> ArrayLike:
     """Converts p-values to surprisal values."""
-    return logp_to_surprisal(p_to_logp(arraylike))
+    return logp_to_surprisal(p_to_logp(p))
 
 
-def logp_to_surprisal(arraylike: ArrayLike) -> ArrayLike:
+def logp_to_surprisal(logp: ArrayLike) -> ArrayLike:
     """Converts logp-values to surprisal values."""
-    return -1 * arraylike
+    return -1 * logp
 
 
-def surprisal_to_logp(arraylike: ArrayLike) -> ArrayLike:
+def surprisal_to_logp(surprisal: ArrayLike) -> ArrayLike:
     """Converts surprisal values to logp values."""
-    return -1 * arraylike
+    return -1 * surprisal
 
 
-def surprisal_to_p(arraylike: ArrayLike) -> ArrayLike:
+def surprisal_to_p(surprisal: ArrayLike) -> ArrayLike:
     """Converts surprisal values to p-values."""
-    return logp_to_p(surprisal_to_logp(arraylike))
+    return logp_to_p(surprisal_to_logp(surprisal))
 
 
 def p_threshold_for_sigmas(sigmas: float) -> float:

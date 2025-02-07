@@ -4,7 +4,6 @@ import os
 from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
-from statistics import NormalDist
 from typing import Optional, Sequence, NamedTuple, Any, Type, Literal, Callable
 from warnings import warn
 
@@ -21,7 +20,7 @@ from seaborn import color_palette
 from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
 from kymata.entities.transform import Transform
-from kymata.math.probability import p_to_logp, sidak_correct
+from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent, DiscreteListedColormap
 from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
@@ -424,7 +423,7 @@ def expression_plot(
     show_only: Optional[str | Sequence[str]] = None,
     paired_axes: bool = True,
     # Statistical kwargs
-    alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
+    alpha: float = p_threshold_for_sigmas(5),
     # Style kwargs
     color: Optional[str | dict[str, str] | list[str]] = None,
     ylim: Optional[float] = None,
