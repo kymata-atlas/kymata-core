@@ -67,7 +67,7 @@ class DenoisingStrategy(ABC):
                 return p_to_logp(sidak_correct(p_threshold_for_sigmas(exclude_points_above_n_sigma),
                                                n_comparisons=n_comparisons))
         else:
-            # Will return either the fixed threshold, or constant None where exclude_logp_vals_above was None
+            # Will return either the fixed threshold, or constant None where exclude_logp_vals_above was (also) None
             def get_threshold(_es: ExpressionSet) -> float:
                 """Get fixed threshold"""
                 return exclude_logp_vals_above

@@ -48,7 +48,10 @@ def p_threshold_for_sigmas(sigmas: float) -> float:
 
 def bonferroni_correct(alpha: float, n_comparisons: int) -> float:
     """Applies Bonferroni correction to an alpha threshold."""
-    return 1 - ((1 - alpha) ** n_comparisons)
+    return 1 - (
+            (1 - alpha)
+            ** n_comparisons
+    )
 
 
 def sidak_correct(alpha: float, n_comparisons: int) -> float:
