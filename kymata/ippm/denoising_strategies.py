@@ -3,7 +3,7 @@ from copy import deepcopy, copy
 from random import shuffle
 from typing import Optional, overload, Callable
 
-from ..math.probability import logp_to_p, p_to_logp, sidak_correct, p_threshold_for_sigmas
+from ..math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG)
@@ -227,7 +227,7 @@ class DenoisingStrategy(ABC):
         return [
             p for p in points
             # Lower is better
-            if logp_to_p(p.logp_value) < threshold_logp
+            if p.logp_value < threshold_logp
         ]
 
     def _preprocess(self, points: list[ExpressionPoint]) -> list[ExpressionPoint]:
