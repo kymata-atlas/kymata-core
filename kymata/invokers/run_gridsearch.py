@@ -84,9 +84,9 @@ def main():
                              "(set to stimulus_length/seconds_per_split for full file)")
     parser.add_argument("--n-derangements", type=int, default=6,
                         help="Number of deragements for the null distribution")
-    parser.add_argument("--start-latency", type=float, default=-200,
+    parser.add_argument("--start-latency", type=float, default=-0.2,
                         help="Earliest latency to check in cross correlation")
-    parser.add_argument("--emeg-t-start", type=float, default=-200,
+    parser.add_argument("--emeg-t-start", type=float, default=-0.2,
                         help="Start of the emeg evoked files relative to the start of the transform")
 
     # Output paths

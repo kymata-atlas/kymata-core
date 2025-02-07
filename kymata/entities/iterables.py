@@ -55,3 +55,16 @@ def all_equal(sequence: Collection) -> bool:
     else:
         g = groupby(sequence)
         return next(g, True) and not next(g, False)
+
+
+def interleave(*lists) -> list:
+    """
+    Given some lists, returns a list of interleaved entries from list1, list2, list3, etc.
+
+    If the lists are of unequal length, stops after the length of the shortest list.
+    """
+    return [
+        val
+        for tup in zip(*lists)
+        for val in tup
+    ]

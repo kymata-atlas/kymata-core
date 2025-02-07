@@ -175,3 +175,9 @@ Now (within the Apptainer) you can run it using `poetry`, e.g.:
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
   ```
+
+If plotting on the CBU cluster (off-screen), use
+
+  ```shell
+  xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting
+  ```
