@@ -505,7 +505,7 @@ def expression_plot(
         legend_display (dict[str, str] | None, optional): Allows grouping of multiple transforms under the same legend
             item. Provide a dictionary mapping true transform names to display names. None applies no grouping.
             Default is None.
-        minimap_kwargs (Optional[dict]): Keyword argument overrides for minimap plotting. Deafault is None.
+        minimap_kwargs (Optional[dict]): Keyword argument overrides for minimap plotting. Default is None.
 
     Returns:
         pyplot.Figure: The matplotlib figure object containing the generated plot.
