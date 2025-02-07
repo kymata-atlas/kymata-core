@@ -152,8 +152,8 @@ def plot_ippm(
     linewidth: float = 3,
     show_labels: bool = True,
     avoid_collinearity: bool = True,
-    serial_sequence: Optional[list[list[str]]] = None
-):
+    serial_sequence: Optional[list[list[str]]] = None,
+) -> plt.Figure:
     """
     Plots an IPPM graph.
 
@@ -168,6 +168,9 @@ def plot_ippm(
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
+
+    Returns:
+        (pyplot.Figure): A figure of the IPPM graph.
     """
 
     if hemisphere is None:
@@ -269,6 +272,8 @@ def plot_ippm(
 
     fig.set_figheight(figheight)
     fig.set_figwidth(figwidth)
+
+    return fig
 
 
 def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:

@@ -25,12 +25,12 @@ class DenoisingStrategy(ABC):
 
     def __init__(
         self,
-        should_normalise: bool,
-        should_cluster_only_latency: bool,
-        should_max_pool: bool,
-        exclude_logp_vals_above: float | None,
-        exclude_points_above_n_sigma: float | None,
-        should_shuffle: bool,
+        should_normalise: bool = False,
+        should_cluster_only_latency: bool = False,
+        should_max_pool: bool = False,
+        exclude_points_above_n_sigma: float | None = 5.0,
+        exclude_logp_vals_above: float | None = None,
+        should_shuffle: bool = True,
         **kwargs,
     ):
         """
@@ -39,18 +39,23 @@ class DenoisingStrategy(ABC):
         Args:
             should_normalise (bool): Indicates whether the preprocessing step of scaling the data to be unit length
                 should be done. Unnormalised data places greater precedence on the latency dimension.
+                Default is False.
             should_cluster_only_latency (bool): Indicates whether we should discard the magnitude dimension from the
                 clustering algorithm. We can term this "density-based clustering" as it focuses on the density of points
                 in time only.
+                Default is False.
             should_max_pool (bool): Indicates whether we want to enforce the constraint that each transform should have
                 1 spike.
                 Equivalently, we take the maximum over all clusters and discard all other points. Setting this to True
                 optimises performance in the context of IPPMs.
-            exclude_logp_vals_above (float | None): Supply a log p-value threshold to test for significance for this
-                exclusion. Supply None to not exclude.
+                Default is False.
             exclude_points_above_n_sigma (float | None): Sigma threshold for excluding points.  Supply None to not
-                exclude.
-            should_shuffle (bool): Whether to shuffle the points before clustering.
+                exclude using this criterion.
+                Default is 5.0.
+            exclude_logp_vals_above (float | None): Supply a log p-value threshold to test for significance for this
+                exclusion. Supply None to not exclude using this criterion.
+                Default is None.
+            should_shuffle (bool): Whether to shuffle the points before clustering. Default is True.
         """
 
         if exclude_logp_vals_above is not None and exclude_points_above_n_sigma is not None:
@@ -344,18 +349,18 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
             exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = None,
+            exclude_points_above_n_sigma: float | None = 5.0,
             should_shuffle: bool = True,
             bin_significance_threshold: int = 1,
             bin_size: int = 1,
     ):
         super().__init__(
-            should_normalise,
-            should_cluster_only_latency,
-            should_max_pool,
-            exclude_logp_vals_above,
-            exclude_points_above_n_sigma,
-            should_shuffle
+            should_normalise=should_normalise,
+            should_cluster_only_latency=should_cluster_only_latency,
+            should_max_pool=should_max_pool,
+            exclude_logp_vals_above=exclude_logp_vals_above,
+            exclude_points_above_n_sigma=exclude_points_above_n_sigma,
+            should_shuffle=should_shuffle
         )
         self._clusterer = MaxPoolClusterer(bin_significance_threshold, bin_size)
 
@@ -367,16 +372,16 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
             exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = None,
+            exclude_points_above_n_sigma: float | None = 5.0,
             bin_significance_threshold: int = 1,
             base_bin_size: int = 1,
     ):
         super().__init__(
-            should_normalise,
-            should_cluster_only_latency,
-            should_max_pool,
-            exclude_logp_vals_above,
-            exclude_points_above_n_sigma,
+            should_normalise=should_normalise,
+            should_cluster_only_latency=should_cluster_only_latency,
+            should_max_pool=should_max_pool,
+            exclude_logp_vals_above=exclude_logp_vals_above,
+            exclude_points_above_n_sigma=exclude_points_above_n_sigma,
             should_shuffle=False,  # AMP assumes a sorted time series, so avoid shuffling.
         )                          # Mainly because AMP uses a sliding window algorithm to merge significant clusters.
         self._clusterer = AdaptiveMaxPoolClusterer(bin_significance_threshold, base_bin_size)
@@ -389,7 +394,7 @@ class GMMStrategy(DenoisingStrategy):
             should_cluster_only_latency: bool = True,
             should_max_pool: bool = False,
             exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = None,
+            exclude_points_above_n_sigma: float | None = 5.0,
             should_shuffle: bool = True,
             number_of_clusters_upper_bound: int = 2,
             covariance_type: str = "full",
@@ -400,21 +405,21 @@ class GMMStrategy(DenoisingStrategy):
             should_evaluate_using_aic: bool = True,
     ):
         super().__init__(
-            should_normalise,
-            should_cluster_only_latency,
-            should_max_pool,
-            exclude_logp_vals_above,
-            exclude_points_above_n_sigma,
-            should_shuffle
+            should_normalise=should_normalise,
+            should_cluster_only_latency=should_cluster_only_latency,
+            should_max_pool=should_max_pool,
+            exclude_logp_vals_above=exclude_logp_vals_above,
+            exclude_points_above_n_sigma=exclude_points_above_n_sigma,
+            should_shuffle=should_shuffle,
         )
         self._clusterer = GMMClusterer(
-            number_of_clusters_upper_bound,
-            covariance_type,
-            max_iter,
-            n_init,
-            init_params,
-            random_state,
-            should_evaluate_using_aic,
+            number_of_clusters_upper_bound=number_of_clusters_upper_bound,
+            covariance_type=covariance_type,
+            max_iter=max_iter,
+            n_init=n_init,
+            init_params=init_params,
+            random_state=random_state,
+            should_evaluate_using_aic=should_evaluate_using_aic,
         )
 
 
@@ -425,7 +430,7 @@ class DBSCANStrategy(DenoisingStrategy):
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
             exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = None,
+            exclude_points_above_n_sigma: float | None = 5.0,
             should_shuffle: bool = True,
             eps: int = 10,
             min_samples: int = 2,
@@ -436,12 +441,12 @@ class DBSCANStrategy(DenoisingStrategy):
             metric_params: Optional[dict] = None,
     ):
         super().__init__(
-            should_normalise,
-            should_cluster_only_latency,
-            should_max_pool,
-            exclude_logp_vals_above,
-            exclude_points_above_n_sigma,
-            should_shuffle
+            should_normalise=should_normalise,
+            should_cluster_only_latency=should_cluster_only_latency,
+            should_max_pool=should_max_pool,
+            exclude_logp_vals_above=exclude_logp_vals_above,
+            exclude_points_above_n_sigma=exclude_points_above_n_sigma,
+            should_shuffle=should_shuffle
         )
         self._clusterer = DBSCANClusterer(
             eps=eps,
@@ -461,7 +466,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             should_cluster_only_latency: bool = True,
             should_max_pool: bool = False,
             exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = None,
+            exclude_points_above_n_sigma: float | None = 5.0,
             should_shuffle: bool = True,
             cluster_all: bool = False,
             bandwidth: float = 0.5,
@@ -470,12 +475,12 @@ class MeanShiftStrategy(DenoisingStrategy):
             n_jobs: int = -1,
     ):
         super().__init__(
-            should_normalise,
-            should_cluster_only_latency,
-            should_max_pool,
-            exclude_logp_vals_above,
-            exclude_points_above_n_sigma,
-            should_shuffle
+            should_normalise=should_normalise,
+            should_cluster_only_latency=should_cluster_only_latency,
+            should_max_pool=should_max_pool,
+            exclude_logp_vals_above=exclude_logp_vals_above,
+            exclude_points_above_n_sigma=exclude_points_above_n_sigma,
+            should_shuffle=should_shuffle,
         )
         self._clusterer = MeanShiftClusterer(
             bandwidth=bandwidth,

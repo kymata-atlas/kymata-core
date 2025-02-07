@@ -33,4 +33,7 @@ docs/_build/
 .vscode
 
 # Stratch file
-scratch.py
+scratch.*
+
+# Temp testing files
+/**/temp/*

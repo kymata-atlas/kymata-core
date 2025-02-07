@@ -34,7 +34,7 @@ class IPPM:
     object using indexing. E.g.:
 
         ippm = IPPM(...)
-        left_graph = ippm["lef"]  # BLOCK_LEFT
+        left_graph = ippm["left"]  # BLOCK_LEFT
     """
     def __init__(self,
                  expression_set: ExpressionSet,
@@ -83,6 +83,7 @@ class IPPM:
             expression_set = denoising_strategy.denoise(expression_set)
 
         # Build the graph
+        # self._graphs maps block-name → graph
         self._graphs: dict[str, IPPMGraph] = dict()
         if isinstance(expression_set, HexelExpressionSet):
             btl, btr = expression_set.best_transforms()
