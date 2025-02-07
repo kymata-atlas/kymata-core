@@ -4,7 +4,6 @@ import os
 from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
-from statistics import NormalDist
 from typing import Optional, Sequence, NamedTuple, Any, Type, Literal, Callable
 from warnings import warn
 
@@ -16,20 +15,16 @@ from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator
 from mne import SourceEstimate
 from numpy.typing import NDArray
-from pandas import DataFrame
 from seaborn import color_palette
 
 from kymata.entities.datatypes import TransformNameDType
-from kymata.entities.expression import (
-    HexelExpressionSet, SensorExpressionSet, ExpressionSet, DIM_TRANSFORM, COL_LOGP_VALUE, DIM_LATENCY)
+from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
 from kymata.entities.transform import Transform
-from kymata.math.p_values import p_to_logp
+from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_down, round_up
-from kymata.plot.color import DiscreteListedColormap
-from kymata.plot.layouts import (
-    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors)
+from kymata.plot.color import transparent, DiscreteListedColormap
+from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
 
-transparent = (0, 0, 0, 0)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -179,8 +174,9 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         show_transforms (list[str]): A list of transform names to consider for significance. Only these
             transforms will be checked for significant hexels.
         value_lookup (dict[str, int]): A dictionary mapping transform names to values to set in the data arrays.
-        minimap_latency_range: tuple[float | None, float | None]: The latency range to use in the minimap.
+        minimap_latency_range: (Optional[tuple[float | None, float | None]]): The latency range to use in the minimap.
             Defaults to None.
+
 
     Returns:
         tuple[NDArray, NDArray]: A tuple containing two arrays (one for the left hemisphere and one for
@@ -199,35 +195,37 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
     # Initialise with zeros: transparent everywhere
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
-
-    # Get best transforms which survive alpha threshold
+    best_transforms_left: list[ExpressionPoint]
+    best_transforms_right: list[ExpressionPoint]
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
-    best_transforms_left = best_transforms_left[best_transforms_left[COL_LOGP_VALUE] < alpha_logp]
-    best_transforms_right = best_transforms_right[best_transforms_right[COL_LOGP_VALUE] < alpha_logp]
+    best_transforms_left  = [ep for ep in best_transforms_left  if ep.logp_value < alpha_logp]
+    best_transforms_right = [ep for ep in best_transforms_right if ep.logp_value < alpha_logp]
+    if minimap_latency_range is not None:
+        # Filter expression points to keep those where latency is in range
+        minimap_start, minimap_end = minimap_latency_range
+        if minimap_start is not None:
+            best_transforms_left  = [ep for ep in best_transforms_left  if ep.latency >= minimap_start]
+            best_transforms_right = [ep for ep in best_transforms_right if ep.latency >= minimap_start]
+        if minimap_end is not None:
+            best_transforms_left  = [ep for ep in best_transforms_left  if ep.latency <= minimap_end]
+            best_transforms_right = [ep for ep in best_transforms_right if ep.latency <= minimap_end]
 
-    # Apply latency range if appropriate
-    if minimap_latency_range != (None, None):
-        # Filter the dataframe to keep rows where 'latency' is within the range
-        best_transforms_left = best_transforms_left[(best_transforms_left['latency'] >= minimap_latency_range[0]) &
-                                                    (best_transforms_left['latency'] <= minimap_latency_range[1])]
-        best_transforms_right = best_transforms_right[(best_transforms_right['latency'] >= minimap_latency_range[0]) &
-                                                      (best_transforms_right['latency'] <= minimap_latency_range[1])]
-
-    # Apply colour index to each shown transform
-    for transform in show_transforms:
-        significant_hexel_names_left = best_transforms_left[
-                best_transforms_left[DIM_TRANSFORM] == transform
-            ][expression_set.channel_coord_name]
+    for trans_i, transform in enumerate(
+        expression_set.transforms,
+        # 1-indexed, as 0 will refer to transparent
+        start=1,
+    ):
+        if transform not in show_transforms:
+            continue
+        significant_hexel_names_left = [ep.channel for ep in best_transforms_left if ep.transform == transform]
         hexel_idxs_left = np.searchsorted(
-            expression_set.hexels_left, significant_hexel_names_left.to_numpy()
+            expression_set.hexels_left, np.array(significant_hexel_names_left)
         )
         data_left[hexel_idxs_left] = value_lookup[transform]
 
-        significant_hexel_names_right = best_transforms_right[
-                best_transforms_right[DIM_TRANSFORM] == transform
-            ][expression_set.channel_coord_name]
+        significant_hexel_names_right = [ep.channel for ep in best_transforms_right if ep.transform == transform]
         hexel_idxs_right = np.searchsorted(
-            expression_set.hexels_right, significant_hexel_names_right.to_numpy()
+            expression_set.hexels_right, np.array(significant_hexel_names_right)
         )
         data_right[hexel_idxs_right] = value_lookup[transform]
 
@@ -236,7 +234,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
 
 def _plot_transform_expression_on_axes(
     ax: pyplot.Axes,
-    transform_data: DataFrame,
+    transform_data: list[ExpressionPoint],
     color,
     sidak_corrected_alpha: float,
     filled: bool,
@@ -248,9 +246,11 @@ def _plot_transform_expression_on_axes(
             Note: *_min and *_max values are np.Inf and -np.Inf respectively if x or y is empty
                   (so they can be added to min() and max() without altering the result).
     """
-    x = transform_data[DIM_LATENCY].values * 1000  # Convert to milliseconds
-    y = transform_data[COL_LOGP_VALUE].values
-    c = np.where(np.array(y) <= sidak_corrected_alpha, color, "black")
+    x = np.array([ep.latency * 1000   # Convert to milliseconds
+                  for ep in transform_data])
+    y = np.array([ep.logp_value
+                  for ep in transform_data])
+    c = np.where(y <= sidak_corrected_alpha, color, "black")
     ax.vlines(x=x, ymin=1, ymax=y, color=c)
     ax.scatter(x, y, facecolors=c if filled else "none", s=20, edgecolors=c)
 
@@ -326,13 +326,11 @@ def _plot_minimap_hexel(
 
     colormap, colour_idx_lookup, n_colors = _get_colormap_for_cortical_minimap(colors, show_transforms)
 
-    data_left, data_right = _hexel_minimap_data(
-        expression_set,
-        alpha_logp=alpha_logp,
-        show_transforms=show_transforms,
-        value_lookup=colour_idx_lookup,
-        minimap_latency_range=minimap_latency_range,
-    )
+    data_left, data_right = _hexel_minimap_data(expression_set,
+                                                alpha_logp=alpha_logp,
+                                                show_transforms=show_transforms,
+                                                value_lookup=colour_idx_lookup,
+                                                minimap_latency_range=minimap_latency_range)
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
         vertices=[expression_set.hexels_left, expression_set.hexels_right],
@@ -425,13 +423,13 @@ def expression_plot(
     show_only: Optional[str | Sequence[str]] = None,
     paired_axes: bool = True,
     # Statistical kwargs
-    alpha: float = 1 - NormalDist(mu=0, sigma=1).cdf(5),  # 5-sigma
+    alpha: float = p_threshold_for_sigmas(5),
     # Style kwargs
     color: Optional[str | dict[str, str] | list[str]] = None,
     ylim: Optional[float] = None,
     xlims: Optional[tuple[float | None, float | None]] = None,
     hidden_transforms_in_legend: bool = True,
-    title: str = None,
+    title: Optional[str] = None,
     fig_size: tuple[float, float] = (12, 7),
     # Display options
     minimap: str | None = None,
@@ -466,7 +464,7 @@ def expression_plot(
             default values, or set either entry to None to use the default for that value. Default is (-100, 800).
         hidden_transforms_in_legend (bool, optional): If True, includes non-plotted transforms in the legend.
             Default is True.
-        title (str, optional): Title over the top axis in the figure. Default is None.
+        title (str, optional): Title over the top axis in the figure. Supply None for no title. Default is None.
         fig_size (tuple[float, float], optional): Figure size in inches. Default is (12, 7).
         minimap (str, optional): If None, no minimap is shown. Other options are:
             `"standard"`: Show small minimal.
@@ -494,10 +492,10 @@ def expression_plot(
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
-        minimap_latency_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to restrict
-            minimap view to only the specified time window, and highlight the time window on the expression plot.
-            Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for half-open
-            intervals.
+        minimap_latency_range (Optional[tuple[float | None, float | None]]): Supply `(start_time, stop_time)` to
+            restrict the minimap view to only the specified time window, and highlight the time window on the expression
+            plot. Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for
+            half-open intervals.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -581,15 +579,9 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_channels(
-        expression_set, best_transforms, show_only_sensors
-    )
+    chosen_channels = _restrict_channels(expression_set, best_transforms, show_only_sensors)
 
-    sidak_corrected_alpha = 1 - (
-        (1 - alpha)
-        ** np.longdouble(1 / (2 * len(expression_set.latencies) * n_channels * len(show_only)))
-    )
-
+    sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=len(expression_set.latencies) * n_channels * len(show_only))
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
     def _custom_label(transform_name):
@@ -650,7 +642,7 @@ def expression_plot(
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
             bottom_chans -= both_chans
-            for ax, best_funs_this_ax, chans_this_ax in zip(
+            for ax, best_trans_this_ax, chans_this_ax in zip(
                 expression_axes_list, best_transforms, (top_chans, bottom_chans)
             ):
                 # Plot filled
@@ -660,14 +652,10 @@ def expression_plot(
                     y_min,
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
-                    transform_data=best_funs_this_ax[
-                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
-                        & (
-                            best_funs_this_ax[expression_set.channel_coord_name].isin(
-                                chans_this_ax
-                            )
-                        )
-                    ],
+                    transform_data=[ep
+                                    for ep in best_trans_this_ax
+                                    if ep.transform == transform
+                                    and ep.channel in chans_this_ax],
                     color=color[transform],
                     ax=ax,
                     sidak_corrected_alpha=sidak_corrected_alpha,
@@ -683,14 +671,10 @@ def expression_plot(
                     y_min,
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
-                    transform_data=best_funs_this_ax[
-                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
-                        & (
-                            best_funs_this_ax[expression_set.channel_coord_name].isin(
-                                both_chans
-                            )
-                        )
-                    ],
+                    transform_data=[ep
+                                    for ep in best_trans_this_ax
+                                    if ep.transform == transform
+                                    and ep.channel in both_chans],
                     color=color[transform],
                     ax=ax,
                     sidak_corrected_alpha=sidak_corrected_alpha,
@@ -703,21 +687,17 @@ def expression_plot(
         # With non-sensor data, or non-paired axes, we can treat these cases together
         else:
             # As normal, plot appropriate filled points in each axis
-            for ax, best_funs_this_ax in zip(expression_axes_list, best_transforms):
+            for ax, best_trans_this_ax in zip(expression_axes_list, best_transforms):
                 (
                     x_min,
                     x_max,
                     y_min,
                     _y_max,
                 ) = _plot_transform_expression_on_axes(
-                    transform_data=best_funs_this_ax[
-                        (best_funs_this_ax[DIM_TRANSFORM] == transform)
-                        & (
-                            best_funs_this_ax[expression_set.channel_coord_name].isin(
-                                chosen_channels
-                            )
-                        )
-                    ],
+                    transform_data=[ep
+                                    for ep in best_trans_this_ax
+                                    if ep.transform == transform
+                                    and ep.channel in chosen_channels],
                     color=color[transform],
                     ax=ax,
                     sidak_corrected_alpha=sidak_corrected_alpha,
@@ -768,7 +748,6 @@ def expression_plot(
                 stop = ax.get_xlim()[1]
             else:
                 stop = stop * 1000  # Convert to ms
-
             ax.axvspan(xmin=start, xmax=stop, color="grey", alpha=0.2, lw=0, zorder=-10)
 
     # Plot minimap
@@ -938,7 +917,7 @@ def __add_axis_name_annotations(axes_names: Sequence[str],
 
 def _restrict_channels(
     expression_set: ExpressionSet,
-    best_transforms: tuple[DataFrame, ...],
+    best_transforms: tuple[list[ExpressionPoint], ...],
     show_only_sensors: str | None,
 ):
     """Restrict to specific sensor type if requested."""
@@ -956,16 +935,16 @@ def _restrict_channels(
         if isinstance(expression_set, SensorExpressionSet):
             # All sensors
             chosen_channels = {
-                sensor
-                for best_funs_each_ax in best_transforms
-                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
+                ep.channel
+                for best_transforms_each_ax in best_transforms
+                for ep in best_transforms_each_ax
             }
         elif isinstance(expression_set, HexelExpressionSet):
             # All hexels
             chosen_channels = {
-                sensor
-                for best_funs_each_ax in best_transforms
-                for sensor in best_funs_each_ax[expression_set.channel_coord_name]
+                ep.channel
+                for best_transforms_each_ax in best_transforms
+                for ep in best_transforms_each_ax
             }
         else:
             raise NotImplementedError()

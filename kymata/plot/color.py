@@ -2,6 +2,9 @@ from matplotlib.colors import to_rgb, to_hex, ListedColormap
 from numpy import linspace, round as np_round
 
 
+transparent = (0, 0, 0, 0)
+
+
 def gradient_color_dict(transforms: list[str], start_color, stop_color) -> dict[str, str]:
     """
     Generates a dictionary mapping transform names to colors forming a linear gradient.

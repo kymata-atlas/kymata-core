@@ -34,3 +34,6 @@ docs/_build/
 
 # Stratch file
 scratch.*
+
+# Temp testing files
+/**/temp/*
