@@ -185,7 +185,6 @@ class DenoisingStrategy(ABC):
 
         for trans, points in spikes.items():
 
-            points = copy(points)
             # Apply filters
             if logp_threshold is not None:
                 points = self._filter_out_insignificant_points(points, logp_threshold)
