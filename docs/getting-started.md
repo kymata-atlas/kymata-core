@@ -113,10 +113,6 @@ This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_l
 
 See also `demos/demo_plotting.ipynb`.
 
-!!! notes 
-
-    If plotting on the CBU cluster, use `xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting` to plot and save offscreen.
-
 ### 5. Visualise processing pathways
 
 See `demos/demo_ippm.ipynb`.
@@ -178,4 +174,10 @@ Now (within the Apptainer) you can run it using `poetry`, e.g.:
 
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
+  ```
+
+If plotting on the CBU cluster (off-screen), use
+
+  ```shell
+  xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting
   ```
