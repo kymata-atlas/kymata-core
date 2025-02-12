@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'ANN' # 'standard' or 'ANN' or 'simple'
+    transform_family_type = 'standard' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -250,7 +250,8 @@ def main():
 
     elif transform_family_type == 'standard':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
+        # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
+        expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
 
         # import ipdb;ipdb.set_trace()
 
@@ -259,7 +260,7 @@ def main():
                               | constant_color_dict(['IL'], 'red')
                               | constant_color_dict(['STL'], 'pink'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/dataset_eng.png")
 
     elif transform_family_type == 'ANN':
 
