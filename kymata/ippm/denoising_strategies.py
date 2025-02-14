@@ -3,10 +3,12 @@ from copy import deepcopy, copy
 from random import shuffle
 from typing import Optional, overload, Callable
 
+from numpy.typing import NDArray
+
 from ..math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
-    ANOMALOUS_CLUSTER_TAG)
+    ANOMALOUS_CLUSTER_TAG, points_to_matrix)
 from ..entities.expression import (
     ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels)
 from .hierarchy import group_points_by_transform, GroupedPoints
@@ -198,8 +200,8 @@ class DenoisingStrategy(ABC):
                 continue
 
             self._clusterer: CustomClusterer = self._clusterer.fit(
-                # We use the preprocessed points to fit the clusterer, but it is important not to use them to actually get
-                # the denoised points because the latencies and logp values have been altered
+                # We use the preprocessed points to fit the clusterer, but it is important not to use them to actually
+                # get the denoised points because the latencies and logp values have been altered
                 #
                 # Short text on normalisation for future reference.
                 # https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
@@ -233,7 +235,7 @@ class DenoisingStrategy(ABC):
             if p.logp_value < threshold_logp
         ]
 
-    def _preprocess(self, points: list[ExpressionPoint]) -> list[ExpressionPoint]:
+    def _preprocess(self, points: list[ExpressionPoint]) -> NDArray:
         """
         Currently, this can normalise or remove the magnitude dimension.
 
@@ -241,32 +243,20 @@ class DenoisingStrategy(ABC):
             points (list[ExpressionPoint]): Points we want to preprocess.
 
         Returns:
-            list[ExpressionPoint]: The preprocessed ExpressionPoints.
-                NOTE that these points are NOT true representations of the original data — they can be used for
+            numpy.NDArray: The preprocessed ExpressionPoints as a matrix. Rows are points, columns are data relevant for
+                clustering.
+                ⚠️ NOTE that these points are NOT true representations of the original data — they can be used for
                 clustering only but should not be interpreted directly.
         """
 
-        points = deepcopy(points)
         if self._should_normalise:
             points = self._normalize(points)
+        # columns are latency, logp
+        matrix = points_to_matrix(points)
         if self._should_cluster_only_latency:
-            points = self._flatten_logp(points)
-        return points
+            matrix = matrix[:, [0]]
 
-    @staticmethod
-    def _flatten_logp(points: list[ExpressionPoint]) -> list[ExpressionPoint]:
-        """
-        Sets all the logp values in `points` to be equal to 0, in order that they are not used for clustering.
-        """
-        return [
-            ExpressionPoint(
-                channel=p.channel,
-                latency=p.latency,
-                transform=p.transform,
-                logp_value=0,
-            )
-            for p in points
-        ]
+        return matrix
     
     @staticmethod
     def _normalize(points: list[ExpressionPoint]) -> list[ExpressionPoint]:

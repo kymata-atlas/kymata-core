@@ -33,13 +33,14 @@ class CustomClusterer(ABC):
         self.labels_: list[int] = []
 
     @abstractmethod
-    def fit(self, points: list[ExpressionPoint]) -> Self:
+    def fit(self, x: NDArray) -> Self:
         """
         Mutates `self.labels` to a list whose elements correspond to the elements of `points`,
         assigning an integer cluster label to each point.
 
         Args:
-            points (list[ExpressionPoint]): The list of points to be clustered.
+            x (numpy.NDArray): The array of points to be clustered. Rows are points and columns are data relevant to
+                clustering.
         """
         raise NotImplementedError()
 
@@ -57,19 +58,21 @@ class MaxPoolClusterer(CustomClusterer):
         self._label_size = label_size
         self._latency_offset_ms: float = latency_offset_ms
 
-    def fit(self, points: list[ExpressionPoint]) -> Self:
-        labels = self._assign_points_to_labels(points)
+    def fit(self, points_matrix: NDArray) -> Self:
+        labels = self._assign_points_to_labels(points_matrix)
         count_of_data_per_label = Counter(labels)
         self.labels_ = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
         return self
 
-    def _assign_points_to_labels(self, points: list[ExpressionPoint]) -> list[int]:
-        def __get_bin_index(latency_ms: float) -> int:
-            return floor(
-                (latency_ms + self._latency_offset_ms) / self._label_size
-            )  # floor because end is exclusive
 
-        return list(map(__get_bin_index, [p.latency for p in points]))
+    def __get_bin_index(self, latency_ms: float) -> int:
+        return floor(
+            (latency_ms + self._latency_offset_ms) / self._label_size
+        )  # floor because end is exclusive
+
+
+    def _assign_points_to_labels(self, points_matrix: NDArray, latency_col_idx: int = 0) -> list[int]:
+        return list(map(self.__get_bin_index, points_matrix[:, latency_col_idx]))
 
     def _tag_labels_below_label_significance_threshold_as_anomalies(self,
                                                                     labels: list[int],
@@ -95,14 +98,14 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
         self.labels_ = []
         self._base_label_size = base_label_size
 
-    def fit(self, points: list[ExpressionPoint]) -> Self:
-        labels = self._assign_points_to_labels(points)
+    def fit(self, points_matrix: NDArray) -> Self:
+        labels = self._assign_points_to_labels(points_matrix)
         count_of_data_per_label = Counter(labels)
         labels = self._tag_labels_below_label_significance_threshold_as_anomalies(labels, count_of_data_per_label)
-        self.labels_ = self._merge_significant_labels(labels, points)
+        self.labels_ = self._merge_significant_labels(labels, points_matrix)
         return self
 
-    def _merge_significant_labels(self, labels: list[int], points: list[ExpressionPoint]) -> list[int]:
+    def _merge_significant_labels(self, labels: list[int], points_matrix: NDArray) -> list[int]:
         def __is_insignificant_label(end_index: int) -> bool:
             return labels[end_index] == ANOMALOUS_CLUSTER_TAG
 
@@ -110,8 +113,9 @@ class AdaptiveMaxPoolClusterer(MaxPoolClusterer):
             if __is_insignificant_label(end_index - 1):
                 # we do not care about the gap between insignificant label and significant label
                 return False
-            current_latency = points[end_index].latency
-            previous_latency = points[end_index - 1].latency
+            # Latency is col 0
+            current_latency: float  = points_matrix[end_index,     0]
+            previous_latency: float = points_matrix[end_index - 1, 0]
 
             return current_latency - previous_latency > self._base_label_size
 
@@ -210,17 +214,17 @@ class GMMClusterer(CustomClusterer):
         self._random_state = random_state
         self._should_evaluate_using_AIC = should_evaluate_using_aic
 
-    def fit(self, points: list[ExpressionPoint]) -> Self:
-        optimal_model = self._grid_search_for_optimal_number_of_clusters(points)
+    def fit(self, points_matrix: NDArray) -> Self:
+        optimal_model = self._grid_search_for_optimal_number_of_clusters(points_matrix)
         if optimal_model is not None:
             # None if no data.
-            self.labels_ = optimal_model.predict(points_to_matrix(points))
+            self.labels_ = optimal_model.predict(points_matrix)
             # do not remove anomalies for now
             # self.labels = self._tag_low_loglikelihood_points_as_anomalous(df, optimal_model)
         return self
 
     @ignore_warnings(category=ConvergenceWarning)
-    def _grid_search_for_optimal_number_of_clusters(self, points: list[ExpressionPoint]) -> GaussianMixture:
+    def _grid_search_for_optimal_number_of_clusters(self, points_matrix: NDArray) -> GaussianMixture:
         """
         Quick 101 to model evaluation:
 
@@ -230,23 +234,23 @@ class GMMClusterer(CustomClusterer):
             - AIC and BIC use negative Log-Likeliood, so we now attempt to minimise them.
               You can interpret both of these metrics as negative log-likelihood with a model complexity penalty.
 
-        :param points:
+        :param points_matrix:
         :return:
         """
 
-        def __evaluate_fit(points: list[ExpressionPoint], fitted_model: GaussianMixture) -> float:
-            data = points_to_matrix(points)
+        def __evaluate_fit(points_matrix: NDArray, fitted_model: GaussianMixture) -> float:
             return (
-                fitted_model.aic(data)
+                fitted_model.aic(points_matrix)
                 if self._should_evaluate_using_AIC
-                else fitted_model.bic(data)
+                else fitted_model.bic(points_matrix)
             )
 
         optimal_penalised_loglikelihood = np.inf
         optimal_model = None
+        n_points = points_matrix.shape[0]
         for number_of_clusters in range(1, self._number_of_clusters_upper_bound):
-            if number_of_clusters > len(points) or len(points) == 1:
-                self.labels_ = [0 for _ in range(len(points))]  # default label == 0.
+            if number_of_clusters > n_points or n_points == 1:
+                self.labels_ = [0 for _ in range(n_points)]  # default label == 0.
                 break
 
             model = GaussianMixture(
@@ -260,12 +264,12 @@ class GMMClusterer(CustomClusterer):
 
             max_retries = 3
             for _ in range(max_retries):
-                model.fit(points_to_matrix(points))
+                model.fit(points_matrix)
                 covar_matrices = model.covariances_
                 if self._all_matrices_invertible(covar_matrices):
                     break
 
-            penalised_loglikelihood = __evaluate_fit(points, model)
+            penalised_loglikelihood = __evaluate_fit(points_matrix, model)
             if penalised_loglikelihood < optimal_penalised_loglikelihood:
                 optimal_penalised_loglikelihood = penalised_loglikelihood
                 optimal_model = model
@@ -288,7 +292,7 @@ class GMMClusterer(CustomClusterer):
 
     def _tag_low_loglikelihood_points_as_anomalous(
         self,
-        points: list[ExpressionPoint],
+        points_matrix: NDArray,
         optimal_model: GaussianMixture,
         anomaly_percentile_threshold: int = 5,
     ) -> list[int]:
@@ -301,7 +305,7 @@ class GMMClusterer(CustomClusterer):
                 )
             )
 
-        log_likelihood = optimal_model.score_samples(points)
+        log_likelihood = optimal_model.score_samples(points_matrix)
         threshold = np.percentile(log_likelihood, anomaly_percentile_threshold)
         return __update_labels_to_anomalous_label(log_likelihood, threshold)
 
@@ -325,9 +329,9 @@ class DBSCANClusterer(CustomClusterer):
             leaf_size=leaf_size,
             n_jobs=n_jobs)
 
-    def fit(self, points: list[ExpressionPoint]) -> Self:
+    def fit(self, points_matrix: NDArray) -> Self:
         # A thin wrapper around DBSCAN
-        self._dbscan.fit(points_to_matrix(points))
+        self._dbscan.fit(points_matrix)
         self.labels_ = self._dbscan.labels_
         return self
 
@@ -347,8 +351,8 @@ class MeanShiftClusterer(CustomClusterer):
             cluster_all=cluster_all,
             n_jobs=n_jobs)
 
-    def fit(self, points: list[ExpressionPoint]) -> Self:
+    def fit(self, points_matrix: NDArray) -> Self:
         # A thin wrapper around MeanShift
-        self._meanshift.fit(points_to_matrix(points))
+        self._meanshift.fit(points_matrix)
         self.labels_ = self._meanshift.labels_
         return self

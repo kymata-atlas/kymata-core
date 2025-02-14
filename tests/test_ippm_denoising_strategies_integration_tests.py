@@ -86,6 +86,7 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
         should_cluster_only_latency=True,
         should_max_pool=True,
         bin_significance_threshold=2,
+        should_shuffle=False,  # For predictability
     )
     actual_denoised = strategy._denoise_spikes(noisy_test_hexels, threshold_logp)
 
@@ -179,6 +180,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
 
     strategy = GMMStrategy(
         should_normalise=True,
+        should_shuffle=False,
         should_cluster_only_latency=True,
         number_of_clusters_upper_bound=5,
         random_state=random_seed,
