@@ -12,7 +12,7 @@ from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP
+from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.ippm import IPPM
 
@@ -76,7 +76,7 @@ class _PlottableIPPMGraph:
 
         ippm_graph = copy(ippm_graph)
         if serial_sequence is None:
-            serial_sequence = ippm_graph.serial_sequence
+            serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
 
         y_ordinates: dict[str, float] = dict()
 
@@ -109,34 +109,42 @@ class _PlottableIPPMGraph:
                 for function in step:
                     step_idxs[function] = step_i
             totals_within_serial_step = Counter(step_idxs.values())
+            # level -> latest idx
             idxs_within_level = defaultdict(int)
-            for transform in ippm_graph.transforms:
+            for transform in sorted(ippm_graph.candidate_transform_list.transforms):
+                step_idx = step_idxs[transform]
                 y_ordinates[transform] = _get_y_coordinate_centered(
-                            function_idx_within_level=idxs_within_level[step_idxs[transform]],
-                            function_total_within_level=totals_within_serial_step[step_idxs[transform]],
-                            max_function_total_within_level=max(totals_within_serial_step.values()),
-                            # Nudge each step up progressively more to avoid collinearity
-                            positive_nudge_frac=(step_idxs[transform] / len(serial_sequence)
-                                                 if avoid_collinearity
-                                                 else 0))
+                    function_idx_within_level=idxs_within_level[step_idx],
+                    function_total_within_level=totals_within_serial_step[step_idx],
+                    max_function_total_within_level=max(totals_within_serial_step.values()),
+                    # Nudge each step up progressively more to avoid collinearity
+                    positive_nudge_frac=(step_idxs[transform] / len(serial_sequence)
+                                         if avoid_collinearity
+                                         else 0))
+                idxs_within_level[step_idx] += 1
 
         else:
             raise NotImplementedError()
 
+        preferred_graph = ippm_graph.graph_last_to_first
+
+        node: ExpressionPoint
         self.graph: DiGraph = relabel_nodes(
-            ippm_graph.graph_last_to_first,
+            preferred_graph,
             {
-                point: _PlottableNode(
-                    label=trans,
-                    x=point.latency,
-                    y=y_ordinates[point.transform],
-                    color=colors[trans],
-                    is_terminal=trans in ippm_graph.terminals,
-                    size=-1*point.logp_value if scale_nodes else 150,
+                node: _PlottableNode(
+                    label=node.transform,
+                    x=node.latency,
+                    y=y_ordinates[node.transform],
+                    color=colors[node.transform],
+                    is_terminal=node.transform in ippm_graph.terminals,
+                    size=-1*node.logp_value if scale_nodes else 150,
                 )
-                for trans, points in ippm_graph.points.items()
-                for point in points
-            })
+                for node in preferred_graph.nodes
+            }
+        )
+
+        pass
 
 
 def plot_ippm(
@@ -228,7 +236,7 @@ def plot_ippm(
 
     fig, ax = plt.subplots()
 
-    text_offset_x = -10
+    text_offset_x = -0.01  # s
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
@@ -242,7 +250,7 @@ def plot_ippm(
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
         ax.arrow(
-            x=path[0][-1], dx=1,
+            x=path[0][-1], dx=0.001,
             y=path[1][-1], dy=0,
             shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
             length_includes_head=True, head_starts_at_zero=False,
@@ -251,7 +259,7 @@ def plot_ippm(
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
-    future_width = 20  # ms
+    future_width = 0.02  # s
     for node in plottable_graph.graph.nodes:
         if node.is_terminal:
             step_1 = max(node_x) + future_width / 2
@@ -268,7 +276,7 @@ def plot_ippm(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel("Latency (ms)")
+    ax.set_xlabel("Latency (s)")
 
     fig.set_figheight(figheight)
     fig.set_figwidth(figwidth)
@@ -339,10 +347,10 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
     # Offset points: chosen for aesthetics, but with a squish down to evenly-spaced when nodes are too small
     x_diff = end_X - start_X
     offsets = [
-        min(5.0,  1 * x_diff / 5),
-        min(10.0, 2 * x_diff / 5),
-        min(20.0, 3 * x_diff / 5),
-        min(30.0, 4 * x_diff / 5),
+        min(0.005, 1 * x_diff / 5),
+        min(0.010, 2 * x_diff / 5),
+        min(0.020, 3 * x_diff / 5),
+        min(0.030, 4 * x_diff / 5),
     ]
 
     ctr_points = np.array(

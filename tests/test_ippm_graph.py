@@ -48,7 +48,7 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
     graph = IPPMGraph(sample_hierarchy, sample_points)
 
     assert graph.transforms == {"input", "func1", "func2", "func3", "func4"}
-    assert graph.points == {
+    assert graph._points_by_transform == {
         "func1": [ExpressionPoint("c", 10, "func1", -28),
                   ExpressionPoint("c", 25, "func1", -79)],
         "func2": [ExpressionPoint("c", 50, "func2", -61)],
@@ -62,7 +62,7 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
     # `graph.points` already tested as correct
     assert (
             set(graph.graph_full.successors(input_stream_pseudo_expression_point("input")))
-            == set(graph.points["func1"] + graph.points["func2"])
+            == set(graph._points_by_transform["func1"] + graph._points_by_transform["func2"])
     )
 
     assert graph.serial_sequence == [
@@ -80,7 +80,7 @@ def test_ippmgraph_empty_points_builds_successfully(sample_hierarchy, empty_poin
     assert graph.transforms == {"input"}
     assert graph.inputs == {"input"}
     assert graph.terminals == {"input"}
-    assert len(graph.points) == 0
+    assert len(graph._points_by_transform) == 0
 
 
 def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_points):
@@ -89,7 +89,7 @@ def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_po
     assert graph.transforms == set()
     assert graph.inputs == set()
     assert graph.terminals == set()
-    assert len(graph.points) == 0
+    assert len(graph._points_by_transform) == 0
 
 
 def test_ippmgraph_copy():
@@ -117,7 +117,7 @@ def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
                       [p for p in sample_points if p.transform != "func1"])
 
     assert graph.transforms == {"input", "func2", "func3", "func4"}
-    assert graph.points == {
+    assert graph._points_by_transform == {
         "func2": [ExpressionPoint("c", 50, "func2", -61)],
         "func3": [ExpressionPoint("c", 60, "func3", -92),
                   ExpressionPoint("c", 65, "func3", -12)],
@@ -129,7 +129,7 @@ def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
     # `graph.points` already tested as correct
     assert (
             set(graph.graph_full.successors(input_stream_pseudo_expression_point("input")))
-            == set(graph.points["func2"])
+            == set(graph._points_by_transform["func2"])
     )
 
     assert graph.serial_sequence == [

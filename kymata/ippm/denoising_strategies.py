@@ -92,16 +92,16 @@ class DenoisingStrategy(ABC):
         ...
 
     @overload
-    def denoise(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
+    def denoise(self, expression_set: SensorExpressionSet) -> list[ExpressionPoint]:
         """Denoise a SensorExpressionSet."""
         ...
 
     @overload
-    def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+    def denoise(self, expression_set: ExpressionSet) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """Denoise a general ExpressionSet."""
         ...
 
-    def denoise(self, expression_set: ExpressionSet) -> ExpressionSet:
+    def denoise(self, expression_set: ExpressionSet) -> list[ExpressionPoint] | tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
         Denoises an expression set by applying the appropriate denoising method based on the type of the expression set.
 
@@ -109,7 +109,8 @@ class DenoisingStrategy(ABC):
             expression_set (ExpressionSet): The expression set to denoise.
 
         Returns:
-            ExpressionSet: The denoised expression set.
+            list[ExpressionPoint] or (list[ExpressionPoint], list[ExpressionPoint]): The denoised expression points.
+                Returns a tuple of (left, right) when denoising a HexelExpressionSet.
         """
         if isinstance(expression_set, HexelExpressionSet):
             return self._denoise_hexel_expression_set(expression_set)
@@ -118,26 +119,20 @@ class DenoisingStrategy(ABC):
         else:
             raise NotImplementedError()
 
-    def _denoise_sensor_expression_set(self, expression_set: SensorExpressionSet) -> SensorExpressionSet:
+    def _denoise_sensor_expression_set(self, expression_set: SensorExpressionSet) -> list[ExpressionPoint]:
         expression_set = copy(expression_set)
+
         # Get the denoised spikes from the expression set's data
         expression_points = expression_set.best_transforms()
         original_spikes = group_points_by_transform(expression_points)
 
         denoised_spikes = self._denoise_spikes(original_spikes, self._logp_threshold_from_expression_set(expression_set))
 
-        for transform in expression_set.transforms:
-            denoised_points = denoised_spikes.get(transform, [])
-            # For any points which didn't make it to the denoised set, delete them
-            expression_set.clear_points([
-                (p.channel, p.latency)
-                for p in original_spikes[transform]
-                if p not in denoised_points
-            ])
+        denoised_points = [p for trans, points in denoised_spikes.items() for p in points]
 
-        return expression_set
+        return denoised_points
 
-    def _denoise_hexel_expression_set(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
+    def _denoise_hexel_expression_set(self, expression_set: HexelExpressionSet) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         expression_set = copy(expression_set)
         expression_points_left, expression_points_right = expression_set.best_transforms()
 
@@ -150,19 +145,7 @@ class DenoisingStrategy(ABC):
         denoised_points_right = [p for trans, points in denoised_spikes_right.items() for p in points]
         denoised_points_left = [p for trans, points in denoised_spikes_left.items() for p in points]
 
-        # For any points which didn't make it to the denoised sets, delete them
-        expression_set.clear_points_right([
-            (p.channel, p.latency)
-            for p in expression_points_right
-            if p not in denoised_points_right
-        ])
-        expression_set.clear_points_left([
-            (p.channel, p.latency)
-            for p in expression_points_left
-            if p not in denoised_points_left
-        ])
-
-        return expression_set
+        return denoised_points_left, denoised_points_right
 
     def _denoise_spikes(self, spikes: GroupedPoints, logp_threshold: float | None) -> GroupedPoints:
         """

@@ -7,7 +7,7 @@ from networkx import DiGraph
 from numpy import inf
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.hierarchy import GroupedPoints, CandidateTransformList, group_points_by_transform, TransformHierarchy
+from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transform, TransformHierarchy
 
 
 _logger = getLogger(__file__)
@@ -34,7 +34,6 @@ class IPPMGraph:
 
     Attributes:
         candidate_transform_list (CandidateTransformList): The candidate transform list used to create the graph.
-        points (GroupedPoints): A dictionary grouping points by their associated transforms.
     """
     def __init__(self,
                  ctl: CandidateTransformList | TransformHierarchy,
@@ -100,12 +99,14 @@ class IPPMGraph:
                         graph.add_edge(other_node, node)
 
         self.candidate_transform_list: CandidateTransformList = ctl
-        self.points: GroupedPoints = points_by_transform
         # The "full" graph has all possible connections between sequences of upstream nodes for the same transform and
         # sequences of downstream nodes for the same transform.
         # It should usually be accessed (for display purposes) via alternative graphs below,
         # e.g. self.graph_last_to_first.
         self.graph_full: DiGraph = graph
+
+        # For testing, try not to use
+        self._points_by_transform = points_by_transform
 
     def __copy__(self) -> IPPMGraph:
         """
@@ -114,8 +115,7 @@ class IPPMGraph:
         Returns:
             IPPMGraph: A new IPPMGraph instance with the same candidate transform list and expression points.
         """
-        return IPPMGraph(ctl=copy(self.candidate_transform_list),
-                         points=[p for _, points in self.points.items() for p in points])
+        return IPPMGraph(ctl=copy(self.candidate_transform_list), points=list(self.graph_full.nodes))
 
     def __eq__(self, other: IPPMGraph) -> bool:
         """
@@ -127,7 +127,7 @@ class IPPMGraph:
         """
         if self.candidate_transform_list != other.candidate_transform_list:
             return False
-        if self.points != other.points:
+        if set(self.graph_full.nodes) != set(other.graph_full.nodes):
             return False
         return True
 
@@ -183,8 +183,8 @@ class IPPMGraph:
     @property
     def graph_last_to_first(self) -> DiGraph:
         """
-        Returns a view of the graph where the last node in each sequence of expressions for a single transform connects
-        to the first node of the next of expression points for the downstream transform.
+        Returns a copy of the subgraph where the last node in each sequence of expressions for a single transform
+        connects to the first node of the next of expression points for the downstream transform.
 
         Returns:
             DiGraph: A directed graph representing this version of the graph.
@@ -214,9 +214,10 @@ class IPPMGraph:
                         return False
                 return True
 
-        subgraph = self.graph_full.edge_subgraph([(s, d) for s, d in self.graph_full.edges if __keep_edge(s, d)])
-        assert isinstance(subgraph, DiGraph)
+        subgraph = DiGraph(self.graph_full.edge_subgraph([(s, d) for s, d in self.graph_full.edges if __keep_edge(s, d)]))
+        # Add orphan nodes
 
+        subgraph.add_nodes_from(self.graph_full.nodes)
         return subgraph
 
 

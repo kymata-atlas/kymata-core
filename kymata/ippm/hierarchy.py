@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, Iterable
 
 from networkx import DiGraph
 
@@ -144,7 +144,7 @@ class CandidateTransformList:
         return set(self.graph.successors(transform))
 
 
-def group_points_by_transform(points: list[ExpressionPoint],
+def group_points_by_transform(points: Iterable[ExpressionPoint],
                               ctl: Optional[CandidateTransformList] = None,
                               ) -> GroupedPoints:
     """

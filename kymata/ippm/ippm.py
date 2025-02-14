@@ -13,7 +13,6 @@ _default_denoiser_kwargs = {
         "should_normalise": True,
         "should_cluster_only_latency": True,
         "should_max_pool": False,
-        "exclude_points_above_n_sigma": 5,
         "should_shuffle": True,
         "eps": 0.005,
         "min_samples": 1,
@@ -38,13 +37,13 @@ class IPPM:
     """
     def __init__(self,
                  expression_set: ExpressionSet,
-                 hierarchy: CandidateTransformList | TransformHierarchy,
+                 candidate_transform_list: CandidateTransformList | TransformHierarchy,
                  denoiser: str | None = _default_denoiser,
                  **kwargs):
         """
         Args:
            expression_set (ExpressionSet): The expressionset from which to build the IPPM.
-           hierarchy (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied to the
+           candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied to the
             expression set.
            denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
            **kwargs: Additional arguments passed to the denoiser.
@@ -61,12 +60,13 @@ class IPPM:
                     kwargs[kw] = arg
 
         # Validate CTL
-        if not isinstance(hierarchy, CandidateTransformList):
-            hierarchy = CandidateTransformList(hierarchy)
-        for transform in hierarchy.transforms - hierarchy.inputs:
+        if not isinstance(candidate_transform_list, CandidateTransformList):
+            candidate_transform_list = CandidateTransformList(candidate_transform_list)
+        for transform in candidate_transform_list.transforms - candidate_transform_list.inputs:
             if transform not in expression_set.transforms:
                 raise ValueError(f"Transform {transform} from hierarchy not in expression set")
-        expression_set = expression_set[hierarchy.transforms & set(expression_set.transforms)]
+
+        expression_set = expression_set[candidate_transform_list.transforms & set(expression_set.transforms)]
 
         denoising_strategy: DenoisingStrategy | None
         if denoiser is not None:
@@ -78,19 +78,22 @@ class IPPM:
         else:
             denoising_strategy = None
 
-        # Do the denoising
-        if denoising_strategy is not None:
-            expression_set = denoising_strategy.denoise(expression_set)
-
         # Build the graph
         # self._graphs maps block-name → graph
         self._graphs: dict[str, IPPMGraph] = dict()
         if isinstance(expression_set, HexelExpressionSet):
-            btl, btr = expression_set.best_transforms()
-            self._graphs[BLOCK_LEFT] = IPPMGraph(hierarchy, btl)
-            self._graphs[BLOCK_RIGHT] = IPPMGraph(hierarchy, btr)
+            if denoising_strategy is not None:
+                points_left, points_right = denoising_strategy.denoise(expression_set)
+            else:
+                points_left, points_right = expression_set.best_transforms()
+            self._graphs[BLOCK_LEFT] = IPPMGraph(candidate_transform_list, points_left)
+            self._graphs[BLOCK_RIGHT] = IPPMGraph(candidate_transform_list, points_right)
         elif isinstance(expression_set, SensorExpressionSet):
-            self._graphs[BLOCK_SCALP] = IPPMGraph(hierarchy, expression_set.best_transforms())
+            if denoising_strategy is not None:
+                points = denoising_strategy.denoise(expression_set)
+            else:
+                points = expression_set.best_transforms()
+            self._graphs[BLOCK_SCALP] = IPPMGraph(candidate_transform_list, points)
         else:
             raise NotImplementedError()
 

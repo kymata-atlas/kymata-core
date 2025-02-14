@@ -31,6 +31,8 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
            (ratio, num, denom)
     """
 
+    points_by_transform = group_points_by_transform(ippm.graph_full.nodes)
+
     causality_violations = 0
     total_arrows = 0
     for transform in ippm.candidate_transform_list.transforms:
@@ -42,13 +44,11 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
         if transform in ippm.candidate_transform_list.inputs:
             continue
 
-        points_this_trans = ippm.points[transform]
-
         # If there aren't any points for this transform it can't cause a causality violation
-        if len(points_this_trans) == 0:
+        if len(points_by_transform[transform]) == 0:
             continue
 
-        earliest_latency_this_trans = _point_with_min_latency(points_this_trans)
+        earliest_latency_this_trans = _point_with_min_latency(points_by_transform[transform])
 
         upstream_transforms = ippm.candidate_transform_list.immediately_upstream(transform)
         for upstream in upstream_transforms:
@@ -56,7 +56,7 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
             if upstream in ippm.candidate_transform_list.inputs:
                 latest_latency_upstream = 0
             else:
-                upstream_points = ippm.points[upstream]
+                upstream_points = points_by_transform[upstream]
                 if len(upstream_points) == 0:
                     continue
                 latest_latency_upstream = _point_with_max_latency(upstream_points).latency
