@@ -171,12 +171,15 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     random_seed = 40
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["trans1"] = [
-        ExpressionPoint("c1", 176, "trans1", -50),
-        ExpressionPoint("c1", 30, "trans1", -100),
-        ExpressionPoint("c1", 199, "trans1", -90),
-        ExpressionPoint("c1", -75, "trans1", -75),
+        ExpressionPoint("c", 176, "trans1", -50),
+        ExpressionPoint("c", 30, "trans1", -100),
+        ExpressionPoint("c", 199, "trans1", -90),
+        ExpressionPoint("c", -75, "trans1", -75),
     ]
-    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
+    expected_denoised["trans2"] = [
+        ExpressionPoint("c", 30, "trans2", -99),
+        ExpressionPoint("c", 130, "trans2", -81),
+    ]
 
     strategy = GMMStrategy(
         should_normalise=True,
