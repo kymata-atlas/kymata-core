@@ -11,7 +11,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils._testing import ignore_warnings
 
 from kymata.entities.expression import ExpressionPoint
-
+from kymata.math.probability import logp_to_p
 
 ANOMALOUS_CLUSTER_TAG = -1
 
@@ -219,6 +219,10 @@ class GMMClusterer(CustomClusterer):
         self._should_evaluate_using_AIC = should_evaluate_using_aic
 
     def fit(self, points_matrix: NDArray) -> Self:
+        # Clusterer expects p-values
+        if points_matrix.shape[1] > 1:
+            # Have logp values included
+            points_matrix[:, 1] = logp_to_p(points_matrix.copy()[:, 1])
         optimal_model = self._grid_search_for_optimal_number_of_clusters(points_matrix)
         if optimal_model is not None:
             # None if no data.
