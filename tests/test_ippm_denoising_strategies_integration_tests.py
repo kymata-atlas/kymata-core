@@ -261,9 +261,12 @@ def test_DBSCANStrategy_AllDefault_Fit_Successfully():
         ExpressionPoint("c", 30, "trans1", -100),
         ExpressionPoint("c", 199, "trans1", -90),
     ]
-    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99), ExpressionPoint("c", 130, "trans2", -81)]
+    expected_denoised["trans2"] = [
+        ExpressionPoint("c", 30, "trans2", -99),
+        ExpressionPoint("c", 130, "trans2", -81),
+    ]
 
-    strategy = DBSCANStrategy()
+    strategy = DBSCANStrategy(should_shuffle=False)
     actual_denoised = strategy._denoise_spikes(noisy_test_hexels, threshold_logp)
 
     assert (

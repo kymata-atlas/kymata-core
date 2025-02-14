@@ -5,7 +5,7 @@ from typing import Optional, overload, Callable
 
 from numpy.typing import NDArray
 
-from ..math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
+from ..math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas, logp_to_p
 from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG, points_to_matrix)
@@ -449,6 +449,13 @@ class DBSCANStrategy(DenoisingStrategy):
             leaf_size=leaf_size,
             n_jobs=n_jobs,
         )
+
+    def _preprocess(self, points: list[ExpressionPoint]) -> NDArray:
+        matrix = super()._preprocess(points)
+        if not self._should_cluster_only_latency:
+            # DBSCAN expects p-values
+            matrix[:, 1] = logp_to_p(matrix[:, 1])
+        return matrix
 
 
 class MeanShiftStrategy(DenoisingStrategy):
