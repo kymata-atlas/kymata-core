@@ -79,14 +79,12 @@ def test_MaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised["trans2"] = [ExpressionPoint("c", 30, "f", 1e-99)]
 
     strategy = MaxPoolingStrategy(
-        hemi=HEMI_RIGHT,
-        n_timepoints=n_timepoints, n_hexels=n_hexels,
         should_normalise=True,
         should_cluster_only_latency=True,
         should_max_pool=True,
         bin_significance_threshold=2,
     )
-    actual_denoised = strategy.denoise(noisy_test_hexels)
+    actual_denoised = strategy._denoise_spikes(noisy_test_hexels, None)
 
     assert (
         set(actual_denoised["trans1"])

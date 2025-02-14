@@ -77,7 +77,6 @@ class DenoisingStrategy(ABC):
         self._should_cluster_only_latency = should_cluster_only_latency
         self._should_max_pool = should_max_pool
         self._logp_threshold_from_expression_set: Callable[[ExpressionSet], float | None] = get_threshold
-        self._exclude_logp_vals_above = exclude_logp_vals_above
         self._should_shuffle = should_shuffle
 
     @overload
@@ -117,6 +116,7 @@ class DenoisingStrategy(ABC):
         # Get the denoised spikes from the expression set's data
         expression_points = expression_set.best_transforms()
         original_spikes = group_points_by_transform(expression_points)
+
         denoised_spikes = self._denoise_spikes(original_spikes, self._logp_threshold_from_expression_set(expression_set))
 
         for transform in expression_set.transforms:
@@ -135,6 +135,7 @@ class DenoisingStrategy(ABC):
         expression_points_left, expression_points_right = expression_set.best_transforms()
         original_spikes_left = group_points_by_transform(expression_points_left)
         original_spikes_right = group_points_by_transform(expression_points_right)
+
         denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
         denoised_spikes_right = self._denoise_spikes(original_spikes_right, self._logp_threshold_from_expression_set(expression_set))
 
