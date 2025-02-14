@@ -1,9 +1,9 @@
 from unittest.mock import patch, MagicMock
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
+from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, points_to_matrix
 
-test_data = [
+test_data = points_to_matrix([
     ExpressionPoint("c", -100, "f", -50),
     ExpressionPoint("c", -90, "f", -34),
     ExpressionPoint("c", -95, "f", -8),
@@ -19,7 +19,7 @@ test_data = [
     ExpressionPoint("c", 200, "f", -50),
     ExpressionPoint("c", 210, "f", -44),
     ExpressionPoint("c", 211, "f", -55),
-]
+])
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 
 
