@@ -145,7 +145,7 @@ class DenoisingStrategy(ABC):
         for func, spike in spikes.items():
             extracted_spikes = spike.right_best_pairings if self._hemi == HEMI_RIGHT else spike.left_best_pairings
             if self._should_merge_hemis:
-                other_hemi_spikes = spike.left_best_pairings if self._hemi == HEMI_LEFT else spike.right_best_pairings
+                other_hemi_spikes = spike.left_best_pairings if self._hemi == HEMI_RIGHT else spike.right_best_pairings
                 extracted_spikes.extend(other_hemi_spikes)
             if self._should_exclude_insignificant:
                 extracted_spikes = self._filter_out_insignificant_spikes(
