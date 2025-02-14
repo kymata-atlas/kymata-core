@@ -172,7 +172,11 @@ def points_to_matrix(points: list[ExpressionPoint]) -> NDArray:
     Returns:
         array which has two columns — latency and logp value — and a row for each point.
     """
-    assert len({p.transform for p in points}) == 1, "Supply points for one transform only"
+    if len({p.transform for p in points}) > 1:
+        raise ValueError("Supply points for no more than one transform")
+
+    if len(points) == 0:
+        return np.empty((0, 2))
 
     return np.array([
         (p.latency, p.logp_value)
