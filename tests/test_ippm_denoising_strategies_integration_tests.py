@@ -183,6 +183,7 @@ def test_GMMStrategy_AllTrue_Fit_Successfully():
     strategy = GMMStrategy(
         HEMI_RIGHT,
         should_normalise=True,
+        should_shuffle=False,
         should_cluster_only_latency=True,
         number_of_clusters_upper_bound=5,
         random_state=random_seed,
