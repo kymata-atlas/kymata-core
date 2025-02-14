@@ -264,7 +264,7 @@ def test_DBSCANStrategy_AllDefault_Fit_Successfully():
     ]
     expected_denoised["func2"].right_best_pairings = [(30, 1e-99), (130, 1e-81)]
 
-    strategy = DBSCANStrategy(HEMI_RIGHT)
+    strategy = DBSCANStrategy(HEMI_RIGHT, should_shuffle=False)
     actual_denoised = strategy.denoise(noisy_test_hexels)
 
     assert (
