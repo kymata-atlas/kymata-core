@@ -197,12 +197,14 @@ class DenoisingStrategy(ABC):
                 spikes[trans] = points
                 continue
 
-            # We use the preprocessed points to fit the clusterer, but it is important not to use them to actually get
-            # the denoised points because the latencies and logp values have been altered
-            #
-            # Short text on normalisation for future reference.
-            # https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
-            self._clusterer: CustomClusterer = self._clusterer.fit(self._preprocess(points))
+            self._clusterer: CustomClusterer = self._clusterer.fit(
+                # We use the preprocessed points to fit the clusterer, but it is important not to use them to actually get
+                # the denoised points because the latencies and logp values have been altered
+                #
+                # Short text on normalisation for future reference.
+                # https://www.kaggle.com/code/residentmario/l1-norms-versus-l2-norms
+                self._preprocess(points)
+            )
 
             spikes[trans] = self._get_denoised_time_series(points)
             if self._should_max_pool:
