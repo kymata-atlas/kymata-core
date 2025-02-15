@@ -58,5 +58,5 @@ def sidak_correct(alpha: float, n_comparisons: int) -> float:
     """Applies Šidák correction to an alpha threshold."""
     return 1 - (
         (1 - alpha)
-        ** longdouble(1 / (2 * n_comparisons))
+        ** longdouble(1 / n_comparisons)
     )
