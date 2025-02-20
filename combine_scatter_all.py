@@ -28,15 +28,15 @@ def asr_models_loop_full():
 
     size = 'large'
 
-    neuron_selection = False
+    neuron_selection = True
     
     n = 1
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
     
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/log/'
-    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/log/'
-    # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all_pilots/log/'
+    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/all/log/'
+    # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/log/'
     file_list = list_files_in_directory(log_dir_1)
 
     # log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'
@@ -144,8 +144,14 @@ def asr_models_loop_full():
     stds.append(np.std(_lats[:, 0]))
 
     _lats_dec = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] > 31])
+    _lats_enc = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] < 32])
     print(_lats_dec.shape[0])
     print(np.mean(_lats_dec[:, 3]))
+    print(np.mean(_lats[:, 3]))
+    print(_lats.shape)
+
+    # output_path = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/enc_neurons.npy'
+    # np.save(output_path, _lats_enc[:, 4:])
 
     import ipdb;ipdb.set_trace()
 
@@ -155,15 +161,15 @@ def asr_models_loop_full():
     #for j in range(_lats.shape[0]):
     #    ax.annotate(j+1, (_lats[j, 0], _lats[j, 3]))
 
-    # plt.ylabel('Layer number')
-    # plt.xlabel('Latencies (ms)')
-    # plt.title(f'Threshold -log(p-value): {thres}')
-    # plt.xlim(-200, 800)
-    # plt.ylim(-1, 65)
-    # # plt.legend()
-    # # plt.xlim(-10, 60)
-    # # plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
-    # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en.png', dpi=600)
+    plt.ylabel('Layer number')
+    plt.xlabel('Latencies (ms)')
+    plt.title(f'Threshold -log(p-value): {thres}')
+    plt.xlim(-200, 800)
+    plt.ylim(-1, 65)
+    # plt.legend()
+    # plt.xlim(-10, 60)
+    # plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_select.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

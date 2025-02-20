@@ -45,7 +45,7 @@ apptainer exec \
         --n-derangements 5 \
         --asr-option 'all' \
         --mfa True \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru/meg15_0081/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru/meg15_0081/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
         --single-participant-override meg15_0081 \
   "
