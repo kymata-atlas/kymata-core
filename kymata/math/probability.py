@@ -46,17 +46,33 @@ def p_threshold_for_sigmas(sigmas: float) -> float:
     return 1 - NormalDist(mu=0, sigma=1).cdf(sigmas)
 
 
-def bonferroni_correct(alpha: float, n_comparisons: int) -> float:
-    """Applies Bonferroni correction to an alpha threshold."""
-    return 1 - (
-            (1 - alpha)
-            ** n_comparisons
-    )
+def bonferroni_correct(alpha_p: float, n_comparisons: int) -> float:
+    """
+    Applies Bonferroni correction to an alpha threshold.
+
+    Args:
+        alpha_p: A p-value threshold such that p < α is defined to be significant.
+        n_comparisons: The number of comparisons to correct for.
+
+    Returns:
+        A corrected p-value threshold α* such that p < α* is defined to be significant with a controlled FWER.
+    """
+    # The
+    return alpha_p / n_comparisons
 
 
-def sidak_correct(alpha: float, n_comparisons: int) -> float:
-    """Applies Šidák correction to an alpha threshold."""
+def sidak_correct(alpha_p: float, n_comparisons: int) -> float:
+    """
+    Applies Šidák correction to an alpha threshold.
+
+    Args:
+        alpha_p: A p-value threshold such that p < α is defined to be significant.
+        n_comparisons: The number of comparisons to correct for.
+
+    Returns:
+        A corrected p-value threshold α* such that p < α* is defined to be significant with a controlled FWER.
+    """
     return 1 - (
-        (1 - alpha)
+        (1 - alpha_p)
         ** longdouble(1 / n_comparisons)
     )
