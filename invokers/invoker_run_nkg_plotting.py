@@ -18,8 +18,11 @@ def main():
 
     if function_family_type == "standard":
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, "combined_TVL_gridsearch.nkg")
+            #Path(path_to_nkg_files, "MEG-MASC_TVL_family_sensor.nkg")
+            '/imaging/projects/cbu/kymata/analyses/sharon/kymata-core/kymata-core-data/output/MEG-MASC_TVL_family_sensor.nkg'
         )
+
+        import ipdb; ipdb.set_trace()
 
         fig = expression_plot(
             expression_data,
