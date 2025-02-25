@@ -163,7 +163,8 @@ def do_gridsearch(
     )  # Include the identity on top
 
     # Fast cross-correlation using FFT
-    normalize(emeg_reshaped, inplace=True)
+    # normalize(emeg_reshaped, inplace=True)
+    emeg_reshaped = normalize(emeg_reshaped)
     emeg_stds = get_stds(emeg_reshaped, n_func_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_func = np.conj(np.fft.rfft(func, n=n_samples_per_split, axis=-1))
@@ -197,7 +198,8 @@ def do_gridsearch(
         # work out autocorrelation for channel-by-channel plots
         noise = normalize(np.random.randn(func.shape[0], func.shape[1])) * 0
         noisy_func = func + noise
-        normalize(noisy_func, inplace=True)
+        # normalize(noisy_func, inplace=True)
+        noisy_func = normalize(noisy_func)
 
         F_noisy_func = np.fft.rfft(noisy_func, n=n_func_samples_per_split, axis=-1)
         F_func = np.conj(np.fft.rfft(func, n=n_func_samples_per_split, axis=-1))
