@@ -35,7 +35,7 @@ def asr_models_loop_full():
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
     
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/log/'
-    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/all/log/'
+    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0070/log/'
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/log/'
     file_list = list_files_in_directory(log_dir_1)
 
@@ -143,17 +143,17 @@ def asr_models_loop_full():
     _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
     stds.append(np.std(_lats[:, 0]))
 
-    _lats_dec = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] > 31])
-    _lats_enc = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] < 32])
-    print(_lats_dec.shape[0])
-    print(np.mean(_lats_dec[:, 3]))
-    print(np.mean(_lats[:, 3]))
-    print(_lats.shape)
+    # _lats_dec = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] > 31])
+    # _lats_enc = np.array([_lats[j, :] for j in range(_lats.shape[0]) if _lats[j, -2] < 32])
+    # print(_lats_dec.shape[0])
+    # print(np.mean(_lats_dec[:, 3]))
+    # print(np.mean(_lats[:, 3]))
+    # print(_lats.shape)
 
     # output_path = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/enc_neurons.npy'
     # np.save(output_path, _lats_enc[:, 4:])
 
-    import ipdb;ipdb.set_trace()
+    # import ipdb;ipdb.set_trace()
 
     scatter = ax.scatter(_lats[:, 0], _lats[:, 4], c= _lats[:, 4], cmap='brg', marker='.', s=15, norm=norm)
     cbar = plt.colorbar(scatter, ax=ax, label='layers')
@@ -169,7 +169,7 @@ def asr_models_loop_full():
     # plt.legend()
     # plt.xlim(-10, 60)
     # plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_select.png', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0070/layer_select.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()
