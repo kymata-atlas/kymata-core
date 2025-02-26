@@ -55,6 +55,97 @@ def get_meg_sensor_xy() -> dict[str, Point2d]:
             d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
     return d
 
+def get_magneto_sensor_xy() -> dict[str, Point2d]:
+    """
+    Retrieve the 2D coordinates of MEG sensors.
+
+    This function reads the sensor locations from a predefined layout file and returns a dictionary mapping
+    sensor names to their corresponding 2D coordinates.
+
+    Returns:
+    --------
+    dict[str, Point2d]
+        A dictionary where keys are sensor names (e.g., 'MEG1234') and values are Point2d objects representing
+        the x and y coordinates of the sensors.
+
+    Notes:
+    ------
+    The function expects the layout file to be located at 'kymata/data/sensor_locations/Vectorview-all.lout'.
+    """
+
+    d = dict()
+    layout_line_re = re.compile(
+        r"^\d+\t"
+        r"(?P<x>-?\d+\.\d+)\t"
+        r"(?P<y>-?\d+\.\d+)\t"
+        r"-?\d+\.\d+\t"
+        r"-?\d+\.\d+\t"
+        r"(?P<sensor>MEG \d+1)$"  # Updated pattern to match sensor names ending with '1'
+    )
+    with Path(
+        Path(__file__).parent.parent,
+        "data",
+        "sensor_locations",
+        "Vectorview-all.lout",
+    ).open("r") as layout_file:
+        _ = layout_file.readline()  # First line is nothing
+        for line in layout_file:
+            if not line:
+                continue  # Skip blank lines
+            match = layout_line_re.match(line)
+            try:
+                sensor = match.group("sensor")
+                sensor = sensor.replace(" ", "")
+                d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
+            except:
+                continue
+    return d
+
+def get_gradio_sensor_xy() -> dict[str, Point2d]:
+    """
+    Retrieve the 2D coordinates of MEG sensors.
+
+    This function reads the sensor locations from a predefined layout file and returns a dictionary mapping
+    sensor names to their corresponding 2D coordinates.
+
+    Returns:
+    --------
+    dict[str, Point2d]
+        A dictionary where keys are sensor names (e.g., 'MEG1234') and values are Point2d objects representing
+        the x and y coordinates of the sensors.
+
+    Notes:
+    ------
+    The function expects the layout file to be located at 'kymata/data/sensor_locations/Vectorview-all.lout'.
+    """
+
+    d = dict()
+    layout_line_re = re.compile(
+        r"^\d+\t"
+        r"(?P<x>-?\d+\.\d+)\t"
+        r"(?P<y>-?\d+\.\d+)\t"
+        r"-?\d+\.\d+\t"
+        r"-?\d+\.\d+\t"
+        r"(?P<sensor>MEG \d+[23])$"  # Updated pattern to match sensor names ending with '1', '2', or '3'
+    )
+    with Path(
+        Path(__file__).parent.parent,
+        "data",
+        "sensor_locations",
+        "Vectorview-all.lout",
+    ).open("r") as layout_file:
+        _ = layout_file.readline()  # First line is nothing
+        for line in layout_file:
+            if not line:
+                continue  # Skip blank lines
+            match = layout_line_re.match(line)
+            try:
+                sensor = match.group("sensor")
+                sensor = sensor.replace(" ", "")
+                d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
+            except:
+                continue
+    return d
 
 def get_eeg_sensor_xy() -> dict[str, Point2d]:
     """
@@ -102,6 +193,14 @@ def get_eeg_sensor_xy() -> dict[str, Point2d]:
 def get_meg_sensors() -> set[str]:
     """Set of MEG sensor names."""
     return set(get_meg_sensor_xy().keys())
+
+def get_magneto_sensors() -> set[str]:
+    """Set of MEG sensor names."""
+    return set(get_magneto_sensor_xy().keys())
+
+def get_gradio_sensors() -> set[str]:
+    """Set of MEG sensor names."""
+    return set(get_gradio_sensor_xy().keys())
 
 
 def get_eeg_sensors() -> set[str]:

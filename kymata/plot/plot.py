@@ -32,8 +32,12 @@ from kymata.math.rounding import round_down, round_up
 from kymata.plot.layouts import (
     get_meg_sensor_xy,
     get_eeg_sensor_xy,
+    get_magneto_sensor_xy,
+    get_gradio_sensor_xy,
     get_meg_sensors,
     get_eeg_sensors,
+    get_magneto_sensors,
+    get_gradio_sensors,
 )
 
 from tqdm import tqdm
@@ -358,7 +362,7 @@ def expression_plot(
     minimap: bool = False,
     minimap_view: str = "lateral",
     minimap_surface: str = "inflated",
-    show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
+    show_only_sensors: Optional[Literal["eeg", "meg", "magneto", "gradio"]] = None,
     display_latency_range: Optional[tuple[float | None, float | None]] = None,
     # I/O args
     save_to: Optional[Path] = None,
@@ -853,6 +857,10 @@ def _restrict_channels(
                 chosen_channels = get_meg_sensors()
             elif show_only_sensors == "eeg":
                 chosen_channels = get_eeg_sensors()
+            elif show_only_sensors == "magneto":
+                chosen_channels = get_magneto_sensors()
+            elif show_only_sensors == "gradio":
+                chosen_channels = get_gradio_sensors()
             else:
                 raise NotImplementedError()
         else:
