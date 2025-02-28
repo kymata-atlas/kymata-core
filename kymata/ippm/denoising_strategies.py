@@ -30,8 +30,8 @@ class DenoisingStrategy(ABC):
         should_normalise: bool = False,
         should_cluster_only_latency: bool = False,
         should_max_pool: bool = False,
-        exclude_points_above_n_sigma: float | None = 5.0,
-        exclude_logp_vals_above: float | None = None,
+        exclude_points_above_n_sigma: Optional[float] = None,
+        exclude_logp_vals_above: Optional[float] = None,
         should_shuffle: bool = True,
         **kwargs,
     ):
@@ -51,26 +51,31 @@ class DenoisingStrategy(ABC):
                 Equivalently, we take the maximum over all clusters and discard all other points. Setting this to True
                 optimises performance in the context of IPPMs.
                 Default is False.
-            exclude_points_above_n_sigma (float | None): Sigma threshold for excluding points.  Supply None to not
+            exclude_points_above_n_sigma (Optional[float]): Sigma threshold for excluding points.  Supply None to not
                 exclude using this criterion.
                 Default is 5.0.
-            exclude_logp_vals_above (float | None): Supply a log p-value threshold to test for significance for this
+            exclude_logp_vals_above (Optional[float]): Supply a log p-value threshold to test for significance for this
                 exclusion. Supply None to not exclude using this criterion.
                 Default is None.
             should_shuffle (bool): Whether to shuffle the points before clustering. Default is True.
         """
 
+        if exclude_logp_vals_above is None and exclude_points_above_n_sigma is None:
+            # Default behaviour
+            exclude_points_above_n_sigma = 5.0
         if exclude_logp_vals_above is not None and exclude_points_above_n_sigma is not None:
             raise ValueError("Supply only one of `exclude_logp_vals_above` and `exclude_points_above_n_sigma`.")
         if exclude_points_above_n_sigma is not None:
-            def get_threshold(es: ExpressionSet) -> float:
-                """Get Šidák n-sigma threshold"""
-                n_comparisons = len(es.transforms) * len(es.latencies) + get_n_channels(es)
-                return p_to_logp(sidak_correct(p_threshold_for_sigmas(exclude_points_above_n_sigma),
-                                               n_comparisons=n_comparisons))
+            # Will return a threshold from an expression set, corrected using Šidák correction
+            def get_logp_threshold(es: ExpressionSet) -> float:
+                """Get Šidák n-sigma threshold as a logp value"""
+                n_comparisons = len(es.transforms) * len(es.latencies) * get_n_channels(es)
+                uncorrected_threshold = p_threshold_for_sigmas(exclude_points_above_n_sigma)
+                corrected_threshold = sidak_correct(uncorrected_threshold, n_comparisons=n_comparisons) 
+                return p_to_logp(corrected_threshold)
         else:
             # Will return either the fixed threshold, or constant None where exclude_logp_vals_above was (also) None
-            def get_threshold(_es: ExpressionSet) -> float:
+            def get_logp_threshold(_es: ExpressionSet) -> float:
                 """Get fixed threshold"""
                 return exclude_logp_vals_above
 
@@ -78,7 +83,7 @@ class DenoisingStrategy(ABC):
         self._should_normalise = should_normalise
         self._should_cluster_only_latency = should_cluster_only_latency
         self._should_max_pool = should_max_pool
-        self._logp_threshold_from_expression_set: Callable[[ExpressionSet], float | None] = get_threshold
+        self._logp_threshold_from_expression_set: Callable[[ExpressionSet], float | None] = get_logp_threshold
         self._should_shuffle = should_shuffle
 
     @overload
@@ -135,25 +140,26 @@ class DenoisingStrategy(ABC):
     def _denoise_hexel_expression_set(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
         expression_set = copy(expression_set)
         expression_points_left, expression_points_right = expression_set.best_transforms()
-        original_spikes_left = group_points_by_transform(expression_points_left)
+
         original_spikes_right = group_points_by_transform(expression_points_right)
+        original_spikes_left = group_points_by_transform(expression_points_left)
 
-        denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
         denoised_spikes_right = self._denoise_spikes(original_spikes_right, self._logp_threshold_from_expression_set(expression_set))
+        denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
 
-        denoised_points_left = [p for trans, points in denoised_spikes_left.items() for p in points]
         denoised_points_right = [p for trans, points in denoised_spikes_right.items() for p in points]
+        denoised_points_left = [p for trans, points in denoised_spikes_left.items() for p in points]
 
         # For any points which didn't make it to the denoised sets, delete them
-        expression_set.clear_points_left([
-            (p.channel, p.latency)
-            for p in expression_points_left
-            if p not in denoised_points_left
-        ])
         expression_set.clear_points_right([
             (p.channel, p.latency)
             for p in expression_points_right
             if p not in denoised_points_right
+        ])
+        expression_set.clear_points_left([
+            (p.channel, p.latency)
+            for p in expression_points_left
+            if p not in denoised_points_left
         ])
 
         return expression_set
@@ -254,7 +260,7 @@ class DenoisingStrategy(ABC):
         # columns are latency, logp
         matrix = points_to_matrix(points)
         if self._should_cluster_only_latency:
-            matrix = matrix[:, [0]]
+            matrix = matrix[:, [0]]  # Extract just the latency dimension
 
         return matrix
     
@@ -340,8 +346,8 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_normalise: bool = True,
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
-            exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = 5.0,
+            exclude_logp_vals_above: Optional[float] = None,
+            exclude_points_above_n_sigma: Optional[float] = None,
             should_shuffle: bool = True,
             bin_significance_threshold: int = 1,
             bin_size: int = 1,
@@ -363,8 +369,8 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             should_normalise: bool = True,
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
-            exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = 5.0,
+            exclude_logp_vals_above: Optional[float] = None,
+            exclude_points_above_n_sigma: Optional[float] = None,
             bin_significance_threshold: int = 1,
             base_bin_size: int = 1,
     ):
@@ -385,8 +391,8 @@ class GMMStrategy(DenoisingStrategy):
             should_normalise: bool = True,
             should_cluster_only_latency: bool = True,
             should_max_pool: bool = False,
-            exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = 5.0,
+            exclude_logp_vals_above: Optional[float] = None,
+            exclude_points_above_n_sigma: Optional[float] = None,
             should_shuffle: bool = True,
             number_of_clusters_upper_bound: int = 2,
             covariance_type: str = "full",
@@ -421,8 +427,8 @@ class DBSCANStrategy(DenoisingStrategy):
             should_normalise: bool = False,
             should_cluster_only_latency: bool = False,
             should_max_pool: bool = False,
-            exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = 5.0,
+            exclude_logp_vals_above: Optional[float] = None,
+            exclude_points_above_n_sigma: Optional[float] = None,
             should_shuffle: bool = True,
             eps: int = 10,
             min_samples: int = 2,
@@ -452,8 +458,8 @@ class DBSCANStrategy(DenoisingStrategy):
 
     def _preprocess(self, points: list[ExpressionPoint]) -> NDArray:
         matrix = super()._preprocess(points)
+        # DBSCAN expects p-values, so convert them if we are including
         if not self._should_cluster_only_latency:
-            # DBSCAN expects p-values
             matrix[:, 1] = logp_to_p(matrix[:, 1])
         return matrix
 
@@ -464,8 +470,8 @@ class MeanShiftStrategy(DenoisingStrategy):
             should_normalise: bool = True,
             should_cluster_only_latency: bool = True,
             should_max_pool: bool = False,
-            exclude_logp_vals_above: float | None = None,
-            exclude_points_above_n_sigma: float | None = 5.0,
+            exclude_logp_vals_above: Optional[float] = None,
+            exclude_points_above_n_sigma: Optional[float] = None,
             should_shuffle: bool = True,
             cluster_all: bool = False,
             bandwidth: float = 0.5,
