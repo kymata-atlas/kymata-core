@@ -180,7 +180,7 @@ def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
 
 
 def test_DenoisingStrategy_PerformMaxPooling_Successfully():
-    max_pooled_spike = [ExpressionPoint("c", 30, "f", -100)]
+    max_pooled_spike = [ExpressionPoint("c", 30, "f1", -100)]
 
     strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=n_timepoints, n_hexels=n_hexels)
     actual_max_pooled = strategy._perform_max_pooling(denoised_test_spikes["trans1"])
