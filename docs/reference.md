@@ -12,6 +12,6 @@
 
 ::: kymata.ippm.plot
 
-::: kymata.ippm.build
+::: kymata.ippm.ippm
 
 ::: kymata.entities.expression
