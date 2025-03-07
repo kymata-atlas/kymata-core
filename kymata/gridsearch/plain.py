@@ -9,12 +9,8 @@ from scipy import stats
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
 from kymata.math.vector import normalize, get_stds
-from kymata.entities.expression import (
-    ExpressionSet,
-    SensorExpressionSet,
-    HexelExpressionSet,
-)
-from kymata.math.p_values import log_base, p_to_logp
+from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
+from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.plot import plot_top_five_channels_of_gridsearch
 
 _logger = getLogger(__name__)
@@ -331,6 +327,6 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
     else:
         # norm v good approx for this, (logsf for t not implemented in logspace)
         log_p = stats.norm.logsf(np.abs(t_stat)) + np.log(2)
-        log_p /= np.log(log_base)  # log base correction
+        log_p /= np.log(LOGP_BASE)  # log base correction
 
     return log_p

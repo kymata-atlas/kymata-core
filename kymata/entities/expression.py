@@ -5,25 +5,22 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, TypeVar, Self
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, inf)
+    array, array_equal, where, inf)
 from numpy.typing import NDArray
-from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
-    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency)
+    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import (
-    expand_dims, densify_data_block, sparsify_log_pmatrix)
-
+from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -38,8 +35,15 @@ BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
-# Column names
-COL_LOGP_VALUE = "log-p-value"
+
+class ExpressionPoint(NamedTuple):
+    """
+    A single point of transform expression evidence.
+    """
+    channel: Channel
+    latency: Latency
+    transform: str
+    logp_value: float
 
 
 class ExpressionSet(ABC):
@@ -121,11 +125,11 @@ class ExpressionSet(ABC):
         if set(self._block_names) != set(channel_coord_values.keys()):
             raise ValueError("Ensure data block names match channel block names")
 
-        data_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
+        data_was_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
 
         # If only one transform supplied, ensure that the other arguments are appropriately specified
         if isinstance(transforms, str):
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 raise ValueError("Single transform name provided but data came as a sequence")
             # Only one transform, so no matter what format the data is in, we don't expect a sequence
             # Wrap transform names and data blocks to ensure we have sequences from now on
@@ -134,7 +138,7 @@ class ExpressionSet(ABC):
         self._validate_transforms_no_duplicates(transforms)
 
         # If data was specified as sequence, ensure all arrays in the sequence have the same shape
-        if data_supplied_as_sequence:
+        if data_was_supplied_as_sequence:
             if not all_equal([
                 # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
                 # is only one transform per item in the sequence
@@ -165,7 +169,7 @@ class ExpressionSet(ABC):
         transforms = array(transforms, dtype=TransformNameDType)
 
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 for trans_name, data in zip(transforms, block_data):
                     if len(channels[block_name]) != data.shape[0]:
                         raise ValueError(f"{channel_coord_name} mismatch for {trans_name}: "
@@ -215,7 +219,7 @@ class ExpressionSet(ABC):
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 # Build DataArray by concatenating sequence
                 data_array: DataArray = _concat_dataarrays(
                     [
@@ -274,6 +278,7 @@ class ExpressionSet(ABC):
     def _validate_transforms_no_duplicates(self, transforms: Sequence[str]) -> None:
         if not len(transforms) == len(set(transforms)):
             checked = []
+            f = None  # So the static analyser knows it'll actually be defined if the Error state is reached
             for f in transforms:
                 if f in checked:
                     break
@@ -324,7 +329,7 @@ class ExpressionSet(ABC):
         return latencies[self._block_names[0]]
 
     @abstractmethod
-    def __getitem__(self, transforms: str | Sequence[str]) -> ExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> ExpressionSet:
         pass
 
     def _validate_crop_latency_args(self, start: float, stop: float) -> None:
@@ -398,9 +403,9 @@ class ExpressionSet(ABC):
                 return False
         return True
 
-    def _best_transforms_for_block(self, block_name: str) -> DataFrame:
+    def _best_transforms_for_block(self, block_name: str) -> list[ExpressionPoint]:
         """
-        Return a DataFrame containing:
+        Return a list of expression points:
         for each channel in the block, the best transform and latency for that channel, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
@@ -440,16 +445,15 @@ class ExpressionSet(ABC):
         ).data
 
         # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
-        idxs = logp_vals < 0
+        idxs = where(logp_vals < 0)[0]
 
-        return DataFrame.from_dict(
-            {
-                self.channel_coord_name: self._channels[block_name][idxs],
-                DIM_TRANSFORM: best_transforms[idxs],
-                DIM_LATENCY: best_latencies[idxs],
-                COL_LOGP_VALUE: logp_vals[idxs],
-            }
-        )
+        return [
+            ExpressionPoint(channel=self._channels[block_name][idx],
+                            transform=best_transforms[idx],
+                            latency=best_latencies[idx],
+                            logp_value=logp_vals[idx])
+            for idx in idxs
+        ]
 
     def rename(self, transforms: dict[str, str] = None, channels: dict = None) -> None:
         """
@@ -497,7 +501,7 @@ class ExpressionSet(ABC):
             self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
-    def best_transforms(self) -> DataFrame | tuple[DataFrame, ...]:
+    def best_transforms(self) -> list[ExpressionPoint] | tuple[list[ExpressionPoint], ...]:
         """
         Note that channels for which the best p-value is 1 will be omitted.
         """
@@ -555,19 +559,22 @@ class HexelExpressionSet(ExpressionSet):
         """Right-hemisphere data."""
         return self._data[BLOCK_RIGHT]
 
-    def __getitem__(self, transforms: str | Sequence[str]) -> HexelExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> HexelExpressionSet:
         """
         Select data for specified transform(s) only.
-        Use a transform name or list/array of transform names
+        Use a transform name or collection of transform names
         """
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
         # Get indices of sliced transforms within total transform list
         transform_idxs = []
         for f in transforms:
             try:
-                transform_idxs.append(self.transforms.index(f))
+                transform_idxs.append(self.transforms.index(TransformNameDType(f)))
             except ValueError:
                 raise KeyError(f)
         return HexelExpressionSet(
@@ -586,6 +593,7 @@ class HexelExpressionSet(ExpressionSet):
             latency_stop = inf
         self._validate_crop_latency_args(latency_start, latency_stop)
 
+        lat: Latency
         selected_latencies = [
             (i, lat)
             for i, lat in enumerate(self.latencies)
@@ -639,7 +647,7 @@ class HexelExpressionSet(ExpressionSet):
             return False
         return True
 
-    def best_transforms(self) -> Tuple[DataFrame, DataFrame]:
+    def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
         Return a pair of DataFrames (left, right), containing:
         for each hexel, the best transform and latency for that hexel, and the associated log p-value
@@ -733,19 +741,22 @@ class SensorExpressionSet(ExpressionSet):
             data=_concat_dataarrays([self.scalp, other.scalp]).data,
         )
 
-    def __getitem__(self, transforms: str | Sequence[str]) -> SensorExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> SensorExpressionSet:
         """
         Select data for specified transform(s) only.
-        Use a transform name or list/array of transform names
+        Use a transform name or collection of transform names
         """
         # Allow indexing by a single transform
         if isinstance(transforms, str):
             transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
         # Get indices of sliced transforms within total transform list
         transform_idxs = []
         for t in transforms:
             try:
-                transform_idxs.append(self.transforms.index(t))
+                transform_idxs.append(self.transforms.index(TransformNameDType(t)))
             except ValueError:
                 raise KeyError(t)
         return SensorExpressionSet(
@@ -763,6 +774,7 @@ class SensorExpressionSet(ExpressionSet):
             latency_stop = inf
         self._validate_crop_latency_args(latency_start, latency_stop)
 
+        lat: Latency
         selected_latencies = [
             (i, lat)
             for i, lat in enumerate(self.latencies)
@@ -778,7 +790,7 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
         )
 
-    def best_transforms(self) -> DataFrame:
+    def best_transforms(self) -> list[ExpressionPoint]:
         """
         Return a DataFrame containing:
         for each sensor, the best transform and latency for that sensor, and the associated log p-value
@@ -809,3 +821,12 @@ def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
         dim=DIM_TRANSFORM,
         data_vars="all",  # Required by concat of DataArrays
     )
+
+
+def get_n_channels(es: ExpressionSet) -> int:
+    """Returns the number of channels represented in an ExpressionSet."""
+    if isinstance(es, SensorExpressionSet):
+        return len(es.sensors)
+    if isinstance(es, HexelExpressionSet):
+        return len(es.hexels_left) + len(es.hexels_right)
+    raise NotImplementedError()

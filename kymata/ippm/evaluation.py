@@ -1,24 +1,20 @@
 """
 Metrics for evaluating IPPMs
 """
-from statistics import NormalDist
 
-from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
-from kymata.ippm.data_tools import SpikeDict, TransformHierarchy, IPPMSpike
-from kymata.ippm.build import IPPMGraph
+from kymata.entities.expression import ExpressionPoint
+from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.hierarchy import group_points_by_transform
 
 
-def causality_violation_score(
-    denoised_spikes: SpikeDict,
-    hierarchy: TransformHierarchy,
-    hemi: str,
-    inputs: list[str],
-) -> tuple[float, int, int]:
+def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
     """
-    Assumption: spikes are denoised. Otherwise, it doesn't really make sense to check the min/max latency of noisy spikes.
+    Assumption: expression points are denoised. Otherwise, it doesn't really make sense to check the min/max latency of
+    noisy expression points.
 
-    A score calculated on denoised spikes that calculates the proportion of arrows in IPPM that are going backward in time.
-    It assumes that the function hierarchy is correct, which may not always be correct, so you must use it with caution.
+    A score calculated on denoised expression points that calculates the proportion of arrows in IPPM that are going
+    backward in time. It assumes that the function hierarchy is correct, which may not always be correct, so you must
+    use it with caution.
 
     Algorithm
     ----------
@@ -31,62 +27,42 @@ def causality_violation_score(
             if child_lat < parent_lat:
                 violations++
             total_arrows++
-    return violations / total_arrows if total_arrows > 0 else 0
+    return violations / total_arrows
+           (ratio, num, denom)
     """
 
-    assert hemi == HEMI_LEFT or hemi == HEMI_RIGHT
-
-    def get_latency(func_spikes: IPPMSpike, mini: bool):
-        return (
-            (
-                min(func_spikes.left_best_pairings, key=lambda x: x[0])
-                if hemi == HEMI_LEFT
-                else min(func_spikes.right_best_pairings, key=lambda x: x[0])
-            )
-            if mini
-            else (
-                max(func_spikes.left_best_pairings, key=lambda x: x[0])
-                if hemi == HEMI_LEFT
-                else max(func_spikes.right_best_pairings, key=lambda x: x[0])
-            )
-        )
+    points_by_transform = group_points_by_transform(ippm.graph_full.nodes)
 
     causality_violations = 0
     total_arrows = 0
-    for func, inc_edges in hierarchy.items():
-        # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in time.
+    for transform in ippm.candidate_transform_list.transforms:
+        # essentially: if max(parent_spikes_latency) > min(child_spikes_latency), there will be a backwards arrow in
+        # time.
         # arrows go from latest inc_edge spike to the earliest func spike
 
-        if func in inputs:
+        # Inputs can't cause a causality violation
+        if transform in ippm.candidate_transform_list.inputs:
             continue
 
-        if hemi == HEMI_LEFT:
-            if len(denoised_spikes[func].left_best_pairings) == 0:
-                continue
-        else:
-            if len(denoised_spikes[func].right_best_pairings) == 0:
-                continue
+        # If there aren't any points for this transform it can't cause a causality violation
+        if len(points_by_transform[transform]) == 0:
+            continue
 
-        child_latency = get_latency(denoised_spikes[func], mini=True)[0]
-        for inc_edge in inc_edges:
-            if inc_edge in inputs:
-                # input node, so parent latency is 0
-                parent_latency = 0
-                if child_latency < parent_latency:
-                    causality_violations += 1
-                total_arrows += 1
-                continue
+        earliest_latency_this_trans = _point_with_min_latency(points_by_transform[transform])
 
-            # We need to ensure the function has significant spikes
-            if hemi == HEMI_LEFT:
-                if len(denoised_spikes[inc_edge].left_best_pairings) == 0:
-                    continue
+        upstream_transforms = ippm.candidate_transform_list.immediately_upstream(transform)
+        for upstream in upstream_transforms:
+            # Get latest upstream latency
+            if upstream in ippm.candidate_transform_list.inputs:
+                latest_latency_upstream = 0
             else:
-                if len(denoised_spikes[inc_edge].right_best_pairings) == 0:
+                upstream_points = points_by_transform[upstream]
+                if len(upstream_points) == 0:
                     continue
+                latest_latency_upstream = _point_with_max_latency(upstream_points).latency
 
-            parent_latency = get_latency(denoised_spikes[inc_edge], mini=False)[0]
-            if child_latency < parent_latency:
+            # Check for causality violation
+            if earliest_latency_this_trans.latency < latest_latency_upstream:
                 causality_violations += 1
             total_arrows += 1
 
@@ -97,12 +73,15 @@ def causality_violation_score(
     )
 
 
-def transform_recall(
-    noisy_spikes: SpikeDict,
-    funcs: list[str],
-    ippm_dict: IPPMGraph,
-    hemi: str,
-) -> tuple[float, int, int]:
+def _point_with_min_latency(trans_points: list[ExpressionPoint]) -> ExpressionPoint:
+    return min(trans_points, key=lambda p: p.latency)
+
+
+def _point_with_max_latency(trans_points: list[ExpressionPoint]) -> ExpressionPoint:
+    return max(trans_points, key=lambda p: p.latency)
+
+
+def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint]) -> tuple[float, int, int]:
     """
     This is the second scoring metric: transform recall. It illustrates what proportion out of functions in the
     noisy spikes are detected as part of IPPM. E.g., 9 functions but only 8 found => 8/9 = function recall. Use this
@@ -117,44 +96,32 @@ def transform_recall(
 
     Params
     ------
-    spikes: the noisy spikes that we denoise and feed into IPPMBuilder. It must be the same dataset.
-    funcs: list of functions that are in our hierarchy. Don't include the input function, e.g., input_cochlear.
-    ippm_dict: the return value from IPPMBuilder. It contains node names as keys and Node objects as values.
-    hemi: left or right
+    ippm: The IPPM graph to evaluate.
+    noisy_points: the ExpressionPoints in the original (not denoised) dataset
 
     Returns
     -------
-    A ratio indicating how many channels were incorporated into the IPPM out of all relevant channels.
+    A ratio indicating how many transforms were incorporated into the IPPM out of all relevant transforms.
+    (ratio, num, denom)
+
+    In case the denominator is 0, the ratio will be set to 0 rather than raise an exception.
     """
-    assert hemi == HEMI_RIGHT or hemi == HEMI_LEFT
 
-    # Step 1: Calculate significance level
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
-    bonferroni_corrected_alpha = 1 - (pow((1 - alpha), (1 / (2 * 201 * 200000))))
-    funcs_present_in_data = 0
-    detected_funcs = 0
-    for func in funcs:
-        pairings = (
-            noisy_spikes[func].right_best_pairings
-            if hemi == HEMI_RIGHT
-            else noisy_spikes[func].left_best_pairings
-        )
-        for latency, spike in pairings:
-            # Step 2: Find a pairing that is significant
-            if spike <= bonferroni_corrected_alpha:
-                funcs_present_in_data += 1
+    trans_present_in_original_data = set(
+        trans
+        for trans, points in group_points_by_transform(noisy_points).items()
+        if len(points) > 0
+    )
+    trans_present_in_graph = set(
+        n.transform
+        for n in ippm_graph.graph_last_to_first.nodes
+    )
 
-                # Step 3: Found a function, look in ippm_dict.keys() for the function.
-                for node_name in ippm_dict.keys():
-                    if func in node_name:
-                        # Step 4: If found, then increment detected_funcs. Also increment funcs_pressent
-                        detected_funcs += 1
-                        break
-                break
+    n_detected_transforms = len(trans_present_in_graph)
+    n_transforms_in_data = len(trans_present_in_original_data)
 
-    # Step 3: Return [ratio, numerator, denominator] primarily because both the denominator and numerator can vary.
     return (
-        detected_funcs / funcs_present_in_data if funcs_present_in_data > 0 else 0,
-        detected_funcs,
-        funcs_present_in_data,
+        n_detected_transforms / n_transforms_in_data if n_transforms_in_data > 0 else 0,  # ratio
+        n_detected_transforms,  # num
+        n_transforms_in_data,   # denom
     )

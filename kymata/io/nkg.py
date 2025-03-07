@@ -25,7 +25,7 @@ from kymata.entities.expression import (
     HexelExpressionSet,
     SensorExpressionSet,
 )
-from kymata.math.p_values import p_to_logp
+from kymata.math.probability import p_to_logp
 from kymata.entities.sparse_data import expand_dims
 from kymata.io.file import PathType, FileType, open_or_use
 
