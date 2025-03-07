@@ -558,7 +558,6 @@ def expression_plot(
 
     color = _normalize_color_arg(color, show_only)
 
-    # TODO
     chosen_channels = _restrict_channels(expression_set, best_transforms, show_only_sensors)
 
     sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=n_latencies * n_channels * len(show_only))
@@ -880,7 +879,6 @@ def _get_transforms(expression_set: _Plottable) -> list[str]:
         raise NotImplementedError()
 
 
-
 def _get_axis_expression_points(expression_set: _Plottable, paired_axes: bool) -> tuple[tuple[str, ...], tuple[list[ExpressionPoint], ...]]:
     """
     expression_set may be an ExpressionSet from which we do model selection, or it may already be a list (or tuple of
@@ -956,7 +954,7 @@ def _get_axis_expression_points(expression_set: _Plottable, paired_axes: bool) -
             best_transforms = (expression_set,)
         else:
             raise NotImplementedError()
-    assert len(axis_names) == len(best_transforms)  # If it says axis_names could be undefined, it's possibly wrong
+    assert len(axes_names) == len(best_transforms)
     return axes_names, best_transforms
 
 
@@ -1045,13 +1043,13 @@ def __add_axis_name_annotations(axes_names: Sequence[str],
 
 
 def _restrict_channels(
-    expression_set: ExpressionSet,
+    expression_set: _Plottable,
     best_transforms: tuple[list[ExpressionPoint], ...],
     show_only_sensors: str | None,
 ):
     """Restrict to specific sensor type if requested."""
     if show_only_sensors is not None:
-        if isinstance(expression_set, SensorExpressionSet):
+        if isinstance(expression_set, SensorExpressionSet) or isinstance(expression_set, list):
             if show_only_sensors == "meg":
                 chosen_channels = get_meg_sensors()
             elif show_only_sensors == "eeg":
@@ -1061,14 +1059,14 @@ def _restrict_channels(
         else:
             raise ValueError("`show_only_sensors` only valid with sensor data.")
     else:
-        if isinstance(expression_set, SensorExpressionSet):
+        if isinstance(expression_set, SensorExpressionSet) or isinstance(expression_set, list):
             # All sensors
             chosen_channels = {
                 ep.channel
                 for best_transforms_each_ax in best_transforms
                 for ep in best_transforms_each_ax
             }
-        elif isinstance(expression_set, HexelExpressionSet):
+        elif isinstance(expression_set, HexelExpressionSet) or isinstance(expression_set, tuple):
             # All hexels
             chosen_channels = {
                 ep.channel
