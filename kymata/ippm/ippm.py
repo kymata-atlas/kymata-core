@@ -1,28 +1,18 @@
 from kymata.entities.expression import (
     ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
-from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy
+from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, \
+    AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
 
 _denoiser_classes = {
-    "maxpooler": MaxPoolingStrategy,
+    "maxpool": MaxPoolingStrategy,
+    "adaptive_maxpool": AdaptiveMaxPoolingStrategy,
     "dbscan": DBSCANStrategy,
+    "gmm": GMMStrategy,
+    "mean_shift": MeanShiftStrategy,
 }
-_default_denoiser_kwargs = {
-    "dbscan": {
-        "should_normalise": True,
-        "should_cluster_only_latency": True,
-        "should_max_pool": False,
-        "should_shuffle": True,
-        "eps": 0.005,
-        "min_samples": 1,
-        "metric": "cosine",
-        "algorithm": "auto",
-        "leaf_size": 30,
-        "n_jobs": -1,
-    }
-}
-_default_denoiser = "maxpooler"
+_default_denoiser = "maxpool"
 
 
 class IPPM:
@@ -52,12 +42,6 @@ class IPPM:
            ValueError: If any transform in the hierarchy is not found in the expression set, or if the provided denoiser
             is invalid.
        """
-
-        # Update kwargs
-        if denoiser is not None:
-            for kw, arg in _default_denoiser_kwargs[denoiser].items():
-                if kw not in kwargs:
-                    kwargs[kw] = arg
 
         # Validate CTL
         if not isinstance(candidate_transform_list, CandidateTransformList):
