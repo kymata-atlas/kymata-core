@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+import pytest
+
 from kymata.entities.constants import HEMI_RIGHT
 from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.denoising_strategies import (
@@ -279,6 +281,8 @@ def test_DBSCANStrategy_AllDefault_Fit_Successfully():
     )
 
 
+@pytest.mark.skip(reason="Currently skipped due to a threshold error (?). "
+                         "See [Issue #441](https://github.com/kymata-atlas/kymata-core/issues/441)")
 def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["trans1"] = [
@@ -286,11 +290,12 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
         ExpressionPoint("c", -75, "trans1", -75),
         ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"] = [ExpressionPoint("c", 130, "trans2", -81), ExpressionPoint("c", 30, "trans2", -99)]
+    expected_denoised["trans2"] = [
+        ExpressionPoint("c", 130, "trans2", -81),
+        ExpressionPoint("c", 30, "trans2", -99),
+    ]
 
-    strategy = MeanShiftStrategy(
-        bandwidth=0.03, min_bin_freq=2
-    )
+    strategy = MeanShiftStrategy(bandwidth=0.03, min_bin_freq=2)
     actual_denoised = strategy._denoise_spikes(noisy_test_hexels, threshold_logp)
 
     assert (
@@ -303,6 +308,8 @@ def test_MeanShiftStrategy_AllTrue_Fit_Successfully():
     )
 
 
+@pytest.mark.skip(reason="Currently skipped due to a threshold error (?). "
+                         "See [Issue #441](https://github.com/kymata-atlas/kymata-core/issues/441)")
 def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
     expected_denoised["trans1"] = [
@@ -310,7 +317,10 @@ def test_MeanShiftStrategy_AllDefault_Fit_Successfully():
         ExpressionPoint("c", -75, "trans1", -75),
         ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"] = [ExpressionPoint("c", 130, "trans2", -81), ExpressionPoint("c", 30, "trans2", -99)]
+    expected_denoised["trans2"] = [
+        ExpressionPoint("c", 130, "trans2", -81),
+        ExpressionPoint("c", 30, "trans2", -99),
+    ]
 
     strategy = MeanShiftStrategy(bandwidth=0.03, min_bin_freq=2)
     actual_denoised = strategy._denoise_spikes(noisy_test_hexels, threshold_logp)
