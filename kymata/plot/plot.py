@@ -418,8 +418,13 @@ def hide_axes(axes: pyplot.Axes):
     axes.axis("off")
 
 
+_Plottable = (ExpressionSet
+              | list[ExpressionPoint]
+              | tuple[list[ExpressionPoint], list[ExpressionPoint]])
+
+
 def expression_plot(
-    expression_set: ExpressionSet,
+    expression_set: _Plottable,
     show_only: Optional[str | Sequence[str]] = None,
     paired_axes: bool = True,
     # Statistical kwargs
@@ -517,23 +522,32 @@ def expression_plot(
         and can handle paired axes for left/right hemisphere data.
     """
 
+    # Get the vital statistics out of the myriad argument types which could have been supplied
+    transforms: list[str] = _get_transforms(expression_set)
+    n_channels: int = _count_channels(expression_set)
+    n_latencies: int = _count_latencies(expression_set)
+    # This refers not to the literal type of the expression_set, but to a proxy which represents the kind of data
+    # being supplied
+    if isinstance(expression_set, ExpressionSet):
+        expression_set_type = type(expression_set)
+    elif isinstance(expression_set, tuple):
+        expression_set_type = HexelExpressionSet
+    elif isinstance(expression_set, list):
+        expression_set_type = SensorExpressionSet
+    else:
+        raise NotImplementedError()
+    # Extract ExpressionPoints from expression_set
+    axis_names: tuple[str, ...]
+    best_transforms: tuple[list[ExpressionPoint], ...]
+    axes_names, best_transforms = _get_axis_expression_points(expression_set, paired_axes)
+
     # Default arg values
     if show_only is None:
         # Plot all
-        show_only = expression_set.transforms
+        show_only = transforms
     elif isinstance(show_only, str):
         show_only = [show_only]
-    not_shown = [f for f in expression_set.transforms if f not in show_only]
-
-    if color is None:
-        color = dict()
-    elif isinstance(color, str):
-        # Single string specified: use all that colour
-        color = {f: color for f in show_only}
-    elif isinstance(color, list):
-        # List specified, then pair up in order
-        assert len(color) == len(show_only)
-        color = {f: c for f, c in zip(show_only, color)}
+    not_shown = [f for f in transforms if f not in show_only]
 
     if minimap_latency_range is None:
         minimap_latency_range = (None, None)
@@ -542,46 +556,12 @@ def expression_plot(
     if minimap_kwargs is None:
         minimap_kwargs = dict()
 
-    # Default colours
-    cycol = cycle(color_palette("Set1"))
-    for transform in show_only:
-        if transform not in color:
-            color[transform] = to_hex(next(cycol))
+    color = _normalize_color_arg(color, show_only)
 
-    best_transforms = expression_set.best_transforms()
-
-    if paired_axes:
-        if isinstance(expression_set, HexelExpressionSet):
-            axes_names = ("left hemisphere", "right hemisphere")
-            assert isinstance(best_transforms, tuple)
-        elif isinstance(expression_set, SensorExpressionSet):
-            axes_names = ("left", "right")
-            # Same transforms passed, filtering done at channel level
-            best_transforms = (best_transforms, best_transforms)
-        else:
-            raise NotImplementedError()
-    else:
-        if isinstance(expression_set, HexelExpressionSet):
-            raise NotImplementedError(
-                "HexelExpressionSets have preset hemisphere assignments"
-            )
-        elif isinstance(expression_set, SensorExpressionSet):
-            axes_names = ("",)
-            # Wrap into list
-            best_transforms = (best_transforms,)
-        else:
-            raise NotImplementedError()
-
-    if isinstance(expression_set, HexelExpressionSet):
-        n_channels = len(expression_set.hexels_left) + len(expression_set.hexels_right)
-    elif isinstance(expression_set, SensorExpressionSet):
-        n_channels = len(expression_set.sensors)
-    else:
-        raise NotImplementedError()
-
+    # TODO
     chosen_channels = _restrict_channels(expression_set, best_transforms, show_only_sensors)
 
-    sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=len(expression_set.latencies) * n_channels * len(show_only))
+    sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=n_latencies * n_channels * len(show_only))
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
 
     def _custom_label(transform_name):
@@ -593,7 +573,7 @@ def expression_plot(
     mosaic = _minimap_mosaic(
         paired_axes=paired_axes,
         minimap_option=minimap,
-        expression_set_type=type(expression_set),
+        expression_set_type=expression_set_type,
         fig_size=fig_size,
     )
 
@@ -629,7 +609,7 @@ def expression_plot(
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
-        if paired_axes and isinstance(expression_set, SensorExpressionSet):
+        if paired_axes and expression_set_type == SensorExpressionSet:
             assign_left_right_channels = sensor_left_right_assignment
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = (
@@ -752,6 +732,8 @@ def expression_plot(
 
     # Plot minimap
     if minimap is not None:
+        if not isinstance(expression_set, ExpressionSet):
+            raise NotImplementedError("Minimap not yet available if not supplying an ExpressionSet")
         if isinstance(expression_set, SensorExpressionSet):
             _plot_minimap_sensor(
                 expression_set,
@@ -848,6 +830,153 @@ def expression_plot(
             raise FileExistsError(save_to)
 
     return fig
+
+
+def _count_channels(expression_set: _Plottable) -> int:
+    if isinstance(expression_set, HexelExpressionSet):
+        return len(expression_set.hexels_left) + len(expression_set.hexels_right)
+    elif isinstance(expression_set, SensorExpressionSet):
+        return len(expression_set.sensors)
+    elif isinstance(expression_set, list):
+        expression_set: list[ExpressionPoint]
+        return len(set(ep.channel for ep in expression_set))
+    elif isinstance(expression_set, tuple):
+        # Assume channels in both sides are distinct
+        assert len(expression_set) == 2
+        left_channels = set(ep.channel for ep in expression_set[0])
+        right_channels = set(ep.channel for ep in expression_set[1])
+        return len(left_channels) + len(right_channels)
+    else:
+        raise NotImplementedError()
+
+
+def _count_latencies(expression_set: _Plottable) -> int:
+    if isinstance(expression_set, ExpressionSet):
+        return len(expression_set.latencies)
+    elif isinstance(expression_set, list):
+        expression_set: list[ExpressionPoint]
+        return len(set(ep.latency for ep in expression_set))
+    elif isinstance(expression_set, tuple):
+        latencies = set()
+        for points in expression_set:
+            latencies |= set(ep.latency for ep in points)
+        return len(latencies)
+    else:
+        raise NotImplementedError()
+
+
+def _get_transforms(expression_set: _Plottable) -> list[str]:
+    if isinstance(expression_set, ExpressionSet):
+        return expression_set.transforms
+    elif isinstance(expression_set, list):
+        expression_set: list[ExpressionPoint]
+        return sorted(set(ep.transform for ep in expression_set))
+    elif isinstance(expression_set, tuple):
+        transforms = set()
+        for points in expression_set:
+            transforms |= set(ep.transform for ep in points)
+        return sorted(transforms)
+    else:
+        raise NotImplementedError()
+
+
+
+def _get_axis_expression_points(expression_set: _Plottable, paired_axes: bool) -> tuple[tuple[str, ...], tuple[list[ExpressionPoint], ...]]:
+    """
+    expression_set may be an ExpressionSet from which we do model selection, or it may already be a list (or tuple of
+    lists) of ExpressionPoints, possibly after denoising.
+
+    If we're using paired_axes, we assign the points to the appropriate axes. If only one set is supplied (either
+    because it's a SensorExpressionSet or because it's a single list of ExpressionPoints), we duplicate it to both axes,
+    and expect to do downstream filtering of the channels in each axis.
+
+    Args:
+        expression_set:
+        paired_axes:
+
+    Returns:
+        tuple[str] | tuple[str, str]: The name(s) of the axes
+        tuple[list[ExpressionPoint]] | tuple[list[ExpressionPoint], list[ExpressionPoint]]: The ExpressionPoints for
+            the axes
+
+        Both are guaranteed to be the same length.
+    """
+
+    # Validate cases where ExpressionSet not supplied
+    if isinstance(expression_set, list):
+        if len(expression_set) == 0:
+            raise ValueError("Empty list supplied")
+        if not isinstance(expression_set[0], ExpressionPoint):
+            raise ValueError("Supply expression points!")
+    if isinstance(expression_set, tuple):
+        if len(expression_set) != 2:
+            raise ValueError("If supplying ExpressionPoints, either supply a list or a pair of lists")
+        for eps in expression_set:
+            if len(eps) > 0:
+                if not isinstance(eps[0], ExpressionPoint):
+                    raise ValueError("Supply ExpressionSet or list(s) of ExpressionPoints")
+
+    axis_names: tuple[str, ...]
+    best_transforms: tuple[list[ExpressionPoint], ...]
+    if paired_axes:
+        if isinstance(expression_set, HexelExpressionSet):
+            # HexelExpressionSet: best transforms for left and right separate
+            axes_names = ("left hemisphere", "right hemisphere")
+            best_transforms = expression_set.best_transforms()
+        elif isinstance(expression_set, SensorExpressionSet):
+            # SensorExpressionSet: Same transforms passed, filtering done at channel level
+            axes_names = ("left", "right")
+            best_transforms = (expression_set.best_transforms(), expression_set.best_transforms())
+        elif isinstance(expression_set, tuple):
+            # Supplied with lists of ExpressionPoints, probably after denoising
+            # Tuple supplied so should be left/right hemispheres
+            assert len(expression_set) == 2
+            axes_names = ("left hemisphere", "right hemisphere")
+            best_transforms = expression_set
+        elif isinstance(expression_set, list):
+            # Supplied with lists of ExpressionPoints, probably after denoising
+            # List supplied so probably sensors
+            # Same transforms passed, filtering done at channel level
+            axes_names = ("left", "right")
+            best_transforms = (expression_set, expression_set)
+        else:
+            raise NotImplementedError()
+    else:
+        if isinstance(expression_set, HexelExpressionSet):
+            raise NotImplementedError("HexelExpressionSets have preset hemisphere assignments")
+        elif isinstance(expression_set, tuple):
+            raise NotImplementedError("Tuple of expressions supplied, need to assign to left and right hemispheres")
+        elif isinstance(expression_set, SensorExpressionSet):
+            axes_names = ("",)
+            # Wrap into tuple
+            best_transforms = (expression_set.best_transforms(),)
+        elif isinstance(expression_set, list):
+            # Wrap into tuple
+            axes_names = ("",)
+            best_transforms = (expression_set,)
+        else:
+            raise NotImplementedError()
+    assert len(axis_names) == len(best_transforms)  # If it says axis_names could be undefined, it's possibly wrong
+    return axes_names, best_transforms
+
+
+def _normalize_color_arg(color, show_only) -> dict[str, str]:
+    """Normalises specified colour argument into a dictionary mapping transforms to colors."""
+    if color is None:
+        color = dict()
+    elif isinstance(color, str):
+        # Single string specified: use all that colour
+        color = {f: color for f in show_only}
+    elif isinstance(color, list):
+        # List specified, then pair up in order
+        assert len(color) == len(show_only)
+        color = {f: c for f, c in zip(show_only, color)}
+    # Default colours
+    cycol = cycle(color_palette("Set1"))
+    for transform in show_only:
+        if transform not in color:
+            color[transform] = to_hex(next(cycol))
+    return color
 
 
 def __reposition_axes_for_legends(fig, legends):
