@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'standard' # 'standard' or 'ANN' or 'simple'
+    transform_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -129,34 +129,34 @@ def main():
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_all_vs_feats_source_v3.png")
 
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron')
+        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
         word_name = expression_data_salmonn_word.transforms
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_phone')
+        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
         phone_name = expression_data_salmonn_phone.transforms
         expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
         tvl_name = expression_data_tvl.transforms
         IL_name = [i for i in tvl_name if i != 'STL']
         STL_name = ['STL']
-        # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=True,
-        #                         color=constant_color_dict(word_name, color= 'red')
-        #                             # | constant_color_dict(tvl_name, color= 'yellow')
-        #                             | constant_color_dict(IL_name, color= 'purple')
-        #                             | constant_color_dict(STL_name, color= 'pink')
-        #                             | constant_color_dict(phone_name, color='green'),
-        #                         legend_display=legend_display_dict(word_name, 'SALMONN word features')
-        #                             # | legend_display_dict(tvl_name, 'TVL transforms')
-        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
-        #                             | legend_display_dict(STL_name, 'Short Term Loudness transform')
-        #                             | legend_display_dict(phone_name, 'SALMONN phone features'))
+        fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone, paired_axes=True, minimap=False, show_legend=True, show_only=word_name + phone_name,
+                                color=constant_color_dict(word_name, color= 'red')
+                                    # | constant_color_dict(tvl_name, color= 'yellow')
+                                    | constant_color_dict(IL_name, color= 'purple')
+                                    | constant_color_dict(STL_name, color= 'pink')
+                                    | constant_color_dict(phone_name, color='green'),
+                                legend_display=legend_display_dict(word_name, 'SALMONN word features')
+                                    # | legend_display_dict(tvl_name, 'TVL transforms')
+                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
+                                    | legend_display_dict(phone_name, 'SALMONN phone features'))
         # fig = expression_plot(expression_data_tvl[40:55], paired_axes=True, minimap=False, show_legend=True)
-        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True,
-                                color=constant_color_dict(IL_name, color= 'purple')
-                                    | constant_color_dict(STL_name, color= 'pink'),
-                                legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
-                                    | legend_display_dict(STL_name, 'Short Term Loudness transform'))
+        # fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=False, show_legend=True,
+        #                         color=constant_color_dict(IL_name, color= 'purple')
+        #                             | constant_color_dict(STL_name, color= 'pink'),
+        #                         legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+        #                             | legend_display_dict(STL_name, 'Short Term Loudness transform'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/tvl_source_der_6.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_interp.png")
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75_test.png")
 
 
@@ -251,11 +251,11 @@ def main():
     elif transform_family_type == 'standard':
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
-        expression_data  = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/en_all/all_tvl_gridsearch.nkg')
+        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/11_transforms_gridsearch.nkg')
 
         # import ipdb;ipdb.set_trace()
 
-        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=True, show_only_sensors='gradio',
+        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=True,
                               color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
                               | constant_color_dict(['IL'], 'red')
                               | constant_color_dict(['STL'], 'pink'))
@@ -263,7 +263,7 @@ def main():
                             #   | constant_color_dict(['IL'], '#4320aa')
                             #   | constant_color_dict(['STL'], '#ca8bb5'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/Kymata_En_gradio.png")
+        fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/new_trigger.png")
 
     elif transform_family_type == 'ANN':
 

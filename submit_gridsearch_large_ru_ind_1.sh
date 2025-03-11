@@ -7,8 +7,8 @@
 
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/ccn_paper/ru/meg15_0045/log/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/ccn_paper/ru/meg15_0045/log/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/ccn_paper/ru/meg15_0058/log/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/ccn_paper/ru/meg15_0058/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=200G
@@ -45,7 +45,7 @@ apptainer exec \
         --n-derangements 5 \
         --asr-option 'all' \
         --mfa True \
-        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0045/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0045/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
-        --single-participant-override meg15_0045 \
+        --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0058/plot/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0058/expression_set/${layer_num[$(($SLURM_ARRAY_TASK_ID))]}' \
+        --single-participant-override meg15_0058 \
   "
