@@ -65,41 +65,41 @@ def main():
             'Articulatory Features': (0, 0.6, 0.4), 
             'Phoneme Identities': (0, 1, 0)}
 
-        # morpheme_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme/sensor/is_root_0_gridsearch.nkg')
+        # morpheme_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/morpheme/sensor/is_root_0_gridsearch.nkg')
         # morpheme_manual_name = morpheme_manual.transforms
-        # morpheme_salmonn = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_morpheme/expression_set')
+        # morpheme_salmonn = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_morpheme/expression_set')
         # morpheme_salmonn_name = morpheme_salmonn.transforms
 
         # fig = expression_plot(morpheme_manual + morpheme_salmonn, paired_axes=True, minimap=True, show_legend=True,
         #                       legend_display=legend_display_dict(morpheme_salmonn_name, 'Salmonn morpheme features')
         #                         | legend_display_dict(morpheme_manual_name, 'Manual morpheme features'))
         
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_manual_morpheme_sensor.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_vs_manual_morpheme_sensor.png")
 
-        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron')
-        # expression_data_salmonn_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
-        # expression_data_salmonn_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
-        # expression_data_salmonn_word += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
-        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_whisper_v2')
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/word_source')
+        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
+        # expression_data_salmonn_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/word_source')
+        # expression_data_salmonn_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
+        # expression_data_salmonn_word += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_whisper_v2')
         salmonn_word_name = expression_data_salmonn_word.transforms
-        # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_phone')
-        # expression_data_salmonn_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
-        # expression_data_salmonn_phone = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
+        # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/phone_source')
+        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
+        # expression_data_salmonn_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/phone_source')
+        # expression_data_salmonn_phone = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
         salmonn_phone_name = expression_data_salmonn_phone.transforms
-        expression_data_salmonn_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source')
-        salmonn_morpheme_name = expression_data_salmonn_morpheme.transforms
+        # expression_data_salmonn_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_source')
+        # salmonn_morpheme_name = expression_data_salmonn_morpheme.transforms
 
         # import ipdb;ipdb.set_trace()
 
-        expression_data_word_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
-        expression_data_word_manual += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
-        expression_data_phone_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
-        expression_data_morpheme_manual = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/morpheme')
+        expression_data_word_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/word/expression_set/word_22_gridsearch.nkg')
+        expression_data_word_manual += load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/syntax/expression_set/syntax_4_gridsearch.nkg')
+        expression_data_phone_manual = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/source/phonetics/expression_set/phone_56_gridsearch.nkg')
+        # expression_data_morpheme_manual = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/feats/morpheme')
         manual_word_name = expression_data_word_manual.transforms
         manual_phone_name = expression_data_phone_manual.transforms
-        manual_morpheme_name = expression_data_morpheme_manual.transforms
+        # manual_morpheme_name = expression_data_morpheme_manual.transforms
 
         # import ipdb;ipdb.set_trace()
 
@@ -109,6 +109,9 @@ def main():
         IL_name = ['IL']
         STL_name = ['STL']
         IL_channel_name = [i for i in tvl_name if i != 'STL' and i != 'IL']
+
+        expression_data_whisper_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_whisper_v2')
+        whisper_word_name = expression_data_whisper_word.transforms
 
         # art_npy = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/art_sig.npy')
         # art_name = [f'layer{i[0]}_{i[1]}' for i in art_npy.tolist()]
@@ -124,36 +127,32 @@ def main():
         # syn_name = [f'layer{i[0]}_{i[1]}' for i in syn_npy.tolist()]
 
         # save_expression_set(expression_data_tvl +  expression_data_salmonn_word + expression_data_salmonn_phone
-        #                       + expression_data_word_manual + expression_data_phone_manual, '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/all_feats.nkg')
+        #                       + expression_data_word_manual + expression_data_phone_manual, '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_feats.nkg')
 
         # fig = expression_plot(expression_data_tvl +  expression_data_salmonn_word + expression_data_salmonn_phone
         #                       + expression_data_word_manual + expression_data_phone_manual,
         #                       paired_axes=True, minimap_view='ventral' , minimap='large', show_legend=False, show_only=syn_name, ylim=-125,
         #                     color=constant_color_dict(syn_name, color= colours['Syntactic Features']),)
 
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/all_feats_syn_ventral.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_feats_syn_ventral.png")
 
         # fig = expression_plot(expression_data_salmonn_morpheme, paired_axes=True, minimap=True, show_legend=True)
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/morpheme_source/salmonn_morpheme.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_source/salmonn_morpheme.png")
 
-        fig = expression_plot(expression_data_tvl +  expression_data_word_manual + expression_data_phone_manual + expression_data_morpheme_manual + 
-                              expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_salmonn_morpheme,
-                              paired_axes=True, minimap='standard', show_legend=True, show_only=salmonn_word_name+salmonn_phone_name+salmonn_morpheme_name, ylim=-100,
-                                color=constant_color_dict(salmonn_word_name, color= 'red')
-                                    | constant_color_dict(IL_channel_name, color= '#941de0')
-                                    | constant_color_dict(IL_name, color= '#4320aa')
-                                    | constant_color_dict(STL_name, color= '#ca8bb5')
-                                    | constant_color_dict(salmonn_phone_name, color='green')
-                                    | constant_color_dict(salmonn_morpheme_name, color='blue'),
-                                legend_display=legend_display_dict(salmonn_word_name, 'Salmonn word features')
-                                    | legend_display_dict(IL_channel_name, 'Tonotopic Instantaneous Loudness transforms')
-                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transform')
-                                    | legend_display_dict(STL_name, 'Short-Term Loudness transform')
-                                    | legend_display_dict(salmonn_phone_name, 'Salmonn phone features')
-                                    | legend_display_dict(salmonn_morpheme_name, 'Salmonn morpheme features'))
-
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_manual_show_salmonn_incl_morph.png")
-        
+        fig = expression_plot(expression_data_tvl + expression_data_word_manual + expression_data_phone_manual,
+                # expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_whisper_word,
+                paired_axes=True, minimap='large', show_legend=True, show_only=manual_phone_name+manual_word_name, ylim=-125,
+                color=constant_color_dict(manual_word_name, color='red')
+                    | gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'purple', stop_color="blue")
+                    | constant_color_dict(IL_name, color='#4320aa')
+                    | constant_color_dict(STL_name, color='#ca8bb5')
+                    | constant_color_dict(manual_phone_name, color='green'),)
+                # legend_display=legend_display_dict(salmonn_word_name, 'Salmonn word features')
+                #     | legend_display_dict(IL_channel_name, 'Tonotopic Instantaneous Loudness transforms')
+                #     | legend_display_dict(IL_name, 'Instantaneous Loudness transform')
+                #     | legend_display_dict(STL_name, 'Short-Term Loudness transform')
+                #     | legend_display_dict(salmonn_phone_name, 'Salmonn phone features'))
+        fig.savefig(f"/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/figure_2_man_only.png")
 
         # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl + expression_data_salmonn_phone + expression_data_word_manual + expression_data_phone_manual, paired_axes=True, minimap=True, show_legend=True, show_only=manual_word_name+manual_phone_name, ylim=-100,
         # # fig = expression_plot(expression_data_salmonn_word + expression_data_tvl, paired_axes=True, minimap=True, show_legend=True,
@@ -179,21 +178,49 @@ def main():
         #                         #     | constant_color_dict(id_name, color= colours['Phoneme Identities']),
         #                         # legend_display=legend_display_dict(art_name, 'Articulatory Features')
         #                         #     | legend_display_dict(id_name, 'Phoneme Identities'))
-        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_vs_manual_part_source_show_manual.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_vs_manual_part_source_show_manual.png")
 
 
     elif transform_family_type == 'standard':
 
-        expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
+        # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
 
+        # # import ipdb;ipdb.set_trace()
+
+        # fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True, 
+        #                       color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
+        #                       | constant_color_dict(['IL'], 'red')
+        #                       | constant_color_dict(['STL'], 'pink'))
+
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_word_source.png")
+
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/word_source')
+        expression_data_salmonn_word_13b = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/single_neuron_13b')
+        word_name_13b = expression_data_salmonn_word_13b.transforms
+        expression_data_salmonn_word_7b = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/single_neuron')
+        word_name_7b = expression_data_salmonn_word_7b.transforms
+        # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/phone_source')
+        expression_data_salmonn_phone_13b = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/single_neuron_13b_phone')
+        phone_name_13b = expression_data_salmonn_phone_13b.transforms
+        expression_data_salmonn_phone_7b = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/single_neuron_phone')
+        phone_name_7b = expression_data_salmonn_phone_7b.transforms
+        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
+        tvl_name = expression_data_tvl.transforms
+        IL_name = [i for i in tvl_name if i != 'STL']
+        STL_name = ['STL']
         # import ipdb;ipdb.set_trace()
-
-        fig = expression_plot(expression_data, paired_axes=True, minimap=False, show_legend=True, 
-                              color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
-                              | constant_color_dict(['IL'], 'red')
-                              | constant_color_dict(['STL'], 'pink'))
-
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/single_neuron_word_source.png")
+        fig = expression_plot(expression_data_salmonn_word_13b + expression_data_tvl + expression_data_salmonn_phone_13b + expression_data_salmonn_word_7b + expression_data_salmonn_phone_7b, paired_axes=True, minimap='large', show_legend=False, show_only=word_name_7b + phone_name_7b,
+                                color=constant_color_dict(word_name_7b, color= 'red')
+                                    # | constant_color_dict(tvl_name, color= 'yellow')
+                                    | constant_color_dict(IL_name, color= 'purple')
+                                    | constant_color_dict(STL_name, color= 'pink')
+                                    | constant_color_dict(phone_name_7b, color='green'),
+                                legend_display=legend_display_dict(word_name_13b, 'SALMONN word features')
+                                    # | legend_display_dict(tvl_name, 'TVL transforms')
+                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
+                                    | legend_display_dict(phone_name_13b, 'SALMONN phone features'))
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_first_speech_paper/salmonn_7b_vs_13b_show_7b.png")
 
     elif transform_family_type == 'ANN':
 

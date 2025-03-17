@@ -800,9 +800,11 @@ def expression_plot(
     # Format one-off axis qualities
     top_ax: pyplot.Axes
     bottom_ax: pyplot.Axes
+    minimap_bottom_ax: pyplot.Axes
     if paired_axes:
         top_ax = axes[_AxName.top]
         bottom_ax = axes[_AxName.bottom]
+        minimap_bottom_ax = axes[_AxName.minimap_bottom]
         top_ax.set_xticklabels([])
         bottom_ax.invert_yaxis()
     else:
@@ -841,28 +843,28 @@ def expression_plot(
                 if custom_label not in custom_labels_not_shown:
                     custom_labels_not_shown.append(custom_label)
                     dummy_patches.append(Patch(color=None, label=custom_label))
-            bottom_legend = bottom_ax.legend(
-                labels=custom_labels_not_shown,
-                fontsize="x-small",
-                alignment="left",
-                title="Non-plotted transforms",
-                ncol=legend_n_col,
-                bbox_to_anchor=(1.02, -0.02),
-                loc="lower left",
-                handles=dummy_patches,
-            )
-            for lh in bottom_legend.legend_handles:
-                lh.set_alpha(0)
-            legends.append(bottom_legend)
-        top_legend = top_ax.legend(
+            # bottom_legend = bottom_ax.legend(
+            #     labels=custom_labels_not_shown,
+            #     fontsize="x-small",
+            #     alignment="left",
+            #     title="Non-plotted transforms",
+            #     ncol=legend_n_col,
+            #     bbox_to_anchor=(1.02, -0.02),
+            #     loc="lower left",
+            #     handles=dummy_patches,
+            # )
+            # for lh in bottom_legend.legend_handles:
+            #     lh.set_alpha(0)
+            # legends.append(bottom_legend)
+        top_legend = minimap_bottom_ax.legend(
             handles=custom_handles,
             labels=custom_labels,
             fontsize="x-small",
             alignment="left",
             title="Plotted transforms",
             ncol=legend_n_col,
-            loc="upper left",
-            bbox_to_anchor=(1.02, 1.02),
+            loc="upper right",
+            bbox_to_anchor=(1.5, 1.02),
         )
         legends.append(top_legend)
 

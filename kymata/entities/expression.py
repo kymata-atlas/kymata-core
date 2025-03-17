@@ -332,7 +332,7 @@ class ExpressionSet(ABC):
         Raises IndexError if the start and stop indices are invalid.
         """
         if start >= stop:
-            raise IndexError(f"start must be less than stop ({start=}, {stop=})")
+            raise IndexError(f"start must be less than stop ({start}, {stop})")
         if start > self.latencies.max() or stop < self.latencies.min():
             raise IndexError(f"Crop range lies entirely outside expression data"
                              f" ({start}–{stop} is outside {self.latencies.min()}–{self.latencies.max()})")
@@ -340,7 +340,7 @@ class ExpressionSet(ABC):
         selected_latencies = [lat for lat in self.latencies if start <= lat <= stop]
 
         if len(selected_latencies) == 0:
-            raise IndexError(f"No latencies fell between selected range ({start=}, {stop=})")
+            raise IndexError(f"No latencies fell between selected range ({start}, {stop})")
 
     @abstractmethod
     def crop(self, latency_start: float | None, latency_stop: float | None) -> Self:
