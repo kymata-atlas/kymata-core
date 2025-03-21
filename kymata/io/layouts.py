@@ -57,7 +57,7 @@ def _get_meg_sensor_xy_from_lout(filepath) -> tuple[_SensorPositionDict, _Boundi
         box_line = layout_file.readline()
         box_match = _lout_box_re.match(box_line)
         if box_match is None:
-            raise ValueError(f".lout file did not contain valid box definition")
+            raise ValueError(".lout file did not contain valid box definition")
         box = (
             float(box_match.group("xmin")),
             float(box_match.group("xmax")),
