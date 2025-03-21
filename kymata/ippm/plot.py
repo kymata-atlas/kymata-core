@@ -279,14 +279,21 @@ def plot_ippm(
     if title is not None:
         plt.title(title)
 
+    # Y-axis
     y_padding = 0.5
     ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
     ax.set_yticklabels([])
     ax.yaxis.set_visible(False)
+
+    # X-axis
+    xticks = ax.get_xticks()
+    plt.xticks(xticks,
+               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
+                for tick in xticks])
+    ax.set_xlabel("Latency (ms)")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel("Latency (s)")
 
     fig.set_figheight(figheight)
     fig.set_figwidth(figwidth)
