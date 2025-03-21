@@ -270,7 +270,8 @@ def plot_ippm(
     if title is not None:
         plt.title(title)
 
-    ax.set_ylim(min(node_y) - 0.1, max(node_y) + 0.1)
+    y_padding = 0.5
+    ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
     ax.set_yticklabels([])
     ax.yaxis.set_visible(False)
     ax.spines["top"].set_visible(False)
