@@ -197,7 +197,7 @@ def save_expression_set(
             if expression_set.sensor_layout is not None:
                 layout_txt += f"MEG:\t{expression_set.sensor_layout.meg!s}\n"
                 layout_txt += f"EEG:\t{expression_set.sensor_layout.eeg!s}\n"
-        zf.writestr(f"/layout.txt", layout_txt)
+        zf.writestr("/layout.txt", layout_txt)
 
         for block_name in expression_set._block_names:
             zf.writestr(
