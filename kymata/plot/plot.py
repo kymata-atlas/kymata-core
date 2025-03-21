@@ -622,6 +622,8 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
+            if expression_set.sensor_layout is None:
+                raise ValueError("Cannot assign sensors to left/right without a sensor layout")
             assign_left_right_channels = _get_sensor_left_right_assignment(expression_set.sensor_layout)
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = (

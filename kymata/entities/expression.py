@@ -677,7 +677,7 @@ class SensorExpressionSet(ExpressionSet):
         # log p-values
         # In general, we will combine flipped and non-flipped versions
         data: _InputDataArray | Sequence[_InputDataArray],
-        sensor_layout: Optional[SensorLayout],
+        sensor_layout: Optional[SensorLayout] = None,
     ):
         """
         Initialize the SensorExpressionSet with transform names, sensor metadata, latency information, and log p-value data.
