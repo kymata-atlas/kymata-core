@@ -38,6 +38,7 @@ class _PlottableNode(NamedTuple):
     label: str
     color: str
     size: float
+    is_input: bool
     is_terminal: bool
 
 
@@ -137,6 +138,7 @@ class _PlottableIPPMGraph:
                     x=node.latency,
                     y=y_ordinates[node.transform],
                     color=colors[node.transform],
+                    is_input=node.transform in ippm_graph.inputs,
                     is_terminal=node.transform in ippm_graph.terminals,
                     size=-1*node.logp_value if scale_nodes else 150,
                 )
@@ -262,10 +264,17 @@ def plot_ippm(
     future_width = 0.02  # s
     for node in plottable_graph.graph.nodes:
         if node.is_terminal:
-            step_1 = max(node_x) + future_width / 2
-            step_2 = max(node_x) + future_width
-            ax.plot([node.x, step_1], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
-            ax.plot([step_1, step_2], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
+            # Plot a solid line, then a dotted section for "trailing off"
+            if node.is_input:
+                # Input nodes with nothing dowstream trail off quickly
+                solid_line_to = 0.02  # s
+            else:
+                # Non-input nodes with nothing downstream trail off at the end of the graph
+                solid_line_to = max(node_x)
+            solid_extension = solid_line_to + future_width / 2
+            dotted_extension = solid_extension + future_width / 2
+            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
+            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
 
     if title is not None:
         plt.title(title)
