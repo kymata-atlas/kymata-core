@@ -687,24 +687,27 @@ class SensorExpressionSet(ExpressionSet):
             sensors (Sequence[Sensor]): Metadata about the sensors used in the study.
             latencies (Sequence[Latency]): Latency information corresponding to the data.
             data (_InputDataArray | Sequence[_InputDataArray]): Log p-values representing the data.
-            sensor_layout (Optional[SensorLayout]): Layout of the EMEG sensors.
+            sensor_layout (Optional[SensorLayout]): Layout of the EMEG sensors. None indicates that the layout is not
+                specified. If not None, then expect at least one of MEG and EEG sensors to be specified
         """
 
         # Validate sensor layout against sensors
         if sensor_layout is not None:
+            if sensor_layout.meg is None and sensor_layout.eeg is None:
+                raise ValueError("Specify at least one out of MEG and EEG sensors, or supply None for sensor_layout.")
             layout_sensors = []
             if sensor_layout.meg is not None:
                 layout_sensors.extend(get_meg_sensors(sensor_layout.meg))
             if sensor_layout.eeg is not None:
                 layout_sensors.extend(get_eeg_sensors(sensor_layout.eeg))
             if len(sensor_layout) != len(layout_sensors):
-                raise ValueError(f"Sensor layout size mismatch."
-                                 f" {len(layout_sensors)} sensors in layout and {len(sensors)} sensors supplied")
+                warn(f"Sensor layout size mismatch."
+                     f" {len(layout_sensors)} sensors in layout and {len(sensors)} sensors supplied")
             sensors_not_in_layout = sorted(set(sensors) - set(layout_sensors))
             sensors_not_supplied = sorted(set(layout_sensors) - set(sensors))
             if len(sensors_not_in_layout) > 0:
                 # Sensors without a layout position indicates an error
-                raise ValueError(f"{len(sensors_not_in_layout)} sensors were not provided in the layout: {sensors_not_in_layout}")
+                warn(f"{len(sensors_not_in_layout)} sensors were not provided in the layout: {sensors_not_in_layout}")
             if len(sensors_not_supplied) > 0:
                 # Sensors which weren't supplied could be the result of a subset of channels being recorded
                 # this is valid but unusual so we warn

@@ -1,6 +1,5 @@
 from enum import StrEnum
 
-from IPython.core.inputtransformer2 import make_tokens_by_line
 from packaging import version
 from io import TextIOWrapper
 from pathlib import Path
@@ -12,8 +11,7 @@ from numpy import frombuffer
 from numpy.typing import NDArray
 from sparse import COO
 
-from kymata.entities.datatypes import (
-    HexelDType, LatencyDType, TransformNameDType, SensorDType)
+from kymata.entities.datatypes import HexelDType, LatencyDType, TransformNameDType, SensorDType
 from kymata.entities.expression import (
     ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, HexelExpressionSet, SensorExpressionSet)
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
@@ -127,20 +125,25 @@ def load_expression_set(from_path_or_file: PathType | FileType | list[PathType])
     elif type_identifier == _ExpressionSetTypeIdentifier.sensor:
         meg_layout = data_dict[_Keys.meg_layout]
         eeg_layout = data_dict[_Keys.eeg_layout]
-        # Warn user if either layout is missing
-        if meg_layout is None:
-            warn("No MEG sensor layout was specified in the NKG file.")
-        if eeg_layout is None:
-            warn("No EEG sensor layout was specified in the NKG file.")
+        if meg_layout is None and eeg_layout is None:
+            # If both layouts are missing, no layouts were specified and this is fine
+            sensor_layout = None
+        else:
+            # If either one was specified, we warn about the missing one
+            if meg_layout is None:
+                warn("No MEG sensor layout was specified in the NKG file.")
+            if eeg_layout is None:
+                warn("No EEG sensor layout was specified in the NKG file.")
+            sensor_layout = SensorLayout(
+                meg=meg_layout,
+                eeg=eeg_layout,
+            )
         return SensorExpressionSet(
             transforms=data_dict[_Keys.transforms],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels][BLOCK_SCALP]],
             latencies=data_dict[_Keys.latencies],
             data=data_dict[_Keys.data][BLOCK_SCALP],
-            sensor_layout=SensorLayout(
-                meg=meg_layout,
-                eeg=eeg_layout,
-            ),
+            sensor_layout=sensor_layout,
         )
 
 
@@ -189,8 +192,11 @@ def save_expression_set(
         # Write layout for SensorExpressionSets
         layout_txt = ""
         if isinstance(expression_set, SensorExpressionSet):
-            layout_txt += f"MEG:\t{expression_set.sensor_layout.meg!s}\n"
-            layout_txt += f"EEG:\t{expression_set.sensor_layout.eeg!s}\n"
+            # It is valid for no sensor layout to be specified, in which case we write nothing.
+            # If the sensor layout is specified, we will write something for both sensor types
+            if expression_set.sensor_layout is not None:
+                layout_txt += f"MEG:\t{expression_set.sensor_layout.meg!s}\n"
+                layout_txt += f"EEG:\t{expression_set.sensor_layout.eeg!s}\n"
         zf.writestr(f"/layout.txt", layout_txt)
 
         for block_name in expression_set._block_names:
@@ -267,6 +273,8 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.data: data,
             # Keys not present in v0.1
             _Keys.expressionset_type: _ExpressionSetTypeIdentifier.hexel,
+            _Keys.meg_layout: None,
+            _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.2"):
         from kymata.io.nkg_compatibility import _load_data_0_2
@@ -306,6 +314,9 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.transforms: dict_0_2["functions"],
             _Keys.latencies: dict_0_2["latencies"],
             _Keys.data: data,
+            # Keys not present in v0.2
+            _Keys.meg_layout: None,
+            _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.3"):
         from kymata.io.nkg_compatibility import _load_data_0_3
@@ -343,13 +354,15 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.transforms: dict_0_3["functions"],
             _Keys.latencies: dict_0_3["latencies"],
             _Keys.data: data,
+            # Keys not present in v0.3
+            _Keys.meg_layout: None,
+            _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.4"):
         from kymata.io.nkg_compatibility import _load_data_0_4
 
         dict_0_4 = _load_data_0_4(from_path_or_file)
 
-        # v0.2 data was stored as p-values
         data = dict()
         for block, sparse_data_dict in dict_0_4["data"].items():
             sparse_data_dict["data"] = p_to_logp(sparse_data_dict["data"])
@@ -362,7 +375,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
                 fill_value=0.0,
             )
             assert sparse_data.shape == (
-                len(dict_0_4["channels"]),
+                len(dict_0_4["channels"][block]),
                 len(dict_0_4["latencies"]),
                 len(dict_0_4["transforms"]),
             )
@@ -374,12 +387,15 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
         return_dict = {
             _Keys.expressionset_type: expressionset_type,
             _Keys.channels: {
-                block_name: dict_0_4["channels"]
+                block_name: dict_0_4["channels"][block_name]
                 for block_name in _ExpressionSetTypeIdentifier(expressionset_type).block_names()
             },
             _Keys.transforms: dict_0_4["transforms"],
             _Keys.latencies: dict_0_4["latencies"],
             _Keys.data: data,
+            # Keys not present in v0.4
+            _Keys.meg_layout: None,
+            _Keys.eeg_layout: None,
         }
     else:
         return_dict = _load_data_current(from_path_or_file)
@@ -417,28 +433,33 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
             layout_lines = f.readlines()
 
         if expression_set_type == _ExpressionSetTypeIdentifier.sensor:
-            meg_layout_parts = layout_lines[0].split("\t")
-            eeg_layout_parts = layout_lines[1].split("\t")
-            meg_identifier = meg_layout_parts[0]
-            meg_layout_name = meg_layout_parts[1]
-            eeg_identifier = eeg_layout_parts[0]
-            eeg_layout_name = eeg_layout_parts[1]
-            # The layout should be a pair of lines
-            #   MEG:\t<meg layout name>
-            #   EEG:\t<eeg layout name>
-            # Validate that the first part of each line is as expected
-            assert meg_identifier == "MEG:"
-            assert eeg_identifier == "EEG:"
-            # The <_ layout name> may be "None" if the layout is not specified, this is valid
-            # Otherwise it should be a valid layout name
-            if meg_layout_name == "None":
+            if len(layout_lines) == 0:
+                # No sensor layout specified for either sensor type
                 return_dict[_Keys.meg_layout] = None
-            else:
-                return_dict[_Keys.meg_layout] = MEGLayout(meg_layout_parts[1].strip())
-            if eeg_layout_name == "None":
                 return_dict[_Keys.eeg_layout] = None
             else:
-                return_dict[_Keys.eeg_layout] = EEGLayout(eeg_layout_parts[1].strip())
+                meg_layout_parts = layout_lines[0].split("\t")
+                eeg_layout_parts = layout_lines[1].split("\t")
+                meg_identifier = meg_layout_parts[0]
+                meg_layout_name = meg_layout_parts[1]
+                eeg_identifier = eeg_layout_parts[0]
+                eeg_layout_name = eeg_layout_parts[1]
+                # The layout should be a pair of lines
+                #   MEG:\t<meg layout name>
+                #   EEG:\t<eeg layout name>
+                # Validate that the first part of each line is as expected
+                assert meg_identifier == "MEG:"
+                assert eeg_identifier == "EEG:"
+                # The <_ layout name> may be "None" if the layout is not specified, this is valid
+                # Otherwise it should be a valid layout name
+                if meg_layout_name == "None":
+                    return_dict[_Keys.meg_layout] = None
+                else:
+                    return_dict[_Keys.meg_layout] = MEGLayout(meg_layout_parts[1].strip())
+                if eeg_layout_name == "None":
+                    return_dict[_Keys.eeg_layout] = None
+                else:
+                    return_dict[_Keys.eeg_layout] = EEGLayout(eeg_layout_parts[1].strip())
 
         return_dict[_Keys.channels] = dict()
         return_dict[_Keys.data] = dict()
@@ -455,7 +476,7 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
             with TextIOWrapper(zf.open(f"/{block_name}/coo-shape.txt"), encoding="utf-8") as f:
                 shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
             sparse_data = COO(coords=coords, data=data, shape=shape, prune=True, fill_value=0.0)
-            # In case there was only 1 function and we have a 2-d data matrix
+            # In case there was only 1 transform, and we have a 2-d data matrix
             if len(shape) == 2:
                 sparse_data = expand_dims(sparse_data)
             assert shape == (
