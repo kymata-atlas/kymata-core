@@ -159,7 +159,7 @@ def plot_ippm(
     arrowhead_dims: tuple[float, float] = None,
     linewidth: float = 3,
     show_labels: bool = True,
-    avoid_collinearity: bool = True,
+    avoid_collinearity: bool = False,
     serial_sequence: Optional[list[list[str]]] = None,
 ) -> plt.Figure:
     """
