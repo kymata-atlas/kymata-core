@@ -17,14 +17,14 @@ from mne import SourceEstimate
 from numpy.typing import NDArray
 from seaborn import color_palette
 
-from kymata.entities.datatypes import TransformNameDType
+from kymata.entities.datatypes import TransformNameDType, Channel
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
 from kymata.entities.transform import Transform
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent, DiscreteListedColormap
-from kymata.plot.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors
-
+from kymata.plot.layouts import (
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, MEGLayout, EEGLayout)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -273,16 +273,16 @@ sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(
         axis_name="left",
         axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy().items() if x <= 0
+            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.VectorView).items() if x <= 0
         ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy().items() if x <= 0],
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.EEG1005).items() if x <= 0],
     ),
     AxisAssignment(
         axis_name="right",
         axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy().items() if x >= 0
+            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.VectorView).items() if x >= 0
         ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy().items() if x >= 0],
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.EEG1005).items() if x >= 0],
     ),
 )
 
@@ -579,7 +579,7 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_channels(expression_set, best_transforms, show_only_sensors)
+    chosen_channels = _restrict_sensors_by_type(expression_set, best_transforms, show_only_sensors)
 
     sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=len(expression_set.latencies) * n_channels * len(show_only))
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
@@ -915,12 +915,23 @@ def __add_axis_name_annotations(axes_names: Sequence[str],
         )
 
 
-def _restrict_channels(
+def _restrict_sensors_by_type(
     expression_set: ExpressionSet,
     best_transforms: tuple[list[ExpressionPoint], ...],
     show_only_sensors: str | None,
-):
-    """Restrict to specific sensor type if requested."""
+) -> set[Channel]:
+    """
+    Restrict to specific sensor type if requested.
+    Does nothing to HexelExpressionSets.
+
+    Args:
+        expression_set:
+        best_transforms:
+        show_only_sensors:
+
+    Returns:
+
+    """
     if show_only_sensors is not None:
         if isinstance(expression_set, SensorExpressionSet):
             if show_only_sensors == "meg":
