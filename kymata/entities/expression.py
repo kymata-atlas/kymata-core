@@ -19,6 +19,7 @@ from xarray import DataArray, concat
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
     HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout, get_meg_sensors
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
 
@@ -676,6 +677,7 @@ class SensorExpressionSet(ExpressionSet):
         # log p-values
         # In general, we will combine flipped and non-flipped versions
         data: _InputDataArray | Sequence[_InputDataArray],
+        sensor_layout: Optional[SensorLayout],
     ):
         """
         Initialize the SensorExpressionSet with transform names, sensor metadata, latency information, and log p-value data.
@@ -685,7 +687,28 @@ class SensorExpressionSet(ExpressionSet):
             sensors (Sequence[Sensor]): Metadata about the sensors used in the study.
             latencies (Sequence[Latency]): Latency information corresponding to the data.
             data (_InputDataArray | Sequence[_InputDataArray]): Log p-values representing the data.
+            sensor_layout (Optional[SensorLayout]): Layout of the EMEG sensors.
         """
+
+        # Validate sensor layout against sensors
+        if sensor_layout is not None:
+            layout_sensors = []
+            if sensor_layout.meg is not None:
+                layout_sensors.extend(get_meg_sensors(sensor_layout.meg))
+            if sensor_layout.eeg is not None:
+                layout_sensors.extend(get_eeg_sensors(sensor_layout.eeg))
+            if len(sensor_layout) != len(layout_sensors):
+                raise ValueError(f"Sensor layout size mismatch."
+                                 f" {len(layout_sensors)} sensors in layout and {len(sensors)} sensors supplied")
+            sensors_not_in_layout = sorted(set(sensors) - set(layout_sensors))
+            sensors_not_supplied = sorted(set(layout_sensors) - set(sensors))
+            if len(sensors_not_in_layout) > 0:
+                raise ValueError(f"{len(sensors_not_in_layout)} sensors were not provided in the layout: {sensors_not_in_layout}")
+            if len(sensors_not_supplied) > 0:
+                raise ValueError(f"{len(sensors_not_supplied)} sensors from the layout were not provided: {sensors_not_supplied}")
+
+        self.sensor_layout: Optional[SensorLayout] = sensor_layout
+
         super().__init__(
             transforms=transforms,
             latencies=latencies,
@@ -717,6 +740,8 @@ class SensorExpressionSet(ExpressionSet):
             return False
         if not COO(self.scalp.data == other.scalp.data).all():
             return False
+        if not self.sensor_layout == other.sensor_layout:
+            return False
         return True
 
     def __copy__(self):
@@ -725,6 +750,7 @@ class SensorExpressionSet(ExpressionSet):
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
             data=self._data[BLOCK_SCALP].data.copy(),
+            sensor_layout=self.sensor_layout,
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
@@ -739,6 +765,7 @@ class SensorExpressionSet(ExpressionSet):
             sensors=self.sensors,
             latencies=self.latencies,
             data=_concat_dataarrays([self.scalp, other.scalp]).data,
+            sensor_layout=self.sensor_layout,
         )
 
     def __getitem__(self, transforms: str | Collection[str]) -> SensorExpressionSet:
@@ -765,6 +792,7 @@ class SensorExpressionSet(ExpressionSet):
             latencies=self.latencies,
             # Slice data by requested transforms
             data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
+            sensor_layout=self.sensor_layout,
         )
 
     def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
@@ -788,6 +816,7 @@ class SensorExpressionSet(ExpressionSet):
             sensors=self.sensors.copy(),
             latencies=selected_latencies,
             data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+            sensor_layout=self.sensor_layout,
         )
 
     def best_transforms(self) -> list[ExpressionPoint]:

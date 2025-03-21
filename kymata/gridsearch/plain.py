@@ -8,6 +8,7 @@ from scipy import stats
 
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
+from kymata.io.layout import SensorLayout
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.probability import LOGP_BASE, p_to_logp
@@ -26,6 +27,7 @@ def do_gridsearch(
     stimulus_shift_correction: float,  # seconds/second
     stimulus_delivery_latency: float,  # seconds
     emeg_sample_rate: float,  # Hertz
+    emeg_layout: SensorLayout,
     plot_location: Optional[Path] = None,
     n_derangements: int = 1,
     seconds_per_split: float = 1,
@@ -229,6 +231,7 @@ def do_gridsearch(
             latencies=latencies_ms / 1000,  # seconds
             sensors=channel_names,
             data=log_pvalues,
+            sensor_layout=emeg_layout,
         )
     elif channel_space == "source":
         es = HexelExpressionSet(

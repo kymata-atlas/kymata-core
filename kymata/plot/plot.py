@@ -269,22 +269,16 @@ class AxisAssignment(NamedTuple):
     axis_channels: list
 
 
-sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
-    AxisAssignment(
-        axis_name="left",
-        axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x <= 0.5
-        ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x <= 0.5],
-    ),
-    AxisAssignment(
-        axis_name="right",
-        axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x >= 0.5
-        ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x >= 0.5],
-    ),
-)
+def _get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[AxisAssignment, AxisAssignment]:
+    left_sensors, right_sensors = [], []
+    if layout.meg is not None:
+        left_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x >= 0.5])
+        right_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x <= 0.5])
+    if layout.eeg is not None:
+        left_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x >= 0])
+        right_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x <= 0])
+    return AxisAssignment("left", left_sensors), AxisAssignment("right", right_sensors)
+
 
 
 def _plot_minimap_sensor(
@@ -630,7 +624,7 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            assign_left_right_channels = sensor_left_right_assignment
+            assign_left_right_channels = _get_sensor_left_right_assignment()
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = (
                 set(assign_left_right_channels[0].axis_channels) & chosen_channels

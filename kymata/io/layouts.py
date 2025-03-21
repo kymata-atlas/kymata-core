@@ -1,6 +1,7 @@
 import re
 from enum import StrEnum
 from pathlib import Path
+from typing import NamedTuple
 
 import yaml
 from kymata.entities.rudimentary import Point2d
@@ -11,6 +12,11 @@ _layout_data_dir = Path(__file__).parent.parent / "data" / "sensor_locations"
 # For type hints
 _SensorPositionDict = dict[str, Point2d]
 _BoundingBox = tuple[float, float, float, float]
+
+
+class SensorLayout(NamedTuple):
+    meg: Optional[MEGLayout]
+    eeg: Optional[EEGLayout]
 
 
 class MEGLayout(StrEnum):
