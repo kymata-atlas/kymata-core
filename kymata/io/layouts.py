@@ -1,7 +1,7 @@
 import re
 from enum import StrEnum
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import yaml
 from kymata.entities.rudimentary import Point2d
@@ -14,11 +14,6 @@ _SensorPositionDict = dict[str, Point2d]
 _BoundingBox = tuple[float, float, float, float]
 
 
-class SensorLayout(NamedTuple):
-    meg: Optional[MEGLayout]
-    eeg: Optional[EEGLayout]
-
-
 class MEGLayout(StrEnum):
     """Represents supported MEG layouts."""
     Vectorview = "Vectorview"
@@ -29,6 +24,12 @@ class MEGLayout(StrEnum):
 class EEGLayout(StrEnum):
     """Represents supported EEG layouts."""
     Easycap = "Easycap"
+
+
+class SensorLayout(NamedTuple):
+    """Represents the full sensor layout definition."""
+    meg: Optional[MEGLayout]
+    eeg: Optional[EEGLayout]
 
 
 _lout_box_re = re.compile(

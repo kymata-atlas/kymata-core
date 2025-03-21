@@ -5,7 +5,7 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional
 from warnings import warn
 
 from numpy import (
@@ -19,7 +19,7 @@ from xarray import DataArray, concat
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
     HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
-from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout, get_meg_sensors
+from kymata.io.layouts import SensorLayout, get_meg_sensors, get_eeg_sensors
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
 
@@ -703,9 +703,12 @@ class SensorExpressionSet(ExpressionSet):
             sensors_not_in_layout = sorted(set(sensors) - set(layout_sensors))
             sensors_not_supplied = sorted(set(layout_sensors) - set(sensors))
             if len(sensors_not_in_layout) > 0:
+                # Sensors without a layout position indicates an error
                 raise ValueError(f"{len(sensors_not_in_layout)} sensors were not provided in the layout: {sensors_not_in_layout}")
             if len(sensors_not_supplied) > 0:
-                raise ValueError(f"{len(sensors_not_supplied)} sensors from the layout were not provided: {sensors_not_supplied}")
+                # Sensors which weren't supplied could be the result of a subset of channels being recorded
+                # this is valid but unusual so we warn
+                warn(f"{len(sensors_not_supplied)} sensors from the layout were not provided: {sensors_not_supplied}")
 
         self.sensor_layout: Optional[SensorLayout] = sensor_layout
 
