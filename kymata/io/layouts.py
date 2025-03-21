@@ -1,46 +1,60 @@
 import re
 from enum import StrEnum
 from pathlib import Path
-from typing import NamedTuple
 
 import yaml
+from kymata.entities.rudimentary import Point2d
+
 
 _layout_data_dir = Path(__file__).parent.parent / "data" / "sensor_locations"
 
 
 class MEGLayout(StrEnum):
-    VectorView = "VectorView"
+    """Represents supported MEG layouts."""
+    Vectorview = "Vectorview"
+    CTF_275    = "CTF275"
+    KIT_AD     = "KIT-AD"
 
 
 class EEGLayout(StrEnum):
-    EEG1005 = "EEG1005"
+    """Represents supported EEG layouts."""
+    Easycap = "Easycap"
 
 
-class Point2d(NamedTuple):
-    x: float
-    y: float
+_lout_re = re.compile(
+    r"^\d+\t"
+    r"(?P<x>-?\d+\.\d+)\t"
+    r"(?P<y>-?\d+\.\d+)\t"
+    r"-?\d+\.\d+\t"
+    r"-?\d+\.\d+\t"
+    r"(?P<sensor>MEG \d+)$"
+)
 
 
-def _get_meg_sensor_xy_vectorview() -> dict[str, Point2d]:
+def _get_meg_sensor_xy_from_lout(filepath) -> dict[str, Point2d]:
     d = dict()
-    layout_line_re = re.compile(
-        r"^\d+\t"
-        r"(?P<x>-?\d+\.\d+)\t"
-        r"(?P<y>-?\d+\.\d+)\t"
-        r"-?\d+\.\d+\t"
-        r"-?\d+\.\d+\t"
-        r"(?P<sensor>MEG \d+)$"
-    )
-    with Path(_layout_data_dir, "Vectorview-all.lout").open("r") as layout_file:
+    with filepath.open("r") as layout_file:
         _ = layout_file.readline()  # First line is nothing
         for line in layout_file:
             if not line:
                 continue  # Skip blank lines
-            match = layout_line_re.match(line)
+            match = _lout_re.match(line)
             sensor = match.group("sensor")
             sensor = sensor.replace(" ", "")
             d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
     return d
+
+
+def _get_meg_sensor_xy_vectorview() -> dict[str, Point2d]:
+    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "Vectorview-all.lout")
+
+
+def _get_meg_sensor_xy_ctf275() -> dict[str, Point2d]:
+    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "CTF-275.lout")
+
+
+def _get_meg_sensor_xy_kit_ad() -> dict[str, Point2d]:
+    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "KIT-AD.lout")
 
 
 def get_meg_sensor_xy(layout: MEGLayout) -> dict[str, Point2d]:
@@ -56,8 +70,12 @@ def get_meg_sensor_xy(layout: MEGLayout) -> dict[str, Point2d]:
         A dictionary where keys are sensor names (e.g., 'MEG1234') and values are Point2d objects representing
         the x and y coordinates of the sensors.
     """
-    if layout == MEGLayout.VectorView:
+    if layout == MEGLayout.Vectorview:
         return _get_meg_sensor_xy_vectorview()
+    elif layout == MEGLayout.CTF_275:
+        return _get_meg_sensor_xy_ctf275()
+    elif layout == MEGLayout.KIT_AD:
+        return _get_meg_sensor_xy_kit_ad()
     else:
         raise NotImplementedError()
 
@@ -91,7 +109,7 @@ def get_eeg_sensor_xy(layout: EEGLayout) -> dict[str, Point2d]:
         A dictionary where keys are our sensor names and values are Point2d objects representing
         the x and y coordinates of the sensors.
     """
-    if layout == EEGLayout.EEG1005:
+    if layout == EEGLayout.Easycap:
         return _get_eeg_sensor_xy_eeg1005()
     else:
         raise NotImplementedError()
