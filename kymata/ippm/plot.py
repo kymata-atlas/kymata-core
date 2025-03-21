@@ -279,7 +279,7 @@ def plot_ippm(
     # X-axis
     xticks = ax.get_xticks()
     plt.xticks(xticks,
-               [int(tick * 1000)  # Convert labels to ms, and cast to int to avoid float-math issues
+               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
                 for tick in xticks])
     ax.set_xlabel("Latency (ms)")
     ax.spines["top"].set_visible(False)
