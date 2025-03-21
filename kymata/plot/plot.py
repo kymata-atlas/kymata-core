@@ -273,16 +273,16 @@ sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
     AxisAssignment(
         axis_name="left",
         axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x <= 0
+            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x <= 0.5
         ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x <= 0],
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x <= 0.5],
     ),
     AxisAssignment(
         axis_name="right",
         axis_channels=[
-            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x >= 0
+            sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.Vectorview).items() if x >= 0.5
         ]
-        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x >= 0],
+        + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.Easycap).items() if x >= 0.5],
     ),
 )
 
