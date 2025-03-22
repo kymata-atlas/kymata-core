@@ -16,7 +16,10 @@ mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
 
 # Preprocessing pipeline
-emeg_machine_used_to_record_data: 'triux'
+meg_manufacturer: 'MEGIN'
+meg_sss_noise_estimate_year: 2023
+meg_sensor_layout: 'Vectorview'
+eeg_sensor_layout: 'Easycap'
 skip_maxfilter_if_previous_runs_exist: True
 skip_ica_if_previous_runs_exist: True
 remove_VEOH_and_HEOG: True

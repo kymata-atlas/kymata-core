@@ -9,9 +9,11 @@ from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.transform import load_transform
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
-from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
+from kymata.preproc.source import load_emeg_pack
 from kymata.plot.plot import expression_plot
+
 
 _default_output_dir = Path(data_root_path(), "output")
 _logger = getLogger(__file__)
@@ -216,6 +218,11 @@ def main():
 
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
+    sensor_layout = SensorLayout(
+        meg_layout=MEGLayout(dataset_config["meg_sensor_layout"]),
+        eeg_layout=EEGLayout(dataset_config["eeg_sensor_layout"]),
+    )
+
     for transform_name in args.transform_name:
         _logger.info(f"Running gridsearch on {transform_name}")
         transform = load_transform(
@@ -251,6 +258,7 @@ def main():
             stimulus_delivery_latency=stimulus_delivery_latency,
             plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
+            emeg_layout=sensor_layout,
         )
 
         if combined_expression_set is None:
