@@ -46,11 +46,11 @@ _lout_sensor_re = re.compile(
     r"(?P<y>-?\d+\.\d+)\s+"
     r"-?\d+\.\d+\s+"
     r"-?\d+\.\d+\s+"
-    r"(?P<sensor>MEG \d+)$"
+    r"(?P<sensor>[A-Z\-\d]+)$"
 )
 
 
-def _get_meg_sensor_xy_from_lout(filepath) -> tuple[_SensorPositionDict, _BoundingBox]:
+def _get_meg_sensor_xy_from_lout(filepath, remove_spaces: bool = False) -> tuple[_SensorPositionDict, _BoundingBox]:
     d = dict()
     with filepath.open("r") as layout_file:
         # First line is bounding box
@@ -71,13 +71,15 @@ def _get_meg_sensor_xy_from_lout(filepath) -> tuple[_SensorPositionDict, _Boundi
                 continue  # Skip blank lines
             match = _lout_sensor_re.match(line)
             sensor = match.group("sensor")
-            sensor = sensor.replace(" ", "")
+            if remove_spaces:
+                sensor = sensor.replace(" ", "")
             d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
     return d, box
 
 
 def _get_meg_sensor_xy_vectorview() -> tuple[_SensorPositionDict, _BoundingBox]:
-    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "Vectorview-all.lout")
+    # Our CBU vectorview files have spaces removed from the sensor names for some reason
+    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "Vectorview-all.lout", remove_spaces=True)
 
 
 def _get_meg_sensor_xy_ctf275() -> tuple[_SensorPositionDict, _BoundingBox]:
@@ -126,7 +128,7 @@ def get_meg_sensor_xy(layout: MEGLayout) -> _SensorPositionDict:
 
 
 def _get_eeg_sensor_xy_eeg1005() -> dict[str, Point2d]:
-    with Path(_layout_data_dir, "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
+    with Path(_layout_data_dir, "EEG1005-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
         mapping = yaml.safe_load(eeg_name_mapping_file)
     mapping = {k.upper(): v.upper() for k, v in mapping.items()}
     d = dict()

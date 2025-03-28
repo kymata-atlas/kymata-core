@@ -134,10 +134,7 @@ def load_expression_set(from_path_or_file: PathType | FileType | list[PathType])
                 warn("No MEG sensor layout was specified in the NKG file.")
             if eeg_layout is None:
                 warn("No EEG sensor layout was specified in the NKG file.")
-            sensor_layout = SensorLayout(
-                meg=meg_layout,
-                eeg=eeg_layout,
-            )
+            sensor_layout = SensorLayout(meg=meg_layout, eeg=eeg_layout)
         return SensorExpressionSet(
             transforms=data_dict[_Keys.transforms],
             sensors=[SensorDType(c) for c in data_dict[_Keys.channels][BLOCK_SCALP]],
