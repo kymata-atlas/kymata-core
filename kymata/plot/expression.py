@@ -1,10 +1,7 @@
-from __future__ import annotations
-
-import os
 from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
-from typing import Optional, Sequence, NamedTuple, Any, Type, Literal, Callable
+from typing import Optional, Sequence, Type, Literal
 from warnings import warn
 
 import numpy as np
@@ -13,18 +10,14 @@ from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator
-from mne import SourceEstimate
-from numpy.typing import NDArray
 from seaborn import color_palette
 
-from kymata.entities.datatypes import TransformNameDType, Channel
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
-from kymata.entities.transform import Transform
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
-from kymata.math.rounding import round_down, round_up
-from kymata.plot.color import transparent, DiscreteListedColormap
-from kymata.io.layouts import (
-    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, SensorLayout, MEGLayout, EEGLayout)
+from kymata.math.rounding import round_up, round_down
+from kymata.plot.brain import plot_minimap_hexel
+from kymata.plot.sensor import get_sensor_left_right_assignment, plot_minimap_sensor, restrict_sensors_by_type
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -158,80 +151,6 @@ def _minimap_mosaic(
     )
 
 
-def _hexel_minimap_data(expression_set: HexelExpressionSet,
-                        alpha_logp: float,
-                        show_transforms: list[str],
-                        value_lookup: dict[str, int | float],
-                        minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
-                        ) -> tuple[NDArray, NDArray]:
-    """
-    Generates data arrays for a minimap visualization of significant hexels in a HexelExpressionSet.
-
-    Args:
-        expression_set (HexelExpressionSet): The set of hexel expressions to analyze.
-        alpha_logp (float): The logarithm of the p-value threshold for significance. Hexels with values
-            below this threshold are considered significant.
-        show_transforms (list[str]): A list of transform names to consider for significance. Only these
-            transforms will be checked for significant hexels.
-        value_lookup (dict[str, int]): A dictionary mapping transform names to values to set in the data arrays.
-        minimap_latency_range: (Optional[tuple[float | None, float | None]]): The latency range to use in the minimap.
-            Defaults to None.
-
-
-    Returns:
-        tuple[NDArray, NDArray]: A tuple containing two arrays (one for the left hemisphere and one for
-        the right hemisphere). Each array has a length equal to the number of hexels in the respective
-        hemisphere, with entries:
-            - 0, if no transform is ever significant for this hexel.
-            - i+1, where i is the index of the transform (within `show_transforms`) that is significant
-              for this hexel.
-
-    Notes:
-        This function identifies which hexels are significant for the given transforms based on a provided
-        significance threshold. It returns arrays for both the left and right hemispheres, where each entry
-        indicates whether the hexel is significant for any transform and, if so, which transform it is
-        significant for.
-    """
-    # Initialise with zeros: transparent everywhere
-    data_left = np.zeros((len(expression_set.hexels_left),))
-    data_right = np.zeros((len(expression_set.hexels_right),))
-    best_transforms_left: list[ExpressionPoint]
-    best_transforms_right: list[ExpressionPoint]
-    best_transforms_left, best_transforms_right = expression_set.best_transforms()
-    best_transforms_left  = [ep for ep in best_transforms_left  if ep.logp_value < alpha_logp]
-    best_transforms_right = [ep for ep in best_transforms_right if ep.logp_value < alpha_logp]
-    if minimap_latency_range is not None:
-        # Filter expression points to keep those where latency is in range
-        minimap_start, minimap_end = minimap_latency_range
-        if minimap_start is not None:
-            best_transforms_left  = [ep for ep in best_transforms_left  if ep.latency >= minimap_start]
-            best_transforms_right = [ep for ep in best_transforms_right if ep.latency >= minimap_start]
-        if minimap_end is not None:
-            best_transforms_left  = [ep for ep in best_transforms_left  if ep.latency <= minimap_end]
-            best_transforms_right = [ep for ep in best_transforms_right if ep.latency <= minimap_end]
-
-    for trans_i, transform in enumerate(
-        expression_set.transforms,
-        # 1-indexed, as 0 will refer to transparent
-        start=1,
-    ):
-        if transform not in show_transforms:
-            continue
-        significant_hexel_names_left = [ep.channel for ep in best_transforms_left if ep.transform == transform]
-        hexel_idxs_left = np.searchsorted(
-            expression_set.hexels_left, np.array(significant_hexel_names_left)
-        )
-        data_left[hexel_idxs_left] = value_lookup[transform]
-
-        significant_hexel_names_right = [ep.channel for ep in best_transforms_right if ep.transform == transform]
-        hexel_idxs_right = np.searchsorted(
-            expression_set.hexels_right, np.array(significant_hexel_names_right)
-        )
-        data_right[hexel_idxs_right] = value_lookup[transform]
-
-    return data_left, data_right
-
-
 def _plot_transform_expression_on_axes(
     ax: pyplot.Axes,
     transform_data: list[ExpressionPoint],
@@ -262,153 +181,6 @@ def _plot_transform_expression_on_axes(
     y_max = y.max() if len(y) > 0 else -np.Inf
 
     return x_min, x_max, y_min, y_max
-
-
-class _AxisAssignment(NamedTuple):
-    axis_name: str
-    axis_channels: list
-
-
-def _get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignment, _AxisAssignment]:
-    left_sensors, right_sensors = [], []
-    if layout.meg is not None:
-        left_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x >= 0.5])
-        right_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x <= 0.5])
-    if layout.eeg is not None:
-        left_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x >= 0])
-        right_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x <= 0])
-    return _AxisAssignment("left", left_sensors), _AxisAssignment("right", right_sensors)
-
-
-def _plot_minimap_sensor(
-    expression_set: ExpressionSet,
-    minimap_axis: pyplot.Axes,
-    colors: dict[str, str],
-    alpha_logp: float,
-    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
-):
-    raise NotImplementedError("Minimap not yet implemented for sensor data")
-
-
-def _plot_minimap_hexel(
-    expression_set: HexelExpressionSet,
-    show_transforms: list[str],
-    lh_minimap_axis: pyplot.Axes,
-    rh_minimap_axis: pyplot.Axes,
-    view: str,
-    surface: str,
-    colors: dict[str, Any],
-    alpha_logp: float,
-    minimap_kwargs: dict,
-    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
-):
-    # Ensure we have the FSAverage dataset downloaded
-    from kymata.datasets.fsaverage import FSAverageDataset
-
-    fsaverage = FSAverageDataset(download=True)
-    os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
-
-    # There is a little circular dependency between the smoothing_steps in plot_kwargs below, which gets created after
-    # the colormap, and the colormap, which depends on the smoothing steps. So we short-circuit that here by pulling out
-    # the relevant value, if it's there so it doesn't get out of sync
-    if "smoothing_steps" in minimap_kwargs:
-        smoothing_steps = minimap_kwargs["smoothing_steps"]
-    else:
-        # Default value
-        smoothing_steps = 2
-
-    colormap, colour_idx_lookup, n_colors = _get_colormap_for_cortical_minimap(colors, show_transforms)
-
-    data_left, data_right = _hexel_minimap_data(expression_set,
-                                                alpha_logp=alpha_logp,
-                                                show_transforms=show_transforms,
-                                                value_lookup=colour_idx_lookup,
-                                                minimap_latency_range=minimap_latency_range)
-    stc = SourceEstimate(
-        data=np.concatenate([data_left, data_right]),
-        vertices=[expression_set.hexels_left, expression_set.hexels_right],
-        tmin=0,
-        tstep=1,
-    )
-    warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
-    plot_kwargs = dict(
-        subject="fsaverage",
-        surface=surface,
-        views=view,
-        colormap=colormap,
-        smoothing_steps=smoothing_steps,
-        cortex=dict(colormap="Greys", vmin=-3, vmax=6),
-        background="white",
-        spacing="ico5",
-        time_viewer=False,
-        colorbar=False,
-        transparent=False,
-        clim=dict(
-            kind="value",
-            lims=[0, n_colors / 2, n_colors],
-        ),
-    )
-    # Override plot kwargs with those passed
-    plot_kwargs.update(minimap_kwargs)
-    # Plot left view
-    lh_brain = stc.plot(hemi="lh", **plot_kwargs)
-    lh_brain_fig = pyplot.gcf()
-    lh_minimap_axis.imshow(lh_brain.screenshot())
-    hide_axes(lh_minimap_axis)
-    pyplot.close(lh_brain_fig)
-    # Plot right view
-    rh_brain = stc.plot(hemi="rh", **plot_kwargs)
-    rh_brain_fig = pyplot.gcf()
-    rh_minimap_axis.imshow(rh_brain.screenshot())
-    hide_axes(rh_minimap_axis)
-    pyplot.close(rh_brain_fig)
-
-
-def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
-                                       show_transforms: list[str],
-                                       ) -> tuple[Callable, dict[TransformNameDType, int], int]:
-    """
-    Get a colormap appropriate for displaying transforms on a brain minimap.
-
-    Colormap will have specified colours for the transforms, interleaved with transparency. The transparency
-    interleaving is necessary to remove false-colour "halos" appearing around the edge of significant hexel patches when
-    smoothing is >1.
-
-    Index point to transform position within `show_transforms` (1-indexed).
-
-    Args:
-        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
-            strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
-        show_transforms (list[str]): The transforms which will be shown
-
-    Returns: Tuple of the following items
-        (
-            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency
-            dict[TransformNameDType, int]: Dictionary mapping transform names to indices within the colourmap for the
-                appropriate colour
-            int: the total number of colours in the colourmap, including the initial and interleaved transparency
-        )
-
-    """
-
-    base_colours = [transparent] + [colors[f] for f in show_transforms]
-
-    colour_idx_lookup = {
-        # Map the colour to its corresponding index in the colourmap
-        TransformNameDType(transform): transform_idx
-        for transform_idx, transform in enumerate(show_transforms, start=1)
-    }
-
-    colormap = DiscreteListedColormap(colors=base_colours, scale01=True)
-
-    return colormap, colour_idx_lookup, max(colour_idx_lookup.values())
-
-
-def hide_axes(axes: pyplot.Axes):
-    """Hide all axes markings from a pyplot.Axes."""
-    axes.get_xaxis().set_visible(False)
-    axes.get_yaxis().set_visible(False)
-    axes.axis("off")
 
 
 def expression_plot(
@@ -572,7 +344,7 @@ def expression_plot(
     else:
         raise NotImplementedError()
 
-    chosen_channels = _restrict_sensors_by_type(expression_set, best_transforms, show_only_sensors)
+    chosen_channels = restrict_sensors_by_type(expression_set, best_transforms, show_only_sensors)
 
     sidak_corrected_alpha = sidak_correct(alpha, n_comparisons=len(expression_set.latencies) * n_channels * len(show_only))
     sidak_corrected_alpha = p_to_logp(sidak_corrected_alpha)
@@ -627,7 +399,7 @@ def expression_plot(
                 sensor_layout = SensorLayout(meg=MEGLayout.Vectorview, eeg=EEGLayout.Easycap)
                 warn(f"SensorExpressionSet had no sensor layout for assignment of sensors to left/right. "
                      f"Attempting to use default value {sensor_layout}, but beware of display issues.")
-            assign_left_right_channels = _get_sensor_left_right_assignment(sensor_layout)
+            assign_left_right_channels = get_sensor_left_right_assignment(sensor_layout)
 
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
@@ -737,7 +509,7 @@ def expression_plot(
     # Plot minimap
     if minimap is not None:
         if isinstance(expression_set, SensorExpressionSet):
-            _plot_minimap_sensor(
+            plot_minimap_sensor(
                 expression_set,
                 minimap_axis=axes[_AxName.minimap_main],
                 colors=color,
@@ -745,7 +517,7 @@ def expression_plot(
                 minimap_latency_range=minimap_latency_range,
             )
         elif isinstance(expression_set, HexelExpressionSet):
-            _plot_minimap_hexel(
+            plot_minimap_hexel(
                 expression_set,
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_top],
@@ -899,53 +671,6 @@ def __add_axis_name_annotations(axes_names: Sequence[str],
         )
 
 
-def _restrict_sensors_by_type(
-    expression_set: ExpressionSet,
-    best_transforms: tuple[list[ExpressionPoint], ...],
-    show_only_sensors: str | None,
-) -> set[Channel]:
-    """
-    Restrict to specific sensor type if requested.
-    Does nothing to HexelExpressionSets.
-
-    Args:
-        expression_set:
-        best_transforms:
-        show_only_sensors:
-
-    Returns:
-
-    """
-    if show_only_sensors is not None:
-        if isinstance(expression_set, SensorExpressionSet):
-            if show_only_sensors == "meg":
-                chosen_channels = get_meg_sensors()
-            elif show_only_sensors == "eeg":
-                chosen_channels = get_eeg_sensors()
-            else:
-                raise NotImplementedError()
-        else:
-            raise ValueError("`show_only_sensors` only valid with sensor data.")
-    else:
-        if isinstance(expression_set, SensorExpressionSet):
-            # All sensors
-            chosen_channels = {
-                ep.channel
-                for best_transforms_each_ax in best_transforms
-                for ep in best_transforms_each_ax
-            }
-        elif isinstance(expression_set, HexelExpressionSet):
-            # All hexels
-            chosen_channels = {
-                ep.channel
-                for best_transforms_each_ax in best_transforms
-                for ep in best_transforms_each_ax
-            }
-        else:
-            raise NotImplementedError()
-    return chosen_channels
-
-
 def _get_best_xlims(xlims, data_x_min, data_x_max):
     default_xlims = (-200, 800)
     if xlims is None:
@@ -983,110 +708,6 @@ def _get_yticks(ylim):
     n_major_ticks = int(ylim / _MAJOR_TICK_SIZE) * -1
     last_major_tick = -1 * n_major_ticks * _MAJOR_TICK_SIZE
     return np.linspace(start=0, stop=last_major_tick, num=n_major_ticks + 1)
-
-
-def plot_top_five_channels_of_gridsearch(
-    latencies: NDArray,
-    corrs: NDArray,
-    transform: Transform,
-    n_samples_per_split: int,
-    n_reps: int,
-    n_splits: int,
-    auto_corrs: NDArray,
-    log_pvalues: any,
-    # I/O args
-    save_to: Optional[Path] = None,
-    overwrite: bool = True,
-):
-    """
-    Generates correlation and p-value plots showing the top five channels of the gridsearch.
-
-    Args:
-        latencies (NDArray[any]): Array of latency values (e.g., time points in milliseconds) for the x-axis of the plots.
-        corrs (NDArray[any]): Correlation coefficients array with shape (n_channels, n_conditions, n_splits, n_time_steps).
-        transform (Transform): The transform object whose name attribute will be used in the plot title.
-        n_samples_per_split (int): Number of samples per split used in the grid search.
-        n_reps (int): Number of repetitions in the grid search.
-        n_splits (int): Number of splits in the grid search.
-        auto_corrs (NDArray[any]): Auto-correlation values array used for plotting the transform auto-correlation.
-        log_pvalues (any): Array of log-transformed p-values for each channel and time point.
-        save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved. Default is None.
-        overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
-
-    Raises:
-        FileExistsError: If the file already exists at save_to and overwrite is set to False.
-
-    Notes:
-        The function generates two subplots:
-
-        - The first subplot shows the correlation coefficients over latencies for the top five channels.
-        - The second subplot shows the corresponding p-values for these channels.
-    """
-
-    figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
-    figure.suptitle(
-        f"{transform.name}: Plotting corrs and pvalues for top five channels"
-    )
-
-    maxs = np.min(log_pvalues, axis=1)
-    n_amaxs = 5
-    amaxs = np.argpartition(maxs, -n_amaxs)[-n_amaxs:]
-    amax = np.argmin(log_pvalues) // (n_samples_per_split // 2)
-    amaxs = [i for i in amaxs if i != amax]  # + [209]
-
-    axis[0].plot(latencies, np.mean(corrs[amax, 0], axis=-2).T, "r-", label=amax)
-    axis[0].plot(latencies, np.mean(corrs[amaxs, 0], axis=-2).T, label=amaxs)
-    std_null = (
-        np.mean(np.std(corrs[:, 1], axis=-2), axis=0).T * 3 / np.sqrt(n_reps * n_splits)
-    )  # 3 pop std.s
-    std_real = np.std(corrs[amax, 0], axis=-2).T * 3 / np.sqrt(n_reps * n_splits)
-    av_real = np.mean(corrs[amax, 0], axis=-2).T
-
-    axis[0].fill_between(latencies, -std_null, std_null, alpha=0.5, color="grey")
-    axis[0].fill_between(
-        latencies, av_real - std_real, av_real + std_real, alpha=0.25, color="red"
-    )
-
-    peak_lat_ind = np.argmin(log_pvalues) % (n_samples_per_split // 2)
-    peak_lat = latencies[peak_lat_ind]
-    peak_corr = np.mean(corrs[amax, 0], axis=-2)[peak_lat_ind]
-    print(
-        f"{transform.name}: peak lat: {peak_lat:.1f},   peak corr: {peak_corr:.4f}   [sensor] ind: {amax},   -log(pval): {-log_pvalues[amax][peak_lat_ind]:.4f}"
-    )
-
-    auto_corrs = np.mean(auto_corrs, axis=0)
-    axis[0].plot(
-        latencies,
-        np.roll(auto_corrs, peak_lat_ind) * peak_corr / np.max(auto_corrs),
-        "k--",
-        label="trans auto-corr",
-    )
-
-    axis[0].axvline(0, color="k")
-    axis[0].legend()
-    axis[0].set_title("Corr coef.")
-    axis[0].set_xlabel("latencies (ms)")
-    axis[0].set_ylabel("Corr coef.")
-
-    axis[1].plot(latencies, -log_pvalues[amax].T, "r-", label=amax)
-    axis[1].plot(latencies, -log_pvalues[amaxs].T, label=amaxs)
-    axis[1].axvline(0, color="k")
-    axis[1].legend()
-    axis[1].set_title("p-values")
-    axis[1].set_xlabel("latencies (ms)")
-    axis[1].set_ylabel("p-values")
-
-    if save_to is not None:
-        pyplot.rcParams["savefig.dpi"] = 300
-        save_to = Path(save_to, transform.name + "_gridsearch_top_five_channels.png")
-
-        if overwrite or not save_to.exists():
-            pyplot.savefig(Path(save_to))
-        else:
-            raise FileExistsError(save_to)
-
-    pyplot.clf()
-    pyplot.close()
 
 
 def legend_display_dict(transforms: list[str], display_name) -> dict[str, str]:

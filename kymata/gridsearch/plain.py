@@ -12,7 +12,7 @@ from kymata.io.layout import SensorLayout
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.probability import LOGP_BASE, p_to_logp
-from kymata.plot.plot import plot_top_five_channels_of_gridsearch
+from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
 
 _logger = getLogger(__name__)
 

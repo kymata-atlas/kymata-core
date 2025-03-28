@@ -12,7 +12,7 @@ from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import save_expression_set
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.preproc.source import load_emeg_pack
-from kymata.plot.plot import expression_plot
+from kymata.plot.expression import expression_plot
 
 
 _default_output_dir = Path(data_root_path(), "output")

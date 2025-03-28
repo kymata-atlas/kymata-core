@@ -7,7 +7,7 @@ from kymata.datasets.sample import delete_dataset
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.io.nkg import load_expression_set
 from kymata.plot.color import gradient_color_dict
-from kymata.plot.plot import (
+from kymata.plot.expression import (
     _get_best_ylim,
     _MAJOR_TICK_SIZE,
     _get_yticks,
@@ -467,10 +467,10 @@ def test_meg_correct_sensors(meg_sensors):
 
 
 def test_eeg_left_right_medial_count(eeg_sensors):
-    from kymata.plot.plot import _get_sensor_left_right_assignment
+    from kymata.plot.sensor import get_sensor_left_right_assignment
 
-    top_chans = set(_get_sensor_left_right_assignment(test_layout)[0].axis_channels)
-    bottom_chans = set(_get_sensor_left_right_assignment(test_layout)[1].axis_channels)
+    top_chans = set(get_sensor_left_right_assignment(test_layout)[0].axis_channels)
+    bottom_chans = set(get_sensor_left_right_assignment(test_layout)[1].axis_channels)
     both_chans = top_chans & bottom_chans
     top_chans -= both_chans
     bottom_chans -= both_chans
