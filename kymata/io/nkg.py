@@ -365,7 +365,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
 
         data = dict()
         for block, sparse_data_dict in dict_0_4["data"].items():
-            sparse_data_dict["data"] = p_to_logp(sparse_data_dict["data"])
+            sparse_data_dict["data"] = sparse_data_dict["data"]
 
             sparse_data = COO(
                 coords=sparse_data_dict["coords"],
