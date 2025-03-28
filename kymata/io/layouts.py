@@ -46,11 +46,11 @@ _lout_sensor_re = re.compile(
     r"(?P<y>-?\d+\.\d+)\s+"
     r"-?\d+\.\d+\s+"
     r"-?\d+\.\d+\s+"
-    r"(?P<sensor>MEG \d+)$"
+    r"(?P<sensor>[A-Z\- \d]+)$"
 )
 
 
-def _get_meg_sensor_xy_from_lout(filepath) -> tuple[_SensorPositionDict, _BoundingBox]:
+def _get_sensor_xy_from_lout(filepath: Path, remove_spaces: bool = False) -> tuple[_SensorPositionDict, _BoundingBox]:
     d = dict()
     with filepath.open("r") as layout_file:
         # First line is bounding box
@@ -71,21 +71,49 @@ def _get_meg_sensor_xy_from_lout(filepath) -> tuple[_SensorPositionDict, _Boundi
                 continue  # Skip blank lines
             match = _lout_sensor_re.match(line)
             sensor = match.group("sensor")
-            sensor = sensor.replace(" ", "")
+            if remove_spaces:
+                sensor = sensor.replace(" ", "")
             d[sensor] = Point2d(float(match.group("x")), float(match.group("y")))
     return d, box
 
 
+def _get_sensor_xy_from_lay(filepath: Path) -> _SensorPositionDict:
+    d = dict()
+    with filepath.open("r") as layout_file:
+        for line in layout_file:
+            parts = line.strip().split("\t")
+            x = float(parts[1])
+            y = float(parts[2])
+            name = parts[-1]
+            d[name] = Point2d(x, y)
+    return d
+
+
+def _get_channel_name_mapping(mapping_path: Path) -> dict[str, str]:
+    with mapping_path.open("r") as mapping_file:
+        return yaml.safe_load(mapping_file)
+
+
+def _apply_channel_name_mapping(layout: _SensorPositionDict, mapping: dict[str, str]) -> _SensorPositionDict:
+    return {
+        our_name: layout[their_name]
+        for our_name, their_name in mapping.items()
+    }
+
+
 def _get_meg_sensor_xy_vectorview() -> tuple[_SensorPositionDict, _BoundingBox]:
-    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "Vectorview-all.lout")
+    # Our CBU vectorview files have spaces removed from the sensor names for some reason
+    return _get_sensor_xy_from_lout(_layout_data_dir / "Vectorview-all.lout", remove_spaces=True)
 
 
 def _get_meg_sensor_xy_ctf275() -> tuple[_SensorPositionDict, _BoundingBox]:
-    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "CTF-275.lout")
+    layout, bbox = _get_sensor_xy_from_lout(_layout_data_dir / "CTF-275.lout")
+    mapping = _get_channel_name_mapping(_layout_data_dir / "CTF-275-channel-name-mapping.yaml")
+    return _apply_channel_name_mapping(layout, mapping), bbox
 
 
 def _get_meg_sensor_xy_kit_ad() -> tuple[_SensorPositionDict, _BoundingBox]:
-    return _get_meg_sensor_xy_from_lout(_layout_data_dir / "KIT-AD.lout")
+    return _get_sensor_xy_from_lout(_layout_data_dir / "KIT-AD.lout")
 
 
 def get_meg_sensor_xy(layout: MEGLayout) -> _SensorPositionDict:
@@ -126,19 +154,12 @@ def get_meg_sensor_xy(layout: MEGLayout) -> _SensorPositionDict:
 
 
 def _get_eeg_sensor_xy_eeg1005() -> dict[str, Point2d]:
-    with Path(_layout_data_dir, "EEG-layout-channel-mappings.yaml").open("r") as eeg_name_mapping_file:
-        mapping = yaml.safe_load(eeg_name_mapping_file)
+    mapping = _get_channel_name_mapping(_layout_data_dir / "EEG1005-channel-name-mappings.yaml")
+    layout = _get_sensor_xy_from_lay(_layout_data_dir / "EEG1005.lay")
+    # Compare mapping with uppercase
     mapping = {k.upper(): v.upper() for k, v in mapping.items()}
-    d = dict()
-    with Path(_layout_data_dir, "EEG1005.lay").open("r") as layout_file:
-        for line in layout_file:
-            parts = line.strip().split("\t")
-            x = float(parts[1])
-            y = float(parts[2])
-            name = parts[-1].upper()
-            d[name] = Point2d(x, y)
-    our_sensor_d = {our_name: d[their_name] for our_name, their_name in mapping.items()}
-    return our_sensor_d
+    layout = {sensor.upper(): point for sensor, point in layout.items()}
+    return _apply_channel_name_mapping(layout, mapping)
 
 
 def get_eeg_sensor_xy(layout: EEGLayout) -> dict[str, Point2d]:
