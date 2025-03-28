@@ -41,7 +41,7 @@ _lout_box_re = re.compile(
 )
 
 _lout_sensor_re = re.compile(
-    r"^\d+\t"  # Line number
+    r"^\d+\s+"  # Line number
     r"(?P<x>-?\d+\.\d+)\s+"
     r"(?P<y>-?\d+\.\d+)\s+"
     r"-?\d+\.\d+\s+"
