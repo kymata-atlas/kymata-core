@@ -23,7 +23,8 @@ from kymata.entities.transform import Transform
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent, DiscreteListedColormap
-from kymata.io.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, SensorLayout
+from kymata.io.layouts import (
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, SensorLayout, MEGLayout, EEGLayout)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -614,24 +615,23 @@ def expression_plot(
     for transform in show_only:
         custom_label = _custom_label(transform)
         if custom_label not in custom_labels:
-            custom_handles.extend(
-                [Line2D([], [], marker=".", color=color[transform], linestyle="None")]
-            )
+            custom_handles.extend([Line2D([], [], marker=".", color=color[transform], linestyle="None")])
             custom_labels.append(custom_label)
 
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            if expression_set.sensor_layout is None:
-                raise ValueError("Cannot assign sensors to left/right without a sensor layout")
-            assign_left_right_channels = _get_sensor_left_right_assignment(expression_set.sensor_layout)
+            if expression_set.sensor_layout is not None:
+                sensor_layout = expression_set.sensor_layout
+            else:
+                sensor_layout = SensorLayout(meg=MEGLayout.Vectorview, eeg=EEGLayout.Easycap)
+                warn(f"SensorExpressionSet had no sensor layout for assignment of sensors to left/right. "
+                     f"Attempting to use default value {sensor_layout}, but beware of display issues.")
+            assign_left_right_channels = _get_sensor_left_right_assignment(sensor_layout)
+
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = (
-                set(assign_left_right_channels[0].axis_channels) & chosen_channels
-            )
-            bottom_chans = (
-                set(assign_left_right_channels[1].axis_channels) & chosen_channels
-            )
+            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
+            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_channels
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
@@ -640,12 +640,7 @@ def expression_plot(
                 expression_axes_list, best_transforms, (top_chans, bottom_chans)
             ):
                 # Plot filled
-                (
-                    x_min,
-                    x_max,
-                    y_min,
-                    _y_max,
-                ) = _plot_transform_expression_on_axes(
+                (x_min, x_max, y_min, _y_max) = _plot_transform_expression_on_axes(
                     transform_data=[ep
                                     for ep in best_trans_this_ax
                                     if ep.transform == transform
@@ -659,12 +654,7 @@ def expression_plot(
                 data_x_max = max(data_x_max, x_max)
                 data_y_min = min(data_y_min, y_min)
                 # Plot empty
-                (
-                    x_min,
-                    x_max,
-                    y_min,
-                    _y_max,
-                ) = _plot_transform_expression_on_axes(
+                (x_min, x_max, y_min, _y_max) = _plot_transform_expression_on_axes(
                     transform_data=[ep
                                     for ep in best_trans_this_ax
                                     if ep.transform == transform

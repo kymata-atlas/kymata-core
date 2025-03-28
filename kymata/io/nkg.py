@@ -182,10 +182,8 @@ def save_expression_set(
 
     with open_or_use(to_path_or_file, mode="wb") as f, ZipFile(f, "w", compression=compression) as zf:
         zf.writestr("_metadata/format-version.txt", CURRENT_VERSION)
-        zf.writestr(
-            "_metadata/expression-set-type.txt",
-            _ExpressionSetTypeIdentifier.from_expression_set(expression_set),
-        )
+        zf.writestr("_metadata/expression-set-type.txt",
+                    _ExpressionSetTypeIdentifier.from_expression_set(expression_set))
         zf.writestr("/latencies.txt", "\n".join(str(x) for x in expression_set.latencies))
         zf.writestr("/transforms.txt", "\n".join(str(x) for x in expression_set.transforms))
         zf.writestr("/blocks.txt",    "\n".join(str(x) for x in expression_set._block_names))
@@ -200,23 +198,11 @@ def save_expression_set(
         zf.writestr("/layout.txt", layout_txt)
 
         for block_name in expression_set._block_names:
-            zf.writestr(
-                f"/{block_name}/channels.txt",
-                "\n".join(str(x) for x in expression_set._channels[block_name]),
-            )
-            zf.writestr(
-                f"/{block_name}/coo-coords.bytes",
-                expression_set._data[block_name].data.coords.tobytes(order="C"),
-            )
-            zf.writestr(
-                f"/{block_name}/coo-data.bytes",
-                expression_set._data[block_name].data.data.tobytes(order="C"),
-            )
+            zf.writestr(f"/{block_name}/channels.txt",     "\n".join(str(x) for x in expression_set._channels[block_name]))
+            zf.writestr(f"/{block_name}/coo-coords.bytes", expression_set._data[block_name].data.coords.tobytes(order="C"))
+            zf.writestr(f"/{block_name}/coo-data.bytes",   expression_set._data[block_name].data.data.tobytes(order="C"))
             # The shape can be inferred, but we save it as an extra validation
-            zf.writestr(
-                f"/{block_name}/coo-shape.txt",
-                "\n".join(str(x) for x in expression_set._data[block_name].data.shape),
-            )
+            zf.writestr(f"/{block_name}/coo-shape.txt",    "\n".join(str(x) for x in expression_set._data[block_name].data.shape))
 
 
 def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version, dict[str, Any]]:
@@ -438,8 +424,8 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
                 return_dict[_Keys.meg_layout] = None
                 return_dict[_Keys.eeg_layout] = None
             else:
-                meg_layout_parts = layout_lines[0].split("\t")
-                eeg_layout_parts = layout_lines[1].split("\t")
+                meg_layout_parts = layout_lines[0].strip().split("\t")
+                eeg_layout_parts = layout_lines[1].strip().split("\t")
                 meg_identifier = meg_layout_parts[0]
                 meg_layout_name = meg_layout_parts[1]
                 eeg_identifier = eeg_layout_parts[0]
@@ -455,11 +441,11 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
                 if meg_layout_name == "None":
                     return_dict[_Keys.meg_layout] = None
                 else:
-                    return_dict[_Keys.meg_layout] = MEGLayout(meg_layout_parts[1].strip())
+                    return_dict[_Keys.meg_layout] = MEGLayout(meg_layout_name)
                 if eeg_layout_name == "None":
                     return_dict[_Keys.eeg_layout] = None
                 else:
-                    return_dict[_Keys.eeg_layout] = EEGLayout(eeg_layout_parts[1].strip())
+                    return_dict[_Keys.eeg_layout] = EEGLayout(eeg_layout_name)
 
         return_dict[_Keys.channels] = dict()
         return_dict[_Keys.data] = dict()
