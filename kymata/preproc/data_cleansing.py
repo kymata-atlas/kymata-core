@@ -27,7 +27,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
     data_root_dir: str,
     dataset_directory_name: str,
     n_runs: int,
-    emeg_machine_used_to_record_data: str,
+    empty_room_estimate_year: str,
     skip_maxfilter_if_previous_runs_exist: bool,
     automatic_bad_channel_detection_requested: bool,
     supress_excessive_plots_and_prompts: bool,
@@ -157,7 +157,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 if automatic_bad_channel_detection_requested:
                     print_with_color("   ...automatic", Fore.GREEN)
-                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, emeg_machine_used_to_record_data)
+                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
 
                 # Apply SSS and movement compensation
                 print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
@@ -165,12 +165,12 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 fine_cal_file = str(Path(Path(__file__).parent.parent,
                         "data",
                         "cbu_specific_files/SSS/sss_cal_"
-                        + emeg_machine_used_to_record_data
+                        + empty_room_estimate_year
                         + ".dat",))
                 crosstalk_file = str(Path(Path(__file__).parent.parent,
                         "data",
                         "cbu_specific_files/SSS/ct_sparse_"
-                        + emeg_machine_used_to_record_data
+                        + empty_room_estimate_year
                         + ".fif"))
 
                 if not supress_excessive_plots_and_prompts:
@@ -405,7 +405,7 @@ def _remove_ecg_eog(filt_raw, ica):
 
 def estimate_noise_cov(
     data_root_dir: str,
-    emeg_machine_used_to_record_data: str,
+    empty_room_estimate_year: str,
     list_of_participants: list[str],
     dataset_directory_name: str,
     n_runs: int,
@@ -482,7 +482,7 @@ def estimate_noise_cov(
                     Path(__file__).parent.parent,
                     "data",
                     "cbu_specific_files/SSS/sss_cal_"
-                    + emeg_machine_used_to_record_data
+                    + empty_room_estimate_year
                     + ".dat",
                 )
             )
@@ -491,7 +491,7 @@ def estimate_noise_cov(
                     Path(__file__).parent.parent,
                     "data",
                     "cbu_specific_files/SSS/ct_sparse_"
-                    + emeg_machine_used_to_record_data
+                    + empty_room_estimate_year
                     + ".fif",
                 )
             )
@@ -577,7 +577,7 @@ def estimate_noise_cov(
                     Path(__file__).parent.parent,
                     "data",
                     "cbu_specific_files/SSS/sss_cal_"
-                    + emeg_machine_used_to_record_data
+                    + empty_room_estimate_year
                     + ".dat",
                 )
             )
@@ -586,7 +586,7 @@ def estimate_noise_cov(
                     Path(__file__).parent.parent,
                     "data",
                     "cbu_specific_files/SSS/ct_sparse_"
-                    + emeg_machine_used_to_record_data
+                    + empty_room_estimate_year
                     + ".fif",
                 )
             )

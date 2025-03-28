@@ -24,7 +24,8 @@ from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_si
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent, DiscreteListedColormap
 from kymata.plot.layouts import (
-    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, MEGLayout, EEGLayout)
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, MEGLayout, EEGLayout,
+	SensorLayout)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -264,27 +265,20 @@ def _plot_transform_expression_on_axes(
     return x_min, x_max, y_min, y_max
 
 
-class AxisAssignment(NamedTuple):
+class _AxisAssignment(NamedTuple):
     axis_name: str
     axis_channels: list
 
 
-sensor_left_right_assignment: tuple[AxisAssignment, AxisAssignment] = (
-    AxisAssignment(
-        axis_name="left",
-        axis_channels=[
+def _get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignment, _AxisAssignment]:
+    left_sensors, right_sensors = [], []
+    if layout.meg is not None:
             sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.VectorView).items() if x <= 0
-        ]
         + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.EEG1005).items() if x <= 0],
-    ),
-    AxisAssignment(
-        axis_name="right",
-        axis_channels=[
+    if layout.eeg is not None:
             sensor for sensor, (x, y) in get_meg_sensor_xy(MEGLayout.VectorView).items() if x >= 0
-        ]
         + [sensor for sensor, (x, y) in get_eeg_sensor_xy(EEGLayout.EEG1005).items() if x >= 0],
     ),
-)
 
 
 def _plot_minimap_sensor(
@@ -630,7 +624,9 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            assign_left_right_channels = sensor_left_right_assignment
+            if expression_set.sensor_layout is None:
+                raise ValueError("Cannot assign sensors to left/right without a sensor layout")
+            assign_left_right_channels = _get_sensor_left_right_assignment(expression_set.sensor_layout)
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = (
                 set(assign_left_right_channels[0].axis_channels) & chosen_channels

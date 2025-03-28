@@ -136,6 +136,37 @@ def test_load_v0_4_sensor_nkg():
     assert es.scalp.shape == (305, 10, 1)
 
 
+def test_load_v0_5_hexel_nkg():
+    from packaging import version
+
+    v05_path = Path(Path(__file__).parent, "test-data", "version_0_5_hexel.nkg")
+    v, _ = _load_data(v05_path)
+    assert v == version.parse("0.5")
+    es = load_expression_set(v05_path)
+    assert isinstance(es, HexelExpressionSet)
+    assert len(es.transforms) == 1
+    assert es.transforms == ["test function"]
+    assert len(es.latencies) == 10
+    assert len(es.hexels_left) == 100
+    assert len(es.hexels_right) == 100
+    assert es.left.shape == es.right.shape == (100, 10, 1)
+
+
+def test_load_v0_5_sensor_nkg():
+    from packaging import version
+
+    v05_path = Path(Path(__file__).parent, "test-data", "version_0_5_sensor.nkg")
+    v, _ = _load_data(v05_path)
+    assert v == version.parse("0.5")
+    es = load_expression_set(v05_path)
+    assert isinstance(es, SensorExpressionSet)
+    assert len(es.transforms) == 1
+    assert es.transforms == ["test transform"]
+    assert len(es.latencies) == 200
+    assert len(es.sensors) == 376
+    assert es.scalp.shape == (376, 200, 1)
+
+
 def test_load_multiple_files():
     v04_path = Path(Path(__file__).parent, "test-data", "version_0_4_sensor.nkg")
     v04_renamed_path = Path(
