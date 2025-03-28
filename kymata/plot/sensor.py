@@ -40,11 +40,11 @@ class _AxisAssignment(NamedTuple):
 def get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignment, _AxisAssignment]:
     left_sensors, right_sensors = [], []
     if layout.meg is not None:
-        left_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x >= 0.5])
-        right_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x <= 0.5])
+        left_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x <= 0.5])
+        right_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x >= 0.5])
     if layout.eeg is not None:
-        left_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x >= 0])
-        right_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x <= 0])
+        left_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x <= 0])
+        right_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x >= 0])
     return _AxisAssignment("left", left_sensors), _AxisAssignment("right", right_sensors)
 
 
