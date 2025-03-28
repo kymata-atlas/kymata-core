@@ -2,7 +2,7 @@
 
 ## kymata
 
-::: kymata.plot.plot
+::: kymata.plot.expression
 
 ::: kymata.gridsearch.plain
 
