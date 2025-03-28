@@ -700,7 +700,7 @@ class SensorExpressionSet(ExpressionSet):
                 layout_sensors.extend(get_meg_sensors(sensor_layout.meg))
             if sensor_layout.eeg is not None:
                 layout_sensors.extend(get_eeg_sensors(sensor_layout.eeg))
-            if len(sensor_layout) != len(layout_sensors):
+            if len(sensors) != len(layout_sensors):
                 warn(f"Sensor layout size mismatch."
                      f" {len(layout_sensors)} sensors in layout and {len(sensors)} sensors supplied")
             sensors_not_in_layout = sorted(set(sensors) - set(layout_sensors))

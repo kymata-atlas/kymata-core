@@ -23,8 +23,8 @@ from kymata.entities.transform import Transform
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_down, round_up
 from kymata.plot.color import transparent, DiscreteListedColormap
-from kymata.io.layouts import get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, SensorLayout, \
-    MEGLayout, EEGLayout
+from kymata.io.layouts import (
+    get_meg_sensor_xy, get_eeg_sensor_xy, get_meg_sensors, get_eeg_sensors, SensorLayout, MEGLayout, EEGLayout)
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
