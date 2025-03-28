@@ -28,8 +28,8 @@ class EEGLayout(StrEnum):
 
 class SensorLayout(NamedTuple):
     """Represents the full sensor layout definition."""
-    meg: Optional[MEGLayout]
-    eeg: Optional[EEGLayout]
+    meg: Optional[MEGLayout] = None
+    eeg: Optional[EEGLayout] = None
 
 
 _lout_box_re = re.compile(
@@ -42,10 +42,10 @@ _lout_box_re = re.compile(
 
 _lout_sensor_re = re.compile(
     r"^\d+\t"  # Line number
-    r"(?P<x>-?\d+\.\d+)\t"
-    r"(?P<y>-?\d+\.\d+)\t"
-    r"-?\d+\.\d+\t"
-    r"-?\d+\.\d+\t"
+    r"(?P<x>-?\d+\.\d+)\s+"
+    r"(?P<y>-?\d+\.\d+)\s+"
+    r"-?\d+\.\d+\s+"
+    r"-?\d+\.\d+\s+"
     r"(?P<sensor>MEG \d+)$"
 )
 
