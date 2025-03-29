@@ -4,6 +4,7 @@ from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy,
     AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
+from typing import Any
 
 _denoiser_classes = {
     "maxpool": MaxPoolingStrategy,
@@ -29,19 +30,19 @@ class IPPM:
                  expression_set: ExpressionSet,
                  candidate_transform_list: CandidateTransformList | TransformHierarchy,
                  denoiser: str | None = _default_denoiser,
-                 **kwargs):
+                 **kwargs: dict[str, Any]):
         """
         Args:
            expression_set (ExpressionSet): The expressionset from which to build the IPPM.
-           candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied to the
-            expression set.
+           candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied
+               to the expression set.
            denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
            **kwargs: Additional arguments passed to the denoiser.
 
-       Raises:
-           ValueError: If any transform in the hierarchy is not found in the expression set, or if the provided denoiser
-            is invalid.
-       """
+        Raises:
+            ValueError: If any transform in the hierarchy is not found in the expression set, or if the provided denoiser
+                is invalid.
+        """
 
         # Validate CTL
         if not isinstance(candidate_transform_list, CandidateTransformList):
