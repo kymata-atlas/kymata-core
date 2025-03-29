@@ -29,14 +29,10 @@ extra_css:
   - stylesheets/kymata-documentation.css
 
 nav:
-- Home:
-  - index.md
-- Overview:
-  - overview.md
-- Getting Started:
-  - getting-started.md
-- Code Reference:
-  - reference.md
+- Home: index.md
+- Overview: overview.md
+- Getting Started: getting-started.md
+- Code Reference: reference.md
 
 extra:
   social:
