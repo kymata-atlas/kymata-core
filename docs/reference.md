@@ -10,7 +10,7 @@
 
 ::: kymata.io.config
 
-::: kymata.ippm.plot
+::: kymata.plot.ippm
 
 ::: kymata.ippm.ippm
 
