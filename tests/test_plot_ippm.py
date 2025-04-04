@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from kymata.ippm.plot import (
+from kymata.plot.ippm import (
     _make_bspline_paths,
     _make_bspline_ctr_points,
     _make_bspline_path,
