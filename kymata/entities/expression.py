@@ -707,11 +707,13 @@ class SensorExpressionSet(ExpressionSet):
             sensors_not_supplied = sorted(set(layout_sensors) - set(sensors))
             if len(sensors_not_in_layout) > 0:
                 # Sensors without a layout position indicates an error
-                warn(f"{len(sensors_not_in_layout)} sensors were not provided in the layout: {sensors_not_in_layout}")
+                warn(f"{len(sensors_not_in_layout)} sensors were present in the NKG file, "
+                     f"but were not provided in the layout: {sensors_not_in_layout}")
             if len(sensors_not_supplied) > 0:
                 # Sensors which weren't supplied could be the result of a subset of channels being recorded
                 # this is valid but unusual so we warn
-                warn(f"{len(sensors_not_supplied)} sensors from the layout were not provided: {sensors_not_supplied}")
+                warn(f"{len(sensors_not_supplied)} sensors are present in the layout, "
+                     f"but not present in the NKG file: {sensors_not_supplied}")
 
         self.sensor_layout: Optional[SensorLayout] = sensor_layout
 
