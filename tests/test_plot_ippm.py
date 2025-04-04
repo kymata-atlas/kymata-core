@@ -1,5 +1,5 @@
 """
-Testing Philosophy for IPPM plotting functionality
+Testing Philosophy for plot.ippmting functionality
 ==================================
 It is a pain to test matplotlib plotting works correctly. Therefore, we will omit testing
 that code since it will be tested by actively using the IPPM module.
@@ -19,7 +19,7 @@ from kymata.plot.ippm import (
 )
 
 
-@patch("kymata.ippm.plot.splev")
+@patch("kymata.plot.ippm.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
     expected_b_spline_paths = [
         np.array(range(65, 100, 10)),
@@ -49,7 +49,7 @@ def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
         assert isclose(expected_point[1], actual_point[1])
 
 
-@patch("kymata.ippm.plot.splev")
+@patch("kymata.plot.ippm.splev")
 def test_IPPMPlotter_MakeBSplinePath_Successfully(mock_splev):
     mock_splev.return_value = [
         np.array(range(65, 100, 10)),
