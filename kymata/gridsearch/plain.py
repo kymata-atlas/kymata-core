@@ -8,7 +8,7 @@ from scipy import stats
 
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
-from kymata.io.layout import SensorLayout
+from kymata.io.layouts import SensorLayout
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.probability import LOGP_BASE, p_to_logp
