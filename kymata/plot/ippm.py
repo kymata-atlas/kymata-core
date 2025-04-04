@@ -12,7 +12,7 @@ from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint
+from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint, ExpressionSet
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.ippm import IPPM
 
@@ -154,6 +154,7 @@ def plot_ippm(
     colors: dict[str, str],
     hemisphere: Optional[str] = None,
     title: Optional[str] = None,
+    xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
     y_ordinate_style: str = _YOrdinateStyle.centered,
     scale_nodes: bool = False,
     figheight: int = 5,
@@ -236,6 +237,8 @@ def plot_ippm(
             
         bsplines += _make_bspline_paths(incoming_edge_endpoints)
 
+    fig: plt.Figure
+    ax: plt.Axes
     fig, ax = plt.subplots()
 
     text_offset_x = -0.01  # s
@@ -286,6 +289,12 @@ def plot_ippm(
     ax.yaxis.set_visible(False)
 
     # X-axis
+    # Set axis limits
+    current_xmin, current_xmax = ax.get_xlim()
+    desired_xmin, desired_xmax = xlims_s
+    if desired_xmin is None:
+        desired_xmin = min(current_xmin, min(node_x))
+    ax.set_xlim((desired_xmin, desired_xmax))
     xticks = ax.get_xticks()
     plt.xticks(xticks,
                [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
@@ -299,6 +308,23 @@ def plot_ippm(
     fig.set_figwidth(figwidth)
 
     return fig
+
+
+def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[float, float]:
+    """
+    Get an appropriate set of xlims from an ExpressionSet.
+
+    Args:
+        es (ExpressionSet):
+        padding (float): The amount of padding to add either side of the IPPM plot, in seconds. Default is 0.05 (50ms).
+
+    Returns:
+        tuple[float, float]: xmin, xmax
+    """
+    return (
+        es.latencies.min() - padding,
+        es.latencies.max() + padding,
+    )
 
 
 def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
