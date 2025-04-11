@@ -1,6 +1,5 @@
-from matplotlib.colors import to_rgb, to_hex, ListedColormap
-from numpy import linspace, round as np_round
-
+from matplotlib.colors import to_rgb, to_hex
+from numpy import linspace
 
 transparent = (0, 0, 0, 0)
 
@@ -64,26 +63,3 @@ def constant_color_dict(transforms: list[str], color) -> dict[str, str]:
     The returned dictionary is compatible with color specifications for expression plots.
     """
     return gradient_color_dict(transforms, color, color)
-
-
-class DiscreteListedColormap(ListedColormap):
-    """Like ListedColormap, but without interpolation between values."""
-    def __init__(self, colors: list, name = 'from_list', N = None, scale01: bool = False):
-        """
-
-        Args:
-            colors:
-            name:
-            N:
-            scale01 (bool): True if the values will be supplied to the colormap in the range [0, 1] instead of the range
-                [0, N-1].
-        """
-        self.scale01: bool = scale01
-        super().__init__(colors=colors, name=name, N=N)
-
-    def __call__(self, X, *args, **kwargs):
-        if self.scale01:
-            # Values are supplied between 0 and 1, so map them up to their corresponding index (or close to it)
-            X *= self.N
-        rounded = np_round(X).astype(int)
-        return super().__call__(X=rounded, *args, **kwargs)
