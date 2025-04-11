@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
+from enum import StrEnum
 from logging import getLogger
 
 from networkx import DiGraph
@@ -11,6 +12,13 @@ from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transf
 
 
 _logger = getLogger(__file__)
+
+
+class IPPMConnectionStyle(StrEnum):
+    """Represents a strategy for connecting nodes of neighbouring transforms in an IPPM."""
+    full           = "full"
+    last_to_first  = "last-to-first"
+    first_to_first = "first-to-first"
 
 
 class IPPMGraph:
@@ -193,7 +201,7 @@ class IPPMGraph:
             # Deal with repeated-transform edges
             if source.transform == dest.transform:
                 # Only want to keep single path of edges from first to last incidence of a transform, so reject edge
-                # when there are other points wihch could serve as intermediates
+                # when there are other points which could serve as intermediates
                 intermediates = set(self.graph_full.successors(source)) & set(self.graph_full.predecessors(dest))
                 return len(intermediates) == 0
 
@@ -215,9 +223,50 @@ class IPPMGraph:
                 return True
 
         subgraph = DiGraph(self.graph_full.edge_subgraph([(s, d) for s, d in self.graph_full.edges if __keep_edge(s, d)]))
-        # Add orphan nodes
 
+        # Add orphan nodes
         subgraph.add_nodes_from(self.graph_full.nodes)
+
+        return subgraph
+
+    def graph_first_to_first(self) -> DiGraph:
+        """
+        Returns a copy of the subgraph where the first node in each sequence of expressions for a single transform
+        connects to the first node of the next of expression points for the downstream transform.
+
+        Returns:
+            DiGraph: A directed graph representing this version of the graph.
+        """
+        def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
+            # Deal with repeated-transform edges
+            if source.transform == dest.transform:
+                # Only want to keep single path of edges from first to last incidence of a transform, so reject edge
+                # when there are other points which could serve as intermediates
+                intermediates = set(self.graph_full.successors(source)) & set(self.graph_full.predecessors(dest))
+                return len(intermediates) == 0
+
+            # Deal with other edges
+            else:
+                # We only want edges between the FIRST point in a string of same-transform points for the upstream
+                # transform, to the FIRST point in the string of same-transform points for the downstream transform
+                # (hence "first to first").
+                # So if there's an available predecessor in the destination, don't keep
+                pred: ExpressionPoint
+                for pred in self.graph_full.predecessors(dest):
+                    if pred.transform == dest.transform:
+                        return False
+                # If there's a predecessor to the source, don't keep
+                succ: ExpressionPoint
+                for pred in self.graph_full.predecessors(source):
+                    if pred.transform == source.transform:
+                        return False
+                return True
+
+        subgraph = DiGraph(self.graph_full.edge_subgraph([(s, d) for s, d in self.graph_full.edges if __keep_edge(s, d)]))
+
+        # Add orphan nodes
+        subgraph.add_nodes_from(self.graph_full.nodes)
+
         return subgraph
 
 

@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import splev
 
 from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint, ExpressionSet
-from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle
 from kymata.ippm.ippm import IPPM
 
 
@@ -58,6 +58,7 @@ class _PlottableIPPMGraph:
                  avoid_collinearity: bool,
                  serial_sequence: Optional[list[list[str]]],
                  scale_nodes: bool,
+                 connection_style: IPPMConnectionStyle,
                  ):
         """
         Initializes the _PlottableIPPMGraph by assigning coordinates, colors, and other visual attributes to each node.
@@ -127,7 +128,13 @@ class _PlottableIPPMGraph:
         else:
             raise NotImplementedError()
 
-        preferred_graph = ippm_graph.graph_last_to_first
+        if connection_style == IPPMConnectionStyle.last_to_first:
+            preferred_graph = ippm_graph.graph_last_to_first
+        elif connection_style == IPPMConnectionStyle.first_to_first:
+            preferred_graph = ippm_graph.graph_first_to_first
+        else:
+            # IPPMConnectionStyle.full typically has too many nodes and edges to be performant and should be avoided
+            raise NotImplementedError()
 
         node: ExpressionPoint
         self.graph: DiGraph = relabel_nodes(
@@ -156,6 +163,7 @@ def plot_ippm(
     title: Optional[str] = None,
     xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
     y_ordinate_style: str = _YOrdinateStyle.centered,
+    connection_style: str = IPPMConnectionStyle.last_to_first,
     scale_nodes: bool = False,
     figheight: int = 5,
     figwidth: int = 10,
