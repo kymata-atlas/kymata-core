@@ -1,16 +1,17 @@
 import os
 from _warnings import warn
 
-from typing import Optional, Any, Callable
+from typing import Optional, Any
 
 import numpy as np
 from matplotlib import pyplot
+from matplotlib.colors import Colormap, ListedColormap
 from mne import SourceEstimate
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
-from kymata.plot.color import transparent, DiscreteListedColormap
+from kymata.plot.color import transparent
 from kymata.plot.axes import hide_axes
 
 
@@ -113,9 +114,9 @@ def plot_minimap_hexel(
         smoothing_steps = minimap_kwargs["smoothing_steps"]
     else:
         # Default value
-        smoothing_steps = 2
+        smoothing_steps = "nearest"
 
-    colormap, colour_idx_lookup, n_colors = _get_colormap_for_cortical_minimap(colors, show_transforms)
+    colormap, colour_idx_lookup = _get_colormap_for_cortical_minimap(colors, show_transforms)
 
     data_left, data_right = _hexel_minimap_data(expression_set,
                                                 alpha_logp=alpha_logp,
@@ -143,7 +144,7 @@ def plot_minimap_hexel(
         transparent=False,
         clim=dict(
             kind="value",
-            lims=[0, n_colors / 2, n_colors],
+            lims=(0.0, 0.5, 1.0),
         ),
     )
     # Override plot kwargs with those passed
@@ -164,39 +165,33 @@ def plot_minimap_hexel(
 
 def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
                                        show_transforms: list[str],
-                                       ) -> tuple[Callable, dict[TransformNameDType, int], int]:
+                                       ) -> tuple[Colormap,
+                                                  dict[TransformNameDType, float]]:
     """
     Get a colormap appropriate for displaying transforms on a brain minimap.
 
-    Colormap will have specified colours for the transforms, interleaved with transparency. The transparency
-    interleaving is necessary to remove false-colour "halos" appearing around the edge of significant hexel patches when
-    smoothing is >1.
-
-    Index point to transform position within `show_transforms` (1-indexed).
+    Indices point to transform position within `show_transforms` (1-indexed, as 0 is transparent/background).
 
     Args:
         colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
-            strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0))
-        show_transforms (list[str]): The transforms which will be shown
+            strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0)).
+        show_transforms (list[str]): The transforms which will be shown.
 
     Returns: Tuple of the following items
         (
-            LinearSegmentedColormap: Colormap with colours for shown functions interleaved with transparency
-            dict[TransformNameDType, int]: Dictionary mapping transform names to indices within the colourmap for the
+            Colormap: Colormap with colours for shown functions interleaved with transparency
+            dict[TransformNameDType, float]: Dictionary mapping transform names to values within the colourmap for the
                 appropriate colour
-            int: the total number of colours in the colourmap, including the initial and interleaved transparency
         )
 
     """
 
-    base_colours = [transparent] + [colors[f] for f in show_transforms]
+    colormap = ListedColormap([transparent] + [colors[f] for f in show_transforms])
 
-    colour_idx_lookup = {
-        # Map the colour to its corresponding index in the colourmap
-        TransformNameDType(transform): transform_idx
+    colormap_value_lookup = {
+        # Map the colour to its corresponding value index in the colourmap
+        TransformNameDType(transform): float(transform_idx / (len(show_transforms) + 1))
         for transform_idx, transform in enumerate(show_transforms, start=1)
     }
 
-    colormap = DiscreteListedColormap(colors=base_colours, scale01=True)
-
-    return colormap, colour_idx_lookup, max(colour_idx_lookup.values())
+    return colormap, colormap_value_lookup
