@@ -229,6 +229,7 @@ class IPPMGraph:
 
         return subgraph
 
+    @property
     def graph_first_to_first(self) -> DiGraph:
         """
         Returns a copy of the subgraph where the first node in each sequence of expressions for a single transform
