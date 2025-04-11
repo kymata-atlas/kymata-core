@@ -204,6 +204,7 @@ def plot_ippm(
                                           serial_sequence=serial_sequence,
                                           colors=colors,
                                           y_ordinate_style=y_ordinate_style,
+                                          connection_style=IPPMConnectionStyle(connection_style),
                                           scale_nodes=scale_nodes)
 
     if arrowhead_dims is None:
