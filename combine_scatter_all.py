@@ -35,7 +35,7 @@ def asr_models_loop_full():
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
     
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/log/'
-    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0070/log/'
+    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/log/'
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/log/'
     file_list = list_files_in_directory(log_dir_1)
 
@@ -169,7 +169,7 @@ def asr_models_loop_full():
     # plt.legend()
     # plt.xlim(-10, 60)
     # plt.savefig(f'kymata-toolbox-data/output/scatter_plot/whisper_all_{size}_colour_layer.png', dpi=600)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0070/layer_select.png', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/layer_select.png', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

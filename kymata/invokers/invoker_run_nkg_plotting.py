@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'simple' # 'standard' or 'ANN' or 'simple'
+    transform_family_type = 'standard' # 'standard' or 'ANN' or 'simple'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -251,7 +251,7 @@ def main():
     elif transform_family_type == 'standard':
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
-        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/11_transforms_gridsearch.nkg')
+        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/11_transforms_gridsearch.nkg')
 
         # import ipdb;ipdb.set_trace()
 
@@ -263,7 +263,7 @@ def main():
                             #   | constant_color_dict(['IL'], '#4320aa')
                             #   | constant_color_dict(['STL'], '#ca8bb5'))
 
-        fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/new_trigger.png")
+        fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/music.png")
 
     elif transform_family_type == 'ANN':
 
