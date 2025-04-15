@@ -60,88 +60,81 @@ def selection(lat_sig, neuron_selection, layer):
                     pass
     return lat_sig[max_indices, :]
 
-def asr_models_loop_full():
-
-    layer = 33 # 66 64 34
-    neuron = 4096
-    neuron_selection = 'layer_sep'
-    margin = 0
-    n = 1
-    figure_opt = 'morpheme'
-    thres_feats = 0.01
-
-    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_7b_morpheme/log/'
-
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
-    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
-
-    stds = []
+def process_lat_sig(n, log_dir, layer, neuron, thres, neuron_selection):
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
     _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
-    stds.append(np.std(_lats[:, 0]))
-
-    print(_lats.shape[0])
-
 
     selected = selection(_lats, neuron_selection, layer)
 
     print(selected.shape[0])
 
+    return selected
 
-    neuron_picks = []
+def asr_models_loop_full():
+
+    layer = 33 # 66 64 34
+    neuron = 4096
+    neuron_selection = 'layer_sep'
+    n = 1
+
+    log_dir_morpheme = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_morpheme/log/'
+    log_dir_wordpiece = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_wordpiece/log/'
+    log_dir_morpheme_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_morpheme/tvl/log/'
+    log_dir_wordpiece_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_wordpiece/tvl/log/'
+
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer)))))
+    thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*neuron*layer)))))
+
+    selected_morpheme = process_lat_sig(n, log_dir_morpheme, layer, neuron, thres, neuron_selection)
+    selected_wordpiece = process_lat_sig(n, log_dir_wordpiece, layer, neuron, thres, neuron_selection)
+
+    overlap_1 = np.array([selected_morpheme[i, :] for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, -2:].tolist() in selected_wordpiece[:, -2:].tolist()])
+    overlap_2 = np.array([selected_wordpiece[i, :] for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, -2:].tolist() in selected_morpheme[:, -2:].tolist()])
+    morpheme_neurons = [
+        *[overlap_1[i, :].tolist() for i in range(overlap_1.shape[0]) if overlap_1[i, 3] >= overlap_2[i, 3]],
+        *[selected_morpheme[i, :].tolist()  for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, :].tolist() not in overlap_1.tolist()]
+    ]
+    wordpiece_neurons = [
+        *[overlap_2[i, :].tolist()  for i in range(overlap_2.shape[0]) if overlap_2[i, 3] >= overlap_1[i, 3]],
+        *[selected_wordpiece[i, :].tolist()  for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, :].tolist() not in overlap_2.tolist()]
+    ]
+
+    print(len(morpheme_neurons))
+    print(len(wordpiece_neurons))
 
     phone_feats = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/phone_sig.npy').tolist()
+    phone_feats += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy').tolist()
     word_feats = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/word_sig.npy').tolist()
+    word_feats += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy').tolist()
 
-    feats_path = f'/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/corr/salmonn_7B_is_root_pvalue.npy'
-    feats = np.load(feats_path)
+    morpheme_neurons = [i for i in morpheme_neurons if [int(i[4]), int(i[5])] not in phone_feats + word_feats]
+    wordpiece_neurons = [i for i in wordpiece_neurons if [int(i[4]), int(i[5])] not in phone_feats + word_feats]
 
-    counter = 0
+    lat_sig = read_log_file_asr(n, log_dir_morpheme_tvl, layer, neuron)
+    morpheme_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    neuron_picks_morpheme = [
+        [int(neuron[4]), int(neuron[5])] 
+        for neuron in morpheme_neurons 
+        if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in morpheme_neurons_tvl)
+    ]
 
-    for i in range(selected.shape[0]):
-        dim = int(selected[i, 5])
-        lay = int(selected[i, 4])
-        if np.min(feats[:, dim, lay]) < thres_feats and [lay, dim] not in word_feats and [lay, dim] not in phone_feats:
-            print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with word feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
-            neuron_picks.append([lay, dim])
-            counter += 1
-    print(f'Number of significant is_root neurons: {counter}')
-    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_sig.npy', np.array(neuron_picks))
+    lat_sig = read_log_file_asr(n, log_dir_wordpiece_tvl, layer, neuron)
+    wordpiece_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    neuron_picks_wordpiece = [
+        [int(neuron[4]), int(neuron[5])] 
+        for neuron in wordpiece_neurons 
+        if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in wordpiece_neurons_tvl)
+    ]
 
-    feats_path = f'/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/corr/salmonn_7B_is_prefix_pvalue.npy'
-    feats = np.load(feats_path)
+    print(len(neuron_picks_morpheme))
+    print(len(neuron_picks_wordpiece))
 
-    counter = 0
-
-    for i in range(selected.shape[0]):
-        dim = int(selected[i, 5])
-        lay = int(selected[i, 4])
-        if np.min(feats[:, dim, lay]) < thres_feats and [lay, dim] not in neuron_picks and [lay, dim] not in word_feats and [lay, dim] not in phone_feats:
-            print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with word feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
-            neuron_picks.append([lay, dim])
-            counter += 1
-    print(f'Number of significant is_prefix neurons: {counter}')
-    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_sig_prefix.npy', np.array(neuron_picks))
-
-    feats_path = f'/imaging/projects/cbu/kymata/analyses/tianyi/workspace/output/corr/salmonn_7B_is_suffix_pvalue.npy'
-    feats = np.load(feats_path)
-
-    counter = 0
-
-    for i in range(selected.shape[0]):
-        dim = int(selected[i, 5])
-        lay = int(selected[i, 4])
-        if np.min(feats[:, dim, lay]) < thres_feats and [lay, dim] not in neuron_picks and [lay, dim] not in word_feats and [lay, dim] not in phone_feats:
-            print(f'The Salmonn neuron {dim} at layer {lay} has the most significant correlation with word feature {np.argmin(feats[:, dim, lay])} with a p-value of {np.min(feats[:, dim, lay])}')
-            neuron_picks.append([lay, dim])
-            counter += 1
-    print(f'Number of significant is_suffix neurons: {counter}')
-    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_sig_suffix.npy', np.array(neuron_picks))
-
-
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_all.npy', np.array(neuron_picks_morpheme))
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/wordpiece_all.npy', np.array(neuron_picks_wordpiece))
 
 if __name__ == '__main__':
     asr_models_loop_full()
