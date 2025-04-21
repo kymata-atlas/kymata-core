@@ -92,16 +92,30 @@ def asr_models_loop_full():
     selected_morpheme = process_lat_sig(n, log_dir_morpheme, layer, neuron, thres, neuron_selection)
     selected_wordpiece = process_lat_sig(n, log_dir_wordpiece, layer, neuron, thres, neuron_selection)
 
-    overlap_1 = np.array([selected_morpheme[i, :] for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, -2:].tolist() in selected_wordpiece[:, -2:].tolist()])
-    overlap_2 = np.array([selected_wordpiece[i, :] for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, -2:].tolist() in selected_morpheme[:, -2:].tolist()])
+    overlap_1 = np.array(sorted(
+        [selected_morpheme[i, :] for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, -2:].tolist() in selected_wordpiece[:, -2:].tolist()],
+        key=lambda x: (x[-2], x[-1]),  # Sort by the correlation value (column index 3) and then by the last column
+        reverse=True  # Sort in descending order
+    ))
+    overlap_2 = np.array(sorted(
+        [selected_wordpiece[i, :] for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, -2:].tolist() in selected_morpheme[:, -2:].tolist()],
+        key=lambda x: (x[-2], x[-1]),  # Sort by the correlation value (column index 3) and then by the last column
+        reverse=True  # Sort in descending order
+    ))
     morpheme_neurons = [
         *[overlap_1[i, :].tolist() for i in range(overlap_1.shape[0]) if overlap_1[i, 3] >= overlap_2[i, 3]],
         *[selected_morpheme[i, :].tolist()  for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, :].tolist() not in overlap_1.tolist()]
     ]
     wordpiece_neurons = [
-        *[overlap_2[i, :].tolist()  for i in range(overlap_2.shape[0]) if overlap_2[i, 3] >= overlap_1[i, 3]],
+        *[overlap_2[i, :].tolist()  for i in range(overlap_2.shape[0]) if overlap_2[i, 3] > overlap_1[i, 3]],
         *[selected_wordpiece[i, :].tolist()  for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, :].tolist() not in overlap_2.tolist()]
     ]
+    overlapping_neurons = [
+        neuron for neuron in morpheme_neurons 
+        if [neuron[-2], neuron[-1]] in [[wp_neuron[-2], wp_neuron[-1]] for wp_neuron in wordpiece_neurons]
+    ]
+
+    print(f"Number of overlapping neurons: {len(overlapping_neurons)}")
 
     print(len(morpheme_neurons))
     print(len(wordpiece_neurons))

@@ -24,7 +24,7 @@ apptainer exec \
     layers=() ;
     neurons=() ;
     
-    for i in {100..199}; do
+    for i in {92..183}; do
       output=\$(\$VENV_PATH/bin/poetry run python -m kymata.invokers.read_npy \$npy_file \$i) ;
 
       a=\$(echo \$output | awk '{print \$1}') ;
