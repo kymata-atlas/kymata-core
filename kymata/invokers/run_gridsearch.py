@@ -219,6 +219,7 @@ def main():
             _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
         if args.morph:
             _logger.info("Morphing to common space")
+        stdout.flush()  # Ensure the log message is flushed immediately
 
         t0 = time.time()
 
@@ -243,6 +244,7 @@ def main():
         print(f'Time to load emeg: {time_to_load:.4f}')
         stdout.flush()  # make sure the above print statement shows up as soon as print is called
         _logger.info(f'Time to load emeg: {time_to_load:.4f}')
+        stdout.flush()  # Ensure the log message is flushed immediately
 
 
 

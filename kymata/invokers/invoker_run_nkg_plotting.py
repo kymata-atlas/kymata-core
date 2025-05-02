@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'all_level' # 'standard' or 'ANN' or 'simple' or 'all_level'
+    transform_family_type = 'standard' # 'standard' or 'ANN' or 'simple' or 'all_level'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -295,7 +295,8 @@ def main():
                             #   | constant_color_dict(['IL'], '#4320aa')
                             #   | constant_color_dict(['STL'], '#ca8bb5'))
 
-        fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/music.png")
+        # fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/music.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/new_cluster_test.png")
 
     elif transform_family_type == 'ANN':
 

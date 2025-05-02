@@ -15,16 +15,5 @@
 #SBATCH --array=1-1
 #SBATCH --exclusive
 
-module load apptainer
-apptainer exec \
-  -B /imaging/woolgar/projects/Tianyi/ \
-  -B /imaging/projects/cbu/kymata/ \
-  /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
-  bash -c \
-    " cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ ; \
-      export VENV_PATH=~/poetry/ ; \
-      export VIRTUAL_ENV=/imaging/woolgar/projects/Tianyi/virtualenvs/kymata-toolbox-jvBImMG9-py3.11/ ; \
-      \$VENV_PATH/bin/poetry run python -m kymata.invokers.invoker_run_nkg_plotting \
-  "
-
-# -B /imaging/projects/cbu/kymata/ \
+cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/
+poetry run python kymata/invokers/invoker_run_nkg_plotting.py
