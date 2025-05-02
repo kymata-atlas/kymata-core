@@ -64,12 +64,12 @@ def load_single_emeg(
         # Load and apply fif-format morph data
         _logger.info(f"Reading source morph from {morph_path}")
         morph_map = (
-            mne.read_source_morph(morph_path) if morph_path is not None else None
+            mne.read_source_morph(morph_path)
+            if morph_path is not None
+            else None
         )
 
-        lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(
-            evoked, inverse_operator_path, snr, morph_map=morph_map
-        )
+        lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(evoked, inverse_operator_path, snr, morph_map=morph_map)
         # Stack into a single matrix, to be split after gridsearch
         emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
 
@@ -95,9 +95,7 @@ def load_single_emeg(
             )
 
             # Common channels to restrict to
-            common_channels = pick_channels_inverse_operator(
-                evoked.ch_names, inverse_operator
-            )
+            common_channels = pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
 
             np.save(premorphed_inverse_operator_path, premorphed_inverse_operator)
             np.save(ch_names_path, morph_hexel_names)
@@ -123,18 +121,13 @@ def load_single_emeg(
     return emeg, morph_hexel_names
 
 
-def inverse_operate(
-    evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None
-):
+def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None):
     lambda2 = 1.0 / snr**2
     _logger.info(f"Reading inverse operator from {inverse_operator}")
-    inverse_operator = mne.minimum_norm.read_inverse_operator(
-        inverse_operator, verbose=False
-    )
+    inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator, verbose=False)
     _logger.info("Applying inverse operator")
-    stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(
-        evoked, inverse_operator, lambda2, "MNE", pick_ori="normal", verbose=False
-    )
+    stc: mne.VectorSourceEstimate = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, "MNE",
+                                                                   pick_ori="normal", verbose=False)
     _logger.info("Inverse operator applied")
 
     if morph_map is not None:
@@ -268,9 +261,7 @@ def __mne_apply_morph_data(morph, stc_from):
         assert not to_used[to_sl].any()
         to_used[to_sl] = True
         # Loop over time points to save memory
-        if morph.vol_morph_mat is None and n_times >= _VOL_MAT_CHECK_RATIO * (
-            to_vol_stop - to_surf_stop
-        ):
+        if morph.vol_morph_mat is None and n_times >= _VOL_MAT_CHECK_RATIO * (to_vol_stop - to_surf_stop):
             warn(
                 "Computing a sparse volume morph matrix will save time over "
                 "directly morphing, calling morph.compute_vol_morph_mat(). "
@@ -285,9 +276,9 @@ def __mne_apply_morph_data(morph, stc_from):
             _logger.debug("Using sparse volume morph matrix")
             data[to_sl, :] = morph.vol_morph_mat @ data_from[from_sl]
     if do_surf:
-        for hemi, v1, v2 in zip(
-            ("left", "right"), morph.src_data["vertices_from"], stc_from.vertices[:2]
-        ):
+        for hemi, v1, v2 in zip(("left", "right"),
+                                morph.src_data["vertices_from"],
+                                stc_from.vertices[:2]):
             _check_vertices_match(v1, v2, "%s hemisphere" % (hemi,))
         from_sl = slice(0, from_surf_stop)
         assert not from_used[from_sl].any()
@@ -367,9 +358,7 @@ def load_emeg_pack(
     ]
     if inverse_operator_dir is not None:
         inverse_operator_paths = [
-            Path(
-                inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}"
-            )
+            Path(inverse_operator_dir, f"{_strip_ave(emeg_fn)}{inverse_operator_suffix}")
             for emeg_fn in emeg_filenames
         ]
     else:
@@ -389,9 +378,7 @@ def load_emeg_pack(
         )
     except Exception as ex:
         _logger.error(f"Error loading EMEG data from {str(emeg_paths[0])}")
-        _logger.error(
-            f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}"
-        )
+        _logger.error(f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}")
         _logger.error(f"\tmorph {str(morph_paths[0])}")
         raise ex
     emeg = np.expand_dims(emeg, 1)

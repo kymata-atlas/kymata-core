@@ -511,7 +511,7 @@ class ExpressionSet(ABC):
 
 class HexelExpressionSet(ExpressionSet):
     """
-    Brain data associated with expression of a single transform in hexel space.
+    Brain data associated with the expression of a single transform in hexel space.
     Includes lh, rh, flipped, non-flipped.
     Data is log10 p-values
     """
