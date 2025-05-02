@@ -5,25 +5,23 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union, get_args, Tuple, TypeVar
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal)
+    array, array_equal, where, inf)
 from numpy.typing import NDArray
-from pandas import DataFrame
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
 
 from kymata.entities.constants import HEMI_LEFT, HEMI_RIGHT
 from kymata.entities.datatypes import (
-    HexelDType, SensorDType, LatencyDType, FunctionNameDType, Hexel, Sensor, Latency)
+    HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
+from kymata.io.layouts import SensorLayout, get_meg_sensors, get_eeg_sensors
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import (
-    expand_dims, densify_data_block, sparsify_log_pmatrix)
-
+from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -31,26 +29,33 @@ _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can b
 DIM_HEXEL = "hexel"
 DIM_SENSOR = "sensor"
 DIM_LATENCY = "latency"
-DIM_FUNCTION = "function"
+DIM_TRANSFORM = "transform"
 
 # Block (e.g. hemisphere)
 BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
 
-# Column names
-COL_LOGP_VALUE = "log-p-value"
+
+class ExpressionPoint(NamedTuple):
+    """
+    A single point of transform expression evidence.
+    """
+    channel: Channel
+    latency: Latency
+    transform: str
+    logp_value: float
 
 
 class ExpressionSet(ABC):
     """
-    Brain data associated with expression of a single function.
+    Brain data associated with expression of a single transform.
     Data is log10 p-values.
     """
 
     def __init__(
             self,
-            functions: str | Sequence[str],
+            transforms: str | Sequence[str],
             # Metadata
             latencies: Sequence[Latency],
             # In general, we will combine flipped and non-flipped versions.
@@ -63,7 +68,7 @@ class ExpressionSet(ABC):
         Initializes the ExpressionSet with the provided data.
 
         Args:
-            functions (str | Sequence[str]): Function name, or sequence of names.
+            transforms (str | Sequence[str]): Transform name, or sequence of names.
             latencies (Sequence[Latency]): Latency values.
             data_blocks (dict[str, _InputDataArray | Sequence[_InputDataArray]]):
                 Mapping of block names to data arrays (log10 p-values).
@@ -71,11 +76,11 @@ class ExpressionSet(ABC):
                 In general there are two possible formats for this argument.
 
                 In the first (safer, more explicit and flexible) format, `data_blocks` contains a dict mapping block
-                names to data arrays. E.g., in the case there are three functions in a hexel setting:
+                names to data arrays. E.g., in the case there are three transforms in a hexel setting:
                 ```
                     {
                                   # each array is (channel, latency)-shaped
-                                  # and there's one for each function
+                                  # and there's one for each transform
                                   # ↓
                         "left":  [array(...), array(...), array(...)],
                         "right": [array(...), array(...), array(...)],
@@ -90,11 +95,11 @@ class ExpressionSet(ABC):
                 (and where `array(...)` can be a numpy array or a sparse array).
                 In this format, all data arrays should be the same size.
 
-                In the second (more performant) format, `data_blocks` contains a single data array whose `function`
+                In the second (more performant) format, `data_blocks` contains a single data array whose `transform`
                 dimensions can be concatenated to achieve the desired resultant data block. E.g.
                 ```
                     {
-                                  # each array is (channel, latency, function)-shaped
+                                  # each array is (channel, latency, transform)-shaped
                                   # ↓
                         "left":  array(...),
                         "right": array(...),
@@ -109,7 +114,7 @@ class ExpressionSet(ABC):
         """
 
         # Canonical order of dimensions
-        self._dims = (channel_coord_name, DIM_LATENCY, DIM_FUNCTION)
+        self._dims = (channel_coord_name, DIM_LATENCY, DIM_TRANSFORM)
 
         self._block_names: list[str] = list(data_blocks.keys())
         self.channel_coord_name = channel_coord_name
@@ -121,23 +126,23 @@ class ExpressionSet(ABC):
         if set(self._block_names) != set(channel_coord_values.keys()):
             raise ValueError("Ensure data block names match channel block names")
 
-        data_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
+        data_was_supplied_as_sequence = self._validate_data_supplied_as_sequence(data_blocks)
 
-        # If only one function supplied, ensure that the other arguments are appropriately specified
-        if isinstance(functions, str):
-            if data_supplied_as_sequence:
-                raise ValueError("Single function name provided but data came as a sequence")
-            # Only one function, so no matter what format the data is in, we don't expect a sequence
-            # Wrap function names and data blocks to ensure we have sequences from now on
-            functions = [functions]
+        # If only one transform supplied, ensure that the other arguments are appropriately specified
+        if isinstance(transforms, str):
+            if data_was_supplied_as_sequence:
+                raise ValueError("Single transform name provided but data came as a sequence")
+            # Only one transform, so no matter what format the data is in, we don't expect a sequence
+            # Wrap transform names and data blocks to ensure we have sequences from now on
+            transforms = [transforms]
 
-        self._validate_functions_no_duplicates(functions)
+        self._validate_transforms_no_duplicates(transforms)
 
         # If data was specified as sequence, ensure all arrays in the sequence have the same shape
-        if data_supplied_as_sequence:
+        if data_was_supplied_as_sequence:
             if not all_equal([
                 # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
-                # is only one function per item in the sequence
+                # is only one transform per item in the sequence
                 block_data_array.shape[1]
                 for block_data in data_blocks.values()
                 for block_data_array in block_data  # data format sequence
@@ -147,7 +152,7 @@ class ExpressionSet(ABC):
         else:
             if not all_equal([
                 # Only check latencies, as channels can vary between blocks (e.g. different hexels per hemi) and there
-                # is only one function per item in the sequence
+                # is only one transform per item in the sequence
                 block_data_array.shape[1]
                 for block_data_array in data_blocks.values()
             ]):
@@ -156,34 +161,34 @@ class ExpressionSet(ABC):
         # Additional validity checks may happen during construction
 
         # Channels can vary between blocks (e.g. different numbers of vertices for each hemisphere).
-        # But latencies and functions do not
+        # But latencies and transforms do not
         channels: dict[str, NDArray] = {
             bn: array(channel_coord_values[bn], dtype=channel_coord_dtype)
             for bn in self._block_names
         }
         latencies = array(latencies, dtype=LatencyDType)
-        functions = array(functions, dtype=FunctionNameDType)
+        transforms = array(transforms, dtype=TransformNameDType)
 
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
-                for function_name, data in zip(functions, block_data):
+            if data_was_supplied_as_sequence:
+                for trans_name, data in zip(transforms, block_data):
                     if len(channels[block_name]) != data.shape[0]:
-                        raise ValueError(f"{channel_coord_name} mismatch for {function_name}: "
+                        raise ValueError(f"{channel_coord_name} mismatch for {trans_name}: "
                                          f"{len(channels)} {channel_coord_name} versus data shape {data.shape} "
                                          f"({block_name})")
                     if len(latencies) != data.shape[1]:
-                        raise ValueError(f"Latencies mismatch for {function_name}: "
+                        raise ValueError(f"Latencies mismatch for {trans_name}: "
                                          f"{len(latencies)} latencies versus data shape {data.shape} "
                                          f"({block_name})")
-                    if not len(functions) == len(block_data):
-                        raise ValueError(f"Functions mismatch for {block_name}: "
-                                         f"{len(functions)} functions but only {len(block_data)} data blocks")
+                    if not len(transforms) == len(block_data):
+                        raise ValueError(f"Transform mismatch for {block_name}: "
+                                         f"{len(transforms)} transforms but only {len(block_data)} data blocks")
                     if len(data.shape) > 3:
-                        raise ValueError(f"Too many dimensions in data for {function_name}: "
+                        raise ValueError(f"Too many dimensions in data for {trans_name}: "
                                          f"shape={data.shape} "
                                          f"({block_name})")
                     if len(data.shape) == 3 and data.shape[2] != 1:
-                        raise ValueError(f"Too many dimensions in data for {function_name}: "
+                        raise ValueError(f"Too many dimensions in data for {trans_name}: "
                                          f"shape={data.shape} "
                                          f"({block_name})")
             else:
@@ -199,9 +204,9 @@ class ExpressionSet(ABC):
                     raise ValueError(f"Too many dimensions in data: "
                                      f"shape={block_data.shape} "
                                      f"({block_name})")
-                if len(block_data.shape) == 3 and len(functions) != block_data.shape[2]:
-                    raise ValueError(f"Functions mismatch: "
-                                     f"{len(functions)} functions versus data shape {block_data.shape} "
+                if len(block_data.shape) == 3 and len(transforms) != block_data.shape[2]:
+                    raise ValueError(f"Transforms mismatch: "
+                                     f"{len(transforms)} transforms versus data shape {block_data.shape} "
                                      f"({block_name})")
 
         ############################################
@@ -209,25 +214,25 @@ class ExpressionSet(ABC):
         ############################################
 
         # Input value `data_blocks` has type something like dict[str, list[array]].
-        #  i.e. a dict mapping block names to a list of 2d data volumes, one for each function
+        #  i.e. a dict mapping block names to a list of 2d data volumes, one for each transform
         # We need to eventually get it into `self._data`, which has type dict[str, DataArray]
-        # i.e. a dict mapping block names to a DataArray containing data for all functions
+        # i.e. a dict mapping block names to a DataArray containing data for all transforms
         self._data: dict[str, DataArray] = dict()
         nan_warning_sent = False
         for block_name, block_data in data_blocks.items():
-            if data_supplied_as_sequence:
+            if data_was_supplied_as_sequence:
                 # Build DataArray by concatenating sequence
                 data_array: DataArray = _concat_dataarrays(
                     [
                         DataArray(
-                            self._init_prep_data(function_data),
+                            self._init_prep_data(transform_data),
                             coords={
                                 channel_coord_name: channels[block_name],
                                 DIM_LATENCY: latencies,
-                                DIM_FUNCTION: [function],
+                                DIM_TRANSFORM: [transform],
                             },
                         )
-                        for function, function_data in zip(functions, block_data)
+                        for transform, transform_data in zip(transforms, block_data)
                     ])
             else:
                 # Build DataArray in one go
@@ -236,7 +241,7 @@ class ExpressionSet(ABC):
                     coords={
                         channel_coord_name: channels[block_name],
                         DIM_LATENCY: latencies,
-                        DIM_FUNCTION: functions,
+                        DIM_TRANSFORM: transforms,
                     }
                 )
 
@@ -254,8 +259,8 @@ class ExpressionSet(ABC):
                 raise ValueError("DataArray had wrong dimensions")
             if set(data_array.coords.keys()) != set(self._dims):
                 raise ValueError("DataArray had wrong coordinates")
-            if not array_equal(data_array.coords[DIM_FUNCTION].values, functions):
-                raise ValueError("DataArray had wrong functions")
+            if not array_equal(data_array.coords[DIM_TRANSFORM].values, transforms):
+                raise ValueError("DataArray had wrong transforms")
 
             self._data[block_name] = data_array
 
@@ -271,14 +276,15 @@ class ExpressionSet(ABC):
         return data_supplied_as_sequence[self._block_names[0]]
 
     # noinspection PyMethodMayBeStatic
-    def _validate_functions_no_duplicates(self, functions: Sequence[str]) -> None:
-        if not len(functions) == len(set(functions)):
+    def _validate_transforms_no_duplicates(self, transforms: Sequence[str]) -> None:
+        if not len(transforms) == len(set(transforms)):
             checked = []
-            for f in functions:
+            f = None  # So the static analyser knows it'll actually be defined if the Error state is reached
+            for f in transforms:
                 if f in checked:
                     break
                 checked.append(f)
-            raise ValueError(f"Duplicated functions in input, e.g. {f}")
+            raise ValueError(f"Duplicated transforms in input, e.g. {f}")
 
     @classmethod
     def _init_prep_data(cls, data: _InputDataArray) -> COO:
@@ -301,16 +307,16 @@ class ExpressionSet(ABC):
         }
 
     @property
-    def functions(self) -> list[FunctionNameDType]:
-        """Function names."""
-        functions = {
-            bn: data.coords[DIM_FUNCTION].values.tolist()
+    def transforms(self) -> list[TransformNameDType]:
+        """Transform names."""
+        transforms = {
+            bn: data.coords[DIM_TRANSFORM].values.tolist()
             for bn, data in self._data.items()
         }
-        # Validate that functions are the same for all data blocks
-        assert all_equal(list(functions.values()))
+        # Validate that transforms are the same for all data blocks
+        assert all_equal(list(transforms.values()))
         # Then just return the first one
-        return functions[self._block_names[0]]
+        return transforms[self._block_names[0]]
 
     @property
     def latencies(self) -> NDArray[LatencyDType]:
@@ -324,15 +330,46 @@ class ExpressionSet(ABC):
         return latencies[self._block_names[0]]
 
     @abstractmethod
-    def __getitem__(self, functions: str | Sequence[str]) -> ExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> ExpressionSet:
+        pass
+
+    def _validate_crop_latency_args(self, start: float, stop: float) -> None:
+        """
+        Raises IndexError if the start and stop indices are invalid.
+        """
+        if start >= stop:
+            raise IndexError(f"start must be less than stop ({start=}, {stop=})")
+        if start > self.latencies.max() or stop < self.latencies.min():
+            raise IndexError(f"Crop range lies entirely outside expression data"
+                             f" ({start}–{stop} is outside {self.latencies.min()}–{self.latencies.max()})")
+
+        selected_latencies = [lat for lat in self.latencies if start <= lat <= stop]
+
+        if len(selected_latencies) == 0:
+            raise IndexError(f"No latencies fell between selected range ({start=}, {stop=})")
+
+    @abstractmethod
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> Self:
+        """
+        Returns a copy of the ExpressionSet with latencies cropped between the two endpoints (inclusive).
+
+        Args:
+            latency_start (float | None): Latency in seconds to start the cropped window. Use None for no cropping at
+                the start (e.g. half-open crop).
+            latency_stop (float | None): Latency in seconds to stop the cropped window. Use None for no cropping at the
+                end (e.g. half-open crop).
+
+        Returns:
+            Self: A copy of the ExpressionSet with the latencies cropped between the specified start and stop.
+        """
         pass
 
     @abstractmethod
-    def __copy__(self) -> ExpressionSet:
+    def __copy__(self) -> Self:
         pass
 
     @abstractmethod
-    def __add__(self, other) -> ExpressionSet:
+    def __add__(self, other) -> Self:
         pass
 
     def _add_compatibility_check(self, other) -> None:
@@ -358,7 +395,7 @@ class ExpressionSet(ABC):
         # Override this method and provide additional checks after calling super().__eq__(other)
         if type(self) is not type(other):
             return False
-        if not self.functions == other.functions:
+        if not self.transforms == other.transforms:
             return False
         if not array_equal(self.latencies, other.latencies):
             return False
@@ -367,15 +404,15 @@ class ExpressionSet(ABC):
                 return False
         return True
 
-    def _best_functions_for_block(self, block_name: str) -> DataFrame:
+    def _best_transforms_for_block(self, block_name: str) -> list[ExpressionPoint]:
         """
-        Return a DataFrame containing:
-        for each channel in the block, the best function and latency for that channel, and the associated log p-value
+        Return a list of expression points:
+        for each channel in the block, the best transform and latency for that channel, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
         """
         # Want, for each channel in the block:
-        #  - The name, f, of the function which is best at any latency
+        #  - The name, f, of the transform which is best at any latency
         #  - The latency, l, for which f is best
         #  - The log p-value, p, for f at l
 
@@ -384,60 +421,59 @@ class ExpressionSet(ABC):
         data: DataArray = self._data[block_name].copy()
         densify_data_block(data)
 
-        # (channel, function) → l, the best latency
+        # (channel, transform) → l, the best latency
         best_latency = data.idxmin(dim=DIM_LATENCY)
-        # (channel, function) → log p of best latency for each function
+        # (channel, transform) → log p of best latency for each transform
         logp_at_best_latency = data.min(dim=DIM_LATENCY)
 
-        # (channel) → log p of best function (at best latency)
-        logp_at_best_function = logp_at_best_latency.min(dim=DIM_FUNCTION)
-        # (channel) → f, the best function
-        best_function = logp_at_best_latency.idxmin(dim=DIM_FUNCTION)
+        # (channel) → log p of best transform (at best latency)
+        logp_at_best_transform = logp_at_best_latency.min(dim=DIM_TRANSFORM)
+        # (channel) → f, the best transform
+        best_transform = logp_at_best_latency.idxmin(dim=DIM_TRANSFORM)
 
-        # (channel) -> logp of the best function (at the best latency)
-        logp_vals = logp_at_best_function.data
-        # (channel) -> best function name (at the best latency)
-        best_functions = best_function.data
-        # (channel) -> latency of the best function
+        # (channel) -> logp of the best transform (at the best latency)
+        logp_vals = logp_at_best_transform.data
+        # (channel) -> best transform name (at the best latency)
+        best_transforms = best_transform.data
+        # (channel) -> latency of the best transform
         best_latencies = best_latency.sel(
             {
                 # e.g. hexels          -> array([0, ..., 10241])
                 self.channel_coord_name: self._channels[block_name],
-                #          -> DataArray((hexel) -> function)
-                DIM_FUNCTION: best_function,
+                #          -> DataArray((hexel) -> transform)
+                DIM_TRANSFORM: best_transform,
             }
         ).data
 
         # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
-        idxs = logp_vals < 0
+        idxs = where(logp_vals < 0)[0]
 
-        return DataFrame.from_dict(
-            {
-                self.channel_coord_name: self._channels[block_name][idxs],
-                DIM_FUNCTION: best_functions[idxs],
-                DIM_LATENCY: best_latencies[idxs],
-                COL_LOGP_VALUE: logp_vals[idxs],
-            }
-        )
+        return [
+            ExpressionPoint(channel=self._channels[block_name][idx],
+                            transform=best_transforms[idx],
+                            latency=best_latencies[idx],
+                            logp_value=logp_vals[idx])
+            for idx in idxs
+        ]
 
-    def rename(self, functions: dict[str, str] = None, channels: dict = None) -> None:
+    def rename(self, transforms: dict[str, str] = None, channels: dict = None) -> None:
         """
-        Renames the functions and channels within an ExpressionSet.
+        Renames the transforms and channels within an ExpressionSet.
 
         Supply a dictionary mapping old values to new values.
 
-        Raises KeyError if one of the keys in the renaming dictionary is not a function name in the expression set.
+        Raises KeyError if one of the keys in the renaming dictionary is not a transform name in the expression set.
         """
         # Default values
-        if functions is None:
-            functions = dict()
+        if transforms is None:
+            transforms = dict()
         if channels is None:
             channels = dict()
 
         # Validate
-        for old, new in functions.items():
-            if old not in self.functions:
-                raise KeyError(f"{old} is not a function in this expression set")
+        for old, new in transforms.items():
+            if old not in self.transforms:
+                raise KeyError(f"{old} is not a transform in this expression set")
         for old, new in channels.items():
             for bn in self._block_names:
                 if old not in self._channels[bn]:
@@ -447,14 +483,14 @@ class ExpressionSet(ABC):
 
         # Replace
         for bn, data in self._data.items():
-            # Functions
+            # Transforms
             new_names = []
-            for old_name in self._data[bn][DIM_FUNCTION].values:
-                if old_name in functions:
-                    new_names.append(functions[old_name])
+            for old_name in self._data[bn][DIM_TRANSFORM].values:
+                if old_name in transforms:
+                    new_names.append(transforms[old_name])
                 else:
                     new_names.append(old_name)
-            self._data[bn][DIM_FUNCTION] = new_names
+            self._data[bn][DIM_TRANSFORM] = new_names
 
             # Channels
             new_channels = []
@@ -466,7 +502,7 @@ class ExpressionSet(ABC):
             self._data[bn][self.channel_coord_name] = new_channels
 
     @abstractmethod
-    def best_functions(self) -> DataFrame | tuple[DataFrame, ...]:
+    def best_transforms(self) -> list[ExpressionPoint] | tuple[list[ExpressionPoint], ...]:
         """
         Note that channels for which the best p-value is 1 will be omitted.
         """
@@ -475,14 +511,14 @@ class ExpressionSet(ABC):
 
 class HexelExpressionSet(ExpressionSet):
     """
-    Brain data associated with expression of a single function in hexel space.
+    Brain data associated with expression of a single transform in hexel space.
     Includes lh, rh, flipped, non-flipped.
     Data is log10 p-values
     """
 
     def __init__(
         self,
-        functions: str | Sequence[str],
+        transforms: str | Sequence[str],
         # Metadata
         hexels_lh: Sequence[Hexel],
         hexels_rh: Sequence[Hexel],
@@ -493,7 +529,7 @@ class HexelExpressionSet(ExpressionSet):
         data_rh: _InputDataArray | Sequence[_InputDataArray],
     ):
         super().__init__(
-            functions=functions,
+            transforms=transforms,
             latencies=latencies,
             data_blocks={
                 BLOCK_LEFT: data_lh,
@@ -524,37 +560,65 @@ class HexelExpressionSet(ExpressionSet):
         """Right-hemisphere data."""
         return self._data[BLOCK_RIGHT]
 
-    def __getitem__(self, functions: str | Sequence[str]) -> HexelExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> HexelExpressionSet:
         """
-        Select data for specified function(s) only.
-        Use a function name or list/array of function names
+        Select data for specified transform(s) only.
+        Use a transform name or collection of transform names
         """
-        # Allow indexing by a single function
-        if isinstance(functions, str):
-            functions = [functions]
-        # Get indices of sliced functions within total function list
-        function_idxs = []
-        for f in functions:
+        # Allow indexing by a single transform
+        if isinstance(transforms, str):
+            transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
+        # Get indices of sliced transforms within total transform list
+        transform_idxs = []
+        for f in transforms:
             try:
-                function_idxs.append(self.functions.index(f))
+                transform_idxs.append(self.transforms.index(TransformNameDType(f)))
             except ValueError:
                 raise KeyError(f)
         return HexelExpressionSet(
-            functions=functions,
+            transforms=transforms,
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
-            data_lh=self._data[BLOCK_LEFT].data[:, :, function_idxs],
-            data_rh=self._data[BLOCK_RIGHT].data[:, :, function_idxs],
+            data_lh=self._data[BLOCK_LEFT].data[:, :, transform_idxs],
+            data_rh=self._data[BLOCK_RIGHT].data[:, :, transform_idxs],
         )
 
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> HexelExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
+
+        lat: Latency
+        selected_latencies = [
+            (i, lat)
+            for i, lat in enumerate(self.latencies)
+            if latency_start <= lat <= latency_stop
+        ]
+        # Unzip idxs and latencies
+        new_latency_idxs, selected_latencies = zip(*selected_latencies)
+
+        return HexelExpressionSet(
+            transforms=self.transforms.copy(),
+            hexels_lh=self.hexels_left.copy(),
+            hexels_rh=self.hexels_right.copy(),
+            latencies=selected_latencies,
+            data_lh=self._data[BLOCK_LEFT].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+            data_rh=self._data[BLOCK_RIGHT].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+        )
+    
     def __copy__(self):
         return HexelExpressionSet(
-            functions=self.functions.copy(),
+            transforms=self.transforms.copy(),
             hexels_lh=self.hexels_left.copy(),
             hexels_rh=self.hexels_right.copy(),
             latencies=self.latencies.copy(),
-            # Slice by function
+            # Slice by transform
             data_lh=self._data[BLOCK_LEFT].data.copy(),
             data_rh=self._data[BLOCK_RIGHT].data.copy(),
         )
@@ -567,7 +631,7 @@ class HexelExpressionSet(ExpressionSet):
             raise ValueError("Hexels mismatch (right)")
         assert array_equal(self.latencies, other.latencies), "Latencies mismatch"
         return HexelExpressionSet(
-            functions=self.functions + other.functions,
+            transforms=self.transforms + other.transforms,
             hexels_lh=self.hexels_left,
             hexels_rh=self.hexels_right,
             latencies=self.latencies,
@@ -584,47 +648,77 @@ class HexelExpressionSet(ExpressionSet):
             return False
         return True
 
-    def best_functions(self) -> Tuple[DataFrame, DataFrame]:
+    def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
         Return a pair of DataFrames (left, right), containing:
-        for each hexel, the best function and latency for that hexel, and the associated log p-value
+        for each hexel, the best transform and latency for that hexel, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
         """
         return (
-            super()._best_functions_for_block(BLOCK_LEFT),
-            super()._best_functions_for_block(BLOCK_RIGHT),
+            super()._best_transforms_for_block(BLOCK_LEFT),
+            super()._best_transforms_for_block(BLOCK_RIGHT),
         )
 
 
 class SensorExpressionSet(ExpressionSet):
     """
-    Brain data associated with the expression of a single function in sensor space.
+    Brain data associated with the expression of a single transform in sensor space.
     Includes left hemisphere (lh), right hemisphere (rh), flipped, and non-flipped data.
     Data is represented as log10 p-values.
     """
 
     def __init__(
         self,
-        functions: str | Sequence[str],
+        transforms: str | Sequence[str],
         # Metadata
         sensors: Sequence[Sensor],
         latencies: Sequence[Latency],
         # log p-values
         # In general, we will combine flipped and non-flipped versions
         data: _InputDataArray | Sequence[_InputDataArray],
+        sensor_layout: Optional[SensorLayout] = None,
     ):
         """
-        Initialize the SensorExpressionSet with function names, sensor metadata, latency information, and log p-value data.
+        Initialize the SensorExpressionSet with transform names, sensor metadata, latency information, and log p-value data.
 
         Args:
-            functions (str | Sequence[str]): The names of the functions being evaluated.
+            transforms (str | Sequence[str]): The names of the transforms being evaluated.
             sensors (Sequence[Sensor]): Metadata about the sensors used in the study.
             latencies (Sequence[Latency]): Latency information corresponding to the data.
             data (_InputDataArray | Sequence[_InputDataArray]): Log p-values representing the data.
+            sensor_layout (Optional[SensorLayout]): Layout of the EMEG sensors. None indicates that the layout is not
+                specified. If not None, then expect at least one of MEG and EEG sensors to be specified
         """
+
+        # Validate sensor layout against sensors
+        if sensor_layout is not None:
+            if sensor_layout.meg is None and sensor_layout.eeg is None:
+                raise ValueError("Specify at least one out of MEG and EEG sensors, or supply None for sensor_layout.")
+            layout_sensors = []
+            if sensor_layout.meg is not None:
+                layout_sensors.extend(get_meg_sensors(sensor_layout.meg))
+            if sensor_layout.eeg is not None:
+                layout_sensors.extend(get_eeg_sensors(sensor_layout.eeg))
+            if len(sensors) != len(layout_sensors):
+                warn(f"Sensor layout size mismatch."
+                     f" {len(layout_sensors)} sensors in layout and {len(sensors)} sensors supplied")
+            sensors_not_in_layout = sorted(set(sensors) - set(layout_sensors))
+            sensors_not_supplied = sorted(set(layout_sensors) - set(sensors))
+            if len(sensors_not_in_layout) > 0:
+                # Sensors without a layout position indicates an error
+                warn(f"{len(sensors_not_in_layout)} sensors were present in the NKG file, "
+                     f"but were not provided in the layout: {sensors_not_in_layout}")
+            if len(sensors_not_supplied) > 0:
+                # Sensors which weren't supplied could be the result of a subset of channels being recorded
+                # this is valid but unusual so we warn
+                warn(f"{len(sensors_not_supplied)} sensors are present in the layout, "
+                     f"but not present in the NKG file: {sensors_not_supplied}")
+
+        self.sensor_layout: Optional[SensorLayout] = sensor_layout
+
         super().__init__(
-            functions=functions,
+            transforms=transforms,
             latencies=latencies,
             data_blocks={BLOCK_SCALP: data},
             channel_coord_name=DIM_SENSOR,
@@ -654,14 +748,17 @@ class SensorExpressionSet(ExpressionSet):
             return False
         if not COO(self.scalp.data == other.scalp.data).all():
             return False
+        if not self.sensor_layout == other.sensor_layout:
+            return False
         return True
 
     def __copy__(self):
         return SensorExpressionSet(
-            functions=self.functions.copy(),
+            transforms=self.transforms.copy(),
             sensors=self.sensors.copy(),
             latencies=self.latencies.copy(),
             data=self._data[BLOCK_SCALP].data.copy(),
+            sensor_layout=self.sensor_layout,
         )
 
     def __add__(self, other: SensorExpressionSet) -> SensorExpressionSet:
@@ -670,45 +767,74 @@ class SensorExpressionSet(ExpressionSet):
             raise ValueError("Sensors mismatch")
         if not array_equal(self.latencies, other.latencies):
             raise ValueError("Latencies mismatch")
-        # constructor expects a sequence of function names and sequences of 2d matrices
+        # constructor expects a sequence of transform names and sequences of 2d matrices
         return SensorExpressionSet(
-            functions=self.functions + other.functions,
+            transforms=self.transforms + other.transforms,
             sensors=self.sensors,
             latencies=self.latencies,
             data=_concat_dataarrays([self.scalp, other.scalp]).data,
+            sensor_layout=self.sensor_layout,
         )
 
-    def __getitem__(self, functions: str | Sequence[str]) -> SensorExpressionSet:
+    def __getitem__(self, transforms: str | Collection[str]) -> SensorExpressionSet:
         """
-        Select data for specified function(s) only.
-        Use a function name or list/array of function names
+        Select data for specified transform(s) only.
+        Use a transform name or collection of transform names
         """
-        # Allow indexing by a single function
-        if isinstance(functions, str):
-            functions = [functions]
-        # Get indices of sliced functions within total function list
-        function_idxs = []
-        for f in functions:
+        # Allow indexing by a single transform
+        if isinstance(transforms, str):
+            transforms = [transforms]
+        else:
+            # Convert collection to list
+            transforms = list(transforms)
+        # Get indices of sliced transforms within total transform list
+        transform_idxs = []
+        for t in transforms:
             try:
-                function_idxs.append(self.functions.index(f))
+                transform_idxs.append(self.transforms.index(TransformNameDType(t)))
             except ValueError:
-                raise KeyError(f)
+                raise KeyError(t)
         return SensorExpressionSet(
-            functions=functions,
+            transforms=transforms,
             sensors=self.sensors,
             latencies=self.latencies,
-            # Slice data by requested functions
-            data=self._data[BLOCK_SCALP].data[:, :, function_idxs],
+            # Slice data by requested transforms
+            data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
+            sensor_layout=self.sensor_layout,
         )
 
-    def best_functions(self) -> DataFrame:
+    def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
+        if latency_start is None:
+            latency_start = -inf
+        if latency_stop is None:
+            latency_stop = inf
+        self._validate_crop_latency_args(latency_start, latency_stop)
+
+        lat: Latency
+        selected_latencies = [
+            (i, lat)
+            for i, lat in enumerate(self.latencies)
+            if latency_start <= lat <= latency_stop
+        ]
+        # Unzip idxs and latencies
+        new_latency_idxs, selected_latencies = zip(*selected_latencies)
+
+        return SensorExpressionSet(
+            transforms=self.transforms.copy(),
+            sensors=self.sensors.copy(),
+            latencies=selected_latencies,
+            data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
+            sensor_layout=self.sensor_layout,
+        )
+
+    def best_transforms(self) -> list[ExpressionPoint]:
         """
         Return a DataFrame containing:
-        for each sensor, the best function and latency for that sensor, and the associated log p-value
+        for each sensor, the best transform and latency for that sensor, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
         """
-        return super()._best_functions_for_block(BLOCK_SCALP)
+        return super()._best_transforms_for_block(BLOCK_SCALP)
 
 
 T_ExpressionSetSubclass = TypeVar("T_ExpressionSetSubclass", bound=ExpressionSet)
@@ -729,6 +855,15 @@ def combine(expression_sets: Sequence[T_ExpressionSetSubclass]) -> T_ExpressionS
 def _concat_dataarrays(arrays: Sequence[DataArray]) -> DataArray:
     return concat(
         arrays,
-        dim=DIM_FUNCTION,
+        dim=DIM_TRANSFORM,
         data_vars="all",  # Required by concat of DataArrays
     )
+
+
+def get_n_channels(es: ExpressionSet) -> int:
+    """Returns the number of channels represented in an ExpressionSet."""
+    if isinstance(es, SensorExpressionSet):
+        return len(es.sensors)
+    if isinstance(es, HexelExpressionSet):
+        return len(es.hexels_left) + len(es.hexels_right)
+    raise NotImplementedError()

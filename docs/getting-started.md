@@ -104,7 +104,7 @@ This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_l
 
 !!! notes 
 
-    If running at the CBU, an easier way to do this (see [Troubleshooting](docs/troubleshooting_cbu.md)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
+    If running at the CBU, an easier way to do this (see [Troubleshooting](#CBU-troubleshooting)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
     Either run it locally with `./submit_gridsearch.sh`, or run it on the CBU queue with `sbatch submit_gridsearch.sh`.
 
 ### 4. Plot the results
@@ -117,6 +117,7 @@ See also `demos/demo_plotting.ipynb`.
 
 See `demos/demo_ippm.ipynb`.
 
+[](){ #CBU-troubleshooting }
 ## Troubleshooting on the CBU compute cluster
 
 - You see `Acccess denied permission error: 403` when you try to use github.
@@ -174,4 +175,10 @@ Now (within the Apptainer) you can run it using `poetry`, e.g.:
 
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
+  ```
+
+If plotting on the CBU cluster (off-screen), use
+
+  ```shell
+  xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting
   ```

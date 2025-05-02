@@ -6,12 +6,14 @@ from sys import stdout
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
-from kymata.io.functions import load_function
+from kymata.io.transform import load_transform
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
-from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
-from kymata.plot.plot import expression_plot
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
+from kymata.preproc.source import load_emeg_pack
+from kymata.plot.expression import expression_plot
+
 
 _default_output_dir = Path(data_root_path(), "output")
 _logger = getLogger(__file__)
@@ -51,18 +53,18 @@ def main():
     parser.add_argument("--ave-mode", type=str, default="ave", choices=["ave", "concatenate"],
                         help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.")
 
-    # Functions
+    # Transforms
     parser.add_argument("--input-stream", type=str, required=True, choices=["auditory", "visual", "tactile"],
-                        help="The input stream for the functions being tested.")
-    parser.add_argument("--function-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
-                        help="Location of function stimulisig. Either supply relative to the data dir, or as an "
+                        help="The input stream for the transforms being tested.")
+    parser.add_argument("--transform-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
+                        help="Location of transform stimulisig. Either supply relative to the data dir, or as an "
                              "absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.")
-    parser.add_argument("--function-name", type=str, nargs="+", help="function names in stimulisig")
+    parser.add_argument("--transform-name", type=str, nargs="+", help="transform names in stimulisig")
     parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
-                        help="If the function contour contains NaN values, "
+                        help="If the transform contour contains NaN values, "
                              "this will replace them with the specified values.")
-    parser.add_argument("--function-sample-rate", type=float, required=False, default=1000,
-                        help="The sample rate of the function contour.")
+    parser.add_argument("--transform-sample-rate", type=float, required=False, default=1000,
+                        help="The sample rate of the transform contour.")
 
     # For source space
     parser.add_argument("--use-inverse-operator", action="store_true",
@@ -82,12 +84,12 @@ def main():
     parser.add_argument("--n-splits", type=int, default=400,
                         help="Number of splits to split the recording into, "
                              "(set to stimulus_length/seconds_per_split for full file)")
-    parser.add_argument("--n-derangements", type=int, default=5,
+    parser.add_argument("--n-derangements", type=int, default=6,
                         help="Number of deragements for the null distribution")
-    parser.add_argument("--start-latency", type=float, default=-200,
+    parser.add_argument("--start-latency", type=float, default=-0.2,
                         help="Earliest latency to check in cross correlation")
-    parser.add_argument("--emeg-t-start", type=float, default=-200,
-                        help="Start of the emeg evoked files relative to the start of the function")
+    parser.add_argument("--emeg-t-start", type=float, default=-0.2,
+                        help="Start of the emeg evoked files relative to the start of the transform")
 
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
@@ -105,7 +107,7 @@ def main():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent.parent, "dataset_config", args.config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 
@@ -175,7 +177,7 @@ def main():
 
     _logger.info("Starting Kymata Gridsearch")
     _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
-    _logger.info(f"Functions to be tested: {args.function_name}")
+    _logger.info(f"Transforms to be tested: {args.transform_name}")
     _logger.info(f"Gridsearch will be applied in {channel_space} space")
     if args.use_inverse_operator:
         _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
@@ -208,37 +210,42 @@ def main():
     combined_expression_set = None
 
     # Get stimulisig path
-    if Path(args.function_path).exists():
-        function_path = Path(args.function_path)
+    if Path(args.transform_path).exists():
+        transform_path = Path(args.transform_path)
     else:
-        function_path = Path(base_dir, args.function_path)
-    _logger.info(f"Loading functions from {str(function_path)}")
+        transform_path = Path(base_dir, args.transform_path)
+    _logger.info(f"Loading transforms from {str(transform_path)}")
 
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
-    for function_name in args.function_name:
-        _logger.info(f"Running gridsearch on {function_name}")
-        function = load_function(
-            function_path,
-            func_name=function_name,
+    sensor_layout = SensorLayout(
+        meg_layout=MEGLayout(dataset_config["meg_sensor_layout"]),
+        eeg_layout=EEGLayout(dataset_config["eeg_sensor_layout"]),
+    )
+
+    for transform_name in args.transform_name:
+        _logger.info(f"Running gridsearch on {transform_name}")
+        transform = load_transform(
+            transform_path,
+            trans_name=transform_name,
             replace_nans=args.replace_nans,
             bruce_neurons=(5, 10),
-            sample_rate=args.function_sample_rate,
+            sample_rate=args.transform_sample_rate,
         )
 
-        # Resample function to match target sample rate if specified, else emeg sample rate
-        function_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
-        if function.sample_rate != function_resample_rate:
-            _logger.info(f"Function sample rate ({function.sample_rate} Hz) doesn't match target sample rate "
-                         f"({function_resample_rate} Hz). Function will be resampled to match. "
-                         f"({function.sample_rate} → {function_resample_rate} Hz)")
-            function = function.resampled(function_resample_rate)
+        # Resample transform to match target sample rate if specified, else emeg sample rate
+        transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+        if transform.sample_rate != transform_resample_rate:
+            _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
+                         f"({transform_resample_rate} Hz). Transform will be resampled to match. "
+                         f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+            transform = transform.resampled(transform_resample_rate)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
             channel_names=ch_names,
             channel_space=channel_space,
-            function=function,
+            transform=transform,
             seconds_per_split=args.seconds_per_split,
             n_derangements=args.n_derangements,
             n_splits=args.n_splits,
@@ -251,6 +258,7 @@ def main():
             stimulus_delivery_latency=stimulus_delivery_latency,
             plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
+            emeg_layout=sensor_layout,
         )
 
         if combined_expression_set is None:
@@ -263,10 +271,10 @@ def main():
     combined_names: str
     if args.save_name is not None and len(args.save_name) > 0:
         combined_names = args.save_name
-    elif len(args.function_name) > 2:
-        combined_names = f"{len(args.function_name)}_functions_gridsearch"
+    elif len(args.transform_name) > 2:
+        combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
     else:
-        combined_names = "_+_".join(args.function_name) + "_gridsearch"
+        combined_names = "_+_".join(args.transform_name) + "_gridsearch"
 
     if args.save_expression_set_location is not None:
         es_save_path = Path(

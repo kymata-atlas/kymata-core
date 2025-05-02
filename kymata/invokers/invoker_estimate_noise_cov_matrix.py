@@ -8,12 +8,12 @@ from kymata.preproc.data_cleansing import estimate_noise_cov
 
 def main(config_filename: str):
     config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
+        str(Path(Path(__file__).parent.parent.parent, "dataset_config", config_filename))
     )
 
     estimate_noise_cov(
         data_root_dir=get_root_dir(config),
-        emeg_machine_used_to_record_data=config["emeg_machine_used_to_record_data"],
+        empty_room_estimate_year=str(config["meg_sss_noise_estimate_year"]),
         list_of_participants=config["participants"],
         dataset_directory_name=config["dataset_directory_name"],
         n_runs=config["number_of_runs"],

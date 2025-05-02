@@ -29,14 +29,10 @@ extra_css:
   - stylesheets/kymata-documentation.css
 
 nav:
-- Home:
-  - index.md
-- Overview:
-  - overview.md
-- Getting Started:
-  - getting-started.md
-- Code Reference:
-  - reference.md
+- Home: index.md
+- Overview: overview.md
+- Getting Started: getting-started.md
+- Code Reference: reference.md
 
 extra:
   social:
@@ -50,7 +46,6 @@ plugins:
       default_handler: python
       handlers:
         python:
-          show_root_full_path: true
           options:
             show_source: false
             docstring_style: google
@@ -63,7 +58,6 @@ plugins:
             separate_signature: true
             show_root_heading: true
             show_root_toc_entry: true
-            show_root_full_path: true
             show_signature_annotations: true
             show_symbol_type_heading: true
             show_symbol_type_toc: true
