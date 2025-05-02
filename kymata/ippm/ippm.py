@@ -1,7 +1,8 @@
 from kymata.entities.expression import (
     ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
-from kymata.ippm.denoising_strategies import MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, \
-    AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy
+from kymata.io.json import NumpyJSONEncoder, serialise_expression_point
+from kymata.ippm.denoising_strategies import (
+    MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy)
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
 from typing import Any
@@ -87,3 +88,32 @@ class IPPM:
 
     def __contains__(self, block: str) -> bool:
         return block in self._graphs
+
+    def to_json(self) -> str:
+        """
+        Serializes the IPPM into a JSON format suitable for sending to <kymata.org>.
+
+        Returns:
+            str: JSON string.
+        """
+        import json
+        from networkx import node_link_data
+
+        jdict = dict()
+        for block, graph in self._graphs.items():
+            jdict[block] = node_link_data(graph.graph_last_to_first, edges="edges")
+            # Appropriately serialise the expression points in nodes and edges
+            jdict[block]["nodes"] = [
+                {
+                    "id": serialise_expression_point(node["id"])
+                }
+                for node in jdict[block]["nodes"]
+            ]
+            jdict[block]["edges"] = [
+                {
+                    "source": serialise_expression_point(edge["source"]),
+                    "target": serialise_expression_point(edge["target"]),
+                }
+                for edge in jdict[block]["edges"]
+            ]
+        return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
