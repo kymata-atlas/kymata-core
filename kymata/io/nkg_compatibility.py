@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from zipfile import ZipFile
 
-from numpy import frombuffer
+from numpy import frombuffer, int64, float64
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import LatencyDType, TransformNameDType, HexelDType
@@ -61,9 +61,9 @@ def _load_data_0_4(from_path_or_file: PathType | FileType) -> dict[str, Any]:
                     for c in f.readlines()
                 ]
             with zf.open(f"/{block_name}/coo-coords.bytes") as f:
-                coords: NDArray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{block_name}/coo-data.bytes") as f:
-                data: NDArray = frombuffer(f.read(), dtype=float)
+                data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(zf.open(f"/{block_name}/coo-shape.txt"), encoding="utf-8") as f:
                 shape: tuple[int, ...] = tuple(int(s.strip()) for s in f.readlines())
             return_dict["data"][block_name] = dict()
@@ -107,9 +107,9 @@ def _load_data_0_3(from_path_or_file: PathType | FileType) -> dict[str, Any]:
         return_dict["data"] = dict()
         for layer in layers:
             with zf.open(f"/{layer}/coo-coords.bytes") as f:
-                coords: NDArray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{layer}/coo-data.bytes") as f:
-                data: NDArray = frombuffer(f.read(), dtype=float)
+                data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(
                 zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8"
             ) as f:
@@ -155,9 +155,9 @@ def _load_data_0_2(from_path_or_file: PathType | FileType) -> dict[str, Any]:
         return_dict["data"] = dict()
         for layer in layers:
             with zf.open(f"/{layer}/coo-coords.bytes") as f:
-                coords: NDArray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{layer}/coo-data.bytes") as f:
-                data: NDArray = frombuffer(f.read(), dtype=float)
+                data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(
                 zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8"
             ) as f:
@@ -203,9 +203,9 @@ def _load_data_0_1(from_path_or_file: PathType | FileType) -> dict[str, Any]:
         return_dict["data"] = dict()
         for layer in ["left", "right"]:
             with zf.open(f"/{layer}/coo-coords.bytes") as f:
-                coords: NDArray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{layer}/coo-data.bytes") as f:
-                data: NDArray = frombuffer(f.read(), dtype=float)
+                data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(
                 zf.open(f"/{layer}/coo-shape.txt"), encoding="utf-8"
             ) as f:
