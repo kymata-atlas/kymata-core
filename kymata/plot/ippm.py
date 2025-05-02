@@ -162,6 +162,7 @@ def plot_ippm(
     arrowhead_dims: tuple[float, float] = None,
     linewidth: float = 3,
     show_labels: bool = True,
+    relabel: dict[str, str] | None = None,
     avoid_collinearity: bool = False,
     serial_sequence: Optional[list[list[str]]] = None,
 ) -> plt.Figure:
@@ -179,10 +180,15 @@ def plot_ippm(
         figheight (int, optional): Height of the plot. Defaults to 5.
         figwidth (int, optional): Width of the plot. Defaults to 10.
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
+        relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
+            original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
 
     Returns:
         (pyplot.Figure): A figure of the IPPM graph.
     """
+
+    if relabel is None:
+        relabel = dict()
 
     if hemisphere is None:
         if BLOCK_LEFT in ippm:
@@ -245,10 +251,11 @@ def plot_ippm(
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
+            display_label = relabel.get(label, f"{label}()")
             ax.text(
                 x=path[0][-1] + text_offset_x,
                 y=path[1][-1],
-                s=f"{label}()",
+                s=display_label,
                 color=color,
                 zorder=1,
                 horizontalalignment="right", verticalalignment='center',
