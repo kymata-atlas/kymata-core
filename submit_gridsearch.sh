@@ -5,7 +5,6 @@
 #   sbatch submit_gridsearch.sh
 ###
 
-
 #SBATCH --job-name=gridsearch
 #SBATCH --output=logs/slurm_log-%x.%j.out.txt
 #SBATCH --error=logs/slurm_log-%x.%j.trace.txt
@@ -18,18 +17,13 @@
 args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
-module load apptainer
-apptainer exec \
-  -B /imaging/projects/cbu/kymata/ \
-  /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif \
-  bash -c \
-    " export VENV_PATH=~/poetry/ ; \
-      \$VENV_PATH/bin/poetry run python -m kymata.invokers.run_gridsearch \
-        --config dataset4.yaml \
-        --input-stream auditory \
-        --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
-        --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
-        --plot-top-channels \
-        --overwrite
-  "
-  #  --snr $ARG # >> result3.txt
+source $(poetry env info --path)/bin/activate
+python kymata/invokers/run_gridsearch.py \
+  --config dataset4.yaml \
+  --input-stream auditory \
+  --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
+  --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
+  --plot-top-channels \
+  --overwrite
+
+#  --snr $ARG # >> result3.txt
