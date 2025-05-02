@@ -283,11 +283,12 @@ def main():
     elif transform_family_type == 'standard':
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
-        expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/11_transforms_gridsearch.nkg')
+        # expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/11_transforms_gridsearch.nkg')
+        expression_data = load_expression_set('C:/Users/cy02/Documents/GitHub/kymata-core/kymata-core-data/output/english_TVL_family_source_baseline_derangments_6.nkg')
 
         # import ipdb;ipdb.set_trace()
 
-        fig = expression_plot(expression_data, paired_axes=False, minimap=False, show_legend=True,
+        fig = expression_plot(expression_data, paired_axes=True, minimap=True, show_legend=True,
                               color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
                               | constant_color_dict(['IL'], 'red')
                               | constant_color_dict(['STL'], 'pink'))
@@ -296,7 +297,7 @@ def main():
                             #   | constant_color_dict(['STL'], '#ca8bb5'))
 
         # fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/music.png")
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/new_cluster_test.png")
+        fig.savefig("C:/Users/cy02/Documents/GitHub/kymata-core/kymata-core-data/output/new_cluster_test.png")
 
     elif transform_family_type == 'ANN':
 

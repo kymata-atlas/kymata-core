@@ -7,7 +7,7 @@ from typing import Any
 from warnings import warn
 from zipfile import ZipFile, ZIP_LZMA
 
-from numpy import frombuffer
+from numpy import frombuffer, int64, float64
 from numpy.typing import NDArray
 from sparse import COO
 
@@ -389,9 +389,9 @@ def _load_data_current(from_path_or_file: PathType | FileType) -> dict[str, Any]
                     c.strip() for c in f.readlines()
                 ]
             with zf.open(f"/{block_name}/coo-coords.bytes") as f:
-                coords: NDArray = frombuffer(f.read(), dtype=int).reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{block_name}/coo-data.bytes") as f:
-                data: NDArray = frombuffer(f.read(), dtype=float)
+                data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(
                 zf.open(f"/{block_name}/coo-shape.txt"), encoding="utf-8"
             ) as f:
