@@ -21,7 +21,7 @@
 </div>
 <br>
 <p align="center">
-        <a href="#About The Project">Overview</a>
+        <a href="#Overview">Overview</a>
         ·
         <a href="#Getting Started">Setup</a>
         ·
@@ -30,14 +30,14 @@
         <a href="#Licence">Licence</a>
 </p>
 
-## About The Project
+## Overview
 
 _Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kymata.org).[^1] It is maintained by the
 [Kymata Research Group](https://kymata.org).
 
 The central pipeline includes:
 * Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
-* Gridsearch approaches for function mapping;
+* Gridsearch approaches for transform mapping;
 * Information Processing Pathway Map[^2] generation (both offline generation and evaluation);
 * Plotting functionality
 

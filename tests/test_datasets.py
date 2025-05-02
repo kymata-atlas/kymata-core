@@ -25,7 +25,11 @@ def test_download_and_delete_q3_2023_data_files():
         for filename in dataset.filenames:
             assert not Path(dataset.path, filename).exists()
 
-
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Test only when run locally - otherwise github will download files each"
+    "time we push",
+)
 def test_download_and_delete_gm_loudness3_data_files():
     from kymata.datasets.sample import TVLInsLoudnessOnlyDataset
 
@@ -39,7 +43,11 @@ def test_download_and_delete_gm_loudness3_data_files():
         for filename in dataset.filenames:
             assert not Path(dataset.path, filename).exists()
 
-
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Test only when run locally - otherwise github will download files each"
+    "time we push",
+)
 def test_download_and_delete_fsaverage_surfaces():
     from kymata.datasets.fsaverage import FSAverageDataset
 

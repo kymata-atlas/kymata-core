@@ -104,7 +104,7 @@ This will output a `.nkg` file, which can then be loaded (see `demos/demo_save_l
 
 !!! notes 
 
-    If running at the CBU, an easier way to do this (see [Troubleshooting](docs/troubleshooting_cbu.md)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
+    If running at the CBU, an easier way to do this (see [Troubleshooting](#CBU-troubleshooting)) may be to use the shell script `submit_gridsearch.sh`, which sets up the Apptainer environment the right way.
     Either run it locally with `./submit_gridsearch.sh`, or run it on the CBU queue with `sbatch submit_gridsearch.sh`.
 
 ### 4. Plot the results
@@ -117,30 +117,50 @@ See also `demos/demo_plotting.ipynb`.
 
 See `demos/demo_ippm.ipynb`.
 
+[](){ #CBU-troubleshooting }
 ## Troubleshooting on the CBU compute cluster
 
-You see `pyenv: Command not found`, `poetry: Command not found`
+- You see `Acccess denied permission error: 403` when you try to use github.
 
-- On the CBU nodes, `pyenv` only works in `bash`, so make sure you are using this.
+This is because your git instance at the CBU is not passing the correct authorisation credentials to your GitHub account. You will [have to create a new public key in ~/.ssh/ in your cbu home folder](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent), and then use this to [create an SSH key in your github settings](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
 
-  ```
-  bash
-  ```
+Then, create (or modify) the `config` file in `~/.ssh/`:
 
-You see `/lib64/libm.so.6: version 'GLIBC_2.29' not found` when running gridsearch
+```shell
+Host github.com
+        LogLevel DEBUG3
+        User git
+        Hostname github.com
+        PreferredAuthentications publickey
+        IdentityFile /home/<username>/.ssh/<name of private key>
+```
 
-- You are running it on a cbu node that does not have the right libraries installed. You could try it on a node which does (such as `lws-gpu02`), or (prefered) use `submit_gridsearch.sh` which will implement apptainer which layers the right libraries over the top of the node. 
+- You can't install python versions using pyenv.
 
-You see `ModuleNotFoundError: No module named 'numpy'`
+This is becasue the login nodes don't have the right C++ compilers. To get around this, ignore pyenv, and instead use
+apptainer to install poetry:
 
-- You are probably running `submit_gridsearch.sh`, and it currently has Andy's `kymata-core` location hard-coded.
+```shell
+module load apptainer
+apptainer shell /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
+mkdir ~/poetry
+export VENV_PATH=~/poetry/
+python3 -m venv $VENV_PATH
+$VENV_PATH/bin/pip install -U pip setuptools
+$VENV_PATH/bin/pip install poetry
+```
+
+- You see `ModuleNotFoundError: No module named 'numpy'`
+
+You are probably running `submit_gridsearch.sh`, and it currently has Andy's `kymata-core` location hard-coded.
 Update to point it at your copy.
 
-You see `ModuleNotFoundError: No module named 'kymata'`
+- You see `ModuleNotFoundError: No module named 'kymata'`
 
-- You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure `kymata-core` is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
+You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure `kymata-core` is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
 
   ```shell
+  module load apptainer
   apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
   export VENV_PATH=~/poetry/
   cd /path/to/kymata-core
@@ -151,8 +171,14 @@ You see `ModuleNotFoundError: No module named 'kymata'`
   $VENV_PATH/bin/poetry install
   ```
 
-- Now (within the Apptainer) you can run it using `poetry`, e.g.:
+Now (within the Apptainer) you can run it using `poetry`, e.g.:
 
   ```shell
   $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
+  ```
+
+If plotting on the CBU cluster (off-screen), use
+
+  ```shell
+  xvfb-run -a poetry run python -m kymata.invokers.invoker_run_nkg_plotting
   ```
