@@ -1,8 +1,8 @@
 from json import JSONEncoder
 from typing import Any
 
+import numpy as np
 from networkx import Graph
-from numpy import integer, floating, ndarray
 
 from kymata.entities.expression import ExpressionPoint
 
@@ -12,11 +12,11 @@ class NumpyJSONEncoder(JSONEncoder):
     A JSON encoder for use with Numpy datatypes.
     """
     def default(self, obj):
-        if isinstance(obj, integer):
+        if isinstance(obj, np.integer):
             return int(obj)
-        if isinstance(obj, floating):
+        if isinstance(obj, np.floating):
             return float(obj)
-        if isinstance(obj, ndarray):
+        if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super().default(obj)
 
