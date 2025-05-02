@@ -61,8 +61,7 @@ def _load_data_0_4(from_path_or_file: PathType | FileType) -> dict[str, Any]:
                     for c in f.readlines()
                 ]
             with zf.open(f"/{block_name}/coo-coords.bytes") as f:
-                temp = frombuffer(f.read(), dtype=int64)
-                coords: NDArray = temp.reshape((3, -1))
+                coords: NDArray = frombuffer(f.read(), dtype=int64).reshape((3, -1))
             with zf.open(f"/{block_name}/coo-data.bytes") as f:
                 data: NDArray = frombuffer(f.read(), dtype=float64)
             with TextIOWrapper(zf.open(f"/{block_name}/coo-shape.txt"), encoding="utf-8") as f:
