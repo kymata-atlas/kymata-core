@@ -11,7 +11,7 @@ from warnings import warn
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, where, inf)
+    array, array_equal, where, inf, float64)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
@@ -296,7 +296,7 @@ class ExpressionSet(ABC):
 
         if data.ndim < 3:
             data = expand_dims(data, axis=2)
-        return data
+        return data.astype(float64)
 
     @property
     # block → channels
