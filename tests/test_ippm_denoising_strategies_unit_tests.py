@@ -105,7 +105,6 @@ def create_data_block(
         latency_idx = point.latency // 5
         data[point.channel][latency_idx][transform_idx] = point.logp_value
 
-    data = np.nan_to_num(data, nan=0)
     return data
 
 
