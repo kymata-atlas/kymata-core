@@ -128,7 +128,6 @@ def test_Should_GMMClusterer_GridSearchForOptimalNumberOfClusters_Successfully(m
     assert optimal_model == mocked_best_fit_gmm_instance
 
 
-"""
 def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
     mocked_gmm_instance = MagicMock()
     mocked_gmm_instance.score_samples.return_value = [-100, -5, -50]
@@ -140,7 +139,6 @@ def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully()
     )
 
     assert actual_labels == [-1, 1, 2]
-"""
 
 
 @patch("kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters")
