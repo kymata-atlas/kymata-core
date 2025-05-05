@@ -1,16 +1,13 @@
-import math
 from copy import deepcopy
 from typing import List
 from unittest.mock import patch, MagicMock
 
 import numpy as np
-import pytest
 from numpy._typing import ArrayLike
 
-from kymata.entities.constants import HEMI_RIGHT, HEMI_LEFT
+from kymata.entities.constants import HEMI_RIGHT
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet
 from kymata.ippm.denoising_strategies import DenoisingStrategy, MaxPoolingStrategy
-from kymata.math.probability import p_to_logp
 
 """
     To construct a HexelExpressionSet, we need to create a matrix with logp values. The dimensions for the matrix are
