@@ -97,10 +97,8 @@ def create_data_block(
         time_range: int,
         n_channels: int
 ) -> ArrayLike:
-    # default value for transform. Set transform_idx values manually, zero out other transforms
-    default_values = [np.nan, 0] if transform_idx == 0 else [0, np.nan]
     data = np.array([
-        [default_values for _ in range(time_range)] for _ in range(n_channels)
+        [[0, 0] for _ in range(time_range)] for _ in range(n_channels)
     ])
 
     for point in test_data:
