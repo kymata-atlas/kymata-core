@@ -6,7 +6,7 @@ from kymata.datasets.data_root import data_root_path
 from kymata.io.file import PathType, FileType, open_or_use
 
 
-def load_config(config_location: PathType | FileType):
+def load_config(config_location: PathType | FileType) -> dict:
     """
     Load configuration parameters from a specified path or file.
 

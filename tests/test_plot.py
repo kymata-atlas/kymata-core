@@ -4,15 +4,19 @@ import pytest
 from numpy import array, array_equal
 
 from kymata.datasets.sample import delete_dataset
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.io.nkg import load_expression_set
 from kymata.plot.color import gradient_color_dict
-from kymata.plot.plot import (
+from kymata.plot.expression import (
     _get_best_ylim,
     _MAJOR_TICK_SIZE,
     _get_yticks,
     _get_xticks,
     expression_plot,
 )
+
+
+test_layout = SensorLayout(meg=MEGLayout.Vectorview, eeg=EEGLayout.Easycap)
 
 
 def test_best_best_ylim_returns_supplied_ylim():
@@ -66,16 +70,16 @@ def test_expression_plot_no_error():
 
 @pytest.fixture
 def eeg_sensors():
-    from kymata.plot.layouts import get_eeg_sensor_xy
+    from kymata.io.layouts import get_eeg_sensor_xy
 
-    return list(get_eeg_sensor_xy().keys())
+    return list(get_eeg_sensor_xy(test_layout.eeg).keys())
 
 
 @pytest.fixture
 def meg_sensors():
-    from kymata.plot.layouts import get_meg_sensor_xy
+    from kymata.io.layouts import get_meg_sensor_xy
 
-    return list(get_meg_sensor_xy().keys())
+    return list(get_meg_sensor_xy(test_layout.meg).keys())
 
 
 def test_eeg_correct_sensors(eeg_sensors):
@@ -463,10 +467,10 @@ def test_meg_correct_sensors(meg_sensors):
 
 
 def test_eeg_left_right_medial_count(eeg_sensors):
-    from kymata.plot.plot import sensor_left_right_assignment
+    from kymata.plot.sensor import get_sensor_left_right_assignment
 
-    top_chans = set(sensor_left_right_assignment[0].axis_channels)
-    bottom_chans = set(sensor_left_right_assignment[1].axis_channels)
+    top_chans = set(get_sensor_left_right_assignment(test_layout)[0].axis_channels)
+    bottom_chans = set(get_sensor_left_right_assignment(test_layout)[1].axis_channels)
     both_chans = top_chans & bottom_chans
     top_chans -= both_chans
     bottom_chans -= both_chans
@@ -502,4 +506,5 @@ def test_expression_set_plot_with_explicit_colour_for_hidden_transform():
             stop_color="yellow",
         ),
         show_only=["d_IL1"],
+        paired_axes=False,
     )

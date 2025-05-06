@@ -1,27 +1,29 @@
 from unittest.mock import patch, MagicMock
 
-import pandas as pd
+import numpy as np
 
-from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer
+from kymata.entities.expression import ExpressionPoint
+from kymata.ippm.cluster import MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, points_to_matrix
 
-test_data = [
-    [-100, 1e-50],
-    [-90, 1e-34],
-    [-95, 1e-8],
-    [-75, 1e-75],
-    [-70, 1e-27],
-    [0, 1e-1],
-    [30, 1e-100],
-    [32, 1e-93],
-    [35, 1e-72],
-    [50, 1e-9],
-    [176, 1e-50],
-    [199, 1e-90],
-    [200, 1e-50],
-    [210, 1e-44],
-    [211, 1e-55],
-]
-test_df = pd.DataFrame(test_data, columns=["Latency", "Mag"])
+_test_dtype = np.float32
+
+test_data = points_to_matrix([
+    ExpressionPoint("c", -100, "f", -50),
+    ExpressionPoint("c", -90, "f", -34),
+    ExpressionPoint("c", -95, "f", -8),
+    ExpressionPoint("c", -75, "f", -75),
+    ExpressionPoint("c", -70, "f", -27),
+    ExpressionPoint("c", 0, "f", -1),
+    ExpressionPoint("c", 30, "f", -100),
+    ExpressionPoint("c", 32, "f", -93),
+    ExpressionPoint("c", 35, "f", -72),
+    ExpressionPoint("c", 50, "f", -9),
+    ExpressionPoint("c", 176, "f", -50),
+    ExpressionPoint("c", 199, "f", -90),
+    ExpressionPoint("c", 200, "f", -50),
+    ExpressionPoint("c", 210, "f", -44),
+    ExpressionPoint("c", 211, "f", -55),
+]).astype(_test_dtype)
 count_of_test_data_per_label = {4: 3, 5: 2, 8: 1, 9: 3, 10: 1, 15: 2, 16: 3}
 
 
@@ -36,9 +38,7 @@ def test_MaxPoolClusterer_MapLabelToNewLabel_Successfully():
 
 
 @patch("kymata.ippm.cluster.MaxPoolClusterer._map_label_to_new_label")
-def test_MaxPoolClusterer_TagLabelsBelowSignificanceThresholdAsAnomalies_Successfully(
-    mocked_func,
-):
+def test_MaxPoolClusterer_TagLabelsBelowSignificanceThresholdAsAnomalies_Successfully(mocked_func):
     final_labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
     mocked_func.side_effect = [
         [4, 4, 4, 5, 5, -1, 9, 9, 9, 10, 15, 15, 16, 16, 16],
@@ -46,6 +46,7 @@ def test_MaxPoolClusterer_TagLabelsBelowSignificanceThresholdAsAnomalies_Success
     ]
     mp = MaxPoolClusterer(label_significance_threshold=2)
     assigned_labels = mp._tag_labels_below_label_significance_threshold_as_anomalies(
+        [],
         count_of_test_data_per_label
     )
 
@@ -54,7 +55,7 @@ def test_MaxPoolClusterer_TagLabelsBelowSignificanceThresholdAsAnomalies_Success
 
 def test_MaxPoolClusterer_AssignPointsToLabels_Successfully():
     mp = MaxPoolClusterer(label_significance_threshold=2)
-    assigned_labels = mp._assign_points_to_labels(test_df)
+    assigned_labels = mp._assign_points_to_labels(test_data)
     expected_labels = [4, 4, 4, 5, 5, 8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
 
     assert assigned_labels == expected_labels
@@ -67,7 +68,7 @@ def test_MaxPoolClusterer_Fit_Successfully(mock_tag_labels, mock_assign_points):
     mock_tag_labels.return_value    = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
 
     mp = MaxPoolClusterer(label_significance_threshold=2)
-    mp = mp.fit(test_df)
+    mp = mp.fit(test_data)
     cluster_labels = mp.labels_
     expected_labels = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
 
@@ -83,7 +84,7 @@ def test_AdaptiveMaxPoolClusterer_MergeSignificantLabels_Successfully(mock_merge
     ]
     amp = AdaptiveMaxPoolClusterer(base_label_size=25)
     amp.labels_ = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    amp._merge_significant_labels(test_df)
+    amp.labels_ = amp._merge_significant_labels(amp.labels_, test_data)
     actual_labels = amp.labels_
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
@@ -98,26 +99,10 @@ def test_Should_AdaptiveMaxPoolClusterer_Fit_Successfully(
 ):
     mock_assign_points.return_value = [4, 4, 4, 5, 5,  8, 9, 9, 9, 10, 15, 15, 16, 16, 16]
     mock_tag_labels.return_value    = [4, 4, 4, 5, 5, -1, 9, 9, 9, -1, 15, 15, 16, 16, 16]
-    mock_merge_significant.return_value = [
-        0,
-        0,
-        0,
-        0,
-        0,
-        -1,
-        1,
-        1,
-        1,
-        -1,
-        2,
-        2,
-        2,
-        2,
-        2,
-    ]
+    mock_merge_significant.return_value = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
     amp = AdaptiveMaxPoolClusterer(label_significance_threshold=2, base_label_size=25)
-    amp = amp.fit(test_df)
+    amp = amp.fit(test_data)
     cluster_labels = amp.labels_
     expected_labels = [0, 0, 0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2, 2]
 
@@ -139,10 +124,10 @@ def test_Should_GMMClusterer_GridSearchForOptimalNumberOfClusters_Successfully(m
     ]
 
     gmm = GMMClusterer(number_of_clusters_upper_bound=4)
-    optimal_model = gmm._grid_search_for_optimal_number_of_clusters(test_df)
+    optimal_model = gmm._grid_search_for_optimal_number_of_clusters(test_data)
     assert optimal_model == mocked_best_fit_gmm_instance
 
-"""
+
 def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully():
     mocked_gmm_instance = MagicMock()
     mocked_gmm_instance.score_samples.return_value = [-100, -5, -50]
@@ -150,37 +135,19 @@ def test_Should_GMMClusterer_TagLowLogLikelihoodPointsAsAnomalous_Successfully()
     gmm = GMMClusterer()
     gmm.labels_ = [0, 1, 2]
     actual_labels = gmm._tag_low_loglikelihood_points_as_anomalous(
-        test_df, mocked_gmm_instance
+        test_data, mocked_gmm_instance
     )
 
     assert actual_labels == [-1, 1, 2]
-"""
 
-@patch(
-    "kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters"
-)
+
+@patch("kymata.ippm.cluster.GMMClusterer._grid_search_for_optimal_number_of_clusters")
 def test_Should_GMMClusterer_Fit_Successfully(mock_grid_search):
     mocked_optimal_model = MagicMock()
-    mocked_optimal_model.predict.return_value = [
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        2,
-        2,
-        2,
-        3,
-        4,
-        4,
-        4,
-        4,
-        4,
-    ]
+    mocked_optimal_model.predict.return_value = [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 4, 4]
     mock_grid_search.return_value = mocked_optimal_model
 
     gmm = GMMClusterer()
-    gmm = gmm.fit(test_df)
+    gmm = gmm.fit(test_data)
 
     assert gmm.labels_ == [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 4, 4]

@@ -10,14 +10,9 @@ logs/
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-
-# Distribution / packaging
-dist/
 
 # Documentation
 docs/_build/
@@ -33,5 +28,8 @@ docs/_build/
 #.vscode settings
 .vscode
 
-# Stratch file
-scratch.py
+# Scratch files
+scratch.*
+
+# Temp testing files
+/**/temp/*

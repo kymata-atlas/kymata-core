@@ -1,6 +1,7 @@
 [![Unit Tests Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/perform-unit-tests.yml)
 [![Linting Checks Passed](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml/badge.svg)](https://github.com/kymata-atlas/kymata-core/actions/workflows/lint-and-check-formatting.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core/badge)](https://www.codefactor.io/repository/github/kymata-atlas/kymata-core)
+[![codecov](https://codecov.io/gh/kymata-atlas/kymata-core/branch/main/graph/badge.svg)](https://codecov.io/gh/kymata-atlas/kymata-core)
 <br />
 <br />
 <div>
@@ -20,7 +21,7 @@
 </div>
 <br>
 <p align="center">
-        <a href="#About The Project">Overview</a>
+        <a href="#Overview">Overview</a>
         ·
         <a href="#Getting Started">Setup</a>
         ·
@@ -29,7 +30,7 @@
         <a href="#Licence">Licence</a>
 </p>
 
-## About The Project
+## Overview
 
 _Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kymata.org).[^1] It is maintained by the
 [Kymata Research Group](https://kymata.org).

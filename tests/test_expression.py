@@ -4,13 +4,11 @@ import pytest
 import numpy as np
 
 from kymata.entities.expression import (
-    SensorExpressionSet,
-    HexelExpressionSet,
-    DIM_TRANSFORM,
-    DIM_LATENCY,
-    combine, COL_LOGP_VALUE, DIM_SENSOR,
-)
-from kymata.math.p_values import p_to_logp, logp_to_p
+    SensorExpressionSet, HexelExpressionSet, combine, ExpressionPoint)
+from kymata.math.probability import p_to_logp, logp_to_p
+
+
+_data_dtype = np.float32
 
 
 def test_log_p_single_value():
@@ -40,8 +38,8 @@ def hexel_expression_set_5_hexels() -> HexelExpressionSet:
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10),
-        data_rh=np.random.randn(5, 10),
+        data_lh=np.random.randn(5, 10).astype(_data_dtype),
+        data_rh=np.random.randn(5, 10).astype(_data_dtype),
     )
 
 
@@ -222,11 +220,9 @@ def test_hes_hexels_left_equals_right(hexel_expression_set_5_hexels):
 
 def test_ses_best_transform():
     from numpy import array
-    from numpy.typing import NDArray
-    from pandas import DataFrame
 
     sensors = [str(i) for i in range(4)]
-    transform_a_data: NDArray = array(
+    transform_a_data = array(
         p_to_logp(
             array(
                 [
@@ -239,7 +235,7 @@ def test_ses_best_transform():
             )
         )
     )
-    transform_b_data: NDArray = array(
+    transform_b_data = array(
         p_to_logp(
             array(
                 [
@@ -257,45 +253,41 @@ def test_ses_best_transform():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["0", "1", "2", "3"],
-            DIM_TRANSFORM: ["a", "b", "a", "b"],
-            DIM_LATENCY: [1, 1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("0", 1, "a", p_to_logp(0.1)),
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 def test_ses_best_transform_with_one_channel_all_1s():
     from numpy import array
-    from numpy.typing import NDArray
-    from pandas import DataFrame
-
+    
     sensors = [str(i) for i in range(4)]
-    transform_a_data: NDArray = array(
+    transform_a_data = array(
         p_to_logp(
             array(
                 [
-                    #  0    1    2  latencies
-                    [1, 1, 1],  # 0  <-- set sensor 0 to 1 for some reason
-                    [1, 1, 0.2],  # 1
-                    [0.1, 1, 1],  # 2
-                    [0.2, 1, 1],  # 3 sensors
+                    #  0    1    2 latencies
+                    [  1,   1,   1],  # 0  <-- set sensor 0 to 1 for some reason
+                    [  1,   1, 0.2],  # 1
+                    [0.1,   1,   1],  # 2
+                    [0.2,   1,   1],  # 3 sensors
                 ]
             )
         )
     )
-    transform_b_data: NDArray = array(
+    transform_b_data = array(
         p_to_logp(
             array(
                 [
-                    [1, 1, 1],
-                    [1, 0.1, 1],
-                    [1, 0.2, 1],
-                    [1, 1, 0.1],
+                    [  1,   1,    1],
+                    [  1, 0.1,    1],
+                    [  1, 0.2,    1],
+                    [  1,   1,  0.1],
                 ]
             )
         )
@@ -306,23 +298,19 @@ def test_ses_best_transform_with_one_channel_all_1s():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["1", "2", "3"],
-            DIM_TRANSFORM: ["b", "a", "b"],
-            DIM_LATENCY: [1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 def test_ses_best_transform_with_one_channel_all_nans():
     from numpy import array, nan
     from numpy.typing import NDArray
-    from pandas import DataFrame
-
+    
     sensors = [str(i) for i in range(4)]
     transform_a_data: NDArray = array(
         p_to_logp(
@@ -355,16 +343,13 @@ def test_ses_best_transform_with_one_channel_all_nans():
         latencies=range(3),
         data=[transform_a_data, transform_b_data],
     )
-    best_transform_df: DataFrame = es.best_transforms()
-    correct: DataFrame = DataFrame.from_dict(
-        {
-            DIM_SENSOR: ["1", "2", "3"],
-            DIM_TRANSFORM: ["b", "a", "b"],
-            DIM_LATENCY: [1, 0, 2],
-            COL_LOGP_VALUE: p_to_logp([0.1, 0.1, 0.1]),
-        }
-    )
-    assert DataFrame(best_transform_df == correct).values.all()
+    best_transforms = es.best_transforms()
+    correct = [
+        ExpressionPoint("1", 1, "b", p_to_logp(0.1)),
+        ExpressionPoint("2", 0, "a", p_to_logp(0.1)),
+        ExpressionPoint("3", 2, "b", p_to_logp(0.1)),
+    ]
+    assert best_transforms == correct
 
 
 # Test ExpressionSet arg validations
@@ -376,7 +361,7 @@ def test_ses_validation_input_lengths_two_transforms_one_dataset():
             transforms=["first", "second"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10),
+            data=np.random.randn(5, 10).astype(_data_dtype),
         )
 
 
@@ -394,7 +379,7 @@ def test_ses_validation_input_lengths_two_transforms_two_datasets_contiguous():
         transforms=["first", "second"],
         sensors=list("abcde"),
         latencies=range(10),
-        data=np.random.randn(5, 10, 2),
+        data=np.random.randn(5, 10, 2).astype(_data_dtype),
     )
 
 
@@ -404,7 +389,7 @@ def test_ses_validation_input_lengths_one_transform_two_datasets_contiguous():
             transforms=["first"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10, 2),
+            data=np.random.randn(5, 10, 2).astype(_data_dtype),
         )
 
 
@@ -424,7 +409,7 @@ def test_ses_validation_input_lengths_two_transforms_three_datasets_contiguous()
             transforms=["first", "second"],
             sensors=list("abcde"),
             latencies=range(10),
-            data=np.random.randn(5, 10, 3),
+            data=np.random.randn(5, 10, 3).astype(_data_dtype),
         )
 
 
@@ -435,8 +420,8 @@ def test_hes_validation_input_lengths_two_transforms_one_dataset():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10),
-            data_rh=np.random.randn(5, 10),
+            data_lh=np.random.randn(5, 10).astype(_data_dtype),
+            data_rh=np.random.randn(5, 10).astype(_data_dtype),
         )
 
 
@@ -446,8 +431,8 @@ def test_hes_validation_input_lengths_two_transforms_two_datasets_sequence():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=[np.random.randn(5, 10) for _ in range(2)],
-        data_rh=[np.random.randn(5, 10) for _ in range(2)],
+        data_lh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)],
+        data_rh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)],
     )
 
 
@@ -457,8 +442,8 @@ def test_hes_validation_input_lengths_two_transforms_two_datasets_contiguous():
         hexels_lh=range(5),
         hexels_rh=range(5),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10, 2),
-        data_rh=np.random.randn(5, 10, 2),
+        data_lh=np.random.randn(5, 10, 2).astype(_data_dtype),
+        data_rh=np.random.randn(5, 10, 2).astype(_data_dtype),
     )
 
 
@@ -469,8 +454,8 @@ def test_hes_validation_input_lengths_two_transforms_three_datasets_sequence():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10) for _ in range(3)],
-            data_rh=[np.random.randn(5, 10) for _ in range(3)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(3)],
+            data_rh=[np.random.randn(5, 10).astype(_data_dtype) for _ in range(3)],
         )
 
 
@@ -481,8 +466,8 @@ def test_hes_validation_input_lengths_two_transforms_three_datasets_contiguous()
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10, 3),
-            data_rh=np.random.randn(5, 10, 3),
+            data_lh=np.random.randn(5, 10, 3).astype(_data_dtype),
+            data_rh=np.random.randn(5, 10, 3).astype(_data_dtype),
         )
 
 
@@ -502,8 +487,8 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels():
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10),
-        data_rh=np.random.randn(6, 10),
+        data_lh=np.random.randn(5, 10).astype(_data_dtype),
+        data_rh=np.random.randn(6, 10).astype(_data_dtype),
     )
 
 
@@ -513,8 +498,10 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_transfor
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=[np.random.randn(5, 10), np.random.randn(5, 10)],
-        data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+        data_lh=[np.random.randn(5, 10).astype(_data_dtype),
+                 np.random.randn(5, 10).astype(_data_dtype)],
+        data_rh=[np.random.randn(6, 10).astype(_data_dtype),
+                 np.random.randn(6, 10).astype(_data_dtype)],
     )
 
 
@@ -524,8 +511,8 @@ def test_hes_validation_input_mismatched_blocks_concordent_channels_two_transfor
         hexels_lh=range(5),
         hexels_rh=range(6),
         latencies=range(10),
-        data_lh=np.random.randn(5, 10, 2),
-        data_rh=np.random.randn(6, 10, 2),
+        data_lh=np.random.randn(5, 10, 2).astype(_data_dtype),
+        data_rh=np.random.randn(6, 10, 2).astype(_data_dtype),
     )
 
 
@@ -536,8 +523,8 @@ def test_hes_validation_input_mismatched_blocks_discordent_channels():
             hexels_lh=range(5),
             hexels_rh=range(5),
             latencies=range(10),
-            data_lh=np.random.randn(5, 10),
-            data_rh=np.random.randn(6, 10),
+            data_lh=np.random.randn(5, 10).astype(_data_dtype),
+            data_rh=np.random.randn(6, 10).astype(_data_dtype),
         )
 
 
@@ -548,8 +535,8 @@ def test_hes_validation_mixmatched_latencies_between_transforms():
             hexels_lh=range(5),
             hexels_rh=range(6),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10), np.random.randn(5, 11)],
-            data_rh=[np.random.randn(6, 10), np.random.randn(6, 11)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype), np.random.randn(5, 11)],
+            data_rh=[np.random.randn(6, 10).astype(_data_dtype), np.random.randn(6, 11)],
         )
 
 
@@ -560,14 +547,14 @@ def test_hes_validation_mixmatched_hexels_between_transforms():
             hexels_lh=range(5),
             hexels_rh=range(6),
             latencies=range(10),
-            data_lh=[np.random.randn(5, 10), np.random.randn(4, 10)],
-            data_rh=[np.random.randn(6, 10), np.random.randn(6, 10)],
+            data_lh=[np.random.randn(5, 10).astype(_data_dtype), np.random.randn(4, 10)],
+            data_rh=[np.random.randn(6, 10).astype(_data_dtype), np.random.randn(6, 10)],
         )
 
 
 def test_hes_rename_transforms():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         transforms=["first", "second"],
@@ -591,8 +578,8 @@ def test_hes_rename_transforms():
 
 
 def test_hes_rename_transforms_noop():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         transforms=["first", "second"],
@@ -610,8 +597,8 @@ def test_hes_rename_transforms_noop():
 
 
 def test_hes_rename_transforms_just_one():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         transforms=["first", "second"],
@@ -635,8 +622,8 @@ def test_hes_rename_transforms_just_one():
 
 
 def test_hes_rename_transforms_wrong_name():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         transforms=["first", "second"],
@@ -651,8 +638,8 @@ def test_hes_rename_transforms_wrong_name():
 
 
 def test_hes_rename_hexels():
-    data_left = [np.random.randn(5, 10) for _ in range(2)]
-    data_right = [np.random.randn(5, 10) for _ in range(2)]
+    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(
         transforms=["first", "second"],

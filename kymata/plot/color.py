@@ -1,6 +1,8 @@
 from matplotlib.colors import to_rgb, to_hex
 from numpy import linspace
 
+transparent = (0, 0, 0, 0)
+
 
 def gradient_color_dict(transforms: list[str], start_color, stop_color) -> dict[str, str]:
     """

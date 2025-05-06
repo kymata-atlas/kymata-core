@@ -11,9 +11,11 @@ from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.transform import load_transform
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
-from kymata.preproc.source import load_emeg_pack
 from kymata.io.nkg import save_expression_set
-from kymata.plot.plot import expression_plot
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
+from kymata.preproc.source import load_emeg_pack
+from kymata.plot.expression import expression_plot
+
 
 _default_output_dir = Path(data_root_path(), "output")
 _logger = getLogger(__file__)
@@ -73,11 +75,18 @@ def main():
     parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
     parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
 
-    parser.add_argument('--seconds-per-split', type=float, default=1, help='seconds in each split of the recording, also maximum range of latencies being checked')
-    parser.add_argument('--n-splits',          type=int, default=400, help='number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file)')
-    parser.add_argument('--n-derangements',    type=int, default=6, help='number of deragements for the null distribution')
-    parser.add_argument('--start-latency',     type=float, default=-200, help='earliest latency to check in cross correlation')
-    parser.add_argument('--emeg-t-start',      type=float, default=-200, help='start of the emeg evoked files relative to the start of the function')
+    # General gridsearch
+    parser.add_argument("--seconds-per-split", type=float, default=1,
+                        help="Seconds in each split of the recording, also maximum range of latencies being checked")
+    parser.add_argument("--n-splits", type=int, default=400,
+                        help="Number of splits to split the recording into, "
+                             "(set to stimulus_length/seconds_per_split for full file)")
+    parser.add_argument("--n-derangements", type=int, default=6,
+                        help="Number of deragements for the null distribution")
+    parser.add_argument("--start-latency", type=float, default=-0.2,
+                        help="Earliest latency to check in cross correlation")
+    parser.add_argument("--emeg-t-start", type=float, default=-0.2,
+                        help="Start of the emeg evoked files relative to the start of the transform")
 
     # Output paths
     parser.add_argument('--save-name', type=str, required=False, help="Specify the name of the saved .nkg file.")
