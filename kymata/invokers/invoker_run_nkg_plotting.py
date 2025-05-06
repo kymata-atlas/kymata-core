@@ -6,7 +6,7 @@ import numpy as np
 
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import load_expression_set
-from kymata.plot.plot import expression_plot, legend_display_dict
+from kymata.plot.expression import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict, gradient_color_dict
 
 import time
