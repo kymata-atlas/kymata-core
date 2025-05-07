@@ -255,45 +255,53 @@ def main():
         IL_name = [i for i in tvl_name if i != 'STL']
         STL_name = ['STL']
 
-        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
-        expression_data_salmonn_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/word_source')
-        word_name = expression_data_salmonn_word.transforms
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
+        # expression_data_salmonn_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/word_source')
+        # word_name = expression_data_salmonn_word.transforms
 
-        expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
-        expression_data_salmonn_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/phone_source')
-        phone_name = expression_data_salmonn_phone.transforms
+        # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
+        # expression_data_salmonn_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/phone_source')
+        # phone_name = expression_data_salmonn_phone.transforms
 
-        expression_data_salmonn_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_morpheme_source')
-        morpheme_name = expression_data_salmonn_morpheme.transforms
-        expression_data_salmonn_wordpiece = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_wordpiece_source')
-        wordpiece_name = expression_data_salmonn_wordpiece.transforms
+        # expression_data_salmonn_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_morpheme_source')
+        # morpheme_name = expression_data_salmonn_morpheme.transforms
+        # expression_data_salmonn_wordpiece = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_wordpiece_source')
+        # wordpiece_name = expression_data_salmonn_wordpiece.transforms
 
-        print(len([i for i in morpheme_name if i in wordpiece_name]))
-        print(len([i for i in wordpiece_name if i in morpheme_name]))
-        print(len([i for i in word_name if i in morpheme_name]))
-        print(len([i for i in morpheme_name if i in word_name]))
-        print(len([i for i in word_name if i in wordpiece_name]))
-        print(len([i for i in wordpiece_name if i in word_name]))
-        print(len([i for i in phone_name if i in morpheme_name]))
-        print(len([i for i in morpheme_name if i in phone_name]))
-        print(len([i for i in phone_name if i in word_name]))
+        # print(len([i for i in morpheme_name if i in wordpiece_name]))
+        # print(len([i for i in wordpiece_name if i in morpheme_name]))
+        # print(len([i for i in word_name if i in morpheme_name]))
+        # print(len([i for i in morpheme_name if i in word_name]))
+        # print(len([i for i in word_name if i in wordpiece_name]))
+        # print(len([i for i in wordpiece_name if i in word_name]))
+        # print(len([i for i in phone_name if i in morpheme_name]))
+        # print(len([i for i in morpheme_name if i in phone_name]))
+        # print(len([i for i in phone_name if i in word_name]))
 
         # import ipdb;ipdb.set_trace()
 
-        fig = expression_plot(expression_data_tvl + expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_salmonn_morpheme + expression_data_salmonn_wordpiece, paired_axes=True, minimap='large', show_legend=True,
-                                color=constant_color_dict(word_name, color= 'red')
-                                    | constant_color_dict(IL_name, color= 'purple')
-                                    | constant_color_dict(STL_name, color= 'pink')
-                                    | constant_color_dict(phone_name, color='green')
-                                    | constant_color_dict(morpheme_name, color='blue')
-                                    | constant_color_dict(wordpiece_name, color='orange'),
-                                legend_display=legend_display_dict(word_name, 'SALMONN word features')
-                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
-                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
-                                    | legend_display_dict(phone_name, 'SALMONN phone features')
-                                    | legend_display_dict(morpheme_name, 'SALMONN morpheme features')
-                                    | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_and_wordpiece/all_feats.png")
+        # fig = expression_plot(expression_data_tvl + expression_data_salmonn_word + expression_data_salmonn_phone + expression_data_salmonn_morpheme + expression_data_salmonn_wordpiece, paired_axes=True, minimap='large', show_legend=True, show_only=STL_name,
+        #                         color=constant_color_dict(word_name, color= 'red')
+        #                             | constant_color_dict(IL_name, color= 'purple')
+        #                             | constant_color_dict(STL_name, color= 'pink')
+        #                             | constant_color_dict(phone_name, color='green')
+        #                             | constant_color_dict(morpheme_name, color='blue')
+        #                             | constant_color_dict(wordpiece_name, color='orange'),
+        #                         legend_display=legend_display_dict(word_name, 'SALMONN word features')
+        #                             | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+        #                             | legend_display_dict(STL_name, 'Short Term Loudness transform')
+        #                             | legend_display_dict(phone_name, 'SALMONN phone features')
+        #                             | legend_display_dict(morpheme_name, 'SALMONN morpheme features')
+        #                             | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_and_wordpiece/all_feats_test_4.png")
+
+        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap='large', show_legend=True, show_only=STL_name,
+                                color=constant_color_dict(IL_name, color= 'purple')
+                                    | constant_color_dict(STL_name, color= 'pink'),
+                                legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform'))
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_and_wordpiece/test_2.png")
+
 
     elif transform_family_type == 'standard':
 
