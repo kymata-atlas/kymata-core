@@ -1,6 +1,6 @@
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
-from matplotlib import pyplot as plt, pyplot
+from matplotlib import pyplot as plt
 from mne.io import Raw
 
 from kymata.entities.datatypes import Channel
