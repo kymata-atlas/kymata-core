@@ -174,7 +174,7 @@ def plot_ippm(
     relabel: dict[str, str] | None = None,
     avoid_collinearity: bool = False,
     serial_sequence: Optional[list[list[str]]] = None,
-) -> plt.Figure:
+) -> plt.Axes:
     """
     Plots an IPPM graph.
 
@@ -193,7 +193,7 @@ def plot_ippm(
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
 
     Returns:
-        (pyplot.Figure): A figure of the IPPM graph.
+        (pyplot.Axes): Axes on which the IPPM was plotted.
     """
 
     if relabel is None:
@@ -316,13 +316,17 @@ def plot_ippm(
     if desired_xmin is None:
         desired_xmin = min(current_xmin, min(node_x))
     _ax.set_xlim((desired_xmin, desired_xmax))
+    # Set tick labels
     xticks = _ax.get_xticks()
     _ax.set_xticks(xticks,
                    [
-                       round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
+                       # Convert labels to ms, and round to avoid float-math issues
+                       round(tick * 1000)
                        for tick in xticks
                    ])
+    # Set decoration
     _ax.set_xlabel("Latency (ms)")
+
     _ax.spines["top"].set_visible(False)
     _ax.spines["right"].set_visible(False)
     _ax.spines["left"].set_visible(False)
@@ -332,7 +336,7 @@ def plot_ippm(
         fig.set_figheight(figheight)
         fig.set_figwidth(figwidth)
 
-    return fig
+    return ax
 
 
 def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[float, float]:
