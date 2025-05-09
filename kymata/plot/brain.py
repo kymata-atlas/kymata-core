@@ -1,5 +1,5 @@
 import os
-from _warnings import warn
+from warnings import warn
 
 from typing import Optional, Any
 
@@ -109,12 +109,8 @@ def plot_minimap_hexel(
 
     # There is a little circular dependency between the smoothing_steps in plot_kwargs below, which gets created after
     # the colormap, and the colormap, which depends on the smoothing steps. So we short-circuit that here by pulling out
-    # the relevant value, if it's there so it doesn't get out of sync
-    if "smoothing_steps" in minimap_kwargs:
-        smoothing_steps = minimap_kwargs["smoothing_steps"]
-    else:
-        # Default value
-        smoothing_steps = "nearest"
+    # the relevant value, if it's there, so it doesn't get out of sync
+    smoothing_steps = minimap_kwargs.pop("smoothing_steps", "nearest")
 
     colormap, colour_idx_lookup = _get_colormap_for_cortical_minimap(colors, show_transforms)
 

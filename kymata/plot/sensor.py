@@ -48,16 +48,6 @@ def get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignm
     return _AxisAssignment("left", left_sensors), _AxisAssignment("right", right_sensors)
 
 
-def plot_minimap_sensor(
-    expression_set: ExpressionSet,
-    minimap_axis: pyplot.Axes,
-    colors: dict[str, str],
-    alpha_logp: float,
-    minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
-):
-    raise NotImplementedError("Minimap not yet implemented for sensor data")
-
-
 def restrict_sensors_by_type(
     expression_set: ExpressionSet,
     best_transforms: tuple[list[ExpressionPoint], ...],
