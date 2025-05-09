@@ -302,6 +302,7 @@ def plot_ippm(
 
     if title is not None:
         plt.title(title)
+        _ax.set_title(title)
 
     # Y-axis
     y_padding = 0.5
