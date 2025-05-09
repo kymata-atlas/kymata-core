@@ -254,18 +254,19 @@ def plot_ippm(
         bsplines += _make_bspline_paths(incoming_edge_endpoints)
 
     fig: plt.Figure
-    ax: plt.Axes
+    _ax: plt.Axes
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, _ax = plt.subplots()
     else:
-        fig = ax.figure
+        _ax = ax
+        fig = _ax.figure
 
     text_offset_x = -0.01  # s
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
-        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
+        _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
             display_label = relabel.get(label, f"{label}()")
-            ax.text(
+            _ax.text(
                 x=path[0][-1] + text_offset_x,
                 y=path[1][-1],
                 s=display_label,
@@ -274,14 +275,14 @@ def plot_ippm(
                 horizontalalignment="right", verticalalignment='center',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
-        ax.arrow(
+        _ax.arrow(
             x=path[0][-1], dx=0.001,
             y=path[1][-1], dy=0,
             shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
 
-    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+    _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 0.02  # s
@@ -296,36 +297,38 @@ def plot_ippm(
                 solid_line_to = max(node_x)
             solid_extension = solid_line_to + future_width / 2
             dotted_extension = solid_extension + future_width / 2
-            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
-            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
+            _ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
+            _ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
 
     if title is not None:
         plt.title(title)
 
     # Y-axis
     y_padding = 0.5
-    ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
-    ax.set_yticklabels([])
-    ax.yaxis.set_visible(False)
+    _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    _ax.set_yticklabels([])
+    _ax.yaxis.set_visible(False)
 
     # X-axis
     # Set axis limits
-    current_xmin, current_xmax = ax.get_xlim()
+    current_xmin, current_xmax = _ax.get_xlim()
     desired_xmin, desired_xmax = xlims_s
     if desired_xmin is None:
         desired_xmin = min(current_xmin, min(node_x))
-    ax.set_xlim((desired_xmin, desired_xmax))
-    xticks = ax.get_xticks()
+    _ax.set_xlim((desired_xmin, desired_xmax))
+    xticks = _ax.get_xticks()
     plt.xticks(xticks,
                [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
                 for tick in xticks])
-    ax.set_xlabel("Latency (ms)")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
+    _ax.set_xlabel("Latency (ms)")
+    _ax.spines["top"].set_visible(False)
+    _ax.spines["right"].set_visible(False)
+    _ax.spines["left"].set_visible(False)
 
-    fig.set_figheight(figheight)
-    fig.set_figwidth(figwidth)
+    if ax is None:
+        # Figure created locally
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
 
     return fig
 
