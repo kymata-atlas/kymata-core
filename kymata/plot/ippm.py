@@ -301,7 +301,6 @@ def plot_ippm(
             _ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
 
     if title is not None:
-        plt.title(title)
         _ax.set_title(title)
 
     # Y-axis
@@ -318,9 +317,11 @@ def plot_ippm(
         desired_xmin = min(current_xmin, min(node_x))
     _ax.set_xlim((desired_xmin, desired_xmax))
     xticks = _ax.get_xticks()
-    plt.xticks(xticks,
-               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
-                for tick in xticks])
+    _ax.set_xticks(xticks,
+                   [
+                       round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
+                       for tick in xticks
+                   ])
     _ax.set_xlabel("Latency (ms)")
     _ax.spines["top"].set_visible(False)
     _ax.spines["right"].set_visible(False)
