@@ -161,6 +161,7 @@ def plot_ippm(
     colors: dict[str, str],
     hemisphere: Optional[str] = None,
     title: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
     xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
     y_ordinate_style: str = _YOrdinateStyle.centered,
     connection_style: str = IPPMConnectionStyle.last_to_first,
@@ -254,7 +255,10 @@ def plot_ippm(
 
     fig: plt.Figure
     ax: plt.Axes
-    fig, ax = plt.subplots()
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
 
     text_offset_x = -0.01  # s
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
