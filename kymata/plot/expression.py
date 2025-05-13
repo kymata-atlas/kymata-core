@@ -16,7 +16,7 @@ from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, Sens
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_up, round_down
 from kymata.plot.brain import plot_minimap_hexel
-from kymata.plot.sensor import get_sensor_left_right_assignment, plot_minimap_sensor, restrict_sensors_by_type
+from kymata.plot.sensor import get_sensor_left_right_assignment, restrict_sensors_by_type
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -508,15 +508,7 @@ def expression_plot(
 
     # Plot minimap
     if minimap is not None:
-        if isinstance(expression_set, SensorExpressionSet):
-            plot_minimap_sensor(
-                expression_set,
-                minimap_axis=axes[_AxName.minimap_main],
-                colors=color,
-                alpha_logp=sidak_corrected_alpha,
-                minimap_latency_range=minimap_latency_range,
-            )
-        elif isinstance(expression_set, HexelExpressionSet):
+        if isinstance(expression_set, HexelExpressionSet):
             plot_minimap_hexel(
                 expression_set,
                 show_transforms=show_only,
@@ -529,6 +521,8 @@ def expression_plot(
                 minimap_latency_range=minimap_latency_range,
                 minimap_kwargs=minimap_kwargs,
             )
+        elif isinstance(expression_set, SensorExpressionSet):
+            raise NotImplementedError("Minimap not yet implemented for sensor data")
         else:
             raise NotImplementedError()
 
