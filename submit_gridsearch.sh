@@ -17,6 +17,8 @@
 args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
+export PATH="$HOME/.local/bin:$PATH"
+cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
