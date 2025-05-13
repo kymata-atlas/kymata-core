@@ -219,8 +219,8 @@ def main():
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
     sensor_layout = SensorLayout(
-        meg_layout=MEGLayout(dataset_config["meg_sensor_layout"]),
-        eeg_layout=EEGLayout(dataset_config["eeg_sensor_layout"]),
+        meg=MEGLayout(dataset_config["meg_sensor_layout"]),
+        eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
     for transform_name in args.transform_name:
