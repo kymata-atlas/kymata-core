@@ -39,9 +39,9 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
     violations = 0
     edges_intersection = 0
     for edge in ippm_1.candidate_transform_list.graph.edges:
-        if not edge in ippm_1.graph_full.edges:
+        if edge not in ippm_1.graph_full.edges:
             continue
-        if not edge in ippm_2.graph_full.edges:
+        if edge not in ippm_2.graph_full.edges:
             continue
 
         # Get the corresponding edge from each graph
@@ -177,5 +177,5 @@ def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint])
     return (
         n_detected_transforms / n_transforms_in_data if n_transforms_in_data > 0 else 0,  # ratio
         n_detected_transforms,  # num
-        n_transforms_in_data,   # denom
+        n_transforms_in_data,  # denom
     )
