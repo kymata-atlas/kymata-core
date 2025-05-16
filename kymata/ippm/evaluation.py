@@ -39,15 +39,17 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
     violations = 0
     edges_intersection = 0
     for edge in ippm_1.candidate_transform_list.graph.edges:
-        if edge not in ippm_1.graph_full.edges:
+        ippm_1_edges = ippm_1.edges_between_transforms(*edge)
+        ippm_2_edges = ippm_2.edges_between_transforms(*edge)
+        if len(ippm_1_edges) == 0 or len(ippm_2_edges) == 0:
             continue
-        if edge not in ippm_2.graph_full.edges:
-            continue
-
         # Get the corresponding edge from each graph
         # (We know there will be only one of each
-        ippm_1_source, ippm_1_target = ippm_1.edges_between_transforms(*edge)[0]
-        ippm_2_source, ippm_2_target = ippm_2.edges_between_transforms(*edge)[0]
+        assert len(ippm_1_edges) == 1
+        assert len(ippm_2_edges) == 1
+        ippm_1_source, ippm_1_target = ippm_1_edges[0]
+        ippm_2_source, ippm_2_target = ippm_2_edges[0]
+
         order_in_ippm_1 = sign(ippm_1_target.latency - ippm_1_source.latency)
         order_in_ippm_2 = sign(ippm_2_target.latency - ippm_2_source.latency)
         if order_in_ippm_1 != order_in_ippm_2:
