@@ -41,6 +41,11 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
     for edge in ippm_1.candidate_transform_list.graph.edges:
         ippm_1_edges = ippm_1.edges_between_transforms(*edge, connection_style=connection_style)
         ippm_2_edges = ippm_2.edges_between_transforms(*edge, connection_style=connection_style)
+        # Skip any which connect to inputs
+        if edge[0] in ippm_1.candidate_transform_list.inputs or edge[1] in ippm_1.candidate_transform_list.inputs:
+            continue
+        # Skip any edges that aren't present in both graphs
+        # (this is the computation of $E_{1\cap2}$ in the paper)
         if len(ippm_1_edges) == 0 or len(ippm_2_edges) == 0:
             continue
         # Get the corresponding edge from each graph
