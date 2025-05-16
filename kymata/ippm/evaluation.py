@@ -39,8 +39,8 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
     violations = 0
     edges_intersection = 0
     for edge in ippm_1.candidate_transform_list.graph.edges:
-        ippm_1_edges = ippm_1.edges_between_transforms(*edge)
-        ippm_2_edges = ippm_2.edges_between_transforms(*edge)
+        ippm_1_edges = ippm_1.edges_between_transforms(*edge, connection_style=connection_style)
+        ippm_2_edges = ippm_2.edges_between_transforms(*edge, connection_style=connection_style)
         if len(ippm_1_edges) == 0 or len(ippm_2_edges) == 0:
             continue
         # Get the corresponding edge from each graph
