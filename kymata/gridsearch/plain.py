@@ -14,11 +14,13 @@ from kymata.entities.expression import ExpressionSet, SensorExpressionSet, Hexel
 from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
 
+from tqdm import tqdm
+
 _logger = getLogger(__name__)
 
 
 def do_gridsearch(
-    emeg_values: NDArray,  # chans x reps x time
+    emeg_values: NDArray | list[NDArray],  # chans x reps x time
     transform: Transform,
     channel_names: list,
     channel_space: str,
@@ -27,7 +29,8 @@ def do_gridsearch(
     stimulus_shift_correction: float,  # seconds/second
     stimulus_delivery_latency: float,  # seconds
     emeg_sample_rate: float,  # Hertz
-    emeg_layout: SensorLayout,
+    invsol_npy_file_name: list,
+    emeg_layout: Optional[SensorLayout] = None,
     plot_location: Optional[Path] = None,
     n_derangements: int = 1,
     seconds_per_split: float = 1,
@@ -35,6 +38,9 @@ def do_gridsearch(
     n_reps: int = 1,
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
+    speedup: bool = False,
+    premorphed_inverse_operator_dir: Optional[Path] = None,
+    emeg_std_source: Optional[NDArray] = None,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given transform.
@@ -62,7 +68,7 @@ def do_gridsearch(
         n_derangements (int, optional): Number of derangements (random permutations) used to create the
             null distribution. Default is 1.
         seconds_per_split (float, optional): Duration of each split in seconds. Default is 0.5 seconds.
-        n_splits (int, optional): Number of splits used for analysis. Default is 800.
+        n_splits (int, optional): Number of splits used for analysis. Default is 400.
         n_reps (int, optional): Number of repetitions for each split. Default is 1.
         plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
             five channels in the gridsearch. Default is False.
@@ -83,6 +89,8 @@ def do_gridsearch(
     # Set random seed to keep derangement orderings
     # deterministic between runs
     np.random.seed(17)
+
+    premorphed_inverse_operator_path = [Path(premorphed_inverse_operator_dir, premorphed_inverse_file) for premorphed_inverse_file in invsol_npy_file_name]
 
     channel_space = channel_space.lower()
     if channel_space not in {"sensor", "source"}:
@@ -105,8 +113,14 @@ def do_gridsearch(
     # the number of samples in the transform 'trial' which is half that needed for the EMEG
     n_trans_samples_per_split = n_samples_per_split // 2
 
-    _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
-                 f" @ {emeg_sample_rate} Hz")
+    if speedup:
+        _logger.info(f"Tianyi's speedup mode is on. ")
+        _logger.info(f"Total EMEG length is {emeg_values[0].shape[2] / emeg_sample_rate:.2f} s"
+                    f" @ {emeg_sample_rate} Hz")
+    else:
+        _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
+                    f" @ {emeg_sample_rate} Hz")
+
     _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate:.2f} s"
                  f" @ {transform.sample_rate} Hz")
 
@@ -130,60 +144,132 @@ def do_gridsearch(
             f"{seconds_per_split} seconds, and adjust `n_splits` accordingly"
         )
         raise ex
+    
+    if speedup:
 
-    n_channels = emeg_values.shape[0]
+        n_channels = emeg_values[0].shape[0]
 
-    # Reshape EMEG into splits of `seconds_per_split` s
-    split_initial_timesteps = [
-        int(
-            (start_latency * emeg_sample_rate)
-            - (emeg_t_start * emeg_sample_rate)
-            + round(
-                i
-                * emeg_sample_rate
-                * seconds_per_split #seconds
-                * (1 + stimulus_shift_correction) #seconds
-            )  # splits, stretched by the shift correction
-            + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+        # Reshape EMEG into splits of `seconds_per_split` s
+        split_initial_timesteps = [
+            int(
+                (start_latency * emeg_sample_rate)
+                - (emeg_t_start * emeg_sample_rate)
+                + round(
+                    i
+                    * emeg_sample_rate
+                    * seconds_per_split #seconds
+                    * (1 + stimulus_shift_correction) #seconds
+                )  # splits, stretched by the shift correction
+                + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+            )
+            for i in range(n_splits)
+        ]
+
+        emeg_reshaped_list = []
+        for emeg in emeg_values:
+
+            emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
+            for j in range(n_reps):
+                for split_i in range(n_splits):
+                    split_start = split_initial_timesteps[split_i]
+                    split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+                    emeg_reshaped[:, split_i + (j * n_splits), :] = emeg[
+                        :, j, split_start:split_stop:downsample_rate
+                    ]
+
+            del emeg
+
+            # Fast cross-correlation using FFT
+            normalize(emeg_reshaped, inplace=True)
+            emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
+            emeg_reshaped_list.append(emeg_reshaped)
+
+        # Derangements for null distribution
+        derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
+        for der_i in range(n_derangements):
+            derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
+        derangements = np.vstack(
+            (np.arange(n_splits * n_reps), derangements)
+        )  # Include the identity on top
+
+        F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
+        if n_reps > 1:
+            F_trans = np.tile(F_trans, (n_reps, 1))
+
+        corrs_list = []
+
+        for der_i, derangement in enumerate(derangements):
+            for emeg_reshaped in emeg_reshaped_list:
+                deranged_emeg = emeg_reshaped[:, derangement, :]
+                premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[der_i])
+                corrs = np.zeros((premorphed_inverse_operator.shape[0], n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
+                reshaped_irfft = np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split].reshape(370, -1)
+                corrs[:, der_i] = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(premorphed_inverse_operator.shape[0], deranged_emeg.shape[1], n_trans_samples_per_split)
+                corrs_list.append(corrs)
+            # Process in smaller chunks to avoid memory issues
+            corrs = np.zeros((premorphed_inverse_operator.shape[0], n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
+            chunk_size = 10  # Adjust this value based on available memory
+            for start_idx in tqdm(range(0, corrs.shape[0], chunk_size)):
+                end_idx = min(start_idx + chunk_size, corrs.shape[0])
+                corrs[start_idx:end_idx, der_i] = np.mean(
+                    [corrs_chunk[start_idx:end_idx, der_i] for corrs_chunk in corrs_list], axis=0
+                ) / emeg_std_source[start_idx:end_idx, derangement]
+
+    else:
+
+        n_channels = emeg_values.shape[0]
+
+        # Reshape EMEG into splits of `seconds_per_split` s
+        split_initial_timesteps = [
+            int(
+                (start_latency * emeg_sample_rate)
+                - (emeg_t_start * emeg_sample_rate)
+                + round(
+                    i
+                    * emeg_sample_rate
+                    * seconds_per_split #seconds
+                    * (1 + stimulus_shift_correction) #seconds
+                )  # splits, stretched by the shift correction
+                + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+            )
+            for i in range(n_splits)
+        ]
+
+        emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
+        for j in range(n_reps):
+            for split_i in range(n_splits):
+                split_start = split_initial_timesteps[split_i]
+                split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+                emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
+                    :, j, split_start:split_stop:downsample_rate
+                ]
+
+        del emeg_values
+
+        # Derangements for null distribution
+        derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
+        for der_i in range(n_derangements):
+            derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
+        derangements = np.vstack(
+            (np.arange(n_splits * n_reps), derangements)
+        )  # Include the identity on top
+
+        # Fast cross-correlation using FFT
+        normalize(emeg_reshaped, inplace=True)
+        emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
+        emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
+        F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
+        if n_reps > 1:
+            F_trans = np.tile(F_trans, (n_reps, 1))
+        corrs = np.zeros(
+            (n_channels, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split)
         )
-        for i in range(n_splits)
-    ]
-
-    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
-    for j in range(n_reps):
-        for split_i in range(n_splits):
-            split_start = split_initial_timesteps[split_i]
-            split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
-            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
-                :, j, split_start:split_stop:downsample_rate
-            ]
-
-    del emeg_values
-
-    # Derangements for null distribution
-    derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
-    for der_i in range(n_derangements):
-        derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
-    derangements = np.vstack(
-        (np.arange(n_splits * n_reps), derangements)
-    )  # Include the identity on top
-
-    # Fast cross-correlation using FFT
-    normalize(emeg_reshaped, inplace=True)
-    emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
-    emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
-    F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
-    if n_reps > 1:
-        F_trans = np.tile(F_trans, (n_reps, 1))
-    corrs = np.zeros(
-        (n_channels, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split)
-    )
-    for der_i, derangement in enumerate(derangements):
-        deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = (
-            np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
-            / emeg_stds[:, derangement]
-        )
+        for der_i, derangement in enumerate(derangements):
+            deranged_emeg = emeg_reshaped[:, derangement, :]
+            corrs[:, der_i] = (
+                np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
+                / emeg_stds[:, derangement]
+            )     
 
     del deranged_emeg, emeg_reshaped
 

@@ -13,6 +13,7 @@ from kymata.preproc.premorph import (
     pick_channels_inverse_operator,
     premorph_inverse_operator,
 )
+from kymata.math.vector import normalize, get_stds
 
 _logger = getLogger(__name__)
 
@@ -417,10 +418,97 @@ def load_emeg_pack(
 
         n_reps = 1  # n_reps is now 1 as all averaged
 
+    elif ave_mode == "list":
+        emeg = []
+        # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
+        for i in range(1, len(emeg_paths)):
+            new_emeg, _ch_names = load_single_emeg(
+                emeg_paths[i],
+                need_names,
+                inverse_operator_paths[i],
+                snr,
+                morph_paths[i],
+                old_morph=old_morph,
+                premorphed_inverse_operator_path=invsol_paths[i],
+                ch_names_path=ch_names_path,
+            )
+            emeg.append(np.expand_dims(new_emeg, 1))
+        n_reps = 1
+
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
 
     return emeg, emeg_names, n_reps
+
+def calculate_emeg_std(
+    emeg_values: NDArray,  # chans x reps x time
+    emeg_sample_rate: float,  # Hertz
+    transform_sample_rate: float,  # Hertz
+    seconds_per_split: float,  # seconds
+    n_reps: int,  # number of repetitions
+    start_latency: float,  # seconds
+    emeg_t_start: float,  # seconds
+    stimulus_shift_correction: float,  # seconds
+    stimulus_delivery_latency: float,  # seconds
+
+) -> NDArray:
+    """
+    Calculate the standard deviations of EMEG data segments for grid search.
+
+    Args:
+        emeg_values (NDArray): A 3D array of EMEG values with shape (channels, reps, time).
+        emeg_sample_rate (float): The sample rate of the EMEG data in Hertz.
+        transform_sample_rate (float): The sample rate of the transform in Hertz.
+        seconds_per_split (float): Duration of each split in seconds.
+
+    Returns:
+        NDArray: A 2D array of standard deviations with shape (channels, splits).
+    """
+    # Calculate the downsample ratio
+    downsample_ratio = emeg_sample_rate / transform_sample_rate
+    if not downsample_ratio.is_integer():
+        raise ValueError(f"Data sample rate ({emeg_sample_rate} Hz) and "
+                         f"transform sample rate ({transform_sample_rate} Hz) are incompatible.")
+    downsample_rate = int(downsample_ratio)
+
+    # Calculate the number of samples per split
+    n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
+
+    # Reshape EMEG into splits
+    n_channels, _, n_time = emeg_values.shape
+    n_splits = 400
+    n_trans_samples_per_split = n_samples_per_split // 2
+
+    split_initial_timesteps = [
+                                int(
+                                    (start_latency * emeg_sample_rate)
+                                    - (emeg_t_start * emeg_sample_rate)
+                                    + round(
+                                        i
+                                        * emeg_sample_rate
+                                        * seconds_per_split #seconds
+                                        * (1 + stimulus_shift_correction) #seconds
+                                    )  # splits, stretched by the shift correction
+                                    + round(stimulus_delivery_latency * emeg_sample_rate)  # correct for stimulus delivery latency delay
+                                )
+                                for i in range(n_splits)
+                            ]
+    
+    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
+    for j in range(n_reps):
+        for split_i in range(n_splits):
+            split_start = split_initial_timesteps[split_i]
+            split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
+                :, j, split_start:split_stop:downsample_rate
+            ]
+
+    # Calculate standard deviations
+    normalize(emeg_reshaped, inplace=True)
+    emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
+
+    return emeg_stds
+
 
 
 def _strip_ave(name: str) -> str:

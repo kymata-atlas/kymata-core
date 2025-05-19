@@ -17,13 +17,20 @@
 args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
+export PATH="$HOME/.local/bin:$PATH"
+cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
   --input-stream auditory \
   --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
-  --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
+  --transform-name IL \
   --plot-top-channels \
-  --overwrite
+  --use-inverse-operator \
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+  --morph \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/speedup_test' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/speedup_test' \
+  --speedup
 
 #  --snr $ARG # >> result3.txt

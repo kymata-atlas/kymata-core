@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import time
 from sys import stdout
+import numpy as np
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -11,7 +12,7 @@ from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import save_expression_set
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
-from kymata.preproc.source import load_emeg_pack
+from kymata.preproc.source import load_emeg_pack, calculate_emeg_std
 from kymata.plot.expression import expression_plot
 
 
@@ -99,8 +100,14 @@ def main():
                         help="Save an expression plots, and other plots, in this location")
     parser.add_argument("--plot-top-channels", action="store_true",
                         help="Plots the p-values and correlations of the top channels in the gridsearch.")
+    parser.add_argument("--speedup", action="store_true",
+                        help="Use Tianyi's speedup code. This is not yet fully tested, and should be used with caution.")
 
     args = parser.parse_args()
+
+    if args.speedup:
+        assert args.single_participant_override is None, "Speedup code does not support single participant override"
+        assert args.use_inverse_operator, "Speedup code only works in source space"
 
     specified_config_file = Path(args.config)
     if specified_config_file.exists():
@@ -171,6 +178,13 @@ def main():
         "4_hexel_current_reconstruction",
         "npy_invsol",
     )
+    invsol_npy_file_name = [p + "_ico5-3L-loose02-cps-nodepth-fusion-inv_" + p + "_fsaverage_morph.npy" for p in participants]
+    emeg_std_dir = Path(
+        base_dir,
+        "interim_preprocessing_files",
+        "4_hexel_current_reconstruction",
+        "emeg_std",
+    )
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
     channel_space = "source" if args.use_inverse_operator else "sensor"
@@ -186,7 +200,55 @@ def main():
 
     t0 = time.time()
 
-    emeg_values, ch_names, n_reps = load_emeg_pack(
+    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
+
+    if args.speedup:
+        if Path(emeg_std_dir, "emeg_std_source.npy").exists():
+            emeg_std_source = np.load(Path(emeg_std_dir, "emeg_std_source.npy"))
+            ch_names_source = np.load(Path(emeg_std_dir, "emeg_source_ch_name.npy"), allow_pickle=True)
+        else:
+            emeg_values_source, ch_names_source, n_reps = load_emeg_pack(
+                    emeg_filenames,
+                    emeg_dir=emeg_path,
+                    morph_dir=morph_dir if args.morph else None,
+                    need_names=True,
+                    ave_mode=args.ave_mode,
+                    inverse_operator_dir=inverse_operator_dir
+                    if args.use_inverse_operator
+                    else None,
+                    inverse_operator_suffix=args.inverse_operator_suffix,
+                    snr=args.snr,
+                    old_morph=False,
+                    invsol_npy_dir=invsol_npy_dir,
+                    ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+                )
+            emeg_std_source = calculate_emeg_std(emeg_values_source, 
+                                                emeg_sample_rate, 
+                                                args.resample, 
+                                                args.seconds_per_split, 
+                                                n_reps, 
+                                                args.start_latency, 
+                                                args.emeg_t_start,
+                                                stimulus_shift_correction,
+                                                stimulus_delivery_latency,)
+            np.save(Path(emeg_std_dir, "emeg_std_source.npy"), emeg_std_source)
+            np.save(Path(emeg_std_dir, "emeg_source_ch_name.npy"), ch_names_source)
+            del emeg_values_source
+        emeg_values, ch_names, n_reps = load_emeg_pack(
+                                                        emeg_filenames,
+                                                        emeg_dir=emeg_path,
+                                                        morph_dir=morph_dir if args.morph else None,
+                                                        need_names=True,
+                                                        ave_mode='list',
+                                                        inverse_operator_dir=None,
+                                                        inverse_operator_suffix=args.inverse_operator_suffix,
+                                                        snr=args.snr,
+                                                        old_morph=False,
+                                                        invsol_npy_dir=invsol_npy_dir,
+                                                        ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+                                                        )
+    else:
+        emeg_values, ch_names, n_reps = load_emeg_pack(
         emeg_filenames,
         emeg_dir=emeg_path,
         morph_dir=morph_dir if args.morph else None,
@@ -216,11 +278,9 @@ def main():
         transform_path = Path(base_dir, args.transform_path)
     _logger.info(f"Loading transforms from {str(transform_path)}")
 
-    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
-
     sensor_layout = SensorLayout(
-        meg_layout=MEGLayout(dataset_config["meg_sensor_layout"]),
-        eeg_layout=EEGLayout(dataset_config["eeg_sensor_layout"]),
+        meg=MEGLayout(dataset_config["meg_sensor_layout"]),
+        eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
     for transform_name in args.transform_name:
@@ -243,7 +303,7 @@ def main():
 
         es = do_gridsearch(
             emeg_values=emeg_values,
-            channel_names=ch_names,
+            channel_names=ch_names_source if args.speedup else ch_names,
             channel_space=channel_space,
             transform=transform,
             seconds_per_split=args.seconds_per_split,
@@ -259,6 +319,10 @@ def main():
             plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
             emeg_layout=sensor_layout,
+            speedup=args.speedup,
+            premorphed_inverse_operator_dir = invsol_npy_dir,
+            emeg_std_source=emeg_std_source if args.speedup else None,
+            invsol_npy_file_name=invsol_npy_file_name,
         )
 
         if combined_expression_set is None:
