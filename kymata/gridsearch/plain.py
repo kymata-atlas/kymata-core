@@ -197,23 +197,26 @@ def do_gridsearch(
             F_trans = np.tile(F_trans, (n_reps, 1))
 
         corrs_list = []
+        n_sources = 20484
+        corrs = np.zeros((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
 
         for der_i, derangement in enumerate(derangements):
             for emeg_reshaped in emeg_reshaped_list:
                 deranged_emeg = emeg_reshaped[:, derangement, :]
                 premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[der_i])
-                corrs = np.zeros((premorphed_inverse_operator.shape[0], n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
+                corrs_ind = np.zeros((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
                 reshaped_irfft = np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split].reshape(370, -1)
-                corrs[:, der_i] = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(premorphed_inverse_operator.shape[0], deranged_emeg.shape[1], n_trans_samples_per_split)
-                corrs_list.append(corrs)
+                corrs_ind[:, der_i] = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
+                corrs_list.append(corrs_ind)
+                del deranged_emeg, reshaped_irfft
+            del premorphed_inverse_operator
             # Process in smaller chunks to avoid memory issues
-            corrs = np.zeros((premorphed_inverse_operator.shape[0], n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
-            chunk_size = 10  # Adjust this value based on available memory
+            chunk_size = 2000  # Adjust this value based on available memory
             for start_idx in tqdm(range(0, corrs.shape[0], chunk_size)):
                 end_idx = min(start_idx + chunk_size, corrs.shape[0])
-                corrs[start_idx:end_idx, der_i] = np.mean(
-                    [corrs_chunk[start_idx:end_idx, der_i] for corrs_chunk in corrs_list], axis=0
-                ) / emeg_std_source[start_idx:end_idx, derangement]
+                slices = np.array([corrs_chunk[start_idx:end_idx, der_i] for corrs_chunk in corrs_list])
+                corrs[start_idx:end_idx, der_i] = np.mean(slices, axis=0) / emeg_std_source[start_idx:end_idx, derangement]
+                del slices
 
     else:
 
