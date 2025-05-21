@@ -15,6 +15,7 @@ from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
 
 from tqdm import tqdm
+import gc
 
 _logger = getLogger(__name__)
 
@@ -196,27 +197,67 @@ def do_gridsearch(
         if n_reps > 1:
             F_trans = np.tile(F_trans, (n_reps, 1))
 
-        corrs_list = []
-        n_sources = 20484
-        corrs = np.zeros((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
+        F_trans = np.ascontiguousarray(F_trans)
 
-        for der_i, derangement in enumerate(derangements):
-            for emeg_reshaped in emeg_reshaped_list:
-                deranged_emeg = emeg_reshaped[:, derangement, :]
-                premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[der_i])
-                corrs_ind = np.zeros((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
-                reshaped_irfft = np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split].reshape(370, -1)
-                corrs_ind[:, der_i] = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
-                corrs_list.append(corrs_ind)
-                del deranged_emeg, reshaped_irfft
-            del premorphed_inverse_operator
-            # Process in smaller chunks to avoid memory issues
-            chunk_size = 2000  # Adjust this value based on available memory
-            for start_idx in tqdm(range(0, corrs.shape[0], chunk_size)):
-                end_idx = min(start_idx + chunk_size, corrs.shape[0])
-                slices = np.array([corrs_chunk[start_idx:end_idx, der_i] for corrs_chunk in corrs_list])
-                corrs[start_idx:end_idx, der_i] = np.mean(slices, axis=0) / emeg_std_source[start_idx:end_idx, derangement]
-                del slices
+        n_sources = 20484
+        corrs = np.empty((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
+
+        premorphed_inverse_operator_all = []
+        for i in range(len(emeg_reshaped_list)):
+            premorphed_inverse_operator_all.append(
+                np.load(premorphed_inverse_operator_path[i])
+            )
+
+        for der_i, derangement in tqdm(enumerate(derangements)):
+            # for par_i, emeg_reshaped in tqdm(enumerate(emeg_reshaped_list)):
+            #     # deranged_emeg = emeg_reshaped[:, derangement, :]
+            #     # premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[par_i])
+            #     premorphed_inverse_operator = premorphed_inverse_operator_all[par_i]
+            #     reshaped_irfft = np.fft.irfft(emeg_reshaped[:, derangement, :] * F_trans)[:, :, :n_trans_samples_per_split].reshape(n_channels, -1)
+            #     # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
+            #     corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, derangement.shape[0], n_trans_samples_per_split)
+            #     corrs_list.append(corrs_ind)
+            #     # del deranged_emeg, reshaped_irfft
+            #     del reshaped_irfft
+            # del emeg_reshaped
+            # reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split].reshape(len(emeg_reshaped_list), n_channels, -1)
+            reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split]
+            # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
+            # corrs[:, der_i] = np.mean(np.einsum('bij, bjk -> bik', np.array(premorphed_inverse_operator_all), reshaped_irfft).reshape(len(emeg_reshaped_list), n_sources, derangement.shape[0], n_trans_samples_per_split), axis = 0) / emeg_std_source[:, derangement]
+            # corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
+            corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
+            # del deranged_emeg, reshaped_irfft
+            del reshaped_irfft
+            # _logger.info(f"Size of corrs_ind is {corrs_ind.nbytes / 1024**3:.2f} GB")
+            # import ipdb; ipdb.set_trace()
+            # # Process in smaller chunks to avoid memory issues
+            # chunk_size = 1000  # Adjust this value based on available memory
+            # for start_idx in tqdm(range(0, corrs.shape[0], chunk_size)):
+            #     end_idx = min(start_idx + chunk_size, corrs.shape[0])
+            #     slices = np.empty((len(corrs_list), ) + corrs_list[0][start_idx:end_idx].shape)
+            #     for chunk_i, chunk in enumerate(corrs_list):
+            #         slices[chunk_i] = chunk[start_idx:end_idx]
+            #     # slices = np.array([chunk[start_idx:end_idx] for chunk in corrs_list])
+            #     corrs[start_idx:end_idx, der_i] = np.mean(slices, axis=0) / emeg_std_source[start_idx:end_idx, derangement]
+            # corrs[:, der_i] = np.mean(np.array(corrs_list), axis=0) / emeg_std_source[:, derangement]
+            # Allocate output mean array
+            # mean_corr = np.empty_like(corrs_list[0])
+
+            # # Incrementally compute the mean to avoid 4D allocation
+            # for arr in tqdm(corrs_list):
+            #     mean_corr += arr
+            #     del arr
+            # mean_corr /= len(corrs_list)
+
+            # Now safely divide and store in the final tensor
+            # corrs[:, der_i] = np.mean(corrs_ind, axis=0) / emeg_std_source[:, derangement]
+            # np.divide(
+            #             np.mean(corrs_ind, axis=0),          # shape: (20484, 400, 200)
+            #             emeg_std_source[:, derangement],     # must be broadcastable to (20484, 400, 200)
+            #             out=corrs[:, der_i]                  # must also be shape (20484, 400, 200)
+            #         )
+
+            # del corrs_ind
 
     else:
 
