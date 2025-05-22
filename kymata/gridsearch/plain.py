@@ -202,32 +202,48 @@ def do_gridsearch(
         n_sources = 20484
         corrs = np.empty((n_sources, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split))
 
-        premorphed_inverse_operator_all = []
-        for i in range(len(emeg_reshaped_list)):
-            premorphed_inverse_operator_all.append(
-                np.load(premorphed_inverse_operator_path[i])
-            )
+        # premorphed_inverse_operator_all = []
+        # for i in range(len(emeg_reshaped_list)):
+        #     premorphed_inverse_operator_all.append(
+        #         np.load(premorphed_inverse_operator_path[i])
+        #     )
 
-        for der_i, derangement in tqdm(enumerate(derangements)):
-            # for par_i, emeg_reshaped in tqdm(enumerate(emeg_reshaped_list)):
-            #     # deranged_emeg = emeg_reshaped[:, derangement, :]
-            #     # premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[par_i])
-            #     premorphed_inverse_operator = premorphed_inverse_operator_all[par_i]
-            #     reshaped_irfft = np.fft.irfft(emeg_reshaped[:, derangement, :] * F_trans)[:, :, :n_trans_samples_per_split].reshape(n_channels, -1)
-            #     # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
-            #     corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, derangement.shape[0], n_trans_samples_per_split)
-            #     corrs_list.append(corrs_ind)
-            #     # del deranged_emeg, reshaped_irfft
-            #     del reshaped_irfft
-            # del emeg_reshaped
-            # reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split].reshape(len(emeg_reshaped_list), n_channels, -1)
-            reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split]
-            # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
-            # corrs[:, der_i] = np.mean(np.einsum('bij, bjk -> bik', np.array(premorphed_inverse_operator_all), reshaped_irfft).reshape(len(emeg_reshaped_list), n_sources, derangement.shape[0], n_trans_samples_per_split), axis = 0) / emeg_std_source[:, derangement]
-            # corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
-            corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
-            # del deranged_emeg, reshaped_irfft
-            del reshaped_irfft
+        premorphed_inverse_operator_all = np.empty((n_sources,n_channels))
+        for i in range(len(emeg_reshaped_list)):
+            premorphed_inverse_operator_all += np.load(premorphed_inverse_operator_path[i])
+        premorphed_inverse_operator_all /= len(emeg_reshaped_list) # shape : (n_sources, n_channels)
+
+        emeg_reshaped_ave = np.mean(
+            np.array(emeg_reshaped_list), axis=0
+        )  # shape: (n_channels, n_splits * n_reps, n_samples_per_split)
+
+        for der_i, derangement in enumerate(derangements):
+            deranged_emeg = emeg_reshaped_ave[:, derangement, :]
+            corrs[:, der_i] = (
+                np.matmul(premorphed_inverse_operator_all, np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split].reshape(n_channels, -1)).reshape((n_sources, derangement.shape[0], n_trans_samples_per_split))
+                / emeg_std_source[:, derangement]
+            )        
+
+        # for der_i, derangement in tqdm(enumerate(derangements)):
+        #     # for par_i, emeg_reshaped in tqdm(enumerate(emeg_reshaped_list)):
+        #     #     # deranged_emeg = emeg_reshaped[:, derangement, :]
+        #     #     # premorphed_inverse_operator = np.load(premorphed_inverse_operator_path[par_i])
+        #     #     premorphed_inverse_operator = premorphed_inverse_operator_all[par_i]
+        #     #     reshaped_irfft = np.fft.irfft(emeg_reshaped[:, derangement, :] * F_trans)[:, :, :n_trans_samples_per_split].reshape(n_channels, -1)
+        #     #     # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
+        #     #     corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, derangement.shape[0], n_trans_samples_per_split)
+        #     #     corrs_list.append(corrs_ind)
+        #     #     # del deranged_emeg, reshaped_irfft
+        #     #     del reshaped_irfft
+        #     # del emeg_reshaped
+        #     # reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split].reshape(len(emeg_reshaped_list), n_channels, -1)
+        #     reshaped_irfft = np.fft.irfft(np.ascontiguousarray(emeg_reshaped_list)[:, :, derangement, :] * F_trans)[:, :, :, :n_trans_samples_per_split]
+        #     # corrs_ind = np.matmul(premorphed_inverse_operator, reshaped_irfft).reshape(n_sources, deranged_emeg.shape[1], n_trans_samples_per_split)
+        #     # corrs[:, der_i] = np.mean(np.einsum('bij, bjk -> bik', np.array(premorphed_inverse_operator_all), reshaped_irfft).reshape(len(emeg_reshaped_list), n_sources, derangement.shape[0], n_trans_samples_per_split), axis = 0) / emeg_std_source[:, derangement]
+        #     # corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
+        #     corrs[:, der_i] = np.einsum('bij, bjkl -> ikl', np.ascontiguousarray(premorphed_inverse_operator_all), reshaped_irfft) / (emeg_std_source[:, derangement] * len(emeg_reshaped_list))
+        #     # del deranged_emeg, reshaped_irfft
+        #     del reshaped_irfft
             # _logger.info(f"Size of corrs_ind is {corrs_ind.nbytes / 1024**3:.2f} GB")
             # import ipdb; ipdb.set_trace()
             # # Process in smaller chunks to avoid memory issues
