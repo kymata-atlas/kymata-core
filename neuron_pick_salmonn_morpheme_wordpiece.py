@@ -82,8 +82,12 @@ def asr_models_loop_full():
 
     log_dir_morpheme = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_morpheme/log/'
     log_dir_wordpiece = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_wordpiece/log/'
+    log_dir_phone = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_phone/log/'
+    log_dir_word = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/log/'
     log_dir_morpheme_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_morpheme/tvl/log/'
     log_dir_wordpiece_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_wordpiece/tvl/log/'
+    log_dir_phone_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_phone/tvl/log/'
+    log_dir_word_tvl = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/tvl/log/'
 
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer)))))
@@ -91,42 +95,10 @@ def asr_models_loop_full():
 
     selected_morpheme = process_lat_sig(n, log_dir_morpheme, layer, neuron, thres, neuron_selection)
     selected_wordpiece = process_lat_sig(n, log_dir_wordpiece, layer, neuron, thres, neuron_selection)
+    selected_phone = process_lat_sig(n, log_dir_phone, layer, neuron, thres, neuron_selection)
+    selected_word = process_lat_sig(n, log_dir_word, layer, neuron, thres, neuron_selection)
 
-    overlap_1 = np.array(sorted(
-        [selected_morpheme[i, :] for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, -2:].tolist() in selected_wordpiece[:, -2:].tolist()],
-        key=lambda x: (x[-2], x[-1]),  # Sort by the correlation value (column index 3) and then by the last column
-        reverse=True  # Sort in descending order
-    ))
-    overlap_2 = np.array(sorted(
-        [selected_wordpiece[i, :] for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, -2:].tolist() in selected_morpheme[:, -2:].tolist()],
-        key=lambda x: (x[-2], x[-1]),  # Sort by the correlation value (column index 3) and then by the last column
-        reverse=True  # Sort in descending order
-    ))
-    morpheme_neurons = [
-        *[overlap_1[i, :].tolist() for i in range(overlap_1.shape[0]) if overlap_1[i, 3] >= overlap_2[i, 3]],
-        *[selected_morpheme[i, :].tolist()  for i in range(selected_morpheme.shape[0]) if selected_morpheme[i, :].tolist() not in overlap_1.tolist()]
-    ]
-    wordpiece_neurons = [
-        *[overlap_2[i, :].tolist()  for i in range(overlap_2.shape[0]) if overlap_2[i, 3] > overlap_1[i, 3]],
-        *[selected_wordpiece[i, :].tolist()  for i in range(selected_wordpiece.shape[0]) if selected_wordpiece[i, :].tolist() not in overlap_2.tolist()]
-    ]
-    overlapping_neurons = [
-        neuron for neuron in morpheme_neurons 
-        if [neuron[-2], neuron[-1]] in [[wp_neuron[-2], wp_neuron[-1]] for wp_neuron in wordpiece_neurons]
-    ]
-
-    print(f"Number of overlapping neurons: {len(overlapping_neurons)}")
-
-    print(len(morpheme_neurons))
-    print(len(wordpiece_neurons))
-
-    phone_feats = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/phone_sig.npy').tolist()
-    phone_feats += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy').tolist()
-    word_feats = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/word_sig.npy').tolist()
-    word_feats += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy').tolist()
-
-    morpheme_neurons = [i for i in morpheme_neurons if [int(i[4]), int(i[5])] not in phone_feats + word_feats]
-    wordpiece_neurons = [i for i in wordpiece_neurons if [int(i[4]), int(i[5])] not in phone_feats + word_feats]
+    import ipdb;ipdb.set_trace()
 
     lat_sig = read_log_file_asr(n, log_dir_morpheme_tvl, layer, neuron)
     morpheme_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
