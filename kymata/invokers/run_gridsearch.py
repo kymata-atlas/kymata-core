@@ -122,6 +122,11 @@ def main():
     
     channel_space = "source" if args.use_inverse_operator else "sensor"
 
+    sensor_layout = SensorLayout(
+        meg=MEGLayout(dataset_config["meg_sensor_layout"]),
+        eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
+    )
+
     if args.phonetics:
 
         start = time.time()
@@ -291,6 +296,7 @@ def main():
                     plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     seed=dataset_config['random_seed'],
+                    emeg_layout=sensor_layout,
                 )
             else:
                 es += do_gridsearch(
@@ -311,6 +317,7 @@ def main():
                     plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     seed=dataset_config['random_seed'],
+                    emeg_layout=sensor_layout,
                 )
 
         if args.save_expression_set_location is not None:
@@ -351,6 +358,7 @@ def main():
                 plot_top_five_channels=args.plot_top_channels,
                 overwrite=args.overwrite,
                 seed=dataset_config['random_seed'],
+                emeg_layout=sensor_layout,
             )
 
             expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + f'_{nn_i}' + '_gridsearch.png'), overwrite=args.overwrite, 
@@ -396,6 +404,7 @@ def main():
             plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
             seed=dataset_config['random_seed'],
+            emeg_layout=sensor_layout,
         )
          
 
@@ -434,6 +443,7 @@ def main():
                 plot_top_five_channels=args.plot_top_channels,
                 overwrite=args.overwrite,
                 seed=dataset_config['random_seed'],
+                emeg_layout=sensor_layout,
             )
 
             if combined_expression_set is None:

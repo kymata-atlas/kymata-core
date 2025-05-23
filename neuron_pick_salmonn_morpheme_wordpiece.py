@@ -98,7 +98,44 @@ def asr_models_loop_full():
     selected_phone = process_lat_sig(n, log_dir_phone, layer, neuron, thres, neuron_selection)
     selected_word = process_lat_sig(n, log_dir_word, layer, neuron, thres, neuron_selection)
 
-    import ipdb;ipdb.set_trace()
+    # import ipdb;ipdb.set_trace()
+
+    all_arrays = [selected_morpheme, selected_wordpiece, selected_phone, selected_word]
+
+    # Track origin of each row by tagging it with its source index
+    tagged_rows = []
+    for source_idx, arr in enumerate(all_arrays):
+        for row in arr:
+            key = tuple(row[4:])  # based on last two columns
+            val_3 = row[3]
+            tagged_rows.append((key, val_3, row, source_idx))
+
+    # Create a dictionary to store the best row for each key
+    row_dict = {}
+    for key, val_3, row, source_idx in tagged_rows:
+        if key not in row_dict or val_3 > row_dict[key][1]:
+            row_dict[key] = (row, val_3, source_idx)
+
+    # Collect the filtered rows into their respective arrays
+    arr1_new, arr2_new, arr3_new, arr4_new = [], [], [], []
+
+    for row, _, source_idx in row_dict.values():
+        if source_idx == 0:
+            arr1_new.append(row)
+        elif source_idx == 1:
+            arr2_new.append(row)
+        elif source_idx == 2:
+            arr3_new.append(row)
+        elif source_idx == 3:
+            arr4_new.append(row)
+
+    # Convert lists to numpy arrays
+    morpheme_neurons = np.array(arr1_new)
+    wordpiece_neurons = np.array(arr2_new)
+    phone_neurons = np.array(arr3_new)
+    word_neurons = np.array(arr4_new)
+
+    # (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no)
 
     lat_sig = read_log_file_asr(n, log_dir_morpheme_tvl, layer, neuron)
     morpheme_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
@@ -116,11 +153,54 @@ def asr_models_loop_full():
         if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in wordpiece_neurons_tvl)
     ]
 
+    lat_sig = read_log_file_asr(n, log_dir_phone_tvl, layer, neuron)
+    phone_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    neuron_picks_phone = [
+        [int(neuron[4]), int(neuron[5])] 
+        for neuron in phone_neurons 
+        if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in phone_neurons_tvl)
+    ]
+    lat_sig = read_log_file_asr(n, log_dir_word_tvl, layer, neuron)
+    word_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    neuron_picks_word = [
+        [int(neuron[4]), int(neuron[5])] 
+        for neuron in word_neurons 
+        if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in word_neurons_tvl)
+    ]
+
+    neuron_picks_phone_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/phone_sig.npy').tolist()
+    neuron_picks_phone_old += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_phone_sig.npy').tolist()
+
+    neuron_picks_word_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/word_sig.npy').tolist()
+    neuron_picks_word_old += np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/other_word_sig.npy').tolist()
+
+    neuron_picks_morpheme_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_all.npy').tolist()
+    neuron_picks_wordpiece_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/wordpiece_all.npy').tolist()
+
+    phone_new = np.array([i for i in neuron_picks_phone if i not in neuron_picks_phone_old])
+    word_new = np.array([i for i in neuron_picks_word if i not in neuron_picks_word_old])
+    morpheme_new = np.array([i for i in neuron_picks_morpheme if i not in neuron_picks_morpheme_old])
+    wordpiece_new = np.array([i for i in neuron_picks_wordpiece if i not in neuron_picks_wordpiece_old])
+
+    print(phone_new.shape)
+    print(word_new.shape)
+    print(morpheme_new.shape)
+    print(wordpiece_new.shape)
+
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/new_batch/phone.npy', phone_new)
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/new_batch/word.npy', word_new)
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/new_batch/morpheme.npy', morpheme_new)
+    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/new_batch/wordpiece.npy', wordpiece_new)
+
     print(len(neuron_picks_morpheme))
     print(len(neuron_picks_wordpiece))
+    print(len(neuron_picks_phone))
+    print(len(neuron_picks_word))
 
-    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_all.npy', np.array(neuron_picks_morpheme))
-    np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/wordpiece_all.npy', np.array(neuron_picks_wordpiece))
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/morpheme_all.npy', np.array(neuron_picks_morpheme))
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/wordpiece_all.npy', np.array(neuron_picks_wordpiece))
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/phone_all.npy', np.array(neuron_picks_phone))
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/word_all.npy', np.array(neuron_picks_word))
 
 if __name__ == '__main__':
     asr_models_loop_full()
