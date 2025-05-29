@@ -182,14 +182,23 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
 
     """
 
-    colormap = ListedColormap([transparent] + [colors[f] for f in show_transforms])
+    # Map each unique color to the first transform that uses it
+    color_to_transform = {}
+    for transform in show_transforms:
+        color = colors[transform]
+        if color not in color_to_transform:
+            color_to_transform[color] = transform
 
-    # Map the colour to its corresponding value index in the colourmap.
-    # You might think you could just use the integer index, but you can't because of the way mne plots brains using a
-    # LUT.
+    # Create a list of unique colors
+    unique_colors = list(color_to_transform.keys())
+
+    # Create the colormap with unique colors
+    colormap = ListedColormap([transparent] + unique_colors)
+
+    # Map each transform to the normalized value of its color in the colormap
     colormap_value_lookup = {
-        TransformNameDType(transform): float(transform_idx / len(show_transforms))
-        for transform_idx, transform in enumerate(show_transforms, start=1)  # start=1 because 0 is transparent
+        TransformNameDType(transform): float((unique_colors.index(colors[transform]) + 1) / len(unique_colors))
+        for transform in show_transforms
     }
 
     return colormap, colormap_value_lookup
