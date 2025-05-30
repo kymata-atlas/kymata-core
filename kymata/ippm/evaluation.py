@@ -10,6 +10,7 @@ from kymata.ippm.hierarchy import group_points_by_transform
 
 def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
                                        connection_style: IPPMConnectionStyle = IPPMConnectionStyle.first_to_first,
+                                       include_inputs: bool = True,
                                        ) -> tuple[float, int, int]:
     """
     Computes the relative causality violation score between two IPPMs for a given IPPMConnectionStyle.
@@ -19,6 +20,7 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
         ippm_2 (IPPMGraph):
         connection_style (IPPMConnectionStyle, optional): The connection style to use. Must be one where there is at
             most one edge between any pair of transforms. Defaults to IPPMConnectionStyle.first_to_first.
+        include_inputs (bool, optional): Whether to include inputs in the score. Defaults to True.
 
     Returns:
         float: violations / total edges
@@ -39,6 +41,12 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
     violations = 0
     edges_intersection = 0
     for edge in ippm_1.candidate_transform_list.graph.edges:
+
+        if not include_inputs:
+            if (edge[0] in ippm_1.candidate_transform_list.inputs
+                    or edge[1] in ippm_1.candidate_transform_list.inputs):
+                continue
+
         ippm_1_edges = ippm_1.edges_between_transforms(*edge, connection_style=connection_style)
         ippm_2_edges = ippm_2.edges_between_transforms(*edge, connection_style=connection_style)
         # Skip any edges that aren't present in both graphs
