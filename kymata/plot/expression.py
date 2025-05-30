@@ -479,7 +479,7 @@ def expression_plot(
             verticalalignment="center",
         )
         ax.text(
-            600,
+            xlims[1] - 50,
             sidak_corrected_alpha,
             "α*",
             bbox={"facecolor": "white", "edgecolor": "none"},
