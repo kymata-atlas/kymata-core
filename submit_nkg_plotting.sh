@@ -6,14 +6,15 @@
 ###
 
 
-#SBATCH --job-name=get_feats
-#SBATCH --output=slurm_log.txt
-#SBATCH --error=slurm_log.txt
+#SBATCH --job-name=nkg_plotting
+#SBATCH --output=slurm_log_plot.txt
+#SBATCH --error=slurm_log_plot.txt
 #SBATCH --ntasks=1
-#SBATCH --time=05:00:00
-#SBATCH --mem=240G
+#SBATCH --time=24:00:00
+#SBATCH --mem=200G
 #SBATCH --array=1-1
 #SBATCH --exclusive
 
-cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/
-poetry run python kymata/invokers/invoker_run_nkg_plotting.py
+export PATH="$HOME/.local/bin:$PATH"
+source $(poetry env info --path)/bin/activate
+python kymata/invokers/invoker_run_nkg_plotting_all.py

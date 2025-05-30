@@ -177,6 +177,8 @@ def asr_models_loop_full():
     neuron_picks_morpheme_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/morpheme_all.npy').tolist()
     neuron_picks_wordpiece_old = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/wordpiece_all.npy').tolist()
 
+    import ipdb; ipdb.set_trace()
+
     phone_new = np.array([i for i in neuron_picks_phone if i not in neuron_picks_phone_old])
     word_new = np.array([i for i in neuron_picks_word if i not in neuron_picks_word_old])
     morpheme_new = np.array([i for i in neuron_picks_morpheme if i not in neuron_picks_morpheme_old])

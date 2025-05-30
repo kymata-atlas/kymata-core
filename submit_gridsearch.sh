@@ -19,6 +19,7 @@
 #     part_num+=("$i")
 # done
 
+export PATH="$HOME/.local/bin:$PATH"
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
