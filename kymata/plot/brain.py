@@ -166,10 +166,8 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
     """
     Get a colormap appropriate for displaying transforms on a brain minimap.
 
-    Indices point to transform position within `show_transforms` (1-indexed, as 0 is transparent/background).
-
     Args:
-        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
+        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.,
             strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0)).
         show_transforms (list[str]): The transforms which will be shown.
 
@@ -177,26 +175,22 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
         (
             Colormap: Colormap with colours for shown functions interleaved with transparency
             dict[TransformNameDType, float]: Dictionary mapping transform names to values within the colourmap for the
-                appropriate colour
+                appropriate color
         )
-
     """
 
-    # Map each unique color to the first transform that uses it
-    color_to_transform = {}
-    for transform in show_transforms:
-        color = colors[transform]
-        if color not in color_to_transform:
-            color_to_transform[color] = transform
-
     # Create a list of unique colors
-    unique_colors = list(color_to_transform.keys())
+    unique_colors = sorted(colors.values())
 
     # Create the colormap with unique colors
     colormap = ListedColormap([transparent] + unique_colors)
 
-    # Map each transform to the normalized value of its color in the colormap
+    # Map each transform to its color in the colormap
     colormap_value_lookup = {
+        # Map the colour to its corresponding value index in the colourmap.
+        # You might think you could just use the integer index, but you can't because of the way mne plots brains using
+        # a LUT.
+        # + 1 for transparency
         TransformNameDType(transform): float((unique_colors.index(colors[transform]) + 1) / len(unique_colors))
         for transform in show_transforms
     }
