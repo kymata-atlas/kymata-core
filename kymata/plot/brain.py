@@ -166,10 +166,8 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
     """
     Get a colormap appropriate for displaying transforms on a brain minimap.
 
-    Indices point to transform position within `show_transforms` (1-indexed, as 0 is transparent/background).
-
     Args:
-        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.
+        colors (dict): A dictionary mapping transform names to colours (in any matplotlib-appropriate format, e.g.,
             strings ("red", "#2r4fa6") or rgb(a) tuples ((1.0, 0.0, 0.0, 1.0)).
         show_transforms (list[str]): The transforms which will be shown.
 
@@ -177,19 +175,24 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
         (
             Colormap: Colormap with colours for shown functions interleaved with transparency
             dict[TransformNameDType, float]: Dictionary mapping transform names to values within the colourmap for the
-                appropriate colour
+                appropriate color
         )
-
     """
 
-    colormap = ListedColormap([transparent] + [colors[f] for f in show_transforms])
+    # Create a list of unique colors
+    unique_colors = sorted(colors.values())
 
-    # Map the colour to its corresponding value index in the colourmap.
-    # You might think you could just use the integer index, but you can't because of the way mne plots brains using a
-    # LUT.
+    # Create the colormap with unique colors
+    colormap = ListedColormap([transparent] + unique_colors)
+
+    # Map each transform to its color in the colormap
     colormap_value_lookup = {
-        TransformNameDType(transform): float(transform_idx / len(show_transforms))
-        for transform_idx, transform in enumerate(show_transforms, start=1)  # start=1 because 0 is transparent
+        # Map the colour to its corresponding value index in the colourmap.
+        # You might think you could just use the integer index, but you can't because of the way mne plots brains using
+        # a LUT.
+        # + 1 for transparency
+        TransformNameDType(transform): float((unique_colors.index(colors[transform]) + 1) / len(unique_colors))
+        for transform in show_transforms
     }
 
     return colormap, colormap_value_lookup
