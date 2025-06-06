@@ -32,7 +32,7 @@ def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
         raise NotImplementedError(f"IPPMs must have at most one edge connecting each pair of transforms:"
                                   f" {connection_style} is unsupported")
 
-    # First we assert that the CTL of each graph is the same
+    # First, we assert that the CTL of each graph is the same
     if ippm_1.candidate_transform_list != ippm_2.candidate_transform_list:
         raise ValueError("IPPMs must have the same CTL")
 

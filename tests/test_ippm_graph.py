@@ -220,3 +220,19 @@ def test_ippmgraph_edges_for_transform(sample_hierarchy, sample_points):
             ExpressionPoint("c", 70, "func4", -42),
         ),
     ]
+
+
+def test_ippm_subgraph_with_input(sample_hierarchy, sample_points):
+    graph = IPPMGraph(sample_hierarchy, sample_points)
+    select_transforms = {"input", "func1", "func2"}
+    subgraph = graph.subgraph(select_transforms)
+    expected = IPPMGraph(
+        # Restricted hierarchy
+        {
+            down: [up for up in ups if up in select_transforms]
+            for down, ups in sample_hierarchy.items()
+            if down in select_transforms
+        },
+        [p for p in sample_points if p.transform in select_transforms]
+    )
+    assert subgraph == expected

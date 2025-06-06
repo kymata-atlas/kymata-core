@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import copy
 from enum import StrEnum
 from logging import getLogger
+from typing import Iterable
 
 from networkx import DiGraph
 from numpy import inf
@@ -115,6 +116,14 @@ class IPPMGraph:
 
         # For testing, try not to use
         self._points_by_transform = points_by_transform
+
+    def subgraph(self, transforms: Iterable[str]) -> IPPMGraph:
+        """The IPPMGraph formed by restricting to the subset of transforms provided."""
+        new_points = [
+            p for p in self.graph_full.nodes
+            if p.transform in transforms
+        ]
+        return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
 
     def __copy__(self) -> IPPMGraph:
         """
