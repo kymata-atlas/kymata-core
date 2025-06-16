@@ -39,31 +39,64 @@ def serialise_expression_point(point: ExpressionPoint) -> dict[str, Any]:
     }
 
 
-def serialise_graph(graph: Graph) -> dict:
+def serialise_graph(graph: Graph, hemisphere: str) -> dict:
     """
     Serialize a networkx.Graph into a dictionary suitable for passing to json.dumps(..., cls=NumpyJSONEncoder).
+
+    This version creates unique node IDs and adds metadata as requested.
+
     Args:
-        graph:
+        graph: The networkx graph to serialize.
+        hemisphere (str): The hemisphere block name (e.g., "left" or "right").
 
     Returns:
-
+        dict: A dictionary in the desired format.
     """
 
-    from networkx import node_link_data
+    # A short code for the hemisphere, e.g. "left" -> "LH"
+    hemi_code = "RH" if hemisphere.lower() == "right" else "LH"
 
-    d = node_link_data(graph, edges="edges")
-    # Appropriately serialise the expression points in nodes and edges
-    d["nodes"] = [
-        {
-            "id": serialise_expression_point(node["id"])
-        }
-        for node in d["nodes"]
-    ]
-    d["edges"] = [
-        {
-            "source": serialise_expression_point(edge["source"]),
-            "target": serialise_expression_point(edge["target"]),
-        }
-        for edge in d["edges"]
-    ]
-    return d
+    nodes = []
+    node_id_map = {}  # Map from the ExpressionPoint object to its new unique node_id
+    input_node_counter = 1
+
+    # First, iterate through nodes to create the new node structure and the ID map
+    for point_obj in graph.nodes:
+        is_input = point_obj.channel == "input stream"
+
+        channel_val = input_node_counter if is_input else point_obj.channel
+
+        if is_input:
+            node_id = f"{hemi_code}_i{channel_val}"
+            input_node_counter += 1
+        else:
+            node_id = f"{hemi_code}_h{channel_val}"
+
+        node_id_map[point_obj] = node_id
+
+        nodes.append({
+            "node_id": node_id,
+            "is_input_node": is_input,
+            "hemisphere": hemi_code,
+            "channel": channel_val,
+            "latency": point_obj.latency,
+            "transform": point_obj.transform,
+            "logp_value": point_obj.logp_value,
+        })
+
+    # Now, create the edges using the new node_ids from our map
+    edges = []
+    for source_obj, target_obj in graph.edges:
+        edges.append({
+            "source": node_id_map[source_obj],
+            "target": node_id_map[target_obj],
+        })
+
+    # Assemble the final dictionary
+    return {
+        "directed": True,
+        "multigraph": False,
+        "graph": {},
+        "nodes": nodes,
+        "edges": edges
+    }

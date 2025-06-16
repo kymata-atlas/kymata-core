@@ -100,5 +100,6 @@ class IPPM:
 
         jdict = dict()
         for block, graph in self._graphs.items():
-            jdict[block] = serialise_graph(graph.graph_last_to_first)
+            # Pass the block name (e.g., "left" or "right") to the serializer
+            jdict[block] = serialise_graph(graph.graph_last_to_first, block)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
