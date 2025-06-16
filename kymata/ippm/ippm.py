@@ -19,13 +19,8 @@ _default_denoiser = "maxpool"
 
 class IPPM:
     """
-    IPPM container/constructor object.  Use this class as an interface to build IPPMs from ExpresionSets.
-
-    Contains one IPPMGraph for each block of data (e.g. left and right hemisphere, or scalp sensors).  Access the graph
-    object using indexing. E.g.:
-
-        ippm = IPPM(...)
-        left_graph = ippm["left"]  # BLOCK_LEFT
+    IPPM container/constructor object. Use this class as an interface to build a single, unified IPPM graph
+    from one or more blocks of data (e.g. left and right hemisphere).
     """
     def __init__(self,
                  expression_set: ExpressionSet,
@@ -65,29 +60,31 @@ class IPPM:
             denoising_strategy = None
 
         # Build the graph
-        # self._graphs maps block-name → graph
-        self._graphs: dict[str, IPPMGraph] = dict()
+        self._graph: IPPMGraph
         if isinstance(expression_set, HexelExpressionSet):
             if denoising_strategy is not None:
                 points_left, points_right = denoising_strategy.denoise(expression_set)
             else:
                 points_left, points_right = expression_set.best_transforms()
-            self._graphs[BLOCK_LEFT] = IPPMGraph(candidate_transform_list, points_left)
-            self._graphs[BLOCK_RIGHT] = IPPMGraph(candidate_transform_list, points_right)
+
+            # Group all points by their block (hemisphere) to pass to the graph constructor
+            all_points = {
+                BLOCK_LEFT: points_left,
+                BLOCK_RIGHT: points_right
+            }
+            self._graph = IPPMGraph(candidate_transform_list, all_points)
+
         elif isinstance(expression_set, SensorExpressionSet):
             if denoising_strategy is not None:
                 points = denoising_strategy.denoise(expression_set)
             else:
                 points = expression_set.best_transforms()
-            self._graphs[BLOCK_SCALP] = IPPMGraph(candidate_transform_list, points)
+
+            # For consistency, we still pass a dictionary, even with one block
+            all_points = {BLOCK_SCALP: points}
+            self._graph = IPPMGraph(candidate_transform_list, all_points)
         else:
             raise NotImplementedError()
-
-    def __getitem__(self, block: str) -> IPPMGraph:
-        return self._graphs[block]
-
-    def __contains__(self, block: str) -> bool:
-        return block in self._graphs
 
     def to_json(self) -> str:
         """
@@ -98,8 +95,5 @@ class IPPM:
         """
         import json
 
-        jdict = dict()
-        for block, graph in self._graphs.items():
-            # Pass the block name (e.g., "left" or "right") to the serializer
-            jdict[block] = serialise_graph(graph.graph_last_to_first, block)
+        jdict = serialise_graph(self._graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)

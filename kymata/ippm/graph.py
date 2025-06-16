@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from typing import Any
+
 from copy import copy
 from enum import StrEnum
 from logging import getLogger
+from collections import defaultdict
 
 from networkx import DiGraph
 from numpy import inf
@@ -12,6 +16,23 @@ from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transf
 
 
 _logger = getLogger(__file__)
+
+
+@dataclass(frozen=True, eq=True)
+class IPPMNode:
+    """
+    A node in the IPPMGraph. It is hashable and contains all metadata
+    for a single expression point, including its hemisphere and unique ID.
+    """
+    node_id: str
+    is_input_node: bool
+    hemisphere: str
+    channel: Any  # Can be an int from data or a generated int for an input
+
+    # Data from the original ExpressionPoint
+    transform: str
+    latency: float
+    logp_value: float
 
 
 class IPPMConnectionStyle(StrEnum):
@@ -43,78 +64,100 @@ class IPPMGraph:
     Attributes:
         candidate_transform_list (CandidateTransformList): The candidate transform list used to create the graph.
     """
+
     def __init__(self,
                  ctl: CandidateTransformList | TransformHierarchy,
-                 points: list[ExpressionPoint]):
+                 points_by_block: dict[str, list[ExpressionPoint]]):
         """
-        Initializes an IPPMGraph object by constructing a directed graph from a list of expression points and
-        a candidate transform list.
+        Initializes a single, unified IPPMGraph from potentially multiple blocks of data.
 
         Args:
             ctl (CandidateTransformList): A CTL defining the transform hierarchy.
-            points (list[ExpressionPoint]): A actual evidential expression points from data.
+            points_by_block (dict): A dictionary mapping block names (e.g., "left") to their lists
+                                    of ExpressionPoint data.
         """
         if not isinstance(ctl, CandidateTransformList):
             ctl = CandidateTransformList(ctl)
 
         graph = DiGraph()
+        # Keep track of unique channel numbers for input nodes per hemisphere
+        input_node_counters = defaultdict(lambda: 1)
 
-        # Sort points by latency ascending
-        points_by_transform = group_points_by_transform(points)
-        for trans in points_by_transform.keys():
-            points_by_transform[trans].sort(key=lambda p: p.latency)
+        # Create nodes with metadata from real data points
+        for block, points in points_by_block.items():
+            hemi_code = "RH" if block.lower() == "right" else "LH"
 
-        # Add a node for each datapoint corresponding to a transform
-        # Note: if the transform is not present in the data, it will not be added to the graph (unless it is an input)
-        for transform, points_this_transform in points_by_transform.items():
-            if transform not in ctl.transforms:
-                raise ValueError(f"Points supplied for transform {transform}, not present in transform list.")
-            for point in points_this_transform:
-                graph.add_node(point)
+            points_by_transform = group_points_by_transform(points)
+            for transform, points_this_transform in points_by_transform.items():
+                points_this_transform.sort(key=lambda p: p.latency)  # Sort by latency
+                if transform not in ctl.transforms:
+                    raise ValueError(f"Points supplied for transform {transform}, not present in transform list.")
 
-        # Also add points for inputs
+                for point in points_this_transform:
+                    node_id = f"{hemi_code}_h{point.channel}"
+                    node = IPPMNode(
+                        node_id=node_id,
+                        is_input_node=False,
+                        hemisphere=hemi_code,
+                        channel=point.channel,
+                        transform=point.transform,
+                        latency=point.latency,
+                        logp_value=point.logp_value
+                    )
+                    graph.add_node(node)
+
+        # Create pseudo-nodes for inputs that don't have real data
+        all_transforms_with_points = set(n.transform for n in graph.nodes)
         for input_transform in ctl.inputs:
-            # Two cases to consider:
-            if input_transform in points_by_transform.keys() and len(points_by_transform[input_transform]) > 0:
-                # 1. Input transform has associated ExpressionPoints data (e.g. looking at a partial IPPM whose inputs
-                #    are non-zero-latency transforms themselves). In this case they will have been present in
-                #    `points_by_transform` and will have been added as nodes already. However, this is likely to be an
-                #    unusual case, so we notify the user it's occurred.
-                _logger.info(f"Input transform {input_transform} had associated datapoints")
+            if input_transform not in all_transforms_with_points:
+                _logger.debug(f"Input transform {input_transform} had no associated datapoints, creating pseudo-node.")
+                # We must create a separate input node for each hemisphere it might feed into,
+                # to ensure the node has a hemisphere ID as requested.
+                for block in points_by_block.keys():
+                    hemi_code = "RH" if block.lower() == "right" else "LH"
+                    channel_val = input_node_counters[block]
+                    node_id = f"{hemi_code}_i{channel_val}"
 
-            else:
-                # 2. Input transform had no associated ExpressionPoints data, so is assumed to be an input-stream node,
-                #    with latency defined to be 0 seconds, and "zero" probability.
-                _logger.debug(f"Input transform {input_transform} had no associated datapoints")
-                graph.add_node(input_stream_pseudo_expression_point(input_transform))
+                    pseudo_point = input_stream_pseudo_expression_point(input_transform)
+                    node = IPPMNode(
+                        node_id=node_id,
+                        is_input_node=True,
+                        hemisphere=hemi_code,
+                        channel=channel_val,
+                        transform=pseudo_point.transform,
+                        latency=pseudo_point.latency,
+                        logp_value=pseudo_point.logp_value
+                    )
+                    graph.add_node(node)
+                    input_node_counters[block] += 1
 
-        # Add ALL relevant edges
-        node: ExpressionPoint
-        other_node: ExpressionPoint
+        # Add ALL relevant edges across the entire unified graph
+        node: IPPMNode
+        other_node: IPPMNode
         for node in graph.nodes:
-            ctl_predecessors = set(ctl.graph.predecessors(node.transform))
-            ctl_successors = set(ctl.graph.successors(node.transform))
             for other_node in graph.nodes:
+                # IMPORTANT CHANGE: Only add edges between nodes of the same hemisphere
+                if node.hemisphere != other_node.hemisphere:
+                    continue
+
+                # Connect based on the theoretical hierarchy (CTL)
+                ctl_predecessors = ctl.immediately_upstream(node.transform)
+                ctl_successors = ctl.immediately_downstream(node.transform)
+
                 if other_node.transform in ctl_predecessors:
                     graph.add_edge(other_node, node)
                 if other_node.transform in ctl_successors:
                     graph.add_edge(node, other_node)
-                # Add sequential edges between same-transform nodes
-                if node.transform == other_node.transform:
+                # Add sequential edges for nodes of the same transform
+                if node.transform == other_node.transform and node.node_id != other_node.node_id:
                     if node.latency < other_node.latency:
                         graph.add_edge(node, other_node)
                     elif node.latency > other_node.latency:
                         graph.add_edge(other_node, node)
 
         self.candidate_transform_list: CandidateTransformList = ctl
-        # The "full" graph has all possible connections between sequences of upstream nodes for the same transform and
-        # sequences of downstream nodes for the same transform.
-        # It should usually be accessed (for display purposes) via alternative graphs below,
-        # e.g. self.graph_last_to_first.
         self.graph_full: DiGraph = graph
 
-        # For testing, try not to use
-        self._points_by_transform = points_by_transform
 
     def __copy__(self) -> IPPMGraph:
         """
@@ -123,7 +166,29 @@ class IPPMGraph:
         Returns:
             IPPMGraph: A new IPPMGraph instance with the same candidate transform list and expression points.
         """
-        return IPPMGraph(ctl=copy(self.candidate_transform_list), points=list(self.graph_full.nodes))
+        # The original __copy__ method tried to pass 'points' to the IPPMGraph constructor,
+        # but the constructor expects 'points_by_block'. This is a fix for that.
+        # However, a shallow copy of a graph with nodes that are dataclasses might not be truly shallow
+        # if those dataclasses are mutable. For IPPMNode (frozen=True), this is fine.
+        points_by_block_copy = defaultdict(list)
+        for node in self.graph_full.nodes:
+            # We need to reverse the hemisphere code to block name (LH -> left, RH -> right)
+            block_name = "left" if node.hemisphere == "LH" else "right"
+            # Since IPPMNode is frozen, we can directly create an ExpressionPoint from its attributes
+            # for the purpose of recreating points_by_block.
+            # Note: The original ExpressionPoint might have more fields, but for this specific
+            # constructor usage (which primarily groups by transform and sorts by latency),
+            # this should be sufficient.
+            ep = ExpressionPoint(
+                transform=node.transform,
+                latency=node.latency,
+                logp_value=node.logp_value,
+                channel=node.channel # Assuming channel can be directly used
+            )
+            points_by_block_copy[block_name].append(ep)
+
+        return IPPMGraph(ctl=copy(self.candidate_transform_list), points_by_block=points_by_block_copy)
+
 
     def __eq__(self, other: IPPMGraph) -> bool:
         """
@@ -135,9 +200,10 @@ class IPPMGraph:
         """
         if self.candidate_transform_list != other.candidate_transform_list:
             return False
-        if set(self.graph_full.nodes) != set(other.graph_full.nodes):
-            return False
-        return True
+        # Comparing graphs directly for equality of nodes and edges is more robust
+        # than comparing sets of nodes, as it also checks edge equality.
+        return self.graph_full.graph_equality(other.graph_full)
+
 
     @property
     def transforms(self) -> set[str]:
@@ -197,7 +263,11 @@ class IPPMGraph:
         Returns:
             DiGraph: A directed graph representing this version of the graph.
         """
-        def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
+        def __keep_edge(source: IPPMNode, dest: IPPMNode) -> bool:
+            # Enforce hemisphere constraint
+            if source.hemisphere != dest.hemisphere:
+                return False
+
             # Deal with repeated-transform edges
             if source.transform == dest.transform:
                 # Only want to keep single path of edges from first to last incidence of a transform, so reject edge
@@ -211,12 +281,12 @@ class IPPMGraph:
                 # transform, to the FIRST point in the string of same-transform points for the downstream transform
                 # (hence "last to first").
                 # So if there's an available predecessor in the destination, don't keep
-                pred: ExpressionPoint
+                pred: IPPMNode
                 for pred in self.graph_full.predecessors(dest):
                     if pred.transform == dest.transform:
                         return False
                 # If there's a successor to the source, don't keep
-                succ: ExpressionPoint
+                succ: IPPMNode
                 for succ in self.graph_full.successors(source):
                     if succ.transform == source.transform:
                         return False
@@ -238,7 +308,11 @@ class IPPMGraph:
         Returns:
             DiGraph: A directed graph representing this version of the graph.
         """
-        def __keep_edge(source: ExpressionPoint, dest: ExpressionPoint) -> bool:
+        def __keep_edge(source: IPPMNode, dest: IPPMNode) -> bool:
+            # Enforce hemisphere constraint
+            if source.hemisphere != dest.hemisphere:
+                return False
+
             # Deal with repeated-transform edges
             if source.transform == dest.transform:
                 # Only want to keep single path of edges from first to last incidence of a transform, so reject edge
@@ -252,12 +326,12 @@ class IPPMGraph:
                 # transform, to the FIRST point in the string of same-transform points for the downstream transform
                 # (hence "first to first").
                 # So if there's an available predecessor in the destination, don't keep
-                pred: ExpressionPoint
+                pred: IPPMNode
                 for pred in self.graph_full.predecessors(dest):
                     if pred.transform == dest.transform:
                         return False
                 # If there's a predecessor to the source, don't keep
-                succ: ExpressionPoint
+                succ: IPPMNode
                 for pred in self.graph_full.predecessors(source):
                     if pred.transform == source.transform:
                         return False
@@ -274,9 +348,9 @@ class IPPMGraph:
 def input_stream_pseudo_expression_point(input_name: str) -> ExpressionPoint:
     """
     Input-stream transforms get given "pseudo" ExpressionPoints in the graph with a latency and p-value of 0.
-    
+
     Args:
-        input_name (str): The name of the input stream. 
+        input_name (str): The name of the input stream.
 
     Returns:
         ExpressionPoint
@@ -285,6 +359,6 @@ def input_stream_pseudo_expression_point(input_name: str) -> ExpressionPoint:
     return ExpressionPoint(transform=input_name,
                            # Input latency defined to be 0ms
                            latency=0,
-                           # Input given "zero" probability to ensure it's always present
-                           logp_value=-inf,
+                           # Input given high probability to ensure it's always present
+                           logp_value=-100,
                            channel="input stream")
