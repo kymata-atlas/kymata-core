@@ -13,7 +13,7 @@ from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint, ExpressionSet
+from kymata.entities.expression import ExpressionSet
 from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode  # Import IPPMNode
 from kymata.ippm.ippm import IPPM
 
