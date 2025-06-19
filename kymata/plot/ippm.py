@@ -344,10 +344,10 @@ def plot_ippm(
 
 
     # first lets aggregate all the information.
-    node_x = []
-    node_y = []
-    node_colors = []
-    node_sizes = []
+    node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
+    node_y      = [] # y coordinates for nodes
+    node_colors = [] # color for nodes
+    node_sizes  = []  # size of nodes
     edge_colors = []
     bsplines = []
     edge_labels = []
@@ -401,7 +401,7 @@ def plot_ippm(
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
-    future_width = 0.04
+    future_width = 0.02
     for node in plottable_graph.graph.nodes:
         if node.is_terminal:
             if node.is_input:
@@ -437,7 +437,7 @@ def plot_ippm(
 
     xticks = ax.get_xticks()
     plt.xticks(xticks,
-               [round(tick * 1000)
+               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
                 for tick in xticks])
     ax.set_xlabel("Latency (ms)")
     ax.spines["top"].set_visible(False)
