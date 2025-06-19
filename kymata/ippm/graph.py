@@ -136,7 +136,7 @@ class IPPMGraph:
         other_node: IPPMNode
         for node in graph.nodes:
             for other_node in graph.nodes:
-                # IMPORTANT CHANGE: Only add edges between nodes of the same hemisphere
+                # IMPORTANT TEMPORARY LOGIC: Only add edges between nodes of the same hemisphere
                 if node.hemisphere != other_node.hemisphere:
                     continue
 
