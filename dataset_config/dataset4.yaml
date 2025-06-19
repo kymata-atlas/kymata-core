@@ -9,15 +9,15 @@ random_seed: 17
 
 # General information related to the dataset
 participants: [
-                'pilot_01',
+                # 'pilot_01',
                 'pilot_02',
                 'participant_01',
                 'participant_01b',
                 'participant_02',
                 'participant_03',
-                'participant_04',
+                # 'participant_04',
                 'participant_05',
-                'participant_07',
+                # 'participant_07',
                 'participant_08',
                 'participant_09',
                 'participant_10',

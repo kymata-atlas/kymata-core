@@ -72,6 +72,7 @@ def process_lat_sig(n, log_dir, layer, neuron, thres, neuron_selection):
     print(selected.shape[0])
 
     return selected
+    # return _lats
 
 def asr_models_loop_full():
 
@@ -97,6 +98,13 @@ def asr_models_loop_full():
     selected_wordpiece = process_lat_sig(n, log_dir_wordpiece, layer, neuron, thres, neuron_selection)
     selected_phone = process_lat_sig(n, log_dir_phone, layer, neuron, thres, neuron_selection)
     selected_word = process_lat_sig(n, log_dir_word, layer, neuron, thres, neuron_selection)
+
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sensor/morpheme.npy', selected_morpheme[:, -2:])
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sensor/wordpiece.npy', selected_wordpiece[:, -2:])
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sensor/phone.npy', selected_phone[:, -2:])
+    # np.save('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/sensor/word.npy', selected_word[:, -2:])
+
+    import ipdb; ipdb.set_trace()
 
     # import ipdb;ipdb.set_trace()
 
