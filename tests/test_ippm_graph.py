@@ -75,21 +75,21 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
 
 
 def test_ippmgraph_empty_points_builds_successfully(sample_hierarchy, empty_points):
-    graph = IPPMGraph(sample_hierarchy, empty_points)
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=empty_points))
 
     assert graph.transforms == {"input"}
     assert graph.inputs == {"input"}
     assert graph.terminals == {"input"}
-    assert len(graph._points_by_transform) == 0
+    assert len(graph._points_by_transform["scalp"]) == 0
 
 
 def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_points):
-    graph = IPPMGraph(empty_hierarchy, empty_points)
+    graph = IPPMGraph(empty_hierarchy, dict(scalp=empty_points))
 
     assert graph.transforms == set()
     assert graph.inputs == set()
     assert graph.terminals == set()
-    assert len(graph._points_by_transform) == 0
+    assert len(graph._points_by_transform["scalp"]) == 0
 
 
 def test_ippmgraph_copy():
@@ -154,7 +154,7 @@ def test_ippmgraph_last_to_first():
         ExpressionPoint("c4", 4, "B", -50),
         ExpressionPoint("c5", 5, "C", -50),
     ]
-    graph = IPPMGraph(ctl=ctl, points=points)
+    graph = IPPMGraph(ctl=ctl, points=dict(scalp=points))
     ftl = graph.graph_last_to_first
     inputs = graph.inputs
     for p in points:

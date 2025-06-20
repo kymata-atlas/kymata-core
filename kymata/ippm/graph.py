@@ -99,6 +99,7 @@ class IPPMGraph:
         graph = DiGraph()
 
         # Create nodes with metadata from real data points
+        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()  # for testing
         for block, points in points_by_block.items():
             points_by_transform = group_points_by_transform(points)
             for transform, points_this_transform in points_by_transform.items():
@@ -114,6 +115,7 @@ class IPPMGraph:
                         latency=point.latency,
                         logp_value=point.logp_value
                     ))
+            self._points_by_transform[block] = points_by_transform
 
         # Create pseudo-nodes for inputs that don't have real data
         all_transforms_with_points = set(n.transform for n in graph.nodes)
