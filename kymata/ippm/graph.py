@@ -359,6 +359,6 @@ def input_stream_pseudo_expression_point(input_name: str) -> ExpressionPoint:
     return ExpressionPoint(transform=input_name,
                            # Input latency defined to be 0ms
                            latency=0,
-                           # Input given high probability to ensure it's always present
-                           logp_value=-100,
+                           # Input given "zero" p-value to ensure it's always present
+                           logp_value=-inf,
                            channel="input stream")

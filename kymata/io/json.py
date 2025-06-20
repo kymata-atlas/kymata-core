@@ -1,5 +1,5 @@
 from json import JSONEncoder
-from typing import Any
+from math import isinf
 
 import numpy as np
 from networkx import Graph
@@ -30,13 +30,14 @@ def serialise_graph(graph: Graph) -> dict:
     node: IPPMNode
     for node in graph.nodes:
         nodes.append({
-            "node_id": node.node_id,
+            "node_id":       node.node_id,
             "is_input_node": node.is_input_node,
-            "hemisphere": node.hemisphere,
-            "channel": node.channel,
-            "latency": node.latency,
-            "transform": node.transform,
-            "logp_value": node.logp_value,
+            "hemisphere":    node.hemisphere,
+            "channel":       node.channel,
+            "latency":       node.latency,
+            "transform":     node.transform,
+            # For purposes of serialisation, we treat "zero" probabilities as just very small
+            "logp_value":    node.logp_value if not isinf(node.logp_value) else -100,
         })
 
     edges = []
