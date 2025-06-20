@@ -3,7 +3,7 @@ from copy import deepcopy, copy
 import pytest
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.graph import IPPMGraph, input_stream_pseudo_expression_point
+from kymata.ippm.graph import IPPMGraph, input_stream_pseudo_expression_point, IPPMNode, _node_id_from_point
 from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 
 
@@ -45,10 +45,10 @@ def empty_points() -> list[ExpressionPoint]:
 
 
 def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
-    graph = IPPMGraph(sample_hierarchy, sample_points)
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=sample_points))
 
     assert graph.transforms == {"input", "func1", "func2", "func3", "func4"}
-    assert graph._points_by_transform == {
+    assert graph._points_by_transform["scalp"] == {
         "func1": [ExpressionPoint("c", 10, "func1", -28),
                   ExpressionPoint("c", 25, "func1", -79)],
         "func2": [ExpressionPoint("c", 50, "func2", -61)],
@@ -60,9 +60,19 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
     assert graph.terminals == {"func4"}
 
     # `graph.points` already tested as correct
+    pseudo_input_point = input_stream_pseudo_expression_point("input")
+    pseudo_node = IPPMNode(
+                        node_id=_node_id_from_point(point=pseudo_input_point, block="scalp", input_idx=None),
+                        is_input=False,
+                        hemisphere="scalp",
+                        channel=pseudo_input_point.channel,
+                        transform=pseudo_input_point.transform,
+                        latency=pseudo_input_point.latency,
+                        logp_value=pseudo_input_point.logp_value
+                    )
     assert (
-            set(graph.graph_full.successors(input_stream_pseudo_expression_point("input")))
-            == set(graph._points_by_transform["func1"] + graph._points_by_transform["func2"])
+            set(graph.graph_full.successors(pseudo_node))
+            == set(graph._points_by_transform["scalp"]["func1"] + graph._points_by_transform["scalp"]["func2"])
     )
 
     assert graph.serial_sequence == [
@@ -75,21 +85,21 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
 
 
 def test_ippmgraph_empty_points_builds_successfully(sample_hierarchy, empty_points):
-    graph = IPPMGraph(sample_hierarchy, empty_points)
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=empty_points))
 
     assert graph.transforms == {"input"}
     assert graph.inputs == {"input"}
     assert graph.terminals == {"input"}
-    assert len(graph._points_by_transform) == 0
+    assert len(graph._points_by_transform["scalp"]) == 0
 
 
 def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_points):
-    graph = IPPMGraph(empty_hierarchy, empty_points)
+    graph = IPPMGraph(empty_hierarchy, dict(scalp=empty_points))
 
     assert graph.transforms == set()
     assert graph.inputs == set()
     assert graph.terminals == set()
-    assert len(graph._points_by_transform) == 0
+    assert len(graph._points_by_transform["scalp"]) == 0
 
 
 def test_ippmgraph_copy():
@@ -154,7 +164,7 @@ def test_ippmgraph_last_to_first():
         ExpressionPoint("c4", 4, "B", -50),
         ExpressionPoint("c5", 5, "C", -50),
     ]
-    graph = IPPMGraph(ctl=ctl, points=points)
+    graph = IPPMGraph(ctl=ctl, points=dict(scalp=points))
     ftl = graph.graph_last_to_first
     inputs = graph.inputs
     for p in points:

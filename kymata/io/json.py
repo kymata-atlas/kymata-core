@@ -1,10 +1,10 @@
 from json import JSONEncoder
-from typing import Any
+from math import isinf
 
 import numpy as np
 from networkx import Graph
 
-from kymata.entities.expression import ExpressionPoint
+from kymata.ippm.graph import IPPMNode
 
 
 class NumpyJSONEncoder(JSONEncoder):
@@ -21,51 +21,32 @@ class NumpyJSONEncoder(JSONEncoder):
         return super().default(obj)
 
 
-def serialise_expression_point(point: ExpressionPoint) -> dict[str, Any]:
-    """
-    Serialise an expression point to a dictionary suitable to pass to json.dumps(..., cls=NumpyJSONEncoder).
-
-    Args:
-        point (ExpressionPoint): The point to serialise.
-
-    Returns:
-        dict: A dictionary suitable to pass to json.dumps(..., cls=NumpyJSONEncoder)
-    """
-    return {
-        "channel": point.channel,
-        "latency": point.latency,
-        "transform": point.transform,
-        "logp_value": point.logp_value,
-    }
-
-
 def serialise_graph(graph: Graph) -> dict:
     """
     Serialize a networkx.Graph into a dictionary. It reads metadata directly
     from the IPPMNode objects that constitute the graph.
     """
     nodes = []
-    for node_obj in graph.nodes:
-        # node_obj is now an IPPMNode instance
+    node: IPPMNode
+    for node in graph.nodes:
         nodes.append({
-            "node_id": node_obj.node_id,
-            "is_input_node": node_obj.is_input_node,
-            "hemisphere": node_obj.hemisphere,
-            "channel": node_obj.channel,
-            "latency": node_obj.latency,
-            "transform": node_obj.transform,
-            "logp_value": node_obj.logp_value,
+            "node_id":       node.node_id,
+            "is_input_node": node.is_input,
+            "hemisphere":    node.hemisphere,
+            "channel":       node.channel,
+            "latency":       node.latency,
+            "transform":     node.transform,
+            # For purposes of serialisation, we treat "zero" probabilities as just very small
+            "logp_value":    node.logp_value if not isinf(node.logp_value) else -100,
         })
 
     edges = []
-    # The source and target of an edge are the IPPMNode objects themselves
-    for source_obj, target_obj in graph.edges:
+    for source, target in graph.edges:
         edges.append({
-            "source": source_obj.node_id,
-            "target": target_obj.node_id,
+            "source": source.node_id,
+            "target": target.node_id,
         })
 
-    # Assemble the final dictionary in the same format as before
     return {
         "directed": True,
         "multigraph": False,

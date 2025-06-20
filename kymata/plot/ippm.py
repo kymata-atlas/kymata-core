@@ -1,8 +1,5 @@
 from collections import defaultdict, Counter
-from copy import copy
-from enum import StrEnum
 from typing import Optional, NamedTuple
-from warnings import warn
 
 import matplotlib.patheffects as pe
 import numpy as np
@@ -14,11 +11,11 @@ from numpy.typing import NDArray
 from scipy.interpolate import splev
 
 from kymata.entities.expression import ExpressionSet
-from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode  # Import IPPMNode
+from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode
 from kymata.ippm.ippm import IPPM
 
 
-class _YOrdinateStyle(StrEnum):
+class _YOrdinateStyle:
     """
     Enumeration for Y-ordinate plotting styles.
 
@@ -50,7 +47,7 @@ class _PlottableIPPMGraph:
 
     Attributes:
         graph (DiGraph): A directed graph with additional attributes for visualization, such as node positions and
-        colors.
+            colors.
     """
 
     def __init__(self,
@@ -58,7 +55,6 @@ class _PlottableIPPMGraph:
                  colors: dict[str, str],
                  y_ordinate_style: str,
                  avoid_collinearity: bool,
-                 serial_sequence: Optional[list[list[str]]],
                  scale_nodes: bool,
                  connection_style: IPPMConnectionStyle,
                  test_hemisphere_colors: bool,
@@ -73,160 +69,54 @@ class _PlottableIPPMGraph:
                 Options include "progressive" or "centered" (members of `_YOrdinateStyle`).
             avoid_collinearity (bool): Whether to apply a small offset to avoid collinearity between nodes in the same
                 serial step.
-            serial_sequence (Optional[list[list[str]]]): A list representing the serial execution order of transforms.
-                If None, the default serial sequence from ippm_graph is used.
             scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
                 points.
             test_hemisphere_colors (bool): If True, overrides the `colors` to use predefined hemisphere colors.
         """
 
-        if serial_sequence is None:
-            serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+        # Vertical spacing between nodes
+        node_spacing = 1
 
-        # y_ordinates now maps (transform_name, hemisphere_name) to y_coordinate
-        y_ordinates: dict[tuple[str, str], float] = dict()
+        # Blocks present in the graph
+        blocks: set[str] = {
+            node.hemisphere
+            for node in ippm_graph.graph_full.nodes
+        }
 
-        # Gather all unique (transform, hemisphere) pairs present in the graph
-        unique_transform_hemispheres = set()
-        for node in ippm_graph.graph_full.nodes:
-            unique_transform_hemispheres.add((node.transform, node.hemisphere))
+        # block → {transforms represented in this block}
+        transforms_per_block: dict[str, list[str]] = {
+            block: sorted({
+                node.transform
+                for node in ippm_graph.graph_full.nodes
+                if node.hemisphere == block
+            }, reverse=True)
+            for block in blocks
+        }
 
+        # hemisphere → transform → y-ordinate
+        y_ordinates: dict[str, dict[str, float]]
         if y_ordinate_style == _YOrdinateStyle.progressive:
-            warn("Progressive Y-ordinate style might not separate hemispheres well without further modification.") #
-
-            # Stack inputs
-            # To separate hemispheres in progressive style, you would need to define separate y-ranges
-            # or a larger offset for each hemisphere. This part is left as is for now, as the focus
-            # is on 'centered' style.
-            n_transforms = len(ippm_graph.candidate_transform_list.inputs)
-            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
-            partition_ptr = 0
-            for input_transform in ippm_graph.inputs:
-                for hemisphere_val in sorted(list(set(h for t, h in unique_transform_hemispheres if t == input_transform))):
-                    y_ordinates[(input_transform, hemisphere_val)] = _get_y_coordinate_progressive(
-                        partition_number=partition_ptr, partition_size=y_axis_partition_size)
-                partition_ptr += 1
-
-            # Stack others
-            n_transforms = len(ippm_graph.transforms - ippm_graph.inputs)
-            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
-            partition_ptr = 0
-            for transform in ippm_graph.transforms - ippm_graph.inputs:
-                for hemisphere_val in sorted(list(set(h for t, h in unique_transform_hemispheres if t == transform))):
-                    y_ordinates[(transform, hemisphere_val)] = _get_y_coordinate_progressive(
-                        partition_number=partition_ptr, partition_size=y_axis_partition_size)
-                partition_ptr += 1
-
+            y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_block, node_spacing)
 
         elif y_ordinate_style == _YOrdinateStyle.centered:
-
-            # Build dictionary mapping function names to sequence steps
-            step_idxs = dict()
-            for step_i, step in enumerate(serial_sequence):
-                for function in step:
-                    step_idxs[function] = step_i
-
-            # Separate unique (transform, hemisphere) pairs by hemisphere
-            unique_transform_hemispheres_lh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == "LH"], key=lambda x: x[0]) #
-            unique_transform_hemispheres_rh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == "RH"], key=lambda x: x[0]) #
-            unique_transform_hemispheres_other = sorted([(t, h) for t, h in unique_transform_hemispheres if h not in ["LH", "RH"]], key=lambda x: x[0]) #
-
-
-            # Calculate totals and max totals for each hemisphere group independently
-            # This ensures y-coordinates are calculated relative to within their hemisphere
-            totals_within_serial_step_lh = Counter()
-            idxs_within_level_lh = defaultdict(int)
-            max_function_total_within_level_lh = 0
-            temp_step_counts_lh = defaultdict(set)
-            for transform, hemisphere in unique_transform_hemispheres_lh:
-                if transform in step_idxs:
-                    step_idx = step_idxs[transform]
-                    temp_step_counts_lh[step_idx].add((transform, hemisphere))
-            for step_idx, items_in_step in temp_step_counts_lh.items():
-                totals_within_serial_step_lh[step_idx] = len(items_in_step)
-                if len(items_in_step) > max_function_total_within_level_lh:
-                    max_function_total_within_level_lh = len(items_in_step)
-
-            totals_within_serial_step_rh = Counter()
-            idxs_within_level_rh = defaultdict(int)
-            max_function_total_within_level_rh = 0
-            temp_step_counts_rh = defaultdict(set)
-            for transform, hemisphere in unique_transform_hemispheres_rh:
-                if transform in step_idxs:
-                    step_idx = step_idxs[transform]
-                    temp_step_counts_rh[step_idx].add((transform, hemisphere))
-            for step_idx, items_in_step in temp_step_counts_rh.items():
-                totals_within_serial_step_rh[step_idx] = len(items_in_step)
-                if len(items_in_step) > max_function_total_within_level_rh:
-                    max_function_total_within_level_rh = len(items_in_step)
-
-            totals_within_serial_step_other = Counter()
-            idxs_within_level_other = defaultdict(int)
-            max_function_total_within_level_other = 0
-            temp_step_counts_other = defaultdict(set)
-            for transform, hemisphere in unique_transform_hemispheres_other:
-                if transform in step_idxs:
-                    step_idx = step_idxs[transform]
-                    temp_step_counts_other[step_idx].add((transform, hemisphere))
-            for step_idx, items_in_step in temp_step_counts_other.items():
-                totals_within_serial_step_other[step_idx] = len(items_in_step)
-                if len(items_in_step) > max_function_total_within_level_other:
-                    max_function_total_within_level_other = len(items_in_step)
-
-            # Determine the overall maximum "density" level across all hemispheres for scaling separation.
-            overall_max_nodes_per_level = max(max_function_total_within_level_lh, max_function_total_within_level_rh, max_function_total_within_level_other) #
-            if overall_max_nodes_per_level == 0:
-                overall_max_nodes_per_level = 1
-
-            # Define a base factor for vertical separation. Adjust this to control the overall gap.
-            base_y_separation_factor = 1 # This factor multiplies the 'height' of the densest level
-            # 'spacing' is 1 by default in _get_y_coordinate_centered.
-            hemisphere_separation_offset = overall_max_nodes_per_level * base_y_separation_factor #
-
-            # Assign y-coordinates for Left Hemisphere (LH) - Top
-            for transform, hemisphere in unique_transform_hemispheres_lh:
-                if transform not in step_idxs:
-                    continue
-                step_idx = step_idxs[transform]
-                y_ordinates[(transform, hemisphere)] = _get_y_coordinate_centered(
-                    function_idx_within_level=idxs_within_level_lh[step_idx],
-                    function_total_within_level=totals_within_serial_step_lh[step_idx],
-                    max_function_total_within_level=max_function_total_within_level_lh,
-                    positive_nudge_frac=(step_idx / len(serial_sequence) if avoid_collinearity else 0),
-                    hemisphere_offset=hemisphere_separation_offset / 2 # Offset upwards
-                )
-                idxs_within_level_lh[step_idx] += 1
-
-            # Assign y-coordinates for Right Hemisphere (RH) - Bottom
-            for transform, hemisphere in unique_transform_hemispheres_rh:
-                if transform not in step_idxs:
-                    continue
-                step_idx = step_idxs[transform]
-                y_ordinates[(transform, hemisphere)] = _get_y_coordinate_centered(
-                    function_idx_within_level=idxs_within_level_rh[step_idx],
-                    function_total_within_level=totals_within_serial_step_rh[step_idx],
-                    max_function_total_within_level=max_function_total_within_level_rh,
-                    positive_nudge_frac=(step_idx / len(serial_sequence) if avoid_collinearity else 0),
-                    hemisphere_offset=-hemisphere_separation_offset / 2 # Offset downwards
-                )
-                idxs_within_level_rh[step_idx] += 1
-
-            # Assign y-coordinates for Other Hemispheres (e.g., SCALP) - In the middle, or offset as desired
-            for transform, hemisphere in unique_transform_hemispheres_other:
-                if transform not in step_idxs:
-                    continue
-                step_idx = step_idxs[transform]
-                y_ordinates[(transform, hemisphere)] = _get_y_coordinate_centered(
-                    function_idx_within_level=idxs_within_level_other[step_idx],
-                    function_total_within_level=totals_within_serial_step_other[step_idx],
-                    max_function_total_within_level=max_function_total_within_level_other,
-                    positive_nudge_frac=(step_idx / len(serial_sequence) if avoid_collinearity else 0),
-                    hemisphere_offset=0 # No specific hemisphere offset for others, or define one
-                )
-                idxs_within_level_other[step_idx] += 1
-
+            y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_block, node_spacing, avoid_collinearity)
         else:
             raise NotImplementedError()
+
+        # Apply an offset for each block.
+        # Shift up by the maximum plotted height of all blocks.
+        # (It's `node_spacing +` so that there is clear separation between the blocks; i.e. the last node of one does
+        # not overlap with the first node of the next)
+        hemisphere_separation_offset = node_spacing + max(
+            y_ordinates[block][transform]
+            for block, transforms in transforms_per_block.items()
+            for transform in transforms
+        )
+        for block_i, block in enumerate(blocks):
+            for transform in transforms_per_block[block]:
+                y_ordinates[block][transform] += hemisphere_separation_offset * block_i
+
+        # Apply y-ordinates to desired graph
 
         if connection_style == IPPMConnectionStyle.last_to_first:
             preferred_graph = ippm_graph.graph_last_to_first
@@ -244,11 +134,10 @@ class _PlottableIPPMGraph:
                 node: _PlottableNode(
                     label=node.transform,
                     x=node.latency,
-                    # Access y_ordinate using the (transform, hemisphere) tuple
-                    y=y_ordinates[(node.transform, node.hemisphere)], #
+                    y=y_ordinates[node.hemisphere][node.transform],
                     # Conditionally set color based on test_hemisphere_colors flag
-                    color=_get_test_hemisphere_color(node.hemisphere) if test_hemisphere_colors else colors[node.transform], #
-                    is_input=node.is_input_node,
+                    color=_get_test_hemisphere_color(node.hemisphere) if test_hemisphere_colors else colors[node.transform],
+                    is_input=node.is_input,
                     is_terminal=node.transform in ippm_graph.terminals,
                     size=-1 * node.logp_value if scale_nodes else 150,
                 )
@@ -257,6 +146,107 @@ class _PlottableIPPMGraph:
         )
 
         pass
+
+
+def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
+                                 transforms_per_block: dict[str, list[str]],
+                                 node_spacing: float,
+                                 ) -> dict[str, dict[str, float]]:
+    blocks = set(transforms_per_block.keys())
+    y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
+
+    inputs_per_block = {
+        block: sorted({
+            node.transform
+            for node in ippm_graph.graph_full.nodes
+            if node.hemisphere == block and node.is_input
+        }, reverse=True)
+        for block in blocks
+    }
+    for block in blocks:
+        # Stack inputs
+        partition_ptr = 0
+        for input_transform in inputs_per_block[block]:
+            y_ordinates[block][input_transform] = _get_y_coordinate_progressive(
+                partition_number=partition_ptr,
+                spacing=node_spacing)
+            partition_ptr += 1
+
+        # Stack others
+        partition_ptr = 0
+        # Non-input transforms
+        other_transforms = [t for t in transforms_per_block[block] if t not in inputs_per_block[block]]
+
+        # Build dictionary mapping function names to sequence steps
+        serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+        # transform → sequence_step_idx
+        step_idxs: dict[str, int] = dict()
+        for step_idx, step in enumerate(serial_sequence):
+            for transform in step:
+                step_idxs[transform] = step_idx
+
+        # Sort by serial sequence, then alphabetically
+        # Do both sorts in reverse order
+        other_transforms.sort(reverse=True)
+        other_transforms.sort(key=lambda trans: step_idxs[trans], reverse=True)
+
+        for transform in other_transforms:
+            y_ordinates[block][transform] = _get_y_coordinate_progressive(
+                partition_number=partition_ptr,
+                spacing=node_spacing)
+            partition_ptr += 1
+
+    return y_ordinates
+
+
+def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
+                              transforms_per_block: dict[str, list[str]],
+                              node_spacing: float,
+                              avoid_collinearity: bool,
+                              ) -> dict[str, dict[str, float]]:
+    blocks = set(transforms_per_block.keys())
+    y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
+    # Build dictionary mapping function names to sequence steps
+    serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+    # transform → sequence_step_idx
+    step_idxs: dict[str, int] = dict()
+    for step_idx, step in enumerate(serial_sequence):
+        for transform in step:
+            step_idxs[transform] = step_idx
+    # Count how "wide" each step in the serial sequence is
+    # block → serial step idx → number of "parallel" transforms this step which are present in this block
+    totals_within_serial_step = {
+        block: Counter(step_idx
+                       for trans, step_idx in step_idxs.items()
+                       if trans in transforms_per_block[block])
+        for block in blocks
+    }
+    # block → max "width" over the whole set of nodes this block
+    max_transform_counts = {
+        block: max(totals_within_serial_step[block].values())
+        for block in blocks
+    }
+    for block in blocks:
+        # Calculate totals and max totals for each block independently
+        # This ensures y-coordinates are calculated relative to within their hemisphere
+        temp_step_counts = defaultdict(set)
+        # Within each serial step, we have a collection of transforms. This dictionary comprises a counter for each
+        # of these steps, which increments for each successive transform in that level
+        # step_idx → counter
+        idxs_within_level: dict[int, int] = defaultdict(int)
+        for transform in transforms_per_block[block]:
+            step_idx = step_idxs[transform]
+            y_ordinates[block][transform] = _get_y_coordinate_centered(
+                function_idx_within_level=idxs_within_level[step_idx],
+                function_total_within_level=totals_within_serial_step[block][step_idx],
+                max_function_total_within_level=max_transform_counts[block],
+                positive_nudge_frac=(step_idx / len(serial_sequence)
+                                     if avoid_collinearity
+                                     else 0),
+                spacing=node_spacing
+            )
+            idxs_within_level[step_idx] += 1
+    return y_ordinates
 
 
 def _get_test_hemisphere_color(hemisphere: str) -> str:
@@ -284,7 +274,7 @@ def plot_ippm(
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
         avoid_collinearity: bool = False,
-        test_hemisphere_colors: bool = False,
+        _test_hemisphere_colors: bool = False,
 ) -> Figure:
     """
     Plots an IPPM graph, always including all available hemispheres.
@@ -302,8 +292,8 @@ def plot_ippm(
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
         avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
             serial step. Defaults to False.
-        test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color 'LH' nodes red,
-            'RH' nodes blue, and 'SCALP' nodes green for testing vertical separation. Defaults to False.
+        _test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color nodes according to their
+            hemisphere, for testing vertical separation. Defaults to False.
 
     Returns:
         (pyplot.Figure): A figure of the IPPM graph.
@@ -313,23 +303,19 @@ def plot_ippm(
         relabel = dict()
 
     # Always plot the entire graph
-    ippm_graph_to_plot = ippm._graph
+    ippm_graph_to_plot = ippm.graph
 
     if title is None:
         title = "IPPM Graph"
 
-    # Retrieve serial_sequence from the IPPMGraph. This refers to the theoretical hierarchy.
-    serial_sequence = ippm_graph_to_plot.candidate_transform_list.serial_sequence
-
     # Pass the test_hemisphere_colors flag to _PlottableIPPMGraph
     plottable_graph = _PlottableIPPMGraph(ippm_graph_to_plot,
                                           avoid_collinearity=avoid_collinearity,
-                                          serial_sequence=serial_sequence,
                                           colors=colors,
                                           y_ordinate_style=y_ordinate_style,
                                           connection_style=IPPMConnectionStyle(connection_style),
                                           scale_nodes=scale_nodes,
-                                          test_hemisphere_colors=test_hemisphere_colors)
+                                          test_hemisphere_colors=_test_hemisphere_colors)
 
     if arrowhead_dims is None:
         if plottable_graph.graph.nodes:
@@ -341,7 +327,6 @@ def plot_ippm(
             )
         else:
             arrowhead_dims = (0.1, 0.1)
-
 
     # first lets aggregate all the information.
     node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
@@ -467,7 +452,7 @@ def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[
     )
 
 
-def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
+def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[NDArray]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -502,7 +487,7 @@ def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[l
     return bspline_path_array
 
 
-def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> np.array:
+def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> NDArray:
     """
     Given the position of a start spike and an end spike, create
     a set of 6 control points needed for a b-spline.
@@ -585,8 +570,8 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
 def _get_y_coordinate_progressive(
         partition_number: int,
-        partition_size: float) -> float:
-    return 1 - partition_size * partition_number
+        spacing: float = 1) -> float:
+    return partition_number * spacing
 
 
 def _get_y_coordinate_centered(
@@ -594,8 +579,7 @@ def _get_y_coordinate_centered(
         function_total_within_level: int,
         max_function_total_within_level: int,
         positive_nudge_frac: float,
-        spacing: float = 1,
-        hemisphere_offset: float = 0) -> float: #
+        spacing: float = 1) -> float:
     total_height = (max_function_total_within_level - 1) * spacing
     this_height = (function_total_within_level - 1) * spacing
     baseline = (total_height - this_height) / 2
@@ -603,5 +587,4 @@ def _get_y_coordinate_centered(
     # / 2 because sometimes there's a 1/2-spacing offset between consecutive steps depending on parity, which can
     # inadvertently cause collinearity again, which we're trying to avoid
     y_ord += positive_nudge_frac * spacing / 2
-    y_ord += hemisphere_offset # Apply the hemisphere-specific offset
     return y_ord

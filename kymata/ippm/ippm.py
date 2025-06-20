@@ -20,7 +20,7 @@ _default_denoiser = "maxpool"
 class IPPM:
     """
     IPPM container/constructor object. Use this class as an interface to build a single, unified IPPM graph
-    from one or more blocks of data (e.g. left and right hemisphere).
+    from an expression set.
     """
     def __init__(self,
                  expression_set: ExpressionSet,
@@ -29,7 +29,7 @@ class IPPM:
                  **kwargs: dict[str, Any]):
         """
         Args:
-           expression_set (ExpressionSet): The expressionset from which to build the IPPM.
+           expression_set (ExpressionSet): The ExpressionSet from which to build the IPPM.
            candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied
                to the expression set.
            denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
@@ -59,8 +59,7 @@ class IPPM:
         else:
             denoising_strategy = None
 
-        # Build the graph
-        self._graph: IPPMGraph
+        # Get and group the points to include in the graph
         if isinstance(expression_set, HexelExpressionSet):
             if denoising_strategy is not None:
                 points_left, points_right = denoising_strategy.denoise(expression_set)
@@ -72,7 +71,6 @@ class IPPM:
                 BLOCK_LEFT: points_left,
                 BLOCK_RIGHT: points_right
             }
-            self._graph = IPPMGraph(candidate_transform_list, all_points)
 
         elif isinstance(expression_set, SensorExpressionSet):
             if denoising_strategy is not None:
@@ -82,9 +80,11 @@ class IPPM:
 
             # For consistency, we still pass a dictionary, even with one block
             all_points = {BLOCK_SCALP: points}
-            self._graph = IPPMGraph(candidate_transform_list, all_points)
+
         else:
             raise NotImplementedError()
+
+        self.graph = IPPMGraph(candidate_transform_list, all_points)
 
     def to_json(self) -> str:
         """
@@ -95,5 +95,5 @@ class IPPM:
         """
         import json
 
-        jdict = serialise_graph(self._graph.graph_last_to_first)
+        jdict = serialise_graph(self.graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
