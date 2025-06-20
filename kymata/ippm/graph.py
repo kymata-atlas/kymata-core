@@ -159,7 +159,6 @@ class IPPMGraph:
         self.candidate_transform_list: CandidateTransformList = ctl
         self.graph_full: DiGraph = graph
 
-
     def __copy__(self) -> IPPMGraph:
         """
         Creates a shallow copy of the current IPPMGraph instance.
@@ -173,8 +172,6 @@ class IPPMGraph:
         # if those dataclasses are mutable. For IPPMNode (frozen=True), this is fine.
         points_by_block_copy = defaultdict(list)
         for node in self.graph_full.nodes:
-            # We need to reverse the hemisphere code to block name (LH -> left, RH -> right)
-            block_name = "left" if node.hemisphere == "LH" else "right"
             # Since IPPMNode is frozen, we can directly create an ExpressionPoint from its attributes
             # for the purpose of recreating points_by_block.
             # Note: The original ExpressionPoint might have more fields, but for this specific

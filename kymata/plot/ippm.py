@@ -56,7 +56,6 @@ class _PlottableIPPMGraph:
                  colors: dict[str, str],
                  y_ordinate_style: str,
                  avoid_collinearity: bool,
-                 serial_sequence: Optional[list[list[str]]],
                  scale_nodes: bool,
                  connection_style: IPPMConnectionStyle,
                  test_hemisphere_colors: bool,
@@ -71,15 +70,10 @@ class _PlottableIPPMGraph:
                 Options include "progressive" or "centered" (members of `_YOrdinateStyle`).
             avoid_collinearity (bool): Whether to apply a small offset to avoid collinearity between nodes in the same
                 serial step.
-            serial_sequence (Optional[list[list[str]]]): A list representing the serial execution order of transforms.
-                If None, the default serial sequence from ippm_graph is used.
             scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
                 points.
             test_hemisphere_colors (bool): If True, overrides the `colors` to use predefined hemisphere colors.
         """
-
-        if serial_sequence is None:
-            serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
 
         # y_ordinates now maps (transform_name, hemisphere_name) to y_coordinate
         y_ordinates: dict[tuple[str, str], float] = dict()
@@ -243,7 +237,7 @@ class _PlottableIPPMGraph:
                     label=node.transform,
                     x=node.latency,
                     # Access y_ordinate using the (transform, hemisphere) tuple
-                    y=y_ordinates[(node.transform, node.hemisphere)], #
+                    y=y_ordinates[(node.transform, node.hemisphere)],
                     # Conditionally set color based on test_hemisphere_colors flag
                     color=_get_test_hemisphere_color(node.hemisphere) if test_hemisphere_colors else colors[node.transform], #
                     is_input=node.is_input_node,
@@ -335,7 +329,6 @@ def plot_ippm(
             )
         else:
             arrowhead_dims = (0.1, 0.1)
-
 
     # first lets aggregate all the information.
     node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
@@ -461,7 +454,7 @@ def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[
     )
 
 
-def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
+def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[NDArray]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -496,7 +489,7 @@ def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[l
     return bspline_path_array
 
 
-def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> np.array:
+def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> NDArray:
     """
     Given the position of a start spike and an end spike, create
     a set of 6 control points needed for a b-spline.
