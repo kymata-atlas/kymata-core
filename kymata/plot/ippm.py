@@ -292,7 +292,7 @@ def plot_ippm(
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
         avoid_collinearity: bool = False,
-        test_hemisphere_colors: bool = False,
+        _test_hemisphere_colors: bool = False,
 ) -> Figure:
     """
     Plots an IPPM graph, always including all available hemispheres.
@@ -310,8 +310,8 @@ def plot_ippm(
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
         avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
             serial step. Defaults to False.
-        test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color 'LH' nodes red,
-            'RH' nodes blue, and 'SCALP' nodes green for testing vertical separation. Defaults to False.
+        _test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color nodes according to their
+            hemisphere, for testing vertical separation. Defaults to False.
 
     Returns:
         (pyplot.Figure): A figure of the IPPM graph.
