@@ -229,7 +229,6 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
     for hemisphere in hemispheres:
         # Calculate totals and max totals for each hemisphere independently
         # This ensures y-coordinates are calculated relative to within their hemisphere
-        temp_step_counts = defaultdict(set)
         # Within each serial step, we have a collection of transforms. This dictionary comprises a counter for each
         # of these steps, which increments for each successive transform in that level
         # step_idx → counter

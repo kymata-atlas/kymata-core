@@ -1,5 +1,4 @@
 from json import JSONEncoder
-from math import isinf
 
 import numpy as np
 from networkx import Graph
