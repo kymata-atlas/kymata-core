@@ -10,6 +10,7 @@ from collections import defaultdict
 
 from networkx import DiGraph
 from numpy import inf
+from networkx.utils import graphs_equal
 
 from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transform, TransformHierarchy
@@ -200,10 +201,7 @@ class IPPMGraph:
         """
         if self.candidate_transform_list != other.candidate_transform_list:
             return False
-        # Comparing graphs directly for equality of nodes and edges is more robust
-        # than comparing sets of nodes, as it also checks edge equality.
-        return self.graph_full.graph_equality(other.graph_full)
-
+        return graphs_equal(self.graph_full, other.graph_full)
 
     @property
     def transforms(self) -> set[str]:
