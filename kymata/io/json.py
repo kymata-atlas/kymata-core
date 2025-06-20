@@ -37,7 +37,7 @@ def serialise_graph(graph: Graph) -> dict:
             "latency":       node.latency,
             "transform":     node.transform,
             # For purposes of serialisation, we treat "zero" probabilities as just very small
-            "logp_value":    node.logp_value if not isinf(node.logp_value) else -100,
+            "logp_value":    node.logp_value
         })
 
     edges = []

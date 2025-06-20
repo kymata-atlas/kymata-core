@@ -127,7 +127,7 @@ class IPPMGraph:
 
         for input_transform in ctl.inputs:
             if input_transform in all_transforms_with_points:
-                _logger.warning(f"Transform listed as an input in the CTL had associated data. This is unexpected!")
+                _logger.warning("Transform listed as an input in the CTL had associated data. This is unexpected!")
                 continue
             _logger.debug(f"Input transform {input_transform} had no associated datapoints, creating pseudo-node.")
             # We must create a separate input node for each hemisphere it might feed into,

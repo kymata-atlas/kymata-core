@@ -104,7 +104,7 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 1,
                 'latency': 0,
                 'transform': 'input',
-                'logp_value': -100  # magic value
+                'logp_value': -inf
             }
         ],
         'edges': [
