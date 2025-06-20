@@ -84,7 +84,7 @@ class IPPM:
         else:
             raise NotImplementedError()
 
-        self._graph = IPPMGraph(candidate_transform_list, all_points)
+        self.graph = IPPMGraph(candidate_transform_list, all_points)
 
     def to_json(self) -> str:
         """
@@ -95,5 +95,5 @@ class IPPM:
         """
         import json
 
-        jdict = serialise_graph(self._graph.graph_last_to_first)
+        jdict = serialise_graph(self.graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)

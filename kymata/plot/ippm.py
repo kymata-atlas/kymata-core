@@ -1,6 +1,4 @@
 from collections import defaultdict, Counter
-from copy import copy
-from enum import StrEnum
 from typing import Optional, NamedTuple
 from warnings import warn
 
@@ -18,7 +16,7 @@ from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode  # Import
 from kymata.ippm.ippm import IPPM
 
 
-class _YOrdinateStyle(StrEnum):
+class _YOrdinateStyle:
     """
     Enumeration for Y-ordinate plotting styles.
 
@@ -50,7 +48,7 @@ class _PlottableIPPMGraph:
 
     Attributes:
         graph (DiGraph): A directed graph with additional attributes for visualization, such as node positions and
-        colors.
+            colors.
     """
 
     def __init__(self,
@@ -313,23 +311,19 @@ def plot_ippm(
         relabel = dict()
 
     # Always plot the entire graph
-    ippm_graph_to_plot = ippm._graph
+    ippm_graph_to_plot = ippm.graph
 
     if title is None:
         title = "IPPM Graph"
 
-    # Retrieve serial_sequence from the IPPMGraph. This refers to the theoretical hierarchy.
-    serial_sequence = ippm_graph_to_plot.candidate_transform_list.serial_sequence
-
     # Pass the test_hemisphere_colors flag to _PlottableIPPMGraph
     plottable_graph = _PlottableIPPMGraph(ippm_graph_to_plot,
                                           avoid_collinearity=avoid_collinearity,
-                                          serial_sequence=serial_sequence,
                                           colors=colors,
                                           y_ordinate_style=y_ordinate_style,
                                           connection_style=IPPMConnectionStyle(connection_style),
                                           scale_nodes=scale_nodes,
-                                          test_hemisphere_colors=test_hemisphere_colors)
+                                          test_hemisphere_colors=_test_hemisphere_colors)
 
     if arrowhead_dims is None:
         if plottable_graph.graph.nodes:
