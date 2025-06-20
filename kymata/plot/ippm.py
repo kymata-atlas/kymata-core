@@ -11,7 +11,7 @@ from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import ExpressionSet
+from kymata.entities.expression import ExpressionSet, BLOCK_LEFT, BLOCK_RIGHT
 from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode  # Import IPPMNode
 from kymata.ippm.ippm import IPPM
 
@@ -166,9 +166,9 @@ def _y_ordinates_centered(ippm_graph: IPPMGraph,
             step_idxs[function] = step_i
 
     # Separate unique (transform, hemisphere) pairs by hemisphere
-    unique_transform_hemispheres_lh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == "LH"], key=lambda x: x[0])
-    unique_transform_hemispheres_rh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == "RH"], key=lambda x: x[0])
-    unique_transform_hemispheres_other = sorted([(t, h) for t, h in unique_transform_hemispheres if h not in ["LH", "RH"]], key=lambda x: x[0])
+    unique_transform_hemispheres_lh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == BLOCK_LEFT], key=lambda x: x[0])
+    unique_transform_hemispheres_rh = sorted([(t, h) for t, h in unique_transform_hemispheres if h == BLOCK_RIGHT], key=lambda x: x[0])
+    unique_transform_hemispheres_other = sorted([(t, h) for t, h in unique_transform_hemispheres if h not in {BLOCK_LEFT, BLOCK_RIGHT}], key=lambda x: x[0])
 
     # Calculate totals and max totals for each hemisphere group independently
     # This ensures y-coordinates are calculated relative to within their hemisphere
