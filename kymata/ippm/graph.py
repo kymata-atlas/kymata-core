@@ -25,7 +25,7 @@ class IPPMNode(NamedTuple):
     hemisphere (when referring to hexel data) and an ID.
     """
     node_id: str
-    is_input_node: bool
+    is_input: bool
     hemisphere: str  # Equivalent to the ExpressionSet `block` the data came from.
 
     # Data from the original ExpressionPoint
@@ -107,7 +107,7 @@ class IPPMGraph:
                 for point in sorted(points_this_transform, key=lambda p: p.latency):
                     graph.add_node(IPPMNode(
                         node_id=_node_id_from_point(point=point, block=block, input_idx=None),
-                        is_input_node=False,
+                        is_input=False,
                         hemisphere=block,
                         channel=point.channel,
                         transform=point.transform,
@@ -135,7 +135,7 @@ class IPPMGraph:
                 pseudo_point = input_stream_pseudo_expression_point(input_transform)
                 node = IPPMNode(
                     node_id=_node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
-                    is_input_node=True,
+                    is_input=True,
                     hemisphere=block,
                     channel=input_idx,
                     transform=pseudo_point.transform,

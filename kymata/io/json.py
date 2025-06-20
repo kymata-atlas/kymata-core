@@ -31,7 +31,7 @@ def serialise_graph(graph: Graph) -> dict:
     for node in graph.nodes:
         nodes.append({
             "node_id":       node.node_id,
-            "is_input_node": node.is_input_node,
+            "is_input_node": node.is_input,
             "hemisphere":    node.hemisphere,
             "channel":       node.channel,
             "latency":       node.latency,
