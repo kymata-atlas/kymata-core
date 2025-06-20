@@ -77,44 +77,44 @@ class _PlottableIPPMGraph:
         # Vertical spacing between nodes
         node_spacing = 1
 
-        # Blocks present in the graph
-        blocks: set[str] = {
+        # Hemispheres present in the graph
+        hemispheres: set[str] = {
             node.hemisphere
             for node in ippm_graph.graph_full.nodes
         }
 
-        # block → {transforms represented in this block}
-        transforms_per_block: dict[str, list[str]] = {
-            block: sorted({
+        # hemisphere → {transforms represented in this hemisphere}
+        transforms_per_hemisphere: dict[str, list[str]] = {
+            hemisphere: sorted({
                 node.transform
                 for node in ippm_graph.graph_full.nodes
-                if node.hemisphere == block
+                if node.hemisphere == hemisphere
             }, reverse=True)
-            for block in blocks
+            for hemisphere in hemispheres
         }
 
         # hemisphere → transform → y-ordinate
         y_ordinates: dict[str, dict[str, float]]
         if y_ordinate_style == _YOrdinateStyle.progressive:
-            y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_block, node_spacing)
+            y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_hemisphere, node_spacing)
 
         elif y_ordinate_style == _YOrdinateStyle.centered:
-            y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_block, node_spacing, avoid_collinearity)
+            y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_hemisphere, node_spacing, avoid_collinearity)
         else:
             raise NotImplementedError()
 
-        # Apply an offset for each block.
-        # Shift up by the maximum plotted height of all blocks.
-        # (It's `node_spacing +` so that there is clear separation between the blocks; i.e. the last node of one does
+        # Apply an offset for each hemisphere.
+        # Shift up by the maximum plotted height of all hemispheres.
+        # (It's `node_spacing +` so that there is clear separation between the hemispheres; i.e. the last node of one does
         # not overlap with the first node of the next)
         hemisphere_separation_offset = node_spacing + max(
-            y_ordinates[block][transform]
-            for block, transforms in transforms_per_block.items()
+            y_ordinates[hemisphere][transform]
+            for hemisphere, transforms in transforms_per_hemisphere.items()
             for transform in transforms
         )
-        for block_i, block in enumerate(blocks):
-            for transform in transforms_per_block[block]:
-                y_ordinates[block][transform] += hemisphere_separation_offset * block_i
+        for hemisphere_i, hemisphere in enumerate(hemispheres):
+            for transform in transforms_per_hemisphere[hemisphere]:
+                y_ordinates[hemisphere][transform] += hemisphere_separation_offset * hemisphere_i
 
         # Apply y-ordinates to desired graph
 
@@ -149,25 +149,25 @@ class _PlottableIPPMGraph:
 
 
 def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
-                                 transforms_per_block: dict[str, list[str]],
+                                 transforms_per_hemisphere: dict[str, list[str]],
                                  node_spacing: float,
                                  ) -> dict[str, dict[str, float]]:
-    blocks = set(transforms_per_block.keys())
+    hemispheres = set(transforms_per_hemisphere.keys())
     y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
 
-    inputs_per_block = {
-        block: sorted({
+    inputs_per_hemisphere = {
+        hemisphere: sorted({
             node.transform
             for node in ippm_graph.graph_full.nodes
-            if node.hemisphere == block and node.is_input
+            if node.hemisphere == hemisphere and node.is_input
         }, reverse=True)
-        for block in blocks
+        for hemisphere in hemispheres
     }
-    for block in blocks:
+    for hemisphere in hemispheres:
         # Stack inputs
         partition_ptr = 0
-        for input_transform in inputs_per_block[block]:
-            y_ordinates[block][input_transform] = _get_y_coordinate_progressive(
+        for input_transform in inputs_per_hemisphere[hemisphere]:
+            y_ordinates[hemisphere][input_transform] = _get_y_coordinate_progressive(
                 partition_number=partition_ptr,
                 spacing=node_spacing)
             partition_ptr += 1
@@ -175,7 +175,7 @@ def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
         # Stack others
         partition_ptr = 0
         # Non-input transforms
-        other_transforms = [t for t in transforms_per_block[block] if t not in inputs_per_block[block]]
+        other_transforms = [t for t in transforms_per_hemisphere[hemisphere] if t not in inputs_per_hemisphere[hemisphere]]
 
         # Build dictionary mapping function names to sequence steps
         serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
@@ -191,7 +191,7 @@ def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
         other_transforms.sort(key=lambda trans: step_idxs[trans], reverse=True)
 
         for transform in other_transforms:
-            y_ordinates[block][transform] = _get_y_coordinate_progressive(
+            y_ordinates[hemisphere][transform] = _get_y_coordinate_progressive(
                 partition_number=partition_ptr,
                 spacing=node_spacing)
             partition_ptr += 1
@@ -200,11 +200,11 @@ def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
 
 
 def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
-                              transforms_per_block: dict[str, list[str]],
+                              transforms_per_hemisphere: dict[str, list[str]],
                               node_spacing: float,
                               avoid_collinearity: bool,
                               ) -> dict[str, dict[str, float]]:
-    blocks = set(transforms_per_block.keys())
+    hemispheres = set(transforms_per_hemisphere.keys())
     y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
     # Build dictionary mapping function names to sequence steps
     serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
@@ -214,32 +214,32 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
         for transform in step:
             step_idxs[transform] = step_idx
     # Count how "wide" each step in the serial sequence is
-    # block → serial step idx → number of "parallel" transforms this step which are present in this block
+    # hemisphere → serial step idx → number of "parallel" transforms this step which are present in this hemisphere
     totals_within_serial_step = {
-        block: Counter(step_idx
+        hemisphere: Counter(step_idx
                        for trans, step_idx in step_idxs.items()
-                       if trans in transforms_per_block[block])
-        for block in blocks
+                       if trans in transforms_per_hemisphere[hemisphere])
+        for hemisphere in hemispheres
     }
-    # block → max "width" over the whole set of nodes this block
+    # hemisphere → max "width" over the whole set of nodes this hemisphere
     max_transform_counts = {
-        block: max(totals_within_serial_step[block].values())
-        for block in blocks
+        hemisphere: max(totals_within_serial_step[hemisphere].values())
+        for hemisphere in hemispheres
     }
-    for block in blocks:
-        # Calculate totals and max totals for each block independently
+    for hemisphere in hemispheres:
+        # Calculate totals and max totals for each hemisphere independently
         # This ensures y-coordinates are calculated relative to within their hemisphere
         temp_step_counts = defaultdict(set)
         # Within each serial step, we have a collection of transforms. This dictionary comprises a counter for each
         # of these steps, which increments for each successive transform in that level
         # step_idx → counter
         idxs_within_level: dict[int, int] = defaultdict(int)
-        for transform in transforms_per_block[block]:
+        for transform in transforms_per_hemisphere[hemisphere]:
             step_idx = step_idxs[transform]
-            y_ordinates[block][transform] = _get_y_coordinate_centered(
+            y_ordinates[hemisphere][transform] = _get_y_coordinate_centered(
                 function_idx_within_level=idxs_within_level[step_idx],
-                function_total_within_level=totals_within_serial_step[block][step_idx],
-                max_function_total_within_level=max_transform_counts[block],
+                function_total_within_level=totals_within_serial_step[hemisphere][step_idx],
+                max_function_total_within_level=max_transform_counts[hemisphere],
                 positive_nudge_frac=(step_idx / len(serial_sequence)
                                      if avoid_collinearity
                                      else 0),
