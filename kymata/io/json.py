@@ -21,24 +21,6 @@ class NumpyJSONEncoder(JSONEncoder):
         return super().default(obj)
 
 
-def serialise_expression_point(point: ExpressionPoint) -> dict[str, Any]:
-    """
-    Serialise an expression point to a dictionary suitable to pass to json.dumps(..., cls=NumpyJSONEncoder).
-
-    Args:
-        point (ExpressionPoint): The point to serialise.
-
-    Returns:
-        dict: A dictionary suitable to pass to json.dumps(..., cls=NumpyJSONEncoder)
-    """
-    return {
-        "channel": point.channel,
-        "latency": point.latency,
-        "transform": point.transform,
-        "logp_value": point.logp_value,
-    }
-
-
 def serialise_graph(graph: Graph) -> dict:
     """
     Serialize a networkx.Graph into a dictionary. It reads metadata directly

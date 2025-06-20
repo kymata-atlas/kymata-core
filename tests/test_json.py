@@ -3,7 +3,7 @@ from math import inf
 import pytest
 
 from kymata.entities.expression import ExpressionPoint
-from kymata.io.json import serialise_expression_point, serialise_graph
+from kymata.io.json import serialise_graph
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import TransformHierarchy
 
@@ -31,23 +31,6 @@ def sample_points() -> list[ExpressionPoint]:
         ExpressionPoint("c", 65, "func3", -12),
         ExpressionPoint("c", 70, "func4", -42),
     ]
-
-
-def test_serialise_expression_point_valid_input():
-    point = ExpressionPoint(
-        channel=123,
-        latency=0.256,
-        transform="transform",
-        logp_value=-7.5
-    )
-    result = serialise_expression_point(point)
-    expected = {
-        "channel": 123,
-        "latency": 0.256,
-        "transform": "transform",
-        "logp_value": -7.5
-    }
-    assert result == expected
 
 
 def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
