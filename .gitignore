@@ -3,6 +3,9 @@ kymata-core-data/tutorial_nkg_data/
 kymata-core-data/emeg_study_data/
 kymata-core-data/output/
 
+# Testing and coverage
+.coverage*
+
 # Environments
 .env
 .venv
