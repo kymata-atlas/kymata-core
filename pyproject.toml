@@ -65,3 +65,8 @@ ignore = [
     # Ignore these bad linting rules
     "F842",  # Local variable `node` is annotated but never used
 ]
+
+[tool.coverage.run]
+omit = [
+    "kymata/io/logging.py",
+]
