@@ -5,7 +5,6 @@ from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.evaluation import causality_violation_score, transform_recall
 from kymata.ippm.graph import IPPMGraph
 
-
 def test_causality_violation_with_right_hemi_should_succeed():
     test_points = [
         ExpressionPoint("c", 50,  "f1", -50),
@@ -18,7 +17,7 @@ def test_causality_violation_with_right_hemi_should_succeed():
     ]
     test_hierarchy = {"f4": ["f3"], "f3": ["f1", "f2"], "f2": ["f1"], "f1": []}
 
-    ippm_graph = IPPMGraph(test_hierarchy, test_points)
+    ippm_graph = IPPMGraph(test_hierarchy, points_by_block={"scalp": test_points})
     ratio, num, denom = causality_violation_score(ippm_graph)
 
     assert ratio == 0.25
@@ -33,11 +32,12 @@ def test_causality_violation_with_single_function_should_return_0():
     ]
     test_hierarchy = {"f1": []}
 
-    ippm_graph = IPPMGraph(test_hierarchy, test_points)
+    ippm_graph = IPPMGraph(test_hierarchy, points_by_block={"scalp": test_points})
     ratio, num, denom = causality_violation_score(ippm_graph)
 
     assert ratio == 0
     assert num == 0
+    assert denom == 0 # Added this assertion as it's logically correct for no arrows
 
 
 def test_causality_violation_with_single_edge_should_return_0():
@@ -48,11 +48,12 @@ def test_causality_violation_with_single_edge_should_return_0():
     ]
     test_hierarchy = {"f2": ["f1"], "f1": []}
 
-    ippm_graph = IPPMGraph(test_hierarchy, test_points)
+    ippm_graph = IPPMGraph(test_hierarchy, points_by_block={"scalp": test_points})
     ratio, num, denom = causality_violation_score(ippm_graph)
 
     assert ratio == 0
     assert num == 0
+    assert denom == 1 # Expected 1 arrow: f1 -> f2
 
 
 def test_transform_recall_with_no_trans_should_return_0():
@@ -64,12 +65,13 @@ def test_transform_recall_with_no_trans_should_return_0():
     ]
     denoised_points = []
 
-    test_graph = IPPMGraph(dict(), denoised_points)
+    test_graph = IPPMGraph(dict(), points_by_block={"scalp": denoised_points})
 
     ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
     assert ratio == 0
     assert numer == 0
+    assert denom == 2 # f1 and f2 are present in noisy_points
 
 
 def test_transform_recall_with_all_trans_found_should_return_1():
@@ -86,13 +88,13 @@ def test_transform_recall_with_all_trans_found_should_return_1():
         ExpressionPoint("c3", 30, "f2", -2),
     ]
 
-    test_graph = IPPMGraph({"f1": [], "f2": ["f1"]}, denoised_points)
+    test_graph = IPPMGraph({"f1": [], "f2": ["f1"]}, points_by_block={"scalp": denoised_points})
 
     ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
     assert ratio == 1
-    assert numer == 2
-    assert denom == 2
+    assert numer == 2 # f1, f2 detected
+    assert denom == 2 # f1, f2 in noisy data
 
 
 def test_transform_recall_with_half_trans_found_should_return_correct_ratio():
@@ -107,10 +109,10 @@ def test_transform_recall_with_half_trans_found_should_return_correct_ratio():
         ExpressionPoint("c2", 15, "f1", -35),
     ]
 
-    test_graph = IPPMGraph({"f1": []}, denoised_points)
+    test_graph = IPPMGraph({"f1": []}, points_by_block={"scalp": denoised_points})
 
     ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
     assert ratio == 1 / 2
-    assert numer == 1
-    assert denom == 2
+    assert numer == 1 # f1 detected
+    assert denom == 2 # f1, f2 in noisy data

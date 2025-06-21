@@ -1,23 +1,21 @@
 from collections import defaultdict, Counter
-from copy import copy
-from enum import StrEnum
 from typing import Optional, NamedTuple
-from warnings import warn
 
 import matplotlib.patheffects as pe
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import BLOCK_LEFT, BLOCK_SCALP, ExpressionPoint, ExpressionSet
-from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle
+from kymata.entities.expression import ExpressionSet
+from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode
 from kymata.ippm.ippm import IPPM
 
 
-class _YOrdinateStyle(StrEnum):
+class _YOrdinateStyle:
     """
     Enumeration for Y-ordinate plotting styles.
 
@@ -26,7 +24,7 @@ class _YOrdinateStyle(StrEnum):
         centered: Points are vertically centered.
     """
     progressive = "progressive"
-    centered    = "centered"
+    centered = "centered"
 
 
 _XY = tuple[float, float]
@@ -49,16 +47,17 @@ class _PlottableIPPMGraph:
 
     Attributes:
         graph (DiGraph): A directed graph with additional attributes for visualization, such as node positions and
-        colors.
+            colors.
     """
+
     def __init__(self,
                  ippm_graph: IPPMGraph,
                  colors: dict[str, str],
                  y_ordinate_style: str,
                  avoid_collinearity: bool,
-                 serial_sequence: Optional[list[list[str]]],
                  scale_nodes: bool,
                  connection_style: IPPMConnectionStyle,
+                 test_hemisphere_colors: bool,
                  ):
         """
         Initializes the _PlottableIPPMGraph by assigning coordinates, colors, and other visual attributes to each node.
@@ -70,63 +69,54 @@ class _PlottableIPPMGraph:
                 Options include "progressive" or "centered" (members of `_YOrdinateStyle`).
             avoid_collinearity (bool): Whether to apply a small offset to avoid collinearity between nodes in the same
                 serial step.
-            serial_sequence (Optional[list[list[str]]]): A list representing the serial execution order of transforms.
-                If None, the default serial sequence from ippm_graph is used.
             scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
                 points.
+            test_hemisphere_colors (bool): If True, overrides the `colors` to use predefined hemisphere colors.
         """
 
-        ippm_graph = copy(ippm_graph)
-        if serial_sequence is None:
-            serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+        # Vertical spacing between nodes
+        node_spacing = 1
 
-        y_ordinates: dict[str, float] = dict()
+        # Hemispheres present in the graph
+        hemispheres: set[str] = {
+            node.hemisphere
+            for node in ippm_graph.graph_full.nodes
+        }
 
+        # hemisphere → {transforms represented in this hemisphere}
+        transforms_per_hemisphere: dict[str, list[str]] = {
+            hemisphere: sorted({
+                node.transform
+                for node in ippm_graph.graph_full.nodes
+                if node.hemisphere == hemisphere
+            }, reverse=True)
+            for hemisphere in hemispheres
+        }
+
+        # hemisphere → transform → y-ordinate
+        y_ordinates: dict[str, dict[str, float]]
         if y_ordinate_style == _YOrdinateStyle.progressive:
-
-            # Stack inputs
-            n_transforms = len(ippm_graph.candidate_transform_list.inputs)
-            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
-            partition_ptr = 0
-            for input_transform in ippm_graph.inputs:
-                y_ordinates[input_transform] = _get_y_coordinate_progressive(
-                    partition_number=partition_ptr, partition_size=y_axis_partition_size)
-                partition_ptr += 1
-
-            # Stack others
-            n_transforms = len(ippm_graph.transforms - ippm_graph.candidate_transform_list.inputs)
-            y_axis_partition_size = 1 / n_transforms if n_transforms > 0 else 1
-            partition_ptr = 0
-            # Non-input transforms step upwards
-            for transform in ippm_graph.transforms - ippm_graph.inputs:
-                y_ordinates[transform] = _get_y_coordinate_progressive(
-                    partition_number=partition_ptr, partition_size=y_axis_partition_size)
-                partition_ptr += 1
+            y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_hemisphere, node_spacing)
 
         elif y_ordinate_style == _YOrdinateStyle.centered:
-
-            # Build dictionary mapping function names to sequence steps
-            step_idxs = dict()
-            for step_i, step in enumerate(serial_sequence):
-                for function in step:
-                    step_idxs[function] = step_i
-            totals_within_serial_step = Counter(step_idxs.values())
-            # level -> latest idx
-            idxs_within_level = defaultdict(int)
-            for transform in sorted(ippm_graph.candidate_transform_list.transforms):
-                step_idx = step_idxs[transform]
-                y_ordinates[transform] = _get_y_coordinate_centered(
-                    function_idx_within_level=idxs_within_level[step_idx],
-                    function_total_within_level=totals_within_serial_step[step_idx],
-                    max_function_total_within_level=max(totals_within_serial_step.values()),
-                    # Nudge each step up progressively more to avoid collinearity
-                    positive_nudge_frac=(step_idxs[transform] / len(serial_sequence)
-                                         if avoid_collinearity
-                                         else 0))
-                idxs_within_level[step_idx] += 1
-
+            y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_hemisphere, node_spacing, avoid_collinearity)
         else:
             raise NotImplementedError()
+
+        # Apply an offset for each hemisphere.
+        # Shift up by the maximum plotted height of all hemispheres.
+        # (It's `node_spacing +` so that there is clear separation between the hemispheres; i.e. the last node of one does
+        # not overlap with the first node of the next)
+        hemisphere_separation_offset = node_spacing + max(
+            y_ordinates[hemisphere][transform]
+            for hemisphere, transforms in transforms_per_hemisphere.items()
+            for transform in transforms
+        )
+        for hemisphere_i, hemisphere in enumerate(hemispheres):
+            for transform in transforms_per_hemisphere[hemisphere]:
+                y_ordinates[hemisphere][transform] += hemisphere_separation_offset * hemisphere_i
+
+        # Apply y-ordinates to desired graph
 
         if connection_style == IPPMConnectionStyle.last_to_first:
             preferred_graph = ippm_graph.graph_last_to_first
@@ -136,18 +126,20 @@ class _PlottableIPPMGraph:
             # IPPMConnectionStyle.full typically has too many nodes and edges to be performant and should be avoided
             raise NotImplementedError()
 
-        node: ExpressionPoint
+        # Update this section to use IPPMNode attributes
+        node: IPPMNode
         self.graph: DiGraph = relabel_nodes(
             preferred_graph,
             {
                 node: _PlottableNode(
                     label=node.transform,
                     x=node.latency,
-                    y=y_ordinates[node.transform],
-                    color=colors[node.transform],
-                    is_input=node.transform in ippm_graph.inputs,
+                    y=y_ordinates[node.hemisphere][node.transform],
+                    # Conditionally set color based on test_hemisphere_colors flag
+                    color=_get_test_hemisphere_color(node.hemisphere) if test_hemisphere_colors else colors[node.transform],
+                    is_input=node.is_input,
                     is_terminal=node.transform in ippm_graph.terminals,
-                    size=-1*node.logp_value if scale_nodes else 150,
+                    size=-1 * node.logp_value if scale_nodes else 150,
                 )
                 for node in preferred_graph.nodes
             }
@@ -156,33 +148,140 @@ class _PlottableIPPMGraph:
         pass
 
 
+def _all_y_ordinates_progressive(ippm_graph: IPPMGraph,
+                                 transforms_per_hemisphere: dict[str, list[str]],
+                                 node_spacing: float,
+                                 ) -> dict[str, dict[str, float]]:
+    hemispheres = set(transforms_per_hemisphere.keys())
+    y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
+
+    inputs_per_hemisphere = {
+        hemisphere: sorted({
+            node.transform
+            for node in ippm_graph.graph_full.nodes
+            if node.hemisphere == hemisphere and node.is_input
+        }, reverse=True)
+        for hemisphere in hemispheres
+    }
+    for hemisphere in hemispheres:
+        # Stack inputs
+        partition_ptr = 0
+        for input_transform in inputs_per_hemisphere[hemisphere]:
+            y_ordinates[hemisphere][input_transform] = _get_y_coordinate_progressive(
+                partition_number=partition_ptr,
+                spacing=node_spacing)
+            partition_ptr += 1
+
+        # Stack others
+        partition_ptr = 0
+        # Non-input transforms
+        other_transforms = [t for t in transforms_per_hemisphere[hemisphere] if t not in inputs_per_hemisphere[hemisphere]]
+
+        # Build dictionary mapping function names to sequence steps
+        serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+        # transform → sequence_step_idx
+        step_idxs: dict[str, int] = dict()
+        for step_idx, step in enumerate(serial_sequence):
+            for transform in step:
+                step_idxs[transform] = step_idx
+
+        # Sort by serial sequence, then alphabetically
+        # Do both sorts in reverse order
+        other_transforms.sort(reverse=True)
+        other_transforms.sort(key=lambda trans: step_idxs[trans], reverse=True)
+
+        for transform in other_transforms:
+            y_ordinates[hemisphere][transform] = _get_y_coordinate_progressive(
+                partition_number=partition_ptr,
+                spacing=node_spacing)
+            partition_ptr += 1
+
+    return y_ordinates
+
+
+def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
+                              transforms_per_hemisphere: dict[str, list[str]],
+                              node_spacing: float,
+                              avoid_collinearity: bool,
+                              ) -> dict[str, dict[str, float]]:
+    hemispheres = set(transforms_per_hemisphere.keys())
+    y_ordinates: dict[str, dict[str, float]] = defaultdict(dict)
+    # Build dictionary mapping function names to sequence steps
+    serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
+    # transform → sequence_step_idx
+    step_idxs: dict[str, int] = dict()
+    for step_idx, step in enumerate(serial_sequence):
+        for transform in step:
+            step_idxs[transform] = step_idx
+    # Count how "wide" each step in the serial sequence is
+    # hemisphere → serial step idx → number of "parallel" transforms this step which are present in this hemisphere
+    totals_within_serial_step = {
+        hemisphere: Counter(step_idx
+                       for trans, step_idx in step_idxs.items()
+                       if trans in transforms_per_hemisphere[hemisphere])
+        for hemisphere in hemispheres
+    }
+    # hemisphere → max "width" over the whole set of nodes this hemisphere
+    max_transform_counts = {
+        hemisphere: max(totals_within_serial_step[hemisphere].values())
+        for hemisphere in hemispheres
+    }
+    for hemisphere in hemispheres:
+        # Calculate totals and max totals for each hemisphere independently
+        # This ensures y-coordinates are calculated relative to within their hemisphere
+        # Within each serial step, we have a collection of transforms. This dictionary comprises a counter for each
+        # of these steps, which increments for each successive transform in that level
+        # step_idx → counter
+        idxs_within_level: dict[int, int] = defaultdict(int)
+        for transform in transforms_per_hemisphere[hemisphere]:
+            step_idx = step_idxs[transform]
+            y_ordinates[hemisphere][transform] = _get_y_coordinate_centered(
+                function_idx_within_level=idxs_within_level[step_idx],
+                function_total_within_level=totals_within_serial_step[hemisphere][step_idx],
+                max_function_total_within_level=max_transform_counts[hemisphere],
+                positive_nudge_frac=(step_idx / len(serial_sequence)
+                                     if avoid_collinearity
+                                     else 0),
+                spacing=node_spacing
+            )
+            idxs_within_level[step_idx] += 1
+    return y_ordinates
+
+
+def _get_test_hemisphere_color(hemisphere: str) -> str:
+    """Helper function to return a specific color based on hemisphere for testing."""
+    if hemisphere == "LH":
+        return "red"
+    elif hemisphere == "RH":
+        return "blue"
+    else: # For SCALP or other
+        return "green"
+
+
 def plot_ippm(
-    ippm: IPPM,
-    colors: dict[str, str],
-    hemisphere: Optional[str] = None,
-    title: Optional[str] = None,
-    xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
-    y_ordinate_style: str = _YOrdinateStyle.centered,
-    connection_style: str = IPPMConnectionStyle.last_to_first,
-    scale_nodes: bool = False,
-    figheight: int = 5,
-    figwidth: int = 10,
-    arrowhead_dims: tuple[float, float] = None,
-    linewidth: float = 3,
-    show_labels: bool = True,
-    relabel: dict[str, str] | None = None,
-    avoid_collinearity: bool = False,
-    serial_sequence: Optional[list[list[str]]] = None,
-) -> plt.Figure:
+        ippm: IPPM,
+        colors: dict[str, str],
+        title: Optional[str] = None,
+        xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
+        y_ordinate_style: str = _YOrdinateStyle.centered,
+        connection_style: str = IPPMConnectionStyle.last_to_first,
+        scale_nodes: bool = False,
+        figheight: int = 5,
+        figwidth: int = 10,
+        arrowhead_dims: tuple[float, float] = None,
+        linewidth: float = 3,
+        show_labels: bool = True,
+        relabel: dict[str, str] | None = None,
+        avoid_collinearity: bool = False,
+        _test_hemisphere_colors: bool = False,
+) -> Figure:
     """
-    Plots an IPPM graph.
+    Plots an IPPM graph, always including all available hemispheres.
 
     Args:
         ippm (IPPM): IPPM object to plot.
         colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
             Contains the color for each transform. The nodes and edges are colored accordingly.
-        hemisphere (str): When generating from a HexelExpressionSet, specify whether the left or the right hemisphere
-            should be used.
         title (str): Title of the plot.
         scale_nodes (bool, optional): scales the node by the significance. Default is False
         figheight (int, optional): Height of the plot. Defaults to 5.
@@ -190,6 +289,10 @@ def plot_ippm(
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
         relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
+        avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
+            serial step. Defaults to False.
+        _test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color nodes according to their
+            hemisphere, for testing vertical separation. Defaults to False.
 
     Returns:
         (pyplot.Figure): A figure of the IPPM graph.
@@ -198,65 +301,67 @@ def plot_ippm(
     if relabel is None:
         relabel = dict()
 
-    if hemisphere is None:
-        if BLOCK_LEFT in ippm:
-            hemisphere = BLOCK_LEFT
-            warn(f"No hemisphere specified, using {hemisphere}")
-        elif BLOCK_SCALP in ippm:
-            hemisphere = BLOCK_SCALP
+    # Always plot the entire graph
+    ippm_graph_to_plot = ippm.graph
 
-    plottable_graph = _PlottableIPPMGraph(ippm[hemisphere],
+    if title is None:
+        title = "IPPM Graph"
+
+    # Pass the test_hemisphere_colors flag to _PlottableIPPMGraph
+    plottable_graph = _PlottableIPPMGraph(ippm_graph_to_plot,
                                           avoid_collinearity=avoid_collinearity,
-                                          serial_sequence=serial_sequence,
                                           colors=colors,
                                           y_ordinate_style=y_ordinate_style,
                                           connection_style=IPPMConnectionStyle(connection_style),
-                                          scale_nodes=scale_nodes)
+                                          scale_nodes=scale_nodes,
+                                          test_hemisphere_colors=_test_hemisphere_colors)
 
     if arrowhead_dims is None:
-        # Scale arrowheads by size of graph
-        arrowhead_dims = (
-            max(node.y for node in plottable_graph.graph.nodes) / 30,  # width
-            max(node.x for node in plottable_graph.graph.nodes) / 30,  # length
-        )
-        
+        if plottable_graph.graph.nodes:
+            max_y = max(node.y for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
+            max_x = max(node.x for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
+            arrowhead_dims = (
+                max_y / 30,
+                max_x / 30,
+            )
+        else:
+            arrowhead_dims = (0.1, 0.1)
+
     # first lets aggregate all the information.
-    node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
-    node_y      = []  # y coordinates for nodes
-    node_colors = []  # color for nodes
+    node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
+    node_y      = [] # y coordinates for nodes
+    node_colors = [] # color for nodes
     node_sizes  = []  # size of nodes
     edge_colors = []
     bsplines = []
     edge_labels = []
+
     node: _PlottableNode
-    for i, node in enumerate(plottable_graph.graph.nodes):
-        node_colors.append(node.color)
-        node_sizes.append(node.size)
-        node_x.append(node.x)
-        node_y.append(node.y)
+    for i, plottable_node in enumerate(plottable_graph.graph.nodes):
+        node_colors.append(plottable_node.color)
+        node_sizes.append(plottable_node.size)
+        node_x.append(plottable_node.x)
+        node_y.append(plottable_node.y)
 
         incoming_edge_endpoints = []
         pred: _PlottableNode
-        for pred in plottable_graph.graph.predecessors(node):
-            # save edge coordinates and color the edge the same color as the finishing node.
+        for pred in plottable_graph.graph.predecessors(plottable_node):
             incoming_edge_endpoints.append(
                 (
-                    # Start
                     (pred.x, pred.y),
-                    # End
-                    (node.x, node.y)
+                    (plottable_node.x, plottable_node.y)
                 )
             )
-            edge_colors.append(node_colors[i])
-            edge_labels.append(node.label)
-            
+            edge_colors.append(plottable_node.color)
+            edge_labels.append(plottable_node.label)
+
         bsplines += _make_bspline_paths(incoming_edge_endpoints)
 
     fig: plt.Figure
     ax: plt.Axes
     fig, ax = plt.subplots()
 
-    text_offset_x = -0.01  # s
+    text_offset_x = -0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
@@ -280,37 +385,40 @@ def plot_ippm(
     ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
-    future_width = 0.02  # s
+    future_width = 0.02
     for node in plottable_graph.graph.nodes:
         if node.is_terminal:
-            # Plot a solid line, then a dotted section for "trailing off"
             if node.is_input:
-                # Input nodes with nothing dowstream trail off quickly
-                solid_line_to = 0.02  # s
+                solid_line_to = 0.02
             else:
-                # Non-input nodes with nothing downstream trail off at the end of the graph
-                solid_line_to = max(node_x)
+                solid_line_to = max(node_x) if node_x else 0.02
             solid_extension = solid_line_to + future_width / 2
             dotted_extension = solid_extension + future_width / 2
-            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
-            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
+            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                    linestyle="solid")
+            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                    linestyle="dotted")
 
-    if title is not None:
-        plt.title(title)
+    plt.title(title)
 
     # Y-axis
     y_padding = 0.5
-    ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    if node_y:
+        ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
     ax.set_yticklabels([])
     ax.yaxis.set_visible(False)
 
     # X-axis
-    # Set axis limits
     current_xmin, current_xmax = ax.get_xlim()
     desired_xmin, desired_xmax = xlims_s
     if desired_xmin is None:
-        desired_xmin = min(current_xmin, min(node_x))
+        desired_xmin = min(current_xmin, min(node_x)) if node_x else current_xmin
+
+    if desired_xmax is None:
+        desired_xmax = max(current_xmax, max(node_x) + future_width) if node_x else current_xmax + future_width
+
     ax.set_xlim((desired_xmin, desired_xmax))
+
     xticks = ax.get_xticks()
     plt.xticks(xticks,
                [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
@@ -343,7 +451,7 @@ def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[
     )
 
 
-def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[np.array]]:
+def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[NDArray]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -378,7 +486,7 @@ def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[l
     return bspline_path_array
 
 
-def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> np.array:
+def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) -> NDArray:
     """
     Given the position of a start spike and an end spike, create
     a set of 6 control points needed for a b-spline.
@@ -461,8 +569,8 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
 def _get_y_coordinate_progressive(
         partition_number: int,
-        partition_size: float) -> float:
-    return 1 - partition_size * partition_number
+        spacing: float = 1) -> float:
+    return partition_number * spacing
 
 
 def _get_y_coordinate_centered(
