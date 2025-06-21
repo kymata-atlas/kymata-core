@@ -3,7 +3,7 @@ from __future__ import annotations
 from math import inf
 from typing import Collection, NamedTuple
 
-from copy import copy
+from copy import copy, deepcopy
 from enum import StrEnum
 from logging import getLogger
 from collections import defaultdict
@@ -181,26 +181,22 @@ class IPPMGraph:
         Returns:
             IPPMGraph: A new IPPMGraph instance with the same candidate transform list and expression points.
         """
-        # The original __copy__ method tried to pass 'points' to the IPPMGraph constructor,
-        # but the constructor expects 'points_by_block'. This is a fix for that.
-        # However, a shallow copy of a graph with nodes that are dataclasses might not be truly shallow
-        # if those dataclasses are mutable. For IPPMNode (frozen=True), this is fine.
-        points_by_block_copy = defaultdict(list)
-        for node in self.graph_full.nodes:
-            # Since IPPMNode is frozen, we can directly create an ExpressionPoint from its attributes
-            # for the purpose of recreating points_by_block.
-            # Note: The original ExpressionPoint might have more fields, but for this specific
-            # constructor usage (which primarily groups by transform and sorts by latency),
-            # this should be sufficient.
-            ep = ExpressionPoint(
-                transform=node.transform,
-                latency=node.latency,
-                logp_value=node.logp_value,
-                channel=node.channel,  # Assuming channel can be directly used
-            )
-            points_by_block_copy[node.hemisphere].append(ep)
+        # as it holds the original ExpressionPoint data grouped correctly.
+        # Deep copy the _points_by_transform to ensure independence of the new graph's points.
+        copied_points_by_block = deepcopy(self._points_by_transform)
 
-        return IPPMGraph(ctl=copy(self.candidate_transform_list), points_by_block=points_by_block_copy)
+        # When re-initializing IPPMGraph, we need to pass a dict of block -> Collection[ExpressionPoint].
+        # The stored self._points_by_transform is block -> (transform -> list[ExpressionPoint]).
+        # So, we need to flatten the inner dictionary for each block.
+        reconstructed_points_by_block = {}
+        for block, transform_points_map in copied_points_by_block.items():
+            all_points_in_block = []
+            for points_list in transform_points_map.values():
+                all_points_in_block.extend(points_list)
+            reconstructed_points_by_block[block] = all_points_in_block
+
+        return IPPMGraph(ctl=copy(self.candidate_transform_list), points_by_block=reconstructed_points_by_block)
+
 
     def __eq__(self, other: IPPMGraph) -> bool:
         """
