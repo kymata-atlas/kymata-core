@@ -261,7 +261,7 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
 
     assert result['nodes'] == expected_nodes
     assert result['edges'] == expected_edges
-    assert result['directed'] == True
-    assert result['multigraph'] == False
+    assert result['directed']
+    assert not result['multigraph']
     assert result['graph'] == {}
 
