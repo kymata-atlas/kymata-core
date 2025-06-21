@@ -10,7 +10,7 @@ from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
-    ndarray,
+    ndarray, isclose,
     array, array_equal, where, inf, float64)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
@@ -45,6 +45,15 @@ class ExpressionPoint(NamedTuple):
     latency: Latency
     transform: str
     logp_value: float
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ExpressionPoint):
+            return NotImplemented
+        # Compare numerical values with a tolerance
+        return (self.channel == other.channel and
+                self.latency == other.latency and
+                self.transform == other.transform and
+                isclose(self.logp_value, other.logp_value))  # Use np.isclose for float comparison
 
 
 class ExpressionSet(ABC):
