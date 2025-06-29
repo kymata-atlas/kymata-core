@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import inf
-from typing import Collection, NamedTuple
+from typing import Collection
 
 from copy import copy, deepcopy
 from enum import StrEnum
@@ -19,20 +19,40 @@ from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transf
 _logger = getLogger(__file__)
 
 
-class IPPMNode(NamedTuple):
+class IPPMNode:
     """
-    A node in the IPPMGraph. It is hashable and contains all metadata for a single expression point, including its
+    A node in the IPPMGraph. It contains all metadata for a single expression point, including its
     hemisphere (when referring to hexel data) and an ID.
     """
-    node_id: str
-    is_input: bool
-    hemisphere: str  # Equivalent to the ExpressionSet `block` the data came from.
+    def __init__(self,
+                 node_id: str,
+                 is_input: bool,
+                 hemisphere: str,
+                 channel: Channel,
+                 latency: Latency,
+                 transform: str,
+                 logp_value: float,
+                 KID: str = "unassigned"):
+        self.node_id = node_id
+        self.is_input = is_input
+        self.hemisphere = hemisphere
+        self.channel = channel
+        self.latency = latency
+        self.transform = transform
+        self.logp_value = logp_value
+        self.KID = KID
 
-    # Data from the original ExpressionPoint
-    channel: Channel  # Can be an int from data or a generated int for an input
-    latency: Latency
-    transform: str
-    logp_value: float
+    # Required for NetworkX nodes to be hashable and comparable if used in sets/dicts
+    def __hash__(self) -> int:
+        return hash(self.node_id)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, IPPMNode):
+            return NotImplemented
+        return self.node_id == other.node_id
+
+    def __repr__(self) -> str:
+        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
 
 
 def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
@@ -113,7 +133,8 @@ class IPPMGraph:
                         channel=point.channel,
                         transform=point.transform,
                         latency=point.latency,
-                        logp_value=point.logp_value
+                        logp_value=point.logp_value,
+                        KID="unassigned" # Initialize KID
                     ))
             self._points_by_transform[block] = points_by_transform
 
@@ -142,7 +163,8 @@ class IPPMGraph:
                     channel=input_idx,
                     transform=pseudo_point.transform,
                     latency=pseudo_point.latency,
-                    logp_value=pseudo_point.logp_value
+                    logp_value=pseudo_point.logp_value,
+                    KID="unassigned"
                 )
                 graph.add_node(node)
                 input_node_idxs[block] += 1
@@ -161,15 +183,15 @@ class IPPMGraph:
                 ctl_successors = ctl.immediately_downstream(node.transform)
 
                 if other_node.transform in ctl_predecessors:
-                    graph.add_edge(other_node, node)
+                    graph.add_edge(other_node, node, transform=node.transform)
                 if other_node.transform in ctl_successors:
-                    graph.add_edge(node, other_node)
+                    graph.add_edge(node, other_node, transform=other_node.transform)
                 # Add sequential edges for nodes of the same transform
                 if node.transform == other_node.transform and node.node_id != other_node.node_id:
                     if node.latency < other_node.latency:
-                        graph.add_edge(node, other_node)
+                        graph.add_edge(node, other_node, transform=other_node.transform)
                     elif node.latency > other_node.latency:
-                        graph.add_edge(other_node, node)
+                        graph.add_edge(other_node, node, transform=node.transform)
 
         self.candidate_transform_list: CandidateTransformList = ctl
         self.graph_full: DiGraph = graph
@@ -349,6 +371,112 @@ class IPPMGraph:
 
         return subgraph
 
+    def merge_with(self, other: 'IPPMGraph') -> 'IPPMGraph':
+        """
+        Merges this IPPMGraph with another IPPMGraph using direct graph operations.
+
+        Args:
+            other (IPPMGraph): The other IPPMGraph to merge with this one.
+
+        Returns:
+            IPPMGraph: A new IPPMGraph containing the merged data.
+
+        Raises:
+            ValueError: If there are conflicting nodes or edges between the graphs.
+        """
+        # Check for node conflicts
+        self_nodes = {node.node_id: node for node in self.graph_full.nodes()}
+        other_nodes = {node.node_id: node for node in other.graph_full.nodes()}
+
+        overlapping_node_ids = set(self_nodes.keys()) & set(other_nodes.keys())
+        if overlapping_node_ids:
+            # Check if overlapping nodes are actually identical
+            conflicting_nodes = []
+            for node_id in overlapping_node_ids:
+                if self_nodes[node_id] != other_nodes[node_id]:
+                    conflicting_nodes.append(node_id)
+
+            if conflicting_nodes:
+                raise ValueError(f"Conflicting nodes found with IDs: {conflicting_nodes}. "
+                                 f"Same node_id but different attributes.")
+
+        # Check for edge conflicts
+        self_edges = set(self.graph_full.edges(data=True))
+        other_edges = set(other.graph_full.edges(data=True))
+
+        # Find edges with same source and target but different attributes
+        self_edge_pairs = {(source, target): data for source, target, data in self_edges}
+        other_edge_pairs = {(source, target): data for source, target, data in other_edges}
+
+        overlapping_edge_pairs = set(self_edge_pairs.keys()) & set(other_edge_pairs.keys())
+        if overlapping_edge_pairs:
+            conflicting_edges = []
+            for edge_pair in overlapping_edge_pairs:
+                if self_edge_pairs[edge_pair] != other_edge_pairs[edge_pair]:
+                    conflicting_edges.append(edge_pair)
+
+            if conflicting_edges:
+                raise ValueError(f"Conflicting edges found: {conflicting_edges}. "
+                                 f"Same source and target but different attributes.")
+
+        # Combine candidate transform lists
+        combined_transforms = self.candidate_transform_list.transforms | other.candidate_transform_list.transforms
+
+        # Create combined hierarchy by merging relationships
+        from kymata.ippm.hierarchy import TransformHierarchy
+        combined_hierarchy = TransformHierarchy()
+
+        # Add all transforms
+        for transform in combined_transforms:
+            combined_hierarchy.add_transform(transform)
+
+        # Add relationships from both hierarchies
+        for transform in self.candidate_transform_list.transforms:
+            predecessors = self.candidate_transform_list.immediately_upstream(transform)
+            for pred in predecessors:
+                combined_hierarchy.add_relationship(pred, transform)
+
+        for transform in other.candidate_transform_list.transforms:
+            predecessors = other.candidate_transform_list.immediately_upstream(transform)
+            for pred in predecessors:
+                combined_hierarchy.add_relationship(pred, transform)
+
+        combined_ctl = CandidateTransformList(combined_hierarchy)
+
+        # Create new graph by directly merging NetworkX graphs
+        merged_graph_full = DiGraph()
+
+        # Add all nodes from both graphs
+        merged_graph_full.add_nodes_from(self.graph_full.nodes(data=True))
+        merged_graph_full.add_nodes_from(other.graph_full.nodes(data=True))
+
+        # Add all edges from both graphs
+        merged_graph_full.add_edges_from(self.graph_full.edges(data=True))
+        merged_graph_full.add_edges_from(other.graph_full.edges(data=True))
+
+        # Combine the _points_by_transform data
+        merged_points_by_transform = {}
+
+        # Add points from self
+        for block, transform_points_map in self._points_by_transform.items():
+            merged_points_by_transform[block] = dict(transform_points_map)
+
+        # Add points from other
+        for block, transform_points_map in other._points_by_transform.items():
+            if block not in merged_points_by_transform:
+                merged_points_by_transform[block] = {}
+            for transform, points_list in transform_points_map.items():
+                if transform not in merged_points_by_transform[block]:
+                    merged_points_by_transform[block][transform] = []
+                merged_points_by_transform[block][transform].extend(points_list)
+
+        # Create new IPPMGraph instance
+        merged_graph = object.__new__(IPPMGraph)
+        merged_graph.candidate_transform_list = combined_ctl
+        merged_graph.graph_full = merged_graph_full
+        merged_graph._points_by_transform = merged_points_by_transform
+
+        return merged_graph
 
 def input_stream_pseudo_expression_point(input_name: str) -> ExpressionPoint:
     """

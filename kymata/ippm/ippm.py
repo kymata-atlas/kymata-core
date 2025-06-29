@@ -5,6 +5,7 @@ from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy)
 from kymata.ippm.graph import IPPMGraph
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
+from kymata.io.atlas import fetch_data_dict
 from typing import Any
 
 _denoiser_classes = {
@@ -97,3 +98,119 @@ class IPPM:
 
         jdict = serialise_graph(self.graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
+
+    def set_KIDs(self, transform_KIDs: dict[str, str]) -> None:
+        """
+        Adds KID attributes to edges and nodes in the IPPM graph based on transform mappings.
+
+        Args:
+            transform_KIDs (dict[str, str]): Dictionary mapping transform names to their KID values.
+
+        Raises:
+            ValueError: If any transform in the graph is missing a KID mapping.
+
+        Warnings:
+            Issues a warning if transforms are provided that don't exist in the graph.
+        """
+        import warnings
+
+        api_url = "https://kymata.org/api/functions/"
+        try:
+            # Use the refactored function from atlas.py
+            api_data = fetch_data_dict(api_url)
+        except ConnectionError as e:
+            raise ConnectionError(f"Failed to fetch KID data from {api_url}: {e}")
+
+        # Extract all valid KIDs from the API response
+        valid_api_kids = {item["kid"] for item in api_data if "kid" in item}
+
+        # Check if all KIDs in transform_KIDs exist in valid_api_kids
+        provided_kids = set(transform_KIDs.values())
+        missing_api_kids = provided_kids - valid_api_kids
+        if missing_api_kids:
+            raise ValueError(f"The following KIDs from transform_KIDs do not exist in the API: {sorted(list(missing_api_kids))}")
+
+        # Add KID attribute to all edges based on the edges' transform
+        for graph_view in [self.graph.graph_full, self.graph.graph_last_to_first, self.graph.graph_first_to_first]:
+            for u, v, data in graph_view.edges(data=True):
+                edge_transform = data.get('transform')
+                if edge_transform:
+                    kid_value = transform_KIDs.get(edge_transform)
+                    if kid_value is not None:
+                        graph_view.edges[u, v]['KID'] = kid_value
+                    else:
+                        graph_view.edges[u, v]['KID'] = "n/a"
+                else:
+                    graph_view.edges[u, v]['KID'] = "n/a (no transform)"
+
+        # Add KID attributes to the nodes - now directly modifiable
+        for graph_view in [self.graph.graph_full, self.graph.graph_last_to_first, self.graph.graph_first_to_first]:
+            for node in graph_view.nodes():
+                node_transform = node.transform
+                kid_value = transform_KIDs.get(node_transform)
+                if kid_value is not None:
+                    node.KID = kid_value # Direct modification of KID attribute
+                else:
+                    node.KID = "n/a" # Direct modification of KID attribute
+
+        # Ensure all nodes (except input nodes) have a KID
+        nodes_missing_kids = []
+        for node in self.graph.graph_full.nodes():
+            if not node.is_input and node.KID == "unassigned": # Check node.KID directly
+                nodes_missing_kids.append(node.transform)
+            elif not node.is_input and node.KID == "n/a": # Check node.KID directly
+                nodes_missing_kids.append(node.transform)
+
+        if nodes_missing_kids:
+            raise ValueError(f"Missing KID mappings for nodes in graph: {sorted(list(set(nodes_missing_kids)))}")
+
+        # Check whether there are any edges that haven't been assigned a KID
+        edges_missing_kids = []
+        for source, target, data in self.graph.graph_full.edges(data=True):
+            if 'KID' not in data or data['KID'] == "n/a" or data['KID'] == "n/a (no transform)":
+                edges_missing_kids.append(f"{source.transform} -> {target.transform}")
+
+        if edges_missing_kids:
+            raise ValueError(f"The following edges have not been assigned a KID: {sorted(list(set(edges_missing_kids)))}")
+
+        # Optional: Warn about transforms in transform_KIDs that are not in the graph
+        transforms_in_graph = self.graph.transforms
+        transforms_not_in_graph = set(transform_KIDs.keys()) - transforms_in_graph
+        if transforms_not_in_graph:
+            warnings.warn(f"The following transforms provided in transform_KIDs do not exist in the graph: {sorted(list(transforms_not_in_graph))}")
+
+    def __add__(self, other: 'IPPM') -> 'IPPM':
+        """
+        Combines two IPPM instances into a new IPPM instance using direct graph merging.
+
+        Args:
+            other (IPPM): The other IPPM instance to combine with this one.
+
+        Returns:
+            IPPM: A new IPPM instance containing the combined graphs.
+
+        Raises:
+            ValueError: If there are conflicting nodes, edges, or incompatible block structures.
+            TypeError: If other is not an IPPM instance.
+        """
+        if not isinstance(other, IPPM):
+            raise TypeError(f"Cannot add IPPM with {type(other)}. Both operands must be IPPM instances.")
+
+        # Check for block compatibility
+        self_blocks = set(self.graph._points_by_transform.keys())
+        other_blocks = set(other.graph._points_by_transform.keys())
+
+        if self_blocks != other_blocks:
+            raise ValueError(f"Block mismatch between IPPMs. "
+                             f"First IPPM has blocks: {sorted(self_blocks)}, "
+                             f"Second IPPM has blocks: {sorted(other_blocks)}. "
+                             f"Cannot combine IPPMs with different block structures.")
+
+        # Use direct graph merging approach
+        combined_graph = self.graph.merge_with(other.graph)
+
+        # Create new IPPM instance
+        combined_ippm = object.__new__(IPPM)
+        combined_ippm.graph = combined_graph
+
+        return combined_ippm
