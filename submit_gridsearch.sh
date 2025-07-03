@@ -20,7 +20,7 @@
 # done
 
 export PATH="$HOME/.local/bin:$PATH"
-source $(poetry env info --path)/bin/activate
+source /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/.venv/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
   --input-stream auditory \
