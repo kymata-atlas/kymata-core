@@ -28,8 +28,8 @@ python kymata/invokers/run_gridsearch.py \
   --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
   --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data_last_four_reps/' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/test' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/test' \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
   --morph \

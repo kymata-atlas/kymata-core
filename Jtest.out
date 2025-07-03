@@ -1,4 +1,0 @@
-Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data.
-Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
-Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data"
-Time to load emeg: 420.9733

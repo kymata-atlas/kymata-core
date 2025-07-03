@@ -6,6 +6,9 @@ from sys import stdout
 import os
 import numpy as np
 
+import psutil
+import threading
+
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.transform import load_transform
@@ -30,6 +33,40 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
     except KeyError:
         _logger.error(f'Config did not contain any value for "{config_key}", falling back to default value {fallback}')
         return fallback
+    
+def log_slurm_and_memory(interval=30, duration=36000, log_file=f"/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/test/mem_log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"):
+    pid = os.getpid()
+    proc = psutil.Process(pid)
+
+    # Get SLURM environment variables
+    job_id = os.environ.get("SLURM_JOB_ID", "N/A")
+    nodelist = os.environ.get("SLURM_JOB_NODELIST", "N/A")
+    hostname = os.uname().nodename
+
+    with open(log_file, "a") as f:
+        f.write(f"SLURM_JOB_ID: {job_id}\n")
+        f.write(f"SLURM_JOB_NODELIST: {nodelist}\n")
+        f.write(f"Hostname: {hostname}\n\n")
+        f.flush()
+
+        for _ in range(duration // interval):
+            mem = proc.memory_info()
+            sysmem = psutil.virtual_memory()
+            f.write(
+                f"Time: {time.ctime()}, "
+                f"RSS: {mem.rss / 1e9:.3f} GB, "
+                f"VMS: {mem.vms / 1e9:.3f} GB, "
+                f"System Total: {sysmem.total / 1e9:.3f} GB, "
+                f"Available: {sysmem.available / 1e9:.3f} GB, "
+                f"Used: {sysmem.used / 1e9:.3f} GB\n"
+            )
+            f.flush()
+            time.sleep(interval)
+
+def start_memory_logging():
+    t = threading.Thread(target=log_slurm_and_memory)
+    t.daemon = True
+    t.start()
 
 
 def main():
@@ -126,6 +163,8 @@ def main():
         meg=MEGLayout(dataset_config["meg_sensor_layout"]),
         eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
+
+    start_memory_logging()
 
     if args.phonetics:
 
