@@ -597,7 +597,7 @@ def test_hes_rename_transforms_noop():
 
 
 def test_hes_rename_transforms_just_one():
-    data_left = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
+    data_left =  [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
     data_right = [np.random.randn(5, 10).astype(_data_dtype) for _ in range(2)]
 
     es = HexelExpressionSet(

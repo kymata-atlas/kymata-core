@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from numpy import nanmin, greater, expand_dims as np_expand_dims
+from numpy.core.numeric import array_equal, isclose
 from numpy.typing import NDArray
 import sparse
 from xarray import DataArray
@@ -51,3 +52,14 @@ def densify_data_block(x: DataArray) -> None:
     Operates in-place.
     """
     x.data = x.data.todense()
+
+
+def all_nonfill_close(left: sparse.COO, right: sparse.COO, **isclose_kwargs) -> bool:
+    """
+    Check if all non-fill values are close between the two matrices.
+    """
+    # Need nonfill values to be in the same places, else we say not close by definition
+    if not array_equal(left.coords, right.coords):
+        return False
+
+    return isclose(left.data, right.data, **isclose_kwargs).all()

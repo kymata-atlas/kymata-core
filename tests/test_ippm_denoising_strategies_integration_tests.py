@@ -2,7 +2,6 @@ from copy import deepcopy
 
 import pytest
 
-from kymata.entities.constants import HEMI_RIGHT
 from kymata.entities.expression import ExpressionPoint
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, DBSCANStrategy, MeanShiftStrategy)
@@ -108,9 +107,9 @@ def test_MaxPoolingStrategy_AllDefault_Fit_Successfully():
         ExpressionPoint("c", -75, "trans1", -75),
         ExpressionPoint("c", 30, "trans1", -100),
     ]
-    expected_denoised["trans2"] = [("c", 30, "trans2", -99)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99)]
 
-    strategy = MaxPoolingStrategy(HEMI_RIGHT)
+    strategy = MaxPoolingStrategy()
     actual_denoised = strategy._denoise_spikes(noisy_test_hexels, threshold_logp)
 
     assert (
@@ -125,8 +124,8 @@ def test_MaxPoolingStrategy_AllDefault_Fit_Successfully():
 
 def test_AdaptiveMaxPoolingStrategy_AllTrue_Fit_Successfully():
     expected_denoised = deepcopy(noisy_test_hexels)
-    expected_denoised["trans1"] = [("c", 30, "trans1", -100)]
-    expected_denoised["trans2"] = [("c", 30, "trans2", -99)]
+    expected_denoised["trans1"] = [ExpressionPoint("c", 30, "trans1", -100)]
+    expected_denoised["trans2"] = [ExpressionPoint("c", 30, "trans2", -99)]
 
     strategy = AdaptiveMaxPoolingStrategy(
         should_normalise=True,
