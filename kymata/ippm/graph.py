@@ -156,7 +156,6 @@ class IPPMGraph:
                     transform=pseudo_point.transform,
                     latency=pseudo_point.latency,
                     logp_value=pseudo_point.logp_value,
-                    KID="unassigned"
                 )
                 graph.add_node(node)
                 input_node_idxs[block] += 1
