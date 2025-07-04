@@ -500,7 +500,9 @@ class ExpressionSet(ABC):
                     new_names.append(transforms[old_name])
                 else:
                     new_names.append(old_name)
-            self._data[bn][DIM_TRANSFORM] = new_names
+            self._data[bn][DIM_TRANSFORM] = array(new_names,
+                                                  # preserve dtype when assigning list
+                                                  dtype=self._data[bn][DIM_TRANSFORM].values.dtype)
 
             # Channels
             new_channels = []
