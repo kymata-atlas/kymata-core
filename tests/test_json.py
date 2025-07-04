@@ -94,7 +94,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c1',
                 'latency': 10,
                 'transform': 'func1',
-                'logp_value': -28
+                'logp_value': -28,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'sc2',
@@ -103,7 +104,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c2',
                 'latency': 25,
                 'transform': 'func1',
-                'logp_value': -79
+                'logp_value': -79,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'sc3',
@@ -112,7 +114,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c3',
                 'latency': 50,
                 'transform': 'func2',
-                'logp_value': -61
+                'logp_value': -61,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'sc4',
@@ -121,7 +124,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c4',
                 'latency': 60,
                 'transform': 'func3',
-                'logp_value': -92
+                'logp_value': -92,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'sc5',
@@ -130,7 +134,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c5',
                 'latency': 65,
                 'transform': 'func3',
-                'logp_value': -12
+                'logp_value': -12,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'sc6',
@@ -139,7 +144,8 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 'c6',
                 'latency': 70,
                 'transform': 'func4',
-                'logp_value': -42
+                'logp_value': -42,
+                'KID': 'unassigned',
             },
             {
                 'node_id': 'i1',
@@ -148,17 +154,18 @@ def test_graph_serialises_valid_input(sample_hierarchy, sample_points):
                 'channel': 1,
                 'latency': 0,
                 'transform': 'input',
-                'logp_value': -inf
+                'logp_value': -inf,
+                'KID': 'unassigned',
             }
         ],
         'edges': [
-            {'source': 'sc1', 'target': 'sc2'},
-            {'source': 'sc2', 'target': 'sc3'},
-            {'source': 'sc3', 'target': 'sc4'},
-            {'source': 'sc4', 'target': 'sc5'},
-            {'source': 'sc5', 'target': 'sc6'},
-            {'source': 'i1', 'target': 'sc1'},
-            {'source': 'i1', 'target': 'sc3'}
+            {'source': 'sc1', 'target': 'sc2', 'KID': 'unassigned', 'transform': 'func1'},
+            {'source': 'sc2', 'target': 'sc3', 'KID': 'unassigned', 'transform': 'func2'},
+            {'source': 'sc3', 'target': 'sc4', 'KID': 'unassigned', 'transform': 'func3'},
+            {'source': 'sc4', 'target': 'sc5', 'KID': 'unassigned', 'transform': 'func3'},
+            {'source': 'sc5', 'target': 'sc6', 'KID': 'unassigned', 'transform': 'func4'},
+            {'source': 'i1',  'target': 'sc1', 'KID': 'unassigned', 'transform': 'func1'},
+            {'source': 'i1',  'target': 'sc3', 'KID': 'unassigned', 'transform': 'func2'},
         ]
     }
 
@@ -197,7 +204,8 @@ def test_serialise_graph_with_single_node_no_edges():
                 "channel": 1,
                 "latency": 0,
                 "transform": "input",
-                "logp_value": -inf
+                "logp_value": -inf,
+                'KID': 'unassigned',
             }
         ],
         "edges": []
@@ -210,7 +218,7 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
     g = Graph()
     node1 = IPPMNode("n1", False, "h1", "c1", 10, "t1", -1.0)
     node2 = IPPMNode("n2", False, "h2", "c2", 20, "t2", -2.0)
-    node3 = IPPMNode("n3", True, "h3", "c3", 30, "t3", -3.0) # An input node
+    node3 = IPPMNode("n3", True,  "h3", "c3", 30, "t3", -3.0)  # An input node
 
     g.add_nodes_from([node1, node2, node3])
     g.add_edge(node1, node2)
@@ -226,7 +234,8 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'channel': 'c1',
             'latency': 10,
             'transform': 't1',
-            'logp_value': -1.0
+            'logp_value': -1.0,
+            'KID': 'unassigned',
         },
         {
             'node_id': 'n2',
@@ -235,7 +244,8 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'channel': 'c2',
             'latency': 20,
             'transform': 't2',
-            'logp_value': -2.0
+            'logp_value': -2.0,
+            'KID': 'unassigned',
         },
         {
             'node_id': 'n3',
@@ -244,13 +254,16 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'channel': 'c3',
             'latency': 30,
             'transform': 't3',
-            'logp_value': -3.0
+            'logp_value': -3.0,
+            'KID': 'unassigned',
         }
     ]
 
     expected_edges = [
-        {'source': 'n1', 'target': 'n2'},
-        {'source': 'n2', 'target': 'n3'},
+        # 'unknown' because transforms aren't automatically available on edges in the graph constructed through Graph
+        # as above
+        {'source': 'n1', 'target': 'n2', 'KID': "unassigned", 'transform': 'unknown'},
+        {'source': 'n2', 'target': 'n3', 'KID': "unassigned", 'transform': 'unknown'},
     ]
 
     # Sort nodes and edges for consistent comparison

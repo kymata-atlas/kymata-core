@@ -32,16 +32,19 @@ def serialise_graph(graph: Graph) -> dict:
             "latency":       node.latency,
             "transform":     node.transform,
             "logp_value":    node.logp_value,
-            "KID":           node.KID
+            "KID":           node.KID if node.KID is not None else "unassigned"
         })
 
+    source: IPPMNode
+    target: IPPMNode
     edges = []
     for source, target, edge_attrs in graph.edges(data=True):
+        kid = edge_attrs.get('KID', None)
         edges.append({
-            "source": source.node_id,
-            "target": target.node_id,
+            "source":    source.node_id,
+            "target":    target.node_id,
             "transform": edge_attrs.get('transform', 'unknown'),
-            "KID":     edge_attrs.get('KID', 'n/a')
+            "KID":       kid if kid is not None else "unassigned"
         })
 
     return {
