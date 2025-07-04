@@ -1,12 +1,16 @@
+import warnings
+from typing import Any
+
+from networkx.relabel import relabel_nodes
+
 from kymata.entities.expression import (
     ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
+from kymata.io.atlas import API_URL, verify_kids
 from kymata.io.json import NumpyJSONEncoder, serialise_graph
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy)
-from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.graph import IPPMGraph, IPPMNode
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
-from kymata.io.atlas import fetch_data_dict
-from typing import Any
 
 _denoiser_classes = {
     "maxpool": MaxPoolingStrategy,
@@ -99,82 +103,62 @@ class IPPM:
         jdict = serialise_graph(self.graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
 
-    def set_KIDs(self, transform_KIDs: dict[str, str]) -> None:
+    def set_kids(self, transform_kids: dict[str, str], verify_against_api: bool = True) -> None:
         """
         Adds KID attributes to edges and nodes in the IPPM graph based on transform mappings.
 
         Args:
-            transform_KIDs (dict[str, str]): Dictionary mapping transform names to their KID values.
+            transform_kids (dict[str, str]): Dictionary mapping transform names to their KID values.
+            verify_against_api (bool): If True (the default), verify all supplied KIDs against the Kymata Atlas API.
 
         Raises:
-            ValueError: If any transform in the graph is missing a KID mapping.
+            ValueError: When verifying against the API (and assuming the API is reachable), if any of the KIDs are not
+                valid.
 
         Warnings:
-            Issues a warning if transforms are provided that don't exist in the graph.
+            Issues a warning if:
+            - Transforms are provided that don't exist in the graph.
+            - There is a connection issue with the Kymata Atlas API.
         """
-        import warnings
 
-        api_url = "https://kymata.org/api/functions/"
-        try:
-            # Use the refactored function from atlas.py
-            api_data = fetch_data_dict(api_url)
-        except ConnectionError as e:
-            raise ConnectionError(f"Failed to fetch KID data from {api_url}: {e}")
+        # Verify supplied KIDs against API
+        if verify_against_api:
+            try:
+                verify_kids(transform_kids.values())
+            except ConnectionError as e:
+                warnings.warn(f"Failed to fetch KID data from {API_URL} ({e}). KIDs will not be verified.")
 
-        # Extract all valid KIDs from the API response
-        valid_api_kids = {item["kid"] for item in api_data if "kid" in item}
+        # Check KID coverage:
+        transforms_not_in_graph = set(transform_kids.keys()) - self.graph.transforms
+        if len(transforms_not_in_graph) > 0:
+            warnings.warn(f"The following transforms were supplied in the mapping but were not represented in the graph:"
+                          f" {sorted(transforms_not_in_graph)}")
+        transforms_not_in_mapping = self.graph.transforms - self.graph.inputs - set(transform_kids.keys())
+        if len(transforms_not_in_mapping) > 0:
+            warnings.warn(f"The following transforms in the graph weren't supplied a KID:"
+                          f" {sorted(transforms_not_in_mapping)}")
 
-        # Check if all KIDs in transform_KIDs exist in valid_api_kids
-        provided_kids = set(transform_KIDs.values())
-        missing_api_kids = provided_kids - valid_api_kids
-        if missing_api_kids:
-            raise ValueError(f"The following KIDs from transform_KIDs do not exist in the API: {sorted(list(missing_api_kids))}")
+        # Add KIDs to nodes
+        node: IPPMNode
+        node_relabel_dict = {
+            node: IPPMNode(
+                node_id=node.node_id,
+                is_input=node.is_input,
+                hemisphere=node.hemisphere,
+                channel=node.channel,
+                latency=node.latency,
+                transform=node.transform,
+                logp_value=node.logp_value,
+                # Replace KIDs from the dictionary
+                KID=transform_kids.get(node.transform, node.KID),
+            )
+            for node in self.graph.graph_full.nodes
+        }
+        self.graph.graph_full = relabel_nodes(self.graph.graph_full, node_relabel_dict)
 
-        # Add KID attribute to all edges based on the edges' transform
-        for graph_view in [self.graph.graph_full, self.graph.graph_last_to_first, self.graph.graph_first_to_first]:
-            for u, v, data in graph_view.edges(data=True):
-                edge_transform = data.get('transform')
-                if edge_transform:
-                    kid_value = transform_KIDs.get(edge_transform)
-                    if kid_value is not None:
-                        graph_view.edges[u, v]['KID'] = kid_value
-                    else:
-                        graph_view.edges[u, v]['KID'] = "n/a"
-                else:
-                    graph_view.edges[u, v]['KID'] = "n/a (no transform)"
-
-        # Add KID attributes to the nodes - now directly modifiable
-        for graph_view in [self.graph.graph_full, self.graph.graph_last_to_first, self.graph.graph_first_to_first]:
-            for node in graph_view.nodes():
-                node_transform = node.transform
-                kid_value = transform_KIDs.get(node_transform)
-                if kid_value is not None:
-                    node.KID = kid_value # Direct modification of KID attribute
-                else:
-                    node.KID = "n/a" # Direct modification of KID attribute
-
-        # Ensure all nodes (except input nodes) have a KID
-        nodes_missing_kids = []
-        for node in self.graph.graph_full.nodes():
-            if not node.is_input and node.KID == "unassigned": # Check node.KID directly
-                nodes_missing_kids.append(node.transform)
-            elif not node.is_input and node.KID == "n/a": # Check node.KID directly
-                nodes_missing_kids.append(node.transform)
-
-        if nodes_missing_kids:
-            raise ValueError(f"Missing KID mappings for nodes in graph: {sorted(list(set(nodes_missing_kids)))}")
-
-        # Check whether there are any edges that haven't been assigned a KID
-        edges_missing_kids = []
-        for source, target, data in self.graph.graph_full.edges(data=True):
-            if 'KID' not in data or data['KID'] == "n/a" or data['KID'] == "n/a (no transform)":
-                edges_missing_kids.append(f"{source.transform} -> {target.transform}")
-
-        if edges_missing_kids:
-            raise ValueError(f"The following edges have not been assigned a KID: {sorted(list(set(edges_missing_kids)))}")
-
-        # Optional: Warn about transforms in transform_KIDs that are not in the graph
-        transforms_in_graph = self.graph.transforms
-        transforms_not_in_graph = set(transform_KIDs.keys()) - transforms_in_graph
-        if transforms_not_in_graph:
-            warnings.warn(f"The following transforms provided in transform_KIDs do not exist in the graph: {sorted(list(transforms_not_in_graph))}")
+        # Add KIDs to edges
+        source: IPPMNode
+        target: IPPMNode
+        for source, target, data in self.graph.graph_full.edges:
+            if target.transform in transform_kids:
+                self.graph.graph_full.edges[source, target]["KID"] = transform_kids[target.transform]
