@@ -159,6 +159,6 @@ class IPPM:
         # Add KIDs to edges
         source: IPPMNode
         target: IPPMNode
-        for source, target, data in self.graph.graph_full.edges:
+        for source, target, data in self.graph.graph_full.edges(data=True):
             if target.transform in transform_kids:
                 self.graph.graph_full.edges[source, target]["KID"] = transform_kids[target.transform]
