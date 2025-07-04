@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from typing import Any
 
@@ -162,3 +164,39 @@ class IPPM:
         for source, target, data in self.graph.graph_full.edges(data=True):
             if target.transform in transform_kids:
                 self.graph.graph_full.edges[source, target]["KID"] = transform_kids[target.transform]
+
+    def __add__(self, other: IPPM) -> IPPM:
+        """
+        Combines two IPPM instances into a new IPPM instance using direct graph merging.
+
+        Args:
+            other (IPPM): The other IPPM instance to combine with this one.
+
+        Returns:
+            IPPM: A new IPPM instance containing the combined graphs.
+
+        Raises:
+            ValueError: If there are conflicting nodes, edges, or incompatible block structures.
+            TypeError: If other is not an IPPM instance.
+        """
+        if not isinstance(other, IPPM):
+            raise TypeError(f"Cannot add IPPM with {type(other)}. Both operands must be IPPM instances.")
+
+        # Check for block compatibility
+        self_blocks = set(self.graph._points_by_transform.keys())
+        other_blocks = set(other.graph._points_by_transform.keys())
+
+        if self_blocks != other_blocks:
+            raise ValueError(f"Block mismatch between IPPMs. "
+                             f"First IPPM has blocks: {sorted(self_blocks)}, "
+                             f"Second IPPM has blocks: {sorted(other_blocks)}. "
+                             f"Cannot combine IPPMs with different block structures.")
+
+        # Use direct graph merging approach
+        combined_graph = self.graph.merge_with(other.graph)
+
+        # Create new IPPM instance
+        combined_ippm = object.__new__(IPPM)
+        combined_ippm.graph = combined_graph
+
+        return combined_ippm
