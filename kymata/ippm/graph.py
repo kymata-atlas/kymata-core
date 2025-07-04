@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from math import inf
 from typing import Collection
 
@@ -19,6 +20,7 @@ from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transf
 _logger = getLogger(__file__)
 
 
+@dataclass(frozen=True)
 class IPPMNode:
     """
     A node in the IPPMGraph. It contains all metadata for a single expression point, including its
@@ -34,15 +36,6 @@ class IPPMNode:
     logp_value: float
     # For API
     KID: str = "unassigned"
-
-    # Required for NetworkX nodes to be hashable and comparable if used in sets/dicts
-    def __hash__(self) -> int:
-        return hash(self.node_id)
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, IPPMNode):
-            return False
-        return self.node_id == other.node_id
 
     def __repr__(self) -> str:
         return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
