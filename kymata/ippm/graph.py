@@ -355,7 +355,7 @@ class IPPMGraph:
 
         return subgraph
 
-    def merge_with(self, other: 'IPPMGraph') -> 'IPPMGraph':
+    def merge_with(self, other: IPPMGraph) -> IPPMGraph:
         """
         Merges this IPPMGraph with another IPPMGraph using direct graph operations.
 

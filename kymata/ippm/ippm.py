@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from typing import Any
 
@@ -163,7 +165,7 @@ class IPPM:
             if target.transform in transform_kids:
                 self.graph.graph_full.edges[source, target]["KID"] = transform_kids[target.transform]
 
-    def __add__(self, other: 'IPPM') -> 'IPPM':
+    def __add__(self, other: IPPM) -> IPPM:
         """
         Combines two IPPM instances into a new IPPM instance using direct graph merging.
 
