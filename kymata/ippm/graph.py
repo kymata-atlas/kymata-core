@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import inf
-from typing import Collection
+from typing import Collection, Optional
 
 from copy import copy, deepcopy
 from enum import StrEnum
@@ -35,7 +35,7 @@ class IPPMNode:
     transform: str
     logp_value: float
     # For API
-    KID: str = "unassigned"
+    KID: Optional[str] = None
 
     def __repr__(self) -> str:
         return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"

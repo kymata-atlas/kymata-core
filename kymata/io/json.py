@@ -3,6 +3,9 @@ from json import JSONEncoder
 import numpy as np
 from networkx import Graph
 
+from kymata.ippm.graph import IPPMNode
+
+
 class NumpyJSONEncoder(JSONEncoder):
     """
     A JSON encoder for use with Numpy datatypes.
@@ -23,6 +26,7 @@ def serialise_graph(graph: Graph) -> dict:
     from the IPPMNode objects that constitute the graph.
     """
     nodes = []
+    node: IPPMNode
     for node in graph.nodes:
         nodes.append({
             "node_id":       node.node_id,
@@ -32,7 +36,7 @@ def serialise_graph(graph: Graph) -> dict:
             "latency":       node.latency,
             "transform":     node.transform,
             "logp_value":    node.logp_value,
-            "KID":           node.KID
+            "KID":           node.KID if node.KID is not None else "unassigned"
         })
 
     edges = []
