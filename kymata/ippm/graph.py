@@ -41,7 +41,7 @@ class IPPMNode:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, IPPMNode):
-            return NotImplemented
+            return False
         return self.node_id == other.node_id
 
     def __repr__(self) -> str:
