@@ -44,19 +44,11 @@ def serialise_graph(graph: Graph) -> dict:
     edges = []
     for source, target, edge_attrs in graph.edges(data=True):
         kid = edge_attrs.get('KID', None)
-        if kid is None:
-            if target.is_input:
-                # This shouldn't really happen but we deal with it anyway
-                kid_edge_label = "n/a"
-            else:
-                kid_edge_label = "unassigned"
-        else:
-            kid_edge_label = kid
         edges.append({
             "source":    source.node_id,
             "target":    target.node_id,
             "transform": edge_attrs.get('transform', 'unknown'),
-            "KID":       kid_edge_label
+            "KID":       kid if kid is not None else "unassigned"
         })
 
     return {

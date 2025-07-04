@@ -218,7 +218,7 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
     g = Graph()
     node1 = IPPMNode("n1", False, "h1", "c1", 10, "t1", -1.0)
     node2 = IPPMNode("n2", False, "h2", "c2", 20, "t2", -2.0)
-    node3 = IPPMNode("n3", True, "h3", "c3", 30, "t3", -3.0) # An input node
+    node3 = IPPMNode("n3", True,  "h3", "c3", 30, "t3", -3.0)  # An input node
 
     g.add_nodes_from([node1, node2, node3])
     g.add_edge(node1, node2)
@@ -235,7 +235,7 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'latency': 10,
             'transform': 't1',
             'logp_value': -1.0,
-                'KID': 'unassigned',
+            'KID': 'unassigned',
         },
         {
             'node_id': 'n2',
@@ -245,7 +245,7 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'latency': 20,
             'transform': 't2',
             'logp_value': -2.0,
-                'KID': 'unassigned',
+            'KID': 'unassigned',
         },
         {
             'node_id': 'n3',
@@ -255,13 +255,15 @@ def test_serialise_graph_with_multiple_nodes_and_edges():
             'latency': 30,
             'transform': 't3',
             'logp_value': -3.0,
-                'KID': 'unassigned',
+            'KID': 'unassigned',
         }
     ]
 
     expected_edges = [
-        {'source': 'n1', 'target': 'n2'},
-        {'source': 'n2', 'target': 'n3'},
+        # 'unknown' because transforms aren't automatically available on edges in the graph constructed through Graph
+        # as above
+        {'source': 'n1', 'target': 'n2', 'KID': "unassigned", 'transform': 'unknown'},
+        {'source': 'n2', 'target': 'n3', 'KID': "unassigned", 'transform': 'unknown'},
     ]
 
     # Sort nodes and edges for consistent comparison
