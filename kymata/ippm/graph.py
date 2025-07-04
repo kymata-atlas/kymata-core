@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from math import inf
-from typing import Collection, NamedTuple
+from typing import Collection, Optional
 
 from copy import copy, deepcopy
 from enum import StrEnum
@@ -19,20 +20,25 @@ from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transf
 _logger = getLogger(__file__)
 
 
-class IPPMNode(NamedTuple):
+@dataclass(frozen=True)
+class IPPMNode:
     """
-    A node in the IPPMGraph. It is hashable and contains all metadata for a single expression point, including its
+    A node in the IPPMGraph. It contains all metadata for a single expression point, including its
     hemisphere (when referring to hexel data) and an ID.
     """
     node_id: str
     is_input: bool
-    hemisphere: str  # Equivalent to the ExpressionSet `block` the data came from.
-
+    hemisphere: str  # Equivalent to the ExpressionSet `block` the data came from.  # Could even improve this using a `typing.Literal` of the allowed strings
     # Data from the original ExpressionPoint
     channel: Channel  # Can be an int from data or a generated int for an input
     latency: Latency
     transform: str
     logp_value: float
+    # For API
+    KID: Optional[str] = None
+
+    def __repr__(self) -> str:
+        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
 
 
 def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
@@ -113,7 +119,7 @@ class IPPMGraph:
                         channel=point.channel,
                         transform=point.transform,
                         latency=point.latency,
-                        logp_value=point.logp_value
+                        logp_value=point.logp_value,
                     ))
             self._points_by_transform[block] = points_by_transform
 
@@ -142,7 +148,7 @@ class IPPMGraph:
                     channel=input_idx,
                     transform=pseudo_point.transform,
                     latency=pseudo_point.latency,
-                    logp_value=pseudo_point.logp_value
+                    logp_value=pseudo_point.logp_value,
                 )
                 graph.add_node(node)
                 input_node_idxs[block] += 1
@@ -161,15 +167,15 @@ class IPPMGraph:
                 ctl_successors = ctl.immediately_downstream(node.transform)
 
                 if other_node.transform in ctl_predecessors:
-                    graph.add_edge(other_node, node)
+                    graph.add_edge(other_node, node, transform=node.transform)
                 if other_node.transform in ctl_successors:
-                    graph.add_edge(node, other_node)
+                    graph.add_edge(node, other_node, transform=other_node.transform)
                 # Add sequential edges for nodes of the same transform
                 if node.transform == other_node.transform and node.node_id != other_node.node_id:
                     if node.latency < other_node.latency:
-                        graph.add_edge(node, other_node)
+                        graph.add_edge(node, other_node, transform=other_node.transform)
                     elif node.latency > other_node.latency:
-                        graph.add_edge(other_node, node)
+                        graph.add_edge(other_node, node, transform=node.transform)
 
         self.candidate_transform_list: CandidateTransformList = ctl
         self.graph_full: DiGraph = graph

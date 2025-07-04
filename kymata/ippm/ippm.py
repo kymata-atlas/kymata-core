@@ -1,11 +1,16 @@
+import warnings
+from typing import Any
+
+from networkx.relabel import relabel_nodes
+
 from kymata.entities.expression import (
     ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
+from kymata.io.atlas import API_URL, verify_kids
 from kymata.io.json import NumpyJSONEncoder, serialise_graph
 from kymata.ippm.denoising_strategies import (
     MaxPoolingStrategy, DBSCANStrategy, DenoisingStrategy, AdaptiveMaxPoolingStrategy, GMMStrategy, MeanShiftStrategy)
-from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.graph import IPPMGraph, IPPMNode
 from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy
-from typing import Any
 
 _denoiser_classes = {
     "maxpool": MaxPoolingStrategy,
@@ -97,3 +102,63 @@ class IPPM:
 
         jdict = serialise_graph(self.graph.graph_last_to_first)
         return json.dumps(jdict, indent=2, cls=NumpyJSONEncoder)
+
+    def set_kids(self, transform_kids: dict[str, str], verify_against_api: bool = True) -> None:
+        """
+        Adds KID attributes to edges and nodes in the IPPM graph based on transform mappings.
+
+        Args:
+            transform_kids (dict[str, str]): Dictionary mapping transform names to their KID values.
+            verify_against_api (bool): If True (the default), verify all supplied KIDs against the Kymata Atlas API.
+
+        Raises:
+            ValueError: When verifying against the API (and assuming the API is reachable), if any of the KIDs are not
+                valid.
+
+        Warnings:
+            Issues a warning if:
+            - Transforms are provided that don't exist in the graph.
+            - There is a connection issue with the Kymata Atlas API.
+        """
+
+        # Verify supplied KIDs against API
+        if verify_against_api:
+            try:
+                verify_kids(transform_kids.values())
+            except ConnectionError as e:
+                warnings.warn(f"Failed to fetch KID data from {API_URL} ({e}). KIDs will not be verified.")
+
+        # Check KID coverage:
+        transforms_not_in_graph = set(transform_kids.keys()) - self.graph.transforms
+        if len(transforms_not_in_graph) > 0:
+            warnings.warn(f"The following transforms were supplied in the mapping but were not represented in the graph:"
+                          f" {sorted(transforms_not_in_graph)}")
+        transforms_not_in_mapping = self.graph.transforms - self.graph.inputs - set(transform_kids.keys())
+        if len(transforms_not_in_mapping) > 0:
+            warnings.warn(f"The following transforms in the graph weren't supplied a KID:"
+                          f" {sorted(transforms_not_in_mapping)}")
+
+        # Add KIDs to nodes
+        node: IPPMNode
+        node_relabel_dict = {
+            node: IPPMNode(
+                node_id=node.node_id,
+                is_input=node.is_input,
+                hemisphere=node.hemisphere,
+                channel=node.channel,
+                latency=node.latency,
+                transform=node.transform,
+                logp_value=node.logp_value,
+                # Replace KIDs from the dictionary
+                KID=transform_kids.get(node.transform, node.KID),
+            )
+            for node in self.graph.graph_full.nodes
+        }
+        self.graph.graph_full = relabel_nodes(self.graph.graph_full, node_relabel_dict)
+
+        # Add KIDs to edges
+        source: IPPMNode
+        target: IPPMNode
+        for source, target, data in self.graph.graph_full.edges(data=True):
+            if target.transform in transform_kids:
+                self.graph.graph_full.edges[source, target]["KID"] = transform_kids[target.transform]
