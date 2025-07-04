@@ -66,7 +66,7 @@ def test_all_nonfill_close_mismatched_coords():
     assert not all_nonfill_close(left, right)
 
 
-def test__nonfill_close_unequal_data():
+def test_all_nonfill_close_unequal_data():
     coords = [
         [0, 0, 0, 1, 1],
         [0, 1, 2, 0, 3],
@@ -81,7 +81,7 @@ def test__nonfill_close_unequal_data():
     assert not all_nonfill_close(left, right)
 
 
-def test__nonfill_close_close_data():
+def test_all_nonfill_close_close_data():
     coords = [
         [0, 0, 0, 1, 1],
         [0, 1, 2, 0, 3],
@@ -96,7 +96,7 @@ def test__nonfill_close_close_data():
     assert not all_nonfill_close(left, right)
 
 
-def test__nonfill_close_equal():
+def test_all_nonfill_close_equal():
     coords = [
         [0, 0, 0, 1, 1],
         [0, 1, 2, 0, 3],
