@@ -127,7 +127,6 @@ class IPPMGraph:
                         transform=point.transform,
                         latency=point.latency,
                         logp_value=point.logp_value,
-                        KID="unassigned" # Initialize KID
                     ))
             self._points_by_transform[block] = points_by_transform
 
