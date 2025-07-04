@@ -21,7 +21,7 @@ from kymata.entities.datatypes import (
     HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
 from kymata.io.layouts import SensorLayout, get_meg_sensors, get_eeg_sensors
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
+from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix, all_nonfill_close
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -48,7 +48,7 @@ class ExpressionPoint(NamedTuple):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ExpressionPoint):
-            return NotImplemented
+            return False
         # Compare numerical values with a tolerance
         return (self.channel == other.channel and
                 self.latency == other.latency and
@@ -401,7 +401,8 @@ class ExpressionSet(ABC):
 
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
-        # Override this method and provide additional checks after calling super().__eq__(other)
+        # Override this method and provide additional checks after calling super().__eq__(other).
+        # Overrides should use APPROXIMATE EQUALITY TESTS on logp values
         if type(self) is not type(other):
             return False
         if not self.transforms == other.transforms:
@@ -651,9 +652,9 @@ class HexelExpressionSet(ExpressionSet):
     def __eq__(self, other: HexelExpressionSet) -> bool:
         if not super().__eq__(other):
             return False
-        if not COO(self.left.data == other.left.data).all():
+        if not all_nonfill_close(self.left.data, other.left.data):
             return False
-        if not COO(self.right.data == other.right.data).all():
+        if not all_nonfill_close(self.right.data, other.right.data):
             return False
         return True
 
@@ -755,7 +756,7 @@ class SensorExpressionSet(ExpressionSet):
     def __eq__(self, other: SensorExpressionSet) -> bool:
         if not super().__eq__(other):
             return False
-        if not COO(self.scalp.data == other.scalp.data).all():
+        if not all_nonfill_close(self.scalp.data, other.scalp.data):
             return False
         if not self.sensor_layout == other.sensor_layout:
             return False
