@@ -658,6 +658,16 @@ class HexelExpressionSet(ExpressionSet):
             return False
         return True
 
+    def __repr__(self) -> str:
+        return (f"{type(self).__name__}(\n"
+                f"    transforms = {self.transforms!r},\n"
+                f"    hexels_lh = {self.hexels_left!r},\n"
+                f"    hexels_rh = {self.hexels_right!r},\n"
+                f"    latencies = {self.latencies!r},\n"
+                f"    data_lh: {self._data[BLOCK_LEFT]!r},\n"
+                f"    data_rh: {self._data[BLOCK_RIGHT]!r},\n"
+                f")")
+
     def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
         Return a pair of DataFrames (left, right), containing:
@@ -812,6 +822,15 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
             sensor_layout=self.sensor_layout,
         )
+
+    def __repr__(self) -> str:
+        return (f"{type(self).__name__}(\n"
+                f"    transforms = {self.transforms!r},\n"
+                f"    sensors = {self.sensors!r},\n"
+                f"    latencies = {self.latencies!r},\n"
+                f"    data_scalp: {self._data[BLOCK_SCALP]!r},\n"
+                f"    sensor_layout: {self.sensor_layout!r},\n"
+                f")")
 
     def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
         if latency_start is None:
