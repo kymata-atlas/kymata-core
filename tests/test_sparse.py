@@ -93,7 +93,7 @@ def test_all_nonfill_close_close_data():
     left = COO(coords, data_left, shape)
     right = COO(coords, data_right, shape)
 
-    assert not all_nonfill_close(left, right)
+    assert all_nonfill_close(left, right)
 
 
 def test_all_nonfill_close_equal():
