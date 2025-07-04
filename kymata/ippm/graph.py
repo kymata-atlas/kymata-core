@@ -24,23 +24,16 @@ class IPPMNode:
     A node in the IPPMGraph. It contains all metadata for a single expression point, including its
     hemisphere (when referring to hexel data) and an ID.
     """
-    def __init__(self,
-                 node_id: str,
-                 is_input: bool,
-                 hemisphere: str,
-                 channel: Channel,
-                 latency: Latency,
-                 transform: str,
-                 logp_value: float,
-                 KID: str = "unassigned"):
-        self.node_id = node_id
-        self.is_input = is_input
-        self.hemisphere = hemisphere
-        self.channel = channel
-        self.latency = latency
-        self.transform = transform
-        self.logp_value = logp_value
-        self.KID = KID
+    node_id: str
+    is_input: bool
+    hemisphere: str  # Equivalent to the ExpressionSet `block` the data came from.  # Could even improve this using a `typing.Literal` of the allowed strings
+    # Data from the original ExpressionPoint
+    channel: Channel  # Can be an int from data or a generated int for an input
+    latency: Latency
+    transform: str
+    logp_value: float
+    # For API
+    KID: str = "unassigned"
 
     # Required for NetworkX nodes to be hashable and comparable if used in sets/dicts
     def __hash__(self) -> int:
