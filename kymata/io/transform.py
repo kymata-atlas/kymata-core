@@ -99,7 +99,7 @@ def load_transform(
 
     return Transform(
         name=trans_name,
-        values=trans.flatten().squeeze(),
+        values=trans.flatten().squeeze().astype(np.float32),
         sample_rate=sample_rate,
     )
 
