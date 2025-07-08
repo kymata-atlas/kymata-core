@@ -149,7 +149,7 @@ def do_gridsearch(
         for i in range(n_splits)
     ]
 
-    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split))
+    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split), dtype=np.float32)
     for j in range(n_reps):
         for split_i in range(n_splits):
             split_start = split_initial_timesteps[split_i]
@@ -176,7 +176,7 @@ def do_gridsearch(
     if n_reps > 1:
         F_trans = np.tile(F_trans, (n_reps, 1))
     corrs = np.zeros(
-        (n_channels, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split)
+        (n_channels, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split), dtype=np.float32
     )
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
