@@ -54,7 +54,7 @@ librosa = "^0.10.1"
 ipywidgets = "^8.1.5"
 twine = "^5.1.1"
 
-[poetry.group.dev.dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
 ipdb = "^0.13.13"
 ruff = "^0.5.6"

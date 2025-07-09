@@ -420,7 +420,7 @@ def load_emeg_pack(
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
 
-    return emeg, emeg_names, n_reps
+    return emeg.astype(np.float32), emeg_names, n_reps
 
 
 def _strip_ave(name: str) -> str:

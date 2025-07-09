@@ -364,7 +364,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
 
     return Transform(
         name=trans_name,
-        values=func.flatten().squeeze(),
+        values=func.flatten().squeeze().astype(np.float32),
         sample_rate=1000,
     )
 
