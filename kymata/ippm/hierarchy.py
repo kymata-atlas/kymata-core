@@ -163,6 +163,10 @@ class CandidateTransformList:
             raise NotImplementedError(f"Cannot merge CandidateTransformLists with overlapping transforms "
                                       f"({overlapping_transforms})")
 
+        # Inputs are the ONLY keys which can be shared, and they (by definition) have empty sets of parents.
+        # The check above ensures there are no other shared transforms (which might otherwise have different sets of
+        # parents in each operand).
+        # Therefore, we can just union the dictionaries, dropping the shared keys.
         combined_hierarchy = left.hierarchy | right.hierarchy
         return CandidateTransformList(combined_hierarchy)
 
