@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from copy import deepcopy
 from typing import Any
 
 from networkx.relabel import relabel_nodes
@@ -192,11 +193,8 @@ class IPPM:
                              f"Second IPPM has blocks: {sorted(other_blocks)}. "
                              f"Cannot combine IPPMs with different block structures.")
 
-        # Use direct graph merging approach
-        combined_graph = self.graph.merge_with(other.graph)
-
         # Create new IPPM instance
-        combined_ippm = object.__new__(IPPM)
-        combined_ippm.graph = combined_graph
+        combined_ippm = deepcopy(self)
+        combined_ippm.graph = IPPMGraph.merge(combined_ippm.graph, other.graph)
 
         return combined_ippm
