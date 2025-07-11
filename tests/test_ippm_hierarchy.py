@@ -76,3 +76,82 @@ def test_ctl_serial_sequence_more_complex():
         {"func2"},
         {"func3", "func4"},
     ]
+
+
+def test_hierarchy_recoverable(hier):
+    assert CandidateTransformList(hier).hierarchy == hier
+
+
+def test_merge_ct_fails_with_overlapping_transforms():
+    left = CandidateTransformList({
+        "input": set(),
+        "func1": {"input"},
+        "func2": {"input", "func1"},
+    })
+    right = CandidateTransformList({
+        "input": set(),
+        "func1": {"input"},
+        "func3": {"input", "func1"},
+    })
+    with pytest.raises(NotImplementedError):
+        CandidateTransformList.merge(left, right)
+
+
+def test_merge_ctl_with_overlapping_inputs():
+    left = CandidateTransformList({
+        "input": set(),
+        "left_func1": {"input"},
+        "left_func2": {"input", "left_func1"},
+        "left_func3": {"left_func2"},
+        "left_func4": {"left_func2"},
+    })
+    right = CandidateTransformList({
+        "input": set(),
+        "right_func1": {"input"},
+        "right_func2": {"input", "right_func1"},
+        "right_func3": {"right_func2"},
+        "right_func4": {"right_func2"},
+    })
+    combined = CandidateTransformList.merge(left, right)
+    assert combined == CandidateTransformList({
+        "input": set(),
+        "left_func1": {"input"},
+        "left_func2": {"input", "left_func1"},
+        "left_func3": {"left_func2"},
+        "left_func4": {"left_func2"},
+        "right_func1": {"input"},
+        "right_func2": {"input", "right_func1"},
+        "right_func3": {"right_func2"},
+        "right_func4": {"right_func2"},
+    })
+
+
+def test_merge_ctl_with_disjoint_inputs():
+    left = CandidateTransformList({
+        "left_input": set(),
+        "left_func1": {"left_input"},
+        "left_func2": {"left_input", "left_func1"},
+        "left_func3": {"left_func2"},
+        "left_func4": {"left_func2"},
+    })
+    right = CandidateTransformList({
+        "right_input": set(),
+        "right_func1": {"right_input"},
+        "right_func2": {"right_input", "right_func1"},
+        "right_func3": {"right_func2"},
+        "right_func4": {"right_func2"},
+    })
+    combined = CandidateTransformList.merge(left, right)
+    assert combined.inputs == {"left_input", "right_input"}
+    assert combined == CandidateTransformList({
+        "left_input": set(),
+        "right_input": set(),
+        "left_func1": {"left_input"},
+        "left_func2": {"left_input", "left_func1"},
+        "left_func3": {"left_func2"},
+        "left_func4": {"left_func2"},
+        "right_func1": {"right_input"},
+        "right_func2": {"right_input", "right_func1"},
+        "right_func3": {"right_func2"},
+        "right_func4": {"right_func2"},
+    })

@@ -151,6 +151,21 @@ class CandidateTransformList:
 
         return set(self.graph.successors(transform))
 
+    @classmethod
+    def merge(cls, left: CandidateTransformList, right: CandidateTransformList) -> CandidateTransformList:
+        """
+        Merge two CandidateTransformLists.
+        Assumes disjoint (non-input) transforms.
+        """
+        overlapping_inputs = left.inputs & right.inputs
+        overlapping_transforms = (left.transforms & right.transforms) - overlapping_inputs
+        if len(overlapping_transforms) > 0:
+            raise NotImplementedError(f"Cannot merge CandidateTransformLists with overlapping transforms "
+                                      f"({overlapping_transforms})")
+
+        combined_hierarchy = left.hierarchy | right.hierarchy
+        return CandidateTransformList(combined_hierarchy)
+
 
 def group_points_by_transform(points: Iterable[ExpressionPoint],
                               ctl: Optional[CandidateTransformList] = None,
