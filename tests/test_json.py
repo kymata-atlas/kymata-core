@@ -14,11 +14,11 @@ from kymata.ippm.hierarchy import TransformHierarchy
 def sample_hierarchy() -> TransformHierarchy:
     """A sample hierarchy to match with `sample_points`."""
     return {
-        "input": [],
-        "func1": ["input"],
-        "func2": ["input", "func1"],
-        "func3": ["func2"],
-        "func4": ["func3"],
+        "input": set(),
+        "func1": {"input"},
+        "func2": {"input", "func1"},
+        "func3": {"func2"},
+        "func4": {"func3"},
     }
 
 

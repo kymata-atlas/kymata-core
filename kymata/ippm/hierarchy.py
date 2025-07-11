@@ -8,7 +8,7 @@ from networkx import DiGraph
 from kymata.entities.expression import ExpressionPoint
 
 # Maps transforms to lists of names of parent/predecessor/upstream transforms
-TransformHierarchy = dict[str, list[str]]
+TransformHierarchy = dict[str, set[str]]
 
 
 # transform_name → points
@@ -61,6 +61,14 @@ class CandidateTransformList:
         return True
 
     @property
+    def hierarchy(self) -> TransformHierarchy:
+        """A transform hierarchy representation of a CandidateTransformList."""
+        return {
+            trans: set(self.immediately_upstream(trans))
+            for trans in self.transforms
+        }
+
+    @property
     def transforms(self) -> set[str]:
         """
         All transforms in the CTL.
@@ -93,7 +101,7 @@ class CandidateTransformList:
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> list[set[str]]:
         """
         The serial sequence of parallel transforms.
 
@@ -101,10 +109,10 @@ class CandidateTransformList:
         parallelizable transforms, ordered by serial dependency.
 
         Returns:
-            list[list[str]]: A list of lists representing batches of parallel transforms in execution order.
+            list[set[str]]: A list of sets representing batches of parallel transforms in execution order.
         """
         # Add input nodes
-        seq = [sorted(self.inputs)]
+        seq = [self.inputs]
         parsed_transforms = self.inputs
         # Recursively add children
         remaining_transforms = self.transforms - self.inputs
@@ -121,7 +129,7 @@ class CandidateTransformList:
                             remaining_transforms.remove(candidate)
                         except KeyError:
                             pass
-            seq.append(sorted(batch))
+            seq.append(batch)
             parsed_transforms.update(batch)
         return seq
 
