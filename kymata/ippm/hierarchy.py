@@ -7,7 +7,7 @@ from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
 
-# Maps transforms to lists of names of parent/predecessor/upstream transforms
+# Maps transforms to sets of names of parent/predecessor/upstream transforms
 TransformHierarchy = dict[str, set[str]]
 
 
