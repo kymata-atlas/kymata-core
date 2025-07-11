@@ -40,6 +40,15 @@ class IPPMNode:
     def __repr__(self) -> str:
         return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
 
+    def as_point(self) -> ExpressionPoint:
+        """Returns an ExpressionPoint representing the same data."""
+        return ExpressionPoint(
+            channel=self.channel,
+            latency=self.latency,
+            transform=self.transform,
+            logp_value=self.logp_value
+        )
+
 
 def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
     """
@@ -248,7 +257,7 @@ class IPPMGraph:
         return set(n.transform for n in terminal_nodes)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> list[set[str]]:
         """
         The serial sequence of transforms in the graph.
 
@@ -256,10 +265,13 @@ class IPPMGraph:
         transforms.
 
         Returns:
-            list[list[str]]: A list of lists representing the ordered transforms in the serial sequence.
+            list[set[str]]: A list of sets representing the ordered transforms in the serial sequence.
         """
         subsequence = [
-            [t for t in step if t in self.transforms]
+            {
+                t for t in step
+                if t in self.transforms
+            }
             for step in self.candidate_transform_list.serial_sequence
         ]
         # Skip any steps which were completely excluded due to missing data
@@ -354,6 +366,44 @@ class IPPMGraph:
         subgraph.add_nodes_from(self.graph_full.nodes)
 
         return subgraph
+
+    @classmethod
+    def merge(cls, left: IPPMGraph, right: IPPMGraph) -> IPPMGraph:
+        """
+        Merges two IPPMGraphs using direct graph operations.
+
+        Args:
+            left (IPPMGraph): The left IPPMGraph to merge.
+            right (IPPMGraph): The right IPPMGraph to merge.
+
+        Returns:
+            IPPMGraph: A new IPPMGraph containing the merged data.
+        """
+
+        # The merge operation is (currently) only valid if there are no overlaps in the list of transforms,
+        # EXCEPT that overlapping input nodes are ok.
+        overlapping_inputs = left.inputs & right.inputs
+        overlapping_transforms = (left.transforms & right.transforms) - overlapping_inputs
+
+        if len(overlapping_transforms) > 0:
+            raise NotImplementedError(f"Cannot merge graphs with overlapping transforms")
+
+        # Combine CTL
+        combined_ctl = CandidateTransformList.merge(left.candidate_transform_list, right.candidate_transform_list)
+
+        # Combine points
+        combined_points: dict[str, set[ExpressionPoint]] = defaultdict(set)
+        p: IPPMNode
+        for p in left.graph_full.nodes:
+            if p.transform in left.inputs:
+                continue
+            combined_points[p.hemisphere].add(p.as_point())
+        for p in right.graph_full.nodes:
+            if p.transform in right.inputs:
+                continue
+            combined_points[p.hemisphere].add(p.as_point())
+
+        return IPPMGraph(combined_ctl, combined_points)
 
 
 def input_stream_pseudo_expression_point(input_name: str) -> ExpressionPoint:

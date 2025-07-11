@@ -11,11 +11,11 @@ from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 def sample_hierarchy() -> TransformHierarchy:
     """A sample hierarchy to match with `sample_points`."""
     return {
-        "input": [],
-        "func1": ["input"],
-        "func2": ["input", "func1"],
-        "func3": ["func2"],
-        "func4": ["func3"],
+        "input": set(),
+        "func1": {"input"},
+        "func2": {"input", "func1"},
+        "func3": {"func2"},
+        "func4": {"func3"},
     }
 
 
@@ -111,10 +111,10 @@ def test_ippmgraph_empty_hierarchy_builds_successfully(empty_hierarchy, empty_po
 
 def test_ippmgraph_copy():
     ctl = CandidateTransformList({
-        "in": [],
-        "A": ["in"],
-        "B": ["A"],
-        "C": ["A"],
+        "in": set(),
+        "A": {"in"},
+        "B": {"A"},
+        "C": {"A"},
     })
     points = [
         ExpressionPoint("c1", 1, "A", -50),
@@ -164,19 +164,19 @@ def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
     )
 
     assert graph.serial_sequence == [
-        ["input"],
-        ["func2"],
-        ["func3"],
-        ["func4"],
+        {"input"},
+        {"func2"},
+        {"func3"},
+        {"func4"},
     ]
 
 
 def test_ippmgraph_last_to_first():
     ctl = CandidateTransformList({
-        "in": [],
-        "A": ["in"],
-        "B": ["A"],
-        "C": ["A"],
+        "in": set(),
+        "A": {"in"},
+        "B": {"A"},
+        "C": {"A"},
     })
     points = [
         ExpressionPoint("c1", 1, "A", -50),
