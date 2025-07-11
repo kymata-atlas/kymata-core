@@ -373,14 +373,11 @@ class IPPMGraph:
         Merges two IPPMGraphs using direct graph operations.
 
         Args:
-            left (IPPMGraph): The left IPPMGrraph to merge.
+            left (IPPMGraph): The left IPPMGraph to merge.
             right (IPPMGraph): The right IPPMGraph to merge.
 
         Returns:
             IPPMGraph: A new IPPMGraph containing the merged data.
-
-        Raises:
-            ValueError: If there are conflicting nodes or edges between the graphs.
         """
 
         # The merge operation is (currently) only valid if there are no overlaps in the list of transforms,
