@@ -134,6 +134,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- REFERENCES -->
 ## References
 
-[^1]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Lakra, Woolgar, Zhang (2024) _The Kymata Atlas_ (In Prep.)
-[^2]: Thwaites, Zhang and Woolgar (2024) _Information Processing Pathway Maps: A New Frontier in Cortical Processing_ (In Prep.)
+[^1]: Thwaites, Wieser, Soltan, Wingfield, Parish, Yang, Lakra, Woolgar, Zhang (in prep) The Kymata Atlas.
+[^2]: Thwaites, Zhang and Woolgar (2024) Information Processing Pathway Maps: A New Frontier in Cortical Processing (2025) _NeuroImage_ 217:121345. doi:[10.1016/j.neuroimage.2025.121345](https://doi.org/10.1016/j.neuroimage.2025.121345).
 
