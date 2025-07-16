@@ -33,6 +33,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
     supress_excessive_plots_and_prompts: bool,
     raw_emeg_path: Optional[Path] = None,
     processed_path: Optional[Path] = None,
+    meg_only: bool = False,
 ) -> None:
     if raw_emeg_path is None:
         raw_emeg_path = Path(data_root_dir, dataset_directory_name, "raw_emeg")
@@ -146,9 +147,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
-                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+                if not meg_only:
+
+                    eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+                    eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+                    raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
@@ -209,6 +212,7 @@ def run_second_pass_cleansing_and_eog_removal(
     remove_veoh_and_heog: bool,
     skip_ica_if_previous_runs_exist: bool,
     supress_excessive_plots_and_prompts: bool,
+    meg_only: bool = False,
 ):
     cleaned_dir = Path(
         data_root_dir,
@@ -286,7 +290,9 @@ def run_second_pass_cleansing_and_eog_removal(
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
+                if not meg_only:
+
+                    raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -363,7 +369,7 @@ def _remove_veoh_and_heog(filt_raw, ica):
     # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
     ica.plot_sources(eog_evoked)
     # blinks
-    ica.plot_overlay(filt_raw, exclude=eog_indices, picks="eeg")
+    ica.plot_overlay(filt_raw, exclude=eog_indices, picks="meg")
 
 
 def _remove_ecg(filt_raw, ica):
@@ -644,6 +650,8 @@ def create_trialwise_data(
     stimulus_length: int,  # seconds
     number_of_runs: int,
     latency_range: tuple[float, float],  # seconds
+    meg_only: bool = False,
+    tactile: bool = False,
 ):
     """Create trials objects from the raw data files (still in sensor space)"""
 
@@ -671,86 +679,165 @@ def create_trialwise_data(
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
     for p in list_of_participants:
-        print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
-        cleaned_raws = []
+        if tactile:
 
-        for run in range(1, number_of_runs + 1):
-            raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
-            print(f"Loading {raw_path}...")
-            if os.path.isfile(raw_path):
+            print("Processing tactile data...")
+
+            for run in range(1, number_of_runs + 1):
+                
+                raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
+                print(f"Loading {raw_path}...")
                 raw = mne.io.Raw(raw_path, preload=True)
-                cleaned_raws.append(raw)
+                raw_events = mne.find_events(
+                    raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
+                )
+                if run == 0:
+                    repetition_events = raw_events[1].reshape(1, 3)
+                else:
+                    repetition_events = raw_events[0].reshape(1, 3)
+                # Denote picks
+                include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
+                if not meg_only:
+                    picks: NDArray = mne.pick_types(
+                        raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+                    )
+                else:
+                    picks: NDArray = mne.pick_types(
+                        raw.info, meg=True, eeg=False, stim=False, exclude="bads", include=include
+                    )
+                _logger.info(
+                    f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
+                )
 
-        raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+                print(
+                    f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
+                )
 
-        raw_events = mne.find_events(
-            raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
-        )
-        repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
-        # name repetitions
-        for i in range(len(repetition_events)):
-            repetition_events[i][2] = str(i)
+                # Extract trial instances ('epochs')
+                _tmin = latency_range[0]
+                _tmax = (
+                    stimulus_length
+                    # extra padding at the end to accommodate range of latencies
+                    + latency_range[1]
+                    # Extra space to account for audio latency drift
+                    + 2
+                )
 
-        # Validate repetition events
-        assert (
-            len(repetition_events) == number_of_runs * repetitions_per_runs
-        ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
+                epochs = mne.Epochs(
+                    raw,
+                    repetition_events,
+                    None,
+                    _tmin,
+                    _tmax,
+                    picks=picks,
+                    baseline=(None, None),
+                    preload=True,
+                )
+                _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
-        # Denote picks
-        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks: NDArray = mne.pick_types(
-            raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
-        )
-        _logger.info(
-            f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
-        )
+                # Log which channels are worst
+                dropfig = epochs.plot_drop_log(subject=p)
+                dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
 
-        print(
-            f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
-        )
+                evoked = epochs[0].average()
+                _logger.info(
+                    f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+                )
+                evoked.save(Path(evoked_path, f"{p}_run{run}.fif"), overwrite=True)
 
-        # Extract trial instances ('epochs')
-        _tmin = latency_range[0]
-        _tmax = (
-            stimulus_length
-            # extra padding at the end to accommodate range of latencies
-            + latency_range[1]
-            # Extra space to account for audio latency drift
-            + 2
-        )
+        else:
 
-        epochs = mne.Epochs(
-            raw,
-            repetition_events,
-            None,
-            _tmin,
-            _tmax,
-            picks=picks,
-            baseline=(None, None),
-            preload=True,
-        )
-        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+            print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
-        # Log which channels are worst
-        dropfig = epochs.plot_drop_log(subject=p)
-        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+            cleaned_raws = []
 
-        # Save individual repetitions
-        for i in range(len(repetition_events)):
-            evoked = epochs[str(i)].average()
-            _logger.info(
-                f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+            for run in range(1, number_of_runs + 1):
+                raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
+                print(f"Loading {raw_path}...")
+                if os.path.isfile(raw_path):
+                    raw = mne.io.Raw(raw_path, preload=True)
+                    mne.viz.plot_raw(raw, scalings="auto", block=True)
+                    raw_events = mne.find_events(
+                        raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
+                    )
+                    import ipdb;ipdb.set_trace()
+                    cleaned_raws.append(raw)
+
+            raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+
+            raw_events = mne.find_events(
+                raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
             )
-            evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
+            repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
+            # name repetitions
+            for i in range(len(repetition_events)):
+                repetition_events[i][2] = str(i)
 
-        # Average over repetitions
-        evoked = epochs.average()
-        _logger.info(
-            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-        )
+            # Validate repetition events
+            assert (
+                len(repetition_events) == number_of_runs * repetitions_per_runs
+            ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
-        evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
+            # Denote picks
+            include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
+            if not meg_only:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+                )
+            else:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=False, stim=False, exclude="bads", include=include
+                )
+            _logger.info(
+                f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
+            )
+
+            print(
+                f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
+            )
+
+            # Extract trial instances ('epochs')
+            _tmin = latency_range[0]
+            _tmax = (
+                stimulus_length
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2
+            )
+
+            epochs = mne.Epochs(
+                raw,
+                repetition_events,
+                None,
+                _tmin,
+                _tmax,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
+            _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+            # Log which channels are worst
+            dropfig = epochs.plot_drop_log(subject=p)
+            dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+
+            # Save individual repetitions
+            for i in range(len(repetition_events)):
+                evoked = epochs[str(i)].average()
+                _logger.info(
+                    f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+                )
+                evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
+
+            # Average over repetitions
+            evoked = epochs.average()
+            _logger.info(
+                f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+            )
+
+            evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
 
 def apply_automatic_bad_channel_detection(

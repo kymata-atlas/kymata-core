@@ -20,6 +20,8 @@ def main(config_filename: str):
         stimulus_length=config["stimulus_length"],
         number_of_runs=config["number_of_runs"],
         latency_range=config["latency_range"],
+        meg_only=config["meg_only"] if "meg_only" in config else False,
+        tactile = config["tactile"] if "tactile" in config else False,
     )
 
 

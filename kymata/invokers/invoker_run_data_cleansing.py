@@ -24,6 +24,7 @@ def main(config_filename: str):
         skip_maxfilter_if_previous_runs_exist=config["skip_maxfilter_if_previous_runs_exist"],
         automatic_bad_channel_detection_requested=config["automatic_bad_channel_detection_requested"],
         supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
+        meg_only = config["meg_only"] if "meg_only" in config else False,
     )
 
     run_second_pass_cleansing_and_eog_removal(
@@ -35,6 +36,7 @@ def main(config_filename: str):
         remove_veoh_and_heog=config["remove_VEOH_and_HEOG"],
         skip_ica_if_previous_runs_exist=config["skip_ica_if_previous_runs_exist"],
         supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
+        meg_only = config["meg_only"] if "meg_only" in config else False,
     )
 
 
