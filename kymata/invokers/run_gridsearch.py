@@ -131,181 +131,333 @@ def main():
         stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
     else:
         raise NotImplementedError()
+    
+    if input_stream != "tactile":
 
-    reps = [f"_rep{i}" for i in range(8)] + [
-        "-ave"
-    ]  # most of the time we will only use the -ave, not the individual reps
-    if args.single_participant_override is not None:
-        if args.ave_mode == "ave":
-            emeg_filenames = [args.single_participant_override + "-ave"]
-        elif args.ave_mode == "concatenate":
-            print("Concatenating repetitions together")
-            emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
-    else:
-        emeg_filenames = [p + "-ave" for p in participants]
-
-    start = time.time()
-
-    if (
-        (len(emeg_filenames) > 1)
-        and (not args.morph)
-        and (args.ave_mode == "ave")
-        and args.use_inverse_operator
-    ):
-        raise ValueError(
-            "Averaging source-space results without morphing to a common space. "
-            + "If you are averaging over multiple participants you must morph to a common space."
-        )
-
-    # Load data
-    emeg_path = Path(base_dir, args.emeg_dir)
-    morph_dir = Path(
-        base_dir,
-        "interim_preprocessing_files",
-        "4_hexel_current_reconstruction",
-        "morph_maps",
-    )
-    invsol_npy_dir = Path(
-        base_dir,
-        "interim_preprocessing_files",
-        "4_hexel_current_reconstruction",
-        "npy_invsol",
-    )
-    inverse_operator_dir = Path(base_dir, inverse_operator_dir)
-
-    channel_space = "source" if args.use_inverse_operator else "sensor"
-
-    _logger.info("Starting Kymata Gridsearch")
-    _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
-    _logger.info(f"Transforms to be tested: {args.transform_name}")
-    _logger.info(f"Gridsearch will be applied in {channel_space} space")
-    if args.use_inverse_operator:
-        _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
-    if args.morph:
-        _logger.info("Morphing to common space")
-
-    t0 = time.time()
-
-    emeg_values, ch_names, n_reps = load_emeg_pack(
-        emeg_filenames,
-        emeg_dir=emeg_path,
-        morph_dir=morph_dir if args.morph else None,
-        need_names=True,
-        ave_mode=args.ave_mode,
-        inverse_operator_dir=inverse_operator_dir
-        if args.use_inverse_operator
-        else None,
-        inverse_operator_suffix=args.inverse_operator_suffix,
-        snr=args.snr,
-        old_morph=False,
-        invsol_npy_dir=invsol_npy_dir,
-        ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
-    )
-
-    time_to_load = time.time() - t0
-    print(f"Time to load emeg: {time_to_load:.4f}")
-    stdout.flush()  # make sure the above print statement shows up as soon as print is called
-    _logger.info(f"Time to load emeg: {time_to_load:.4f}")
-
-    combined_expression_set = None
-
-    # Get stimulisig path
-    if Path(args.transform_path).exists():
-        transform_path = Path(args.transform_path)
-    else:
-        transform_path = Path(base_dir, args.transform_path)
-    _logger.info(f"Loading transforms from {str(transform_path)}")
-
-    emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
-
-    sensor_layout = SensorLayout(
-        meg=MEGLayout(dataset_config["meg_sensor_layout"]),
-        eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
-    )
-
-    for transform_name in args.transform_name:
-        _logger.info(f"Running gridsearch on {transform_name}")
-        transform = load_transform(
-            transform_path,
-            trans_name=transform_name,
-            replace_nans=args.replace_nans,
-            bruce_neurons=(5, 10),
-            sample_rate=args.transform_sample_rate,
-        )
-
-        # Resample transform to match target sample rate if specified, else emeg sample rate
-        transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
-        if transform.sample_rate != transform_resample_rate:
-            _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
-                         f"({transform_resample_rate} Hz). Transform will be resampled to match. "
-                         f"({transform.sample_rate} → {transform_resample_rate} Hz)")
-            transform = transform.resampled(transform_resample_rate)
-
-        es = do_gridsearch(
-            emeg_values=emeg_values,
-            channel_names=ch_names,
-            channel_space=channel_space,
-            transform=transform,
-            seconds_per_split=args.seconds_per_split,
-            n_derangements=args.n_derangements,
-            n_splits=args.n_splits,
-            n_reps=n_reps,
-            emeg_sample_rate=emeg_sample_rate,
-            start_latency=args.start_latency,
-            plot_location=args.save_plot_location,
-            emeg_t_start=args.emeg_t_start,
-            stimulus_shift_correction=stimulus_shift_correction,
-            stimulus_delivery_latency=stimulus_delivery_latency,
-            plot_top_five_channels=args.plot_top_channels,
-            overwrite=args.overwrite,
-            emeg_layout=sensor_layout,
-        )
-
-        if combined_expression_set is None:
-            combined_expression_set = es
+        reps = [f"_rep{i}" for i in range(8)] + [
+            "-ave"
+        ]  # most of the time we will only use the -ave, not the individual reps
+        if args.single_participant_override is not None:
+            if args.ave_mode == "ave":
+                emeg_filenames = [args.single_participant_override + "-ave"]
+            elif args.ave_mode == "concatenate":
+                print("Concatenating repetitions together")
+                emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
         else:
-            combined_expression_set += es
+            emeg_filenames = [p + "-ave" for p in participants]
 
-    assert combined_expression_set is not None
+        start = time.time()
 
-    combined_names: str
-    if args.save_name is not None and len(args.save_name) > 0:
-        combined_names = args.save_name
-    elif len(args.transform_name) > 2:
-        combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
-    else:
-        combined_names = "_+_".join(args.transform_name) + "_gridsearch"
+        if (
+            (len(emeg_filenames) > 1)
+            and (not args.morph)
+            and (args.ave_mode == "ave")
+            and args.use_inverse_operator
+        ):
+            raise ValueError(
+                "Averaging source-space results without morphing to a common space. "
+                + "If you are averaging over multiple participants you must morph to a common space."
+            )
 
-    if args.save_expression_set_location is not None:
-        es_save_path = Path(
-            args.save_expression_set_location, combined_names
-        ).with_suffix(".nkg")
-        _logger.info(f"Saving expression set to {es_save_path!s}")
-        save_expression_set(
+        # Load data
+        emeg_path = Path(base_dir, args.emeg_dir)
+        morph_dir = Path(
+            base_dir,
+            "interim_preprocessing_files",
+            "4_hexel_current_reconstruction",
+            "morph_maps",
+        )
+        invsol_npy_dir = Path(
+            base_dir,
+            "interim_preprocessing_files",
+            "4_hexel_current_reconstruction",
+            "npy_invsol",
+        )
+        inverse_operator_dir = Path(base_dir, inverse_operator_dir)
+
+        channel_space = "source" if args.use_inverse_operator else "sensor"
+
+        _logger.info("Starting Kymata Gridsearch")
+        _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
+        _logger.info(f"Transforms to be tested: {args.transform_name}")
+        _logger.info(f"Gridsearch will be applied in {channel_space} space")
+        if args.use_inverse_operator:
+            _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
+        if args.morph:
+            _logger.info("Morphing to common space")
+
+        t0 = time.time()
+
+        emeg_values, ch_names, n_reps = load_emeg_pack(
+            emeg_filenames,
+            emeg_dir=emeg_path,
+            morph_dir=morph_dir if args.morph else None,
+            need_names=True,
+            ave_mode=args.ave_mode,
+            inverse_operator_dir=inverse_operator_dir
+            if args.use_inverse_operator
+            else None,
+            inverse_operator_suffix=args.inverse_operator_suffix,
+            snr=args.snr,
+            old_morph=False,
+            invsol_npy_dir=invsol_npy_dir,
+            ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+        )
+
+        time_to_load = time.time() - t0
+        print(f"Time to load emeg: {time_to_load:.4f}")
+        stdout.flush()  # make sure the above print statement shows up as soon as print is called
+        _logger.info(f"Time to load emeg: {time_to_load:.4f}")
+
+        combined_expression_set = None
+
+        # Get stimulisig path
+        if Path(args.transform_path).exists():
+            transform_path = Path(args.transform_path)
+        else:
+            transform_path = Path(base_dir, args.transform_path)
+        _logger.info(f"Loading transforms from {str(transform_path)}")
+
+        emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
+
+        sensor_layout = SensorLayout(
+            meg=MEGLayout(dataset_config["meg_sensor_layout"]),
+            eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
+        )
+
+        for transform_name in args.transform_name:
+            _logger.info(f"Running gridsearch on {transform_name}")
+            transform = load_transform(
+                transform_path,
+                trans_name=transform_name,
+                replace_nans=args.replace_nans,
+                bruce_neurons=(5, 10),
+                sample_rate=args.transform_sample_rate,
+            )
+
+            # Resample transform to match target sample rate if specified, else emeg sample rate
+            transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+            if transform.sample_rate != transform_resample_rate:
+                _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
+                            f"({transform_resample_rate} Hz). Transform will be resampled to match. "
+                            f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+                transform = transform.resampled(transform_resample_rate)
+
+            es = do_gridsearch(
+                emeg_values=emeg_values,
+                channel_names=ch_names,
+                channel_space=channel_space,
+                transform=transform,
+                seconds_per_split=args.seconds_per_split,
+                n_derangements=args.n_derangements,
+                n_splits=args.n_splits,
+                n_reps=n_reps,
+                emeg_sample_rate=emeg_sample_rate,
+                start_latency=args.start_latency,
+                plot_location=args.save_plot_location,
+                emeg_t_start=args.emeg_t_start,
+                stimulus_shift_correction=stimulus_shift_correction,
+                stimulus_delivery_latency=stimulus_delivery_latency,
+                plot_top_five_channels=args.plot_top_channels,
+                overwrite=args.overwrite,
+                emeg_layout=sensor_layout,
+            )
+
+            if combined_expression_set is None:
+                combined_expression_set = es
+            else:
+                combined_expression_set += es
+
+        assert combined_expression_set is not None
+
+        combined_names: str
+        if args.save_name is not None and len(args.save_name) > 0:
+            combined_names = args.save_name
+        elif len(args.transform_name) > 2:
+            combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
+        else:
+            combined_names = "_+_".join(args.transform_name) + "_gridsearch"
+
+        if args.save_expression_set_location is not None:
+            es_save_path = Path(
+                args.save_expression_set_location, combined_names
+            ).with_suffix(".nkg")
+            _logger.info(f"Saving expression set to {es_save_path!s}")
+            save_expression_set(
+                combined_expression_set,
+                to_path_or_file=es_save_path,
+                overwrite=args.overwrite,
+            )
+
+        if args.single_participant_override is not None:
+            fig_save_path = Path(
+                args.save_plot_location,
+                combined_names + f"_{args.single_participant_override}",
+            ).with_suffix(".png")
+        else:
+            fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
+        _logger.info(f"Saving expression plot to {fig_save_path!s}")
+        expression_plot(
             combined_expression_set,
-            to_path_or_file=es_save_path,
+            paired_axes=channel_space == "source",
+            save_to=fig_save_path,
             overwrite=args.overwrite,
         )
 
-    if args.single_participant_override is not None:
-        fig_save_path = Path(
-            args.save_plot_location,
-            combined_names + f"_{args.single_participant_override}",
-        ).with_suffix(".png")
-    else:
-        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
-    _logger.info(f"Saving expression plot to {fig_save_path!s}")
-    expression_plot(
-        combined_expression_set,
-        paired_axes=channel_space == "source",
-        save_to=fig_save_path,
-        overwrite=args.overwrite,
-    )
+        total_time_in_seconds = time.time() - start
+        _logger.info(
+            f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)'
+        )
 
-    total_time_in_seconds = time.time() - start
-    _logger.info(
-        f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)'
-    )
+    else:
+
+        all_es = None
+
+        for i in range(1, 6):
+            
+            emeg_filenames = [p + f"_run{i}" for p in participants]
+
+            start = time.time()
+
+            # Load data
+            emeg_path = Path(base_dir, args.emeg_dir)
+            morph_dir = Path(
+                base_dir,
+                "interim_preprocessing_files",
+                "4_hexel_current_reconstruction",
+                "morph_maps",
+            )
+            invsol_npy_dir = Path(
+                base_dir,
+                "interim_preprocessing_files",
+                "4_hexel_current_reconstruction",
+                "npy_invsol",
+            )
+            inverse_operator_dir = Path(base_dir, inverse_operator_dir)
+
+            channel_space = "source" if args.use_inverse_operator else "sensor"
+
+            _logger.info("Starting Kymata Gridsearch")
+            _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
+            _logger.info(f"Transforms to be tested: {args.transform_name}")
+            _logger.info(f"Gridsearch will be applied in {channel_space} space")
+            if args.use_inverse_operator:
+                _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
+            if args.morph:
+                _logger.info("Morphing to common space")
+
+            t0 = time.time()
+
+            emeg_values, ch_names, n_reps = load_emeg_pack(
+                emeg_filenames,
+                emeg_dir=emeg_path,
+                morph_dir=morph_dir if args.morph else None,
+                need_names=True,
+                ave_mode=args.ave_mode,
+                inverse_operator_dir=inverse_operator_dir
+                if args.use_inverse_operator
+                else None,
+                inverse_operator_suffix=args.inverse_operator_suffix,
+                snr=args.snr,
+                old_morph=False,
+                invsol_npy_dir=invsol_npy_dir,
+                ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+            )
+
+            time_to_load = time.time() - t0
+            print(f"Time to load emeg: {time_to_load:.4f}")
+            stdout.flush()  # make sure the above print statement shows up as soon as print is called
+            _logger.info(f"Time to load emeg: {time_to_load:.4f}")
+
+            combined_expression_set = None
+
+            # Get stimulisig path
+            if Path(args.transform_path).exists():
+                transform_path = Path(args.transform_path)
+            else:
+                transform_path = Path(base_dir, args.transform_path)
+            _logger.info(f"Loading transforms from {str(transform_path)}")
+
+            emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
+
+            sensor_layout = SensorLayout(
+                meg=MEGLayout(dataset_config["meg_sensor_layout"]),
+                eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
+            )
+
+            for transform_name in args.transform_name:
+                _logger.info(f"Running gridsearch on {transform_name}")
+                transform = load_transform(
+                    transform_path,
+                    trans_name=transform_name + f"_{i}",
+                    replace_nans=args.replace_nans,
+                    bruce_neurons=(5, 10),
+                    sample_rate=args.transform_sample_rate,
+                )
+
+                # Resample transform to match target sample rate if specified, else emeg sample rate
+                transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+                if transform.sample_rate != transform_resample_rate:
+                    _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
+                                f"({transform_resample_rate} Hz). Transform will be resampled to match. "
+                                f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+                    transform = transform.resampled(transform_resample_rate)
+
+                es = do_gridsearch(
+                    emeg_values=emeg_values,
+                    channel_names=ch_names,
+                    channel_space=channel_space,
+                    transform=transform,
+                    seconds_per_split=args.seconds_per_split,
+                    n_derangements=args.n_derangements,
+                    n_splits=args.n_splits,
+                    n_reps=n_reps,
+                    emeg_sample_rate=emeg_sample_rate,
+                    start_latency=args.start_latency,
+                    plot_location=args.save_plot_location,
+                    emeg_t_start=args.emeg_t_start,
+                    stimulus_shift_correction=stimulus_shift_correction,
+                    stimulus_delivery_latency=stimulus_delivery_latency,
+                    plot_top_five_channels=args.plot_top_channels,
+                    overwrite=args.overwrite,
+                    emeg_layout=sensor_layout,
+                )
+
+                if combined_expression_set is None:
+                    combined_expression_set = es
+                else:
+                    combined_expression_set += es
+
+            assert combined_expression_set is not None
+
+            if all_es is None:
+                all_es = combined_expression_set
+            else:
+                all_es += combined_expression_set
+
+        es_save_path = Path(
+                args.save_expression_set_location, 'all_tactile'
+            ).with_suffix(".nkg")
+        fig_save_path = Path(args.save_plot_location, 'all_tactile').with_suffix(".png")
+
+
+        save_expression_set(
+                    all_es,
+                    to_path_or_file=es_save_path,
+                    overwrite=args.overwrite,
+                )
+        expression_plot(
+            all_es,
+            paired_axes=channel_space == "source",
+            save_to=fig_save_path,
+            overwrite=args.overwrite,
+        )
+
+
+        total_time_in_seconds = time.time() - start
+        _logger.info(
+            f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)'
+        )      
 
 
 if __name__ == "__main__":

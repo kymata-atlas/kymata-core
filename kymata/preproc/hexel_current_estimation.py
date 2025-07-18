@@ -31,8 +31,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
     # Set location in the Kymata Project directory
     # where the converted MRI structurals will reside, and create the folder structure
-    $ freesurfer_6.0.0
+    $ freesurfer_6.0.0 (use with caution - may need to setup freesurfer first as follows)
+    $ export FREESURFER_HOME=/imaging/local/software/freesurfer/6.0.0/x86_64
+    $ source $FREESURFER_HOME/SetUpFreeSurfer.sh
     $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4-english_narratives/raw_mri_structurals/
+    $ the previous command shoule this in bash:
+    $ export SUBJECTS_DIR=/imaging/projects/cbu/kymata/data/dataset_5-tactile_fingertips/raw_mri_structurals
     for all participants:
         $ mksubjdirs participant_01 # note - this appears to ignore SUBJECTS_DIR and uses the folder you are in.
 
@@ -54,8 +58,8 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     # use it in Kymata web. If so, remove this section). i.e.
     #$ cp $FREESURFER_HOME/average/rh.DKTatlas40.gcs  $SUBJECTS_DIR/fsaverage/rh.DKTatlas40.gcs
     #$ cp $FREESURFER_HOME/average/lh.DKTatlas40.gcs  $SUBJECTS_DIR/fsaverage/lh.DKTatlas40.gcs
-    #$ mris_ca_label -orig white -novar fsaverage rh sphere.reg $SUBJECTS_DIR/fsaverage/label/rh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/rh.aparc.DKTatlas40.annot
-    #$ mris_ca_label -orig white -novar fsaverage lh sphere.reg $SUBJECTS_DIR/fsaverage/label/lh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/lh.aparc.DKTatlas40.annot
+    #$ mris_ca_label -orig white -novar fsaverage rh sphere.reg $SUBJECTS_DIR/fsaverage/rh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/rh.aparc.DKTatlas40.annot
+    #$ mris_ca_label -orig white -novar fsaverage lh sphere.reg $SUBJECTS_DIR/fsaverage/lh.DKTatlas40.gcs $SUBJECTS_DIR/fsaverage/label/lh.aparc.DKTatlas40.annot
 
     # move data across from the MRIdata folder to the local
     # directory, so freesurfer can find it - also convert from dcm to .mgz
@@ -101,6 +105,9 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
     #<------------------------------------------------------------->
     """
+
+    # import ipdb; ipdb.set_trace()
+
     # visualise the labels on the pial surface
     # for participant in list_of_participants:
     #    Brain = mne.viz.get_brain_class() # get correct brain class - why is it not doing this automatically?

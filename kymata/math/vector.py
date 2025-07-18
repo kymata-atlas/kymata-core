@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def normalize(x: NDArray, inplace: bool = False) -> NDArray:
+def normalize(x: NDArray, inplace: bool = False, eps: float = 1e-7) -> NDArray:
     """
     Remove the mean and divide by the Euclidean magnitude.
     If inplace is True, the array will be modified in place. If false, a normalized copy will be returned.
@@ -20,7 +20,7 @@ def normalize(x: NDArray, inplace: bool = False) -> NDArray:
         x *= 1_000_000
     # If we STILL have a magnitude-0 vector, we will have a problem, so should raise the error immediately.
     with np.errstate(divide="raise"):
-        x /= _normalize_magnitude(x)
+        x /= _normalize_magnitude(x) + eps
 
     return x
 

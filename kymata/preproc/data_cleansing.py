@@ -476,7 +476,7 @@ def estimate_noise_cov(
                 + p
                 + "/"
                 + p
-                + "_empty_room.fif"
+                + "_empty_room_raw.fif"
             )
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(
@@ -692,10 +692,12 @@ def create_trialwise_data(
                 raw_events = mne.find_events(
                     raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
                 )
-                if run == 0:
-                    repetition_events = raw_events[1].reshape(1, 3)
-                else:
-                    repetition_events = raw_events[0].reshape(1, 3)
+                assert len(raw_events) == 663
+                # if run == 0:
+                #     repetition_events = raw_events[1].reshape(1, 3)
+                # else:
+                #     repetition_events = raw_events[0].reshape(1, 3)
+                repetition_events = raw_events[1].reshape(1, 3)
                 # Denote picks
                 include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
                 if not meg_only:
