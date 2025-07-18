@@ -5,6 +5,7 @@ import numpy as np
 import nibabel as nib
 
 import mne
+import mne.bem
 
 _logger = getLogger(__file__)
 
@@ -20,7 +21,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     interim_preprocessing_directory_name = Path(
         data_root_dir, dataset_directory_name, "interim_preprocessing_files"
     )
-    # mri_structural_type = config['mri_structural_type']
+    mri_structural_type = config['mri_structural_type']
     mri_structurals_directory = Path(
         data_root_dir, dataset_directory_name, config["mri_structurals_directory"]
     )
@@ -31,9 +32,10 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
     # Set location in the Kymata Project directory
     # where the converted MRI structurals will reside, and create the folder structure
-    $ freesurfer_6.0.0 (use with caution - may need to setup freesurfer first as follows)
+    $ freesurfer_6.0.0 (may need to setup freesurfer first as follows if FREESURFER_HOME not set persistently)
     $ export FREESURFER_HOME=/imaging/local/software/freesurfer/6.0.0/x86_64
     $ source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
     $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4-english_narratives/raw_mri_structurals/
     $ the previous command shoule this in bash:
     $ export SUBJECTS_DIR=/imaging/projects/cbu/kymata/data/dataset_5-tactile_fingertips/raw_mri_structurals
@@ -96,6 +98,8 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         cd ../DKT_Atlas  # this is the best one to use (at the moment - from the mind-boggle dataset)
         mne_annot2labels --subject ${subjects[m]} --parc aparc.DKTatlas40
 
+        # mne_annot2labels does not seem to be available anymore
+
     # export to .stl file format, to offer it to participant for 3d printing (if requested)
     for participant in participants
         $ mkdir $SUBJECTS_DIR/participant_01/surf/stl_export_for_3d_printing
@@ -119,26 +123,26 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #        # andy is using:
         #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
         #
-        #        if mri_structural_type == 'T1':
-        #            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                copy=True,
-        #                overwrite=True,
-        #                show=True,
-        #            )
-        #
-        #            mne.bem.make_scalp_surfaces(
-        #                subject=participant,
-        #                subjects_dir=mri_structurals_directory,
-        #                no_decimate=True,
-        #                force=True,
-        #                overwrite=True,
-        #            )
-        #
-        #        elif mri_structural_type == 'Flash':
-        #            # mne.bem.make_flash_bem().
-        #            print("Flash not yet implemented.")
+        if mri_structural_type == 'T1':
+            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                copy=True,
+                overwrite=True,
+                show=True,
+            )
+
+            mne.bem.make_scalp_surfaces(
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                no_decimate=True,
+                force=True,
+                overwrite=True,
+            )
+
+        elif mri_structural_type == 'Flash':
+            # mne.bem.make_flash_bem().
+            print("Flash not yet implemented.")
 
         # produce the source space (downsampled version of the cortical surface in Freesurfer), which
         # will be saved in a file ending in *-src.fif
@@ -158,21 +162,23 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
             src,
         )
 
-        fig = mne.viz.plot_bem(
-            subject=participant,
-            subjects_dir=mri_structurals_directory,
-            brain_surfaces=["white"],
-            orientation="coronal",
-            slices=[50, 100, 150, 200],
-        )
-        fig.savefig(
-            Path(
-                interim_preprocessing_directory_name,
-                "4_hexel_current_reconstruction",
-                "bem_checks",
-                participant + "_bem_sliced.png",
-            )
-        )
+        # fig = mne.viz.plot_bem(
+        #     subject=participant,
+        #     subjects_dir=mri_structurals_directory,
+        #     brain_surfaces=["white"],
+        #     orientation="coronal",
+        #     slices=[50, 100, 150, 200],
+        # )
+        # fig.savefig(
+        #     Path(
+        #         interim_preprocessing_directory_name,
+        #         "4_hexel_current_reconstruction",
+        #         "bem_checks",
+        #         participant + "_bem_sliced.png",
+        #     )
+        # )
+
+    # import ipdb; ipdb.set_trace()
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
