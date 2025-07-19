@@ -6,6 +6,8 @@ import nibabel as nib
 
 import mne
 import mne.bem
+import scipy
+from scipy.sparse import csr_matrix
 
 _logger = getLogger(__file__)
 
@@ -451,8 +453,10 @@ def confirm_digitisation_locations(data_root_dir, config):
         )
         trans_fname = Path(coregistration_dir, participant + "-trans.fif")
         src_name = Path(src_dir, participant + "_ico5-src.fif")
-        fwd_name = Path(fwd_dir, participant + "-fwd.fif")
-
+        if config["meg"] and config["eeg"]:
+            fwd_name = Path(fwd_dir, participant + "-fwd.fif")
+        elif config["meg"] and not config["eeg"]:
+            fwd_name = Path(fwd_dir, participant + "-megonly-fwd.fif")
         raw = mne.io.read_raw_fif(raw_fname)
         trans = mne.read_trans(trans_fname)
         src = mne.read_source_spaces(src_name)
@@ -609,9 +613,14 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
             # read the src space not from the original but from the version in fwd or
             # inv, incase any vertices have been removed due to proximity to the scalp
             # https://mne.tools/stable/auto_tutorials/forward/30_forward.html#sphx-glr-auto-tutorials-forward-30-forward-py
-            fwd = mne.read_forward_solution(
-                Path(forward_sol_dir, participant + "-fwd.fif")
-            )
+            if config["meg"] and config["eeg"]:
+                fwd = mne.read_forward_solution(
+                    Path(forward_sol_dir, participant + "-fwd.fif")
+                )
+            elif config["meg"] and not config["eeg"]:
+                fwd = mne.read_forward_solution(
+                    Path(forward_sol_dir, participant + "-megonly-fwd.fif")
+                )
             src_from = fwd["src"]
 
             src_to = mne.read_source_spaces(Path(src_dir, "fsaverage_ico5-src.fif"))
@@ -623,6 +632,8 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
                 src_to=src_to,
                 subjects_dir=mri_structurals_directory,
             )
+            if isinstance(morph.morph_mat, scipy.sparse._csr.csr_array):
+                morph.morph_mat = csr_matrix(morph.morph_mat)
             morph.save(morphmap_filename)
         else:
             _logger.info("Morph maps already created")

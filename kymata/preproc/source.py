@@ -426,6 +426,8 @@ def load_emeg_pack(
 def _strip_ave(name: str) -> str:
     if name.endswith("-ave"):
         return name[:-4]
+    elif any(name.endswith(f"_run{i}") for i in range(1, 9)):
+        return name[:-5]
     else:
         return name
 

@@ -9,8 +9,8 @@
 #SBATCH --output=logs/slurm_log-%x.%j.out.txt
 #SBATCH --error=logs/slurm_log-%x.%j.trace.txt
 #SBATCH --ntasks=1
-#SBATCH --time=05:00:00
-#SBATCH --mem=240G
+#SBATCH --time=24:00:00
+#SBATCH --mem=200G
 #SBATCH --array=1-1
 #SBATCH --exclusive
 
@@ -21,11 +21,18 @@ export PATH="$HOME/.local/bin:$PATH"
 cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
-  --config dataset4.yaml \
-  --input-stream auditory \
-  --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
-  --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
+  --config dataset5.yaml \
+  --input-stream tactile \
+  --transform-path 'predicted_function_contours/stimulisig_new' \
+  --transform-name LHSquareVib LHslowfluct RHSquareVib RHslowfluct  \
   --plot-top-channels \
-  --overwrite
+  --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile' \
+  --overwrite \
+  --use-inverse-operator \
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1-inv.fif' \
+  --n-splits 660 \
+  --morph
 
 #  --snr $ARG # >> result3.txt

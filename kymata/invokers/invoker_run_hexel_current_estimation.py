@@ -18,13 +18,13 @@ def main(config_filename: str):
 
     data_root_dir = get_root_dir(config)
 
-    create_current_estimation_prerequisites(data_root_dir, config=config)
+    # create_current_estimation_prerequisites(data_root_dir, config=config)
 
     # create_forward_model_and_inverse_solution(data_root_dir, config=config)
 
     # confirm_digitisation_locations(data_root_dir, config=config)
 
-    # create_hexel_morph_maps(data_root_dir, config=config)
+    create_hexel_morph_maps(data_root_dir, config=config)
 
 
 if __name__ == "__main__":
