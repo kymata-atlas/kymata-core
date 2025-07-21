@@ -10,7 +10,7 @@
 #SBATCH --error=logs/slurm_log-%x.%j.trace.txt
 #SBATCH --ntasks=1
 #SBATCH --time=24:00:00
-#SBATCH --mem=200G
+#SBATCH --mem=240G
 #SBATCH --array=1-1
 #SBATCH --exclusive
 
@@ -27,12 +27,10 @@ python kymata/invokers/run_gridsearch.py \
   --transform-name LHSquareVib LHslowfluct RHSquareVib RHslowfluct  \
   --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/600s' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/600s' \
   --overwrite \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1-inv.fif' \
-  --n-splits 660 \
-  --morph
-
-#  --snr $ARG # >> result3.txt
+  --morph \
+  --n-splits 600

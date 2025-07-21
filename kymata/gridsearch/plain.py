@@ -1,3 +1,4 @@
+import gc
 from logging import getLogger
 from pathlib import Path
 from typing import Optional
@@ -245,6 +246,9 @@ def do_gridsearch(
         )
     else:
         raise NotImplementedError(channel_space)
+    
+    del corrs, auto_corrs, log_pvalues
+    gc.collect()
 
     return es
 

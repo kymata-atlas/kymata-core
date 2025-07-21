@@ -8,8 +8,8 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 participants: [
-                'pilot_01',
-                # 'pilot_02',
+                # 'pilot_01',
+                'pilot_02',
                 # 'participant_01',
                 # 'participant_01b',
                 # 'participant_02',

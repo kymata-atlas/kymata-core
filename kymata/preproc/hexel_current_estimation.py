@@ -112,7 +112,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     #<------------------------------------------------------------->
     """
 
-    # import ipdb; ipdb.set_trace()
+    import ipdb; ipdb.set_trace()
 
     # visualise the labels on the pial surface
     # for participant in list_of_participants:
