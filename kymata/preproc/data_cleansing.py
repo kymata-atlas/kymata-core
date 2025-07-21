@@ -695,7 +695,7 @@ def create_trialwise_data(
         # Validate repetition events
         assert (
             len(repetition_events) == number_of_runs * repetitions_per_runs
-        ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
+        ), f"{len(repetition_events)} but {number_of_runs * repetitions_per_runs}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
@@ -740,14 +740,14 @@ def create_trialwise_data(
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
             _logger.info(
-                f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+                f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape})"
             )
             evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
         # Average over repetitions
         evoked = epochs.average()
         _logger.info(
-            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape})"
         )
 
         evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)

@@ -54,6 +54,10 @@ def load_single_emeg(
     evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
     assert len(evoked) == 1
     evoked = evoked[0]
+    try:
+        evoked = evoked.drop_channels(["MRO52-4304", "MLT41-4304"])
+    except:
+        pass
 
     if inverse_operator_path is None:
         # Want sensor data
