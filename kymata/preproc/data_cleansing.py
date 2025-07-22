@@ -687,6 +687,9 @@ def create_trialwise_data(
             for run in range(1, number_of_runs + 1):
                 
                 raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
+                if Path(evoked_path, f"{p}_run{run}.fif").exists():
+                    print(f"Skipping {raw_path} as it already exists.")
+                    continue
                 print(f"Loading {raw_path}...")
                 raw = mne.io.Raw(raw_path, preload=True)
                 raw_events = mne.find_events(
@@ -694,6 +697,8 @@ def create_trialwise_data(
                 )
                 if raw_events[1][0] - raw_events[0][0] > 1002:
                     raw_events = np.delete(raw_events, 0, axis=0)
+                if len(raw_events) != 663:
+                    import ipdb; ipdb.set_trace()
                 assert len(raw_events) == 663, f"Expected 663 events, but found {len(raw_events)}"
                 # if run == 0:
                 #     repetition_events = raw_events[1].reshape(1, 3)
