@@ -112,9 +112,9 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     #<------------------------------------------------------------->
     """
 
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
 
-    # visualise the labels on the pial surface
+    # # visualise the labels on the pial surface
     # for participant in list_of_participants:
     #    Brain = mne.viz.get_brain_class() # get correct brain class - why is it not doing this automatically?
     #    brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
@@ -180,12 +180,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #     )
         # )
 
-    # import ipdb; ipdb.set_trace()
+    import ipdb; ipdb.set_trace()
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
-    # for participant in list_of_participants:
-    #    mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
+    for participant in list_of_participants:
+       mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
 
     ### #Computing the actual BEM solution
     for participant in list_of_participants:
