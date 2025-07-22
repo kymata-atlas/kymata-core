@@ -311,9 +311,10 @@ def main():
 
     else:
 
+        run_num = dataset_config.get('number_of_runs', 5)
         all_es = None
 
-        for i in range(1, 6):
+        for i in range(1, run_num + 1):
             
             emeg_filenames = [p + f"_run{i}" for p in participants]
 

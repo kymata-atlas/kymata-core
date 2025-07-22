@@ -180,7 +180,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
         #     )
         # )
 
-    # import ipdb; ipdb.set_trace()
+    import ipdb; ipdb.set_trace()
 
     # co-register data (make sure the MEG and EEG is aligned to the head)
     # this will save a trans .fif file
