@@ -695,10 +695,8 @@ def create_trialwise_data(
                 raw_events = mne.find_events(
                     raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
                 )
-                if raw_events[1][0] - raw_events[0][0] > 1002:
+                while raw_events[1][0] - raw_events[0][0] > 1002:
                     raw_events = np.delete(raw_events, 0, axis=0)
-                if len(raw_events) != 663:
-                    import ipdb; ipdb.set_trace()
                 assert len(raw_events) == 663, f"Expected 663 events, but found {len(raw_events)}"
                 # if run == 0:
                 #     repetition_events = raw_events[1].reshape(1, 3)
