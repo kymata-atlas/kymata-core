@@ -603,16 +603,15 @@ def expression_plot(
 def __reposition_axes_for_legends(fig, legends):
     """Adjust figure width to accommodate legend(s)"""
     buffer = 1.0
-    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    fig_width, _fig_height = fig.get_size_inches()
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes()) * fig_width
     max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
                              for leg in legends)
                          # Plus a bit extra because matplotlib
                          + buffer
                          if len(legends) > 0
                          else max_axes_right_inches)
-    fig.subplots_adjust(right=(fig.get_figwidth()
-                               * max_axes_right_inches
-                               / max_extent_inches))
+    fig.subplots_adjust(right=(max_axes_right_inches / max_extent_inches))
 
 
 def __add_axis_name_annotations(axes_names: Sequence[str],
