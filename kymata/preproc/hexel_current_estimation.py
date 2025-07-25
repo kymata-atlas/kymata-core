@@ -278,11 +278,11 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             )
         elif config["meg"]:
             mne.write_forward_solution(
-                Path(forward_sol_dir, participant + "-megonly-fwd.fif"), fwd=fwd
+                Path(forward_sol_dir, participant + "-megonly-fwd.fif"), fwd=fwd, overwrite=True
             )
         elif config["eeg"]:
             mne.write_forward_solution(
-                Path(forward_sol_dir, participant + "-eegonly-fwd.fif"), fwd=fwd
+                Path(forward_sol_dir, participant + "-eegonly-fwd.fif"), fwd=fwd, overwrite=True
             )
         else:
             raise Exception(
