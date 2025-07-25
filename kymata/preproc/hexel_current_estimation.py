@@ -120,49 +120,49 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
     #    brain = Brain(participant, hemi="lh", surf="pial", subjects_dir=mri_structurals_directory, size=(800, 600))
     #    brain.add_annotation("aparc.a2009s", borders=False)
 
-    # # Computing the 'BEM' surfaces (needed for coregistration to work)
-    # for participant in list_of_participants:
-    #     #        # andy is using:
-    #     #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
-    #     #
-    #     if mri_structural_type == 'T1':
-    #         mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
-    #             subject=participant,
-    #             subjects_dir=mri_structurals_directory,
-    #             copy=True,
-    #             overwrite=True,
-    #             show=True,
-    #         )
+    # Computing the 'BEM' surfaces (needed for coregistration to work)
+    for participant in list_of_participants:
+        #        # andy is using:
+        #        https://imaging.mrc-cbu.cam.ac.uk/meg/AnalyzingData/MNE_MRI_processing
+        #
+        if mri_structural_type == 'T1':
+            mne.bem.make_watershed_bem(  # for T1; for FLASH, use make_flash_bem instead
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                copy=True,
+                overwrite=True,
+                show=True,
+            )
 
-    #         mne.bem.make_scalp_surfaces(
-    #             subject=participant,
-    #             subjects_dir=mri_structurals_directory,
-    #             no_decimate=True,
-    #             force=True,
-    #             overwrite=True,
-    #         )
+            mne.bem.make_scalp_surfaces(
+                subject=participant,
+                subjects_dir=mri_structurals_directory,
+                no_decimate=True,
+                force=True,
+                overwrite=True,
+            )
 
-    #     elif mri_structural_type == 'Flash':
-    #         # mne.bem.make_flash_bem().
-    #         print("Flash not yet implemented.")
+        elif mri_structural_type == 'Flash':
+            # mne.bem.make_flash_bem().
+            print("Flash not yet implemented.")
 
-    #     # produce the source space (downsampled version of the cortical surface in Freesurfer), which
-    #     # will be saved in a file ending in *-src.fif
-    #     src = mne.setup_source_space(
-    #         participant,
-    #         spacing="ico5",
-    #         add_dist=True,
-    #         subjects_dir=mri_structurals_directory,
-    #     )
-    #     mne.write_source_spaces(
-    #         Path(
-    #             interim_preprocessing_directory_name,
-    #             "4_hexel_current_reconstruction",
-    #             "src_files",
-    #             participant + "_ico5-src.fif",
-    #         ),
-    #         src,
-    #     )
+        # produce the source space (downsampled version of the cortical surface in Freesurfer), which
+        # will be saved in a file ending in *-src.fif
+        src = mne.setup_source_space(
+            participant,
+            spacing="ico5",
+            add_dist=True,
+            subjects_dir=mri_structurals_directory,
+        )
+        mne.write_source_spaces(
+            Path(
+                interim_preprocessing_directory_name,
+                "4_hexel_current_reconstruction",
+                "src_files",
+                participant + "_ico5-src.fif",
+            ),
+            src,
+        )
 
         # fig = mne.viz.plot_bem(
         #     subject=participant,
