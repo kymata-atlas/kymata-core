@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import time
 from sys import stdout
+import gc
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -435,6 +436,10 @@ def main():
                 all_es = combined_expression_set
             else:
                 all_es += combined_expression_set
+
+            del emeg_values, ch_names, n_reps, combined_expression_set, transform
+            gc.collect()
+
 
         es_save_path = Path(
                 args.save_expression_set_location, 'all_tactile'

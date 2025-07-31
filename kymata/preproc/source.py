@@ -387,33 +387,43 @@ def load_emeg_pack(
     if ave_mode == "concatenate":
         # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
         for i in range(1, len(emeg_paths)):
-            new_emeg, _ch_names = load_single_emeg(
-                emeg_paths[i],
-                need_names,
-                inverse_operator_paths[i],
-                snr,
-                morph_paths[i],
-                old_morph=old_morph,
-                premorphed_inverse_operator_path=invsol_paths[i],
-                ch_names_path=ch_names_path,
-            )
-            emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
+            try:
+                new_emeg, _ch_names = load_single_emeg(
+                    emeg_paths[i],
+                    need_names,
+                    inverse_operator_paths[i],
+                    snr,
+                    morph_paths[i],
+                    old_morph=old_morph,
+                    premorphed_inverse_operator_path=invsol_paths[i],
+                    ch_names_path=ch_names_path,
+                )
+                emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
+            except:
+                _logger.warning(
+                    f"The file {str(emeg_paths[i])} does not seem to exist, probably due to a missing run, skipping it."
+                )
 
     elif ave_mode == "ave":
         # Averaging together all participants
 
         for i in range(1, len(emeg_paths)):
-            new_emeg, _ch_names = load_single_emeg(
-                emeg_paths[i],
-                need_names,
-                inverse_operator_paths[i],
-                snr,
-                morph_paths[i],
-                old_morph=old_morph,
-                premorphed_inverse_operator_path=invsol_paths[i],
-                ch_names_path=ch_names_path,
-            )
-            emeg += np.expand_dims(new_emeg, 1)
+            try:
+                new_emeg, _ch_names = load_single_emeg(
+                    emeg_paths[i],
+                    need_names,
+                    inverse_operator_paths[i],
+                    snr,
+                    morph_paths[i],
+                    old_morph=old_morph,
+                    premorphed_inverse_operator_path=invsol_paths[i],
+                    ch_names_path=ch_names_path,
+                )
+                emeg += np.expand_dims(new_emeg, 1)
+            except:
+                _logger.warning(
+                    f"The file {str(emeg_paths[i])} does not seem to exist, probably due to a missing run, skipping it."
+                )
 
         n_reps = 1  # n_reps is now 1 as all averaged
 

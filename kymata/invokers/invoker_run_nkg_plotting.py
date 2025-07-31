@@ -166,7 +166,7 @@ def main():
         path_to_nkg_files = Path(path_to_nkg_files, "tactile")
 
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, "all_tactile.nkg")
+            Path(path_to_nkg_files, 'participant_09', "all_tactile.nkg")
         )
 
         name = expression_data.transforms
@@ -174,7 +174,7 @@ def main():
         fig_1 = expression_plot(
             expression_data,
             # xlims=(-200, 800),
-            minimap = 'large',
+            # minimap = 'large',
             # show_legend=False,
             color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
             | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
@@ -188,7 +188,7 @@ def main():
         fig_2 = expression_plot(
             expression_data,
             # xlims=(-200, 800),
-            minimap = 'large',
+            # minimap = 'large',
             # show_legend=False,
             color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
             | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
@@ -199,8 +199,42 @@ def main():
             title = 'Vertical displacement',
         )
 
-        fig_1.savefig(Path(path_to_nkg_files, "Vib_detect_brain.png"))
-        fig_2.savefig(Path(path_to_nkg_files, "Vert_disp_brain.png"))
+        fig_3 = expression_plot(
+            expression_data,
+            # xlims=(-200, 800),
+            minimap = 'large',
+            # minimap_view='dorsal',
+            # minimap_surface = 'pial',
+            # show_legend=False,
+            color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
+            | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
+            | constant_color_dict(['LHSquareVib_3', 'RHSquareVib_3'], color="green")
+            | constant_color_dict(['LHSquareVib_4', 'RHSquareVib_4'], color="yellow")
+            | constant_color_dict(['LHSquareVib_5', 'RHSquareVib_5'], color="orange"),
+            show_only=[i for i in name if 'SquareVib' in i],
+            title = 'Vibration detection',
+        )
+
+        fig_4 = expression_plot(
+            expression_data,
+            # xlims=(-200, 800),
+            minimap = 'large',
+            # minimap_view='dorsal',
+            # minimap_surface = 'pial',
+            # show_legend=False,
+            color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
+            | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
+            | constant_color_dict(['LHslowfluct_3', 'RHslowfluct_3'], color="green")
+            | constant_color_dict(['LHslowfluct_4', 'RHslowfluct_4'], color="yellow")
+            | constant_color_dict(['LHslowfluct_5', 'RHslowfluct_5'], color="orange"),
+            show_only=[i for i in name if 'slowfluct' in i],
+            title = 'Vertical displacement',
+        )
+
+        fig_1.savefig(Path(path_to_nkg_files, 'participant_09', "Vib_detect.png"))
+        fig_2.savefig(Path(path_to_nkg_files, 'participant_09', "Vert_disp.png"))
+        fig_3.savefig(Path(path_to_nkg_files, 'participant_09', "Vib_detect_brain.png"))
+        fig_4.savefig(Path(path_to_nkg_files, 'participant_09', "Vert_disp_brain.png"))
 
 
 
