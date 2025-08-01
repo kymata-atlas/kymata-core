@@ -27,6 +27,8 @@ def run_first_pass_cleansing_and_maxwell_filtering(
     data_root_dir: str,
     dataset_directory_name: str,
     n_runs: int,
+    n_reps: int,
+    tactile: bool,
     empty_room_estimate_year: str,
     skip_maxfilter_if_previous_runs_exist: bool,
     automatic_bad_channel_detection_requested: bool,
@@ -52,9 +54,15 @@ def run_first_pass_cleansing_and_maxwell_filtering(
         )
         for run in range(1, n_runs + 1):
             # set filename. (Use .fif.gz extension to use gzip to compress)
-            saved_maxfiltered_path = Path(
-                processed_path, f"{participant}_run{run!s}_raw_sss.fif"
-            )
+            if tactile and n_reps > 1:
+                saved_maxfiltered_path = Path(
+                    processed_path, f"{participant}_run{run!s}_rep{n_reps!s}_raw_sss.fif"
+                )
+                
+            else:
+                saved_maxfiltered_path = Path(
+                    processed_path, f"{participant}_run{run!s}_raw_sss.fif"
+                )
 
             if (
                 skip_maxfilter_if_previous_runs_exist
@@ -74,133 +82,270 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 # Load data
                 print_with_color("   Loading Raw data...", Fore.GREEN)
 
-                raw_fif_data = mne.io.Raw(
-                    Path(
-                        raw_emeg_path, participant, f"{participant}_run{run!s}_raw.fif"
-                    ),
-                    preload=True,
-                )
+                if tactile and n_reps > 1:
 
-                # Rename any channels that require it, and their type
-                recording_config = load_config(config_path)
-                ecg_and_eog_channel_name_and_type_overwrites = recording_config[
-                    "ECG_and_EOG_channel_name_and_type_overwrites"
-                ]
+                    for rep in range(1, n_reps + 1):
+                        saved_maxfiltered_path = Path(
+                            processed_path, f"{participant}_run{run!s}_rep{rep!s}_raw_sss.fif"
+                        )                        
+                        raw_fif_data = mne.io.Raw(
+                            Path(
+                                raw_emeg_path,
+                                participant,
+                                f"{participant}_run{run!s}_rep{rep!s}_raw.fif",
+                            ),
+                            preload=True,
+                        )
+                        # Rename any channels that require it, and their type
+                        recording_config = load_config(config_path)
+                        ecg_and_eog_channel_name_and_type_overwrites = recording_config[
+                            "ECG_and_EOG_channel_name_and_type_overwrites"
+                        ]
 
-                # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
-                ecg_and_eog_channel_type_overwrites = {}
-                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
-                    ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
-                raw_fif_data.set_channel_types(
-                    ecg_and_eog_channel_type_overwrites, verbose=None
-                )
+                        # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
+                        ecg_and_eog_channel_type_overwrites = {}
+                        for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                            ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
+                        raw_fif_data.set_channel_types(
+                            ecg_and_eog_channel_type_overwrites, verbose=None
+                        )
 
-                # Set EOG and ECG names for clarity
-                ecg_and_eog_channel_name_overwrites = {}
-                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
-                    ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
-                raw_fif_data.rename_channels(
-                    ecg_and_eog_channel_name_overwrites, allow_duplicates=False
-                )
+                        # Set EOG and ECG names for clarity
+                        ecg_and_eog_channel_name_overwrites = {}
+                        for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                            ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
+                        raw_fif_data.rename_channels(
+                            ecg_and_eog_channel_name_overwrites, allow_duplicates=False
+                        )
 
-                # Set bad channels (manually)
-                print_with_color("   Setting bad channels...", Fore.GREEN)
-                print_with_color("   ...manual", Fore.GREEN)
+                        # Set bad channels (manually)
+                        print_with_color("   Setting bad channels...", Fore.GREEN)
+                        print_with_color("   ...manual", Fore.GREEN)
 
-                raw_fif_data.info["bads"] = recording_config["bad_channels"]
+                        raw_fif_data.info["bads"] = recording_config["bad_channels"]
 
-                response = input_with_color(
-                    "Would you like to see the raw data? Recommended if you want to confirm"
-                    + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    + " (y/n)",
-                    Fore.MAGENTA,
-                )
-                if response == "y":
-                    print("...Plotting Raw data.")
-                    mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
+                        response = input_with_color(
+                            "Would you like to see the raw data? Recommended if you want to confirm"
+                            + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                            + " (y/n)",
+                            Fore.MAGENTA,
+                        )
+                        if response == "y":
+                            print("...Plotting Raw data.")
+                            mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
+                        else:
+                            print("...assuming you want to continue without looking at the raw data.")
+
+                        # Write back selected bad channels back to participant's config .yaml file
+                        modify_param_config(
+                            config_path,
+                            "bad_channels",
+                            [str(item) for item in sorted(raw_fif_data.info["bads"])],
+                        )
+
+                        # Get the head positions
+                        chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
+                        chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
+                        head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
+
+                        print_with_color("   Removing CHPI ...", Fore.GREEN)
+
+                        # Remove hpi & line
+                        raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
+
+                        print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
+
+                        raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+
+                        # note that EEG and MEG do not have the same frequencies, so we remove them seperately
+                        meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
+                        meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
+                        raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+                        if not meg_only:
+
+                            eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+                            eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+                            raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+
+                        fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                        psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                        psd_checks_dir.mkdir(exist_ok=True)
+                        fig.savefig(Path(psd_checks_dir,f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
+
+                        if automatic_bad_channel_detection_requested:
+                            print_with_color("   ...automatic", Fore.GREEN)
+                            raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
+
+                        # Apply SSS and movement compensation
+                        print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
+
+                        fine_cal_file = str(Path(Path(__file__).parent.parent,
+                                "data",
+                                "cbu_specific_files/SSS/sss_cal_"
+                                + empty_room_estimate_year
+                                + ".dat",))
+                        crosstalk_file = str(Path(Path(__file__).parent.parent,
+                                "data",
+                                "cbu_specific_files/SSS/ct_sparse_"
+                                + empty_room_estimate_year
+                                + ".fif"))
+
+                        if not supress_excessive_plots_and_prompts:
+                            mne.viz.plot_head_positions(
+                                head_pos_data,
+                                mode="field",
+                                destination=raw_fif_data.info["dev_head_t"],
+                                info=raw_fif_data.info,
+                            )
+
+                        raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
+                            raw_fif_data,
+                            cross_talk=crosstalk_file,
+                            calibration=fine_cal_file,
+                            head_pos=head_pos_data,
+                            coord_frame="head",
+                            st_correlation=0.980,
+                            st_duration=10,
+                            destination=(0, 0, 0.04),
+                            # note that using extended_proj/eSSS makes no difference
+                            verbose=True,
+                        )
+
+                        fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                        fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
+
+                        raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt="short")
+
+
                 else:
-                    print("...assuming you want to continue without looking at the raw data.")
-
-                # Write back selected bad channels back to participant's config .yaml file
-                modify_param_config(
-                    config_path,
-                    "bad_channels",
-                    [str(item) for item in sorted(raw_fif_data.info["bads"])],
-                )
-
-                # Get the head positions
-                chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
-                chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
-                head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
-
-                print_with_color("   Removing CHPI ...", Fore.GREEN)
-
-                # Remove hpi & line
-                raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
-
-                print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
-
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
-
-                # note that EEG and MEG do not have the same frequencies, so we remove them seperately
-                meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
-                meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
-
-                if not meg_only:
-
-                    eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                    eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
-                    raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
-
-                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
-                psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
-                psd_checks_dir.mkdir(exist_ok=True)
-                fig.savefig(Path(psd_checks_dir,f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
-
-                if automatic_bad_channel_detection_requested:
-                    print_with_color("   ...automatic", Fore.GREEN)
-                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
-
-                # Apply SSS and movement compensation
-                print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
-
-                fine_cal_file = str(Path(Path(__file__).parent.parent,
-                        "data",
-                        "cbu_specific_files/SSS/sss_cal_"
-                        + empty_room_estimate_year
-                        + ".dat",))
-                crosstalk_file = str(Path(Path(__file__).parent.parent,
-                        "data",
-                        "cbu_specific_files/SSS/ct_sparse_"
-                        + empty_room_estimate_year
-                        + ".fif"))
-
-                if not supress_excessive_plots_and_prompts:
-                    mne.viz.plot_head_positions(
-                        head_pos_data,
-                        mode="field",
-                        destination=raw_fif_data.info["dev_head_t"],
-                        info=raw_fif_data.info,
+                    raw_fif_data = mne.io.Raw(
+                        Path(
+                            raw_emeg_path, participant, f"{participant}_run{run!s}_raw.fif"
+                        ),
+                        preload=True,
                     )
 
-                raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
-                    raw_fif_data,
-                    cross_talk=crosstalk_file,
-                    calibration=fine_cal_file,
-                    head_pos=head_pos_data,
-                    coord_frame="head",
-                    st_correlation=0.980,
-                    st_duration=10,
-                    destination=(0, 0, 0.04),
-                    # note that using extended_proj/eSSS makes no difference
-                    verbose=True,
-                )
+                    # Rename any channels that require it, and their type
+                    recording_config = load_config(config_path)
+                    ecg_and_eog_channel_name_and_type_overwrites = recording_config[
+                        "ECG_and_EOG_channel_name_and_type_overwrites"
+                    ]
 
-                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
-                fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
+                    # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
+                    ecg_and_eog_channel_type_overwrites = {}
+                    for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                        ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
+                    raw_fif_data.set_channel_types(
+                        ecg_and_eog_channel_type_overwrites, verbose=None
+                    )
 
-                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt="short")
+                    # Set EOG and ECG names for clarity
+                    ecg_and_eog_channel_name_overwrites = {}
+                    for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+                        ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
+                    raw_fif_data.rename_channels(
+                        ecg_and_eog_channel_name_overwrites, allow_duplicates=False
+                    )
+
+                    # Set bad channels (manually)
+                    print_with_color("   Setting bad channels...", Fore.GREEN)
+                    print_with_color("   ...manual", Fore.GREEN)
+
+                    raw_fif_data.info["bads"] = recording_config["bad_channels"]
+
+                    response = input_with_color(
+                        "Would you like to see the raw data? Recommended if you want to confirm"
+                        + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                        + " (y/n)",
+                        Fore.MAGENTA,
+                    )
+                    if response == "y":
+                        print("...Plotting Raw data.")
+                        mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
+                    else:
+                        print("...assuming you want to continue without looking at the raw data.")
+
+                    # Write back selected bad channels back to participant's config .yaml file
+                    modify_param_config(
+                        config_path,
+                        "bad_channels",
+                        [str(item) for item in sorted(raw_fif_data.info["bads"])],
+                    )
+
+                    # Get the head positions
+                    chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
+                    chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
+                    head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
+
+                    print_with_color("   Removing CHPI ...", Fore.GREEN)
+
+                    # Remove hpi & line
+                    raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
+
+                    print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
+
+                    raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+
+                    # note that EEG and MEG do not have the same frequencies, so we remove them seperately
+                    meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
+                    meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
+                    raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+                    if not meg_only:
+
+                        eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+                        eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+                        raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+
+                    fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                    psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
+                    psd_checks_dir.mkdir(exist_ok=True)
+                    fig.savefig(Path(psd_checks_dir,f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
+
+                    if automatic_bad_channel_detection_requested:
+                        print_with_color("   ...automatic", Fore.GREEN)
+                        raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
+
+                    # Apply SSS and movement compensation
+                    print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
+
+                    fine_cal_file = str(Path(Path(__file__).parent.parent,
+                            "data",
+                            "cbu_specific_files/SSS/sss_cal_"
+                            + empty_room_estimate_year
+                            + ".dat",))
+                    crosstalk_file = str(Path(Path(__file__).parent.parent,
+                            "data",
+                            "cbu_specific_files/SSS/ct_sparse_"
+                            + empty_room_estimate_year
+                            + ".fif"))
+
+                    if not supress_excessive_plots_and_prompts:
+                        mne.viz.plot_head_positions(
+                            head_pos_data,
+                            mode="field",
+                            destination=raw_fif_data.info["dev_head_t"],
+                            info=raw_fif_data.info,
+                        )
+
+                    raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
+                        raw_fif_data,
+                        cross_talk=crosstalk_file,
+                        calibration=fine_cal_file,
+                        head_pos=head_pos_data,
+                        coord_frame="head",
+                        st_correlation=0.980,
+                        st_duration=10,
+                        destination=(0, 0, 0.04),
+                        # note that using extended_proj/eSSS makes no difference
+                        verbose=True,
+                    )
+
+                    fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                    fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
+
+                    raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt="short")
 
 
 def run_second_pass_cleansing_and_eog_removal(
@@ -208,6 +353,8 @@ def run_second_pass_cleansing_and_eog_removal(
     data_root_dir: str,
     dataset_directory_name: str,
     n_runs: int,
+    n_reps: int,
+    tactile: bool,
     remove_ecg: bool,
     remove_veoh_and_heog: bool,
     skip_ica_if_previous_runs_exist: bool,
@@ -224,129 +371,258 @@ def run_second_pass_cleansing_and_eog_removal(
 
     for participant in list_of_participants:
         for run in range(1, n_runs + 1):
-            saved_cleaned_path = Path(
-                cleaned_dir, participant, "_run", str(run), "_cleaned_raw.fif.gz"
-            )
+            if tactile and n_reps > 1:
+                for rep in range(1, n_reps + 1):
+                    saved_cleaned_path = Path(
+                        cleaned_dir, participant, "_run", str(run), "_rep", str(rep), "_cleaned_raw.fif.gz"
+                    )
 
-            if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
-                print_with_color(
-                    f"Skipping second pass cleaning (ICA) for {participant} [Run {str(run)}]...",
-                    Fore.GREEN,
-                )
+                    if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
+                        print_with_color(
+                            f"Skipping second pass cleaning (ICA) for {participant} [Run {str(run)}]...",
+                            Fore.GREEN,
+                        )
+
+                    else:
+                        # Preprocessing Participant and run info
+                        print_with_color(
+                            f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN
+                        )
+
+                        # set filename. (Use .fif.gz extension to use gzip to compress)
+                        saved_maxfiltered_filename = (
+                            data_root_dir
+                            + dataset_directory_name
+                            + "/interim_preprocessing_files/1_maxfiltered/"
+                            + participant
+                            + "_run"
+                            + str(run)
+                            + "_rep"
+                            + str(rep)
+                            + "_raw_sss.fif"
+                        )
+
+                        # Load data
+                        print_with_color("   Loading Raw data...", Fore.GREEN)
+
+                        raw_fif_data_sss_movecomp_tr = mne.io.Raw(
+                            saved_maxfiltered_filename, preload=True
+                        )
+
+                        if not supress_excessive_plots_and_prompts:
+                            response = input_with_color(
+                                "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                                Fore.MAGENTA,
+                            )
+                            if response == "y":
+                                print("...Plotting Raw data.")
+                                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
+                            else:
+                                print(
+                                    "[y] not pressed. Assuming you want to continue without looking at the raw data."
+                                )
+
+                        # EEG channel interpolation
+                        print_with_color("   Interpolating EEG...", Fore.GREEN)
+
+                        print(
+                            "Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"])
+                        )
+
+                        # Channels marked as “bad” have been effectively repaired by SSS,
+                        # eliminating the need to perform MEG interpolation.
+
+                        raw_fif_data_sss_movecomp_tr = (
+                            raw_fif_data_sss_movecomp_tr.interpolate_bads(
+                                reset_bads=True, mode="accurate"
+                            )
+                        )
+
+                        # Use common average reference, not the nose reference.
+                        print_with_color("   Use common average EEG reference...", Fore.GREEN)
+
+                        if not meg_only:
+
+                            raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
+
+                        # remove very slow drift
+                        print_with_color("   Removing slow drift...", Fore.GREEN)
+                        raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
+                            l_freq=0.1, h_freq=None, picks=None
+                        )
+
+                        # Remove ECG, VEOH and HEOG
+
+                        if remove_ecg or remove_veoh_and_heog:
+                            # remove both frequencies faster than 40Hz and slow drift less than 1hz
+                            filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(
+                                l_freq=1.0, h_freq=40
+                            )
+
+                            ica = mne.preprocessing.ICA(
+                                n_components=30,
+                                method="fastica",
+                                max_iter="auto",
+                                random_state=97,
+                            )
+                            ica.fit(filt_raw)
+
+                            explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
+                            for channel_type, ratio in explained_var_ratio.items():
+                                print(
+                                    f"   Fraction of {channel_type} variance explained by all components: "
+                                    f"   {ratio}"
+                                )
+
+                            ica.exclude = []
+
+                            if supress_excessive_plots_and_prompts:
+                                _remove_ecg_eog(filt_raw, ica)
+
+                            else:
+                                if remove_ecg:
+                                    _remove_ecg(filt_raw, ica)
+
+                                if remove_veoh_and_heog:
+                                    _remove_veoh_and_heog(filt_raw, ica)
+
+                            ica.apply(raw_fif_data_sss_movecomp_tr)
+
+                            if not supress_excessive_plots_and_prompts:
+                                mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+
+                        raw_fif_data_sss_movecomp_tr.save(
+                            Path(
+                                cleaned_dir,
+                                participant + "_run" + str(run) + "_rep" + str(rep) + "_cleaned_raw.fif.gz",
+                            ),
+                            overwrite=True,
+                        )
 
             else:
-                # Preprocessing Participant and run info
-                print_with_color(
-                    f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN
+                saved_cleaned_path = Path(
+                    cleaned_dir, participant, "_run", str(run), "_cleaned_raw.fif.gz"
                 )
 
-                # set filename. (Use .fif.gz extension to use gzip to compress)
-                saved_maxfiltered_filename = (
-                    data_root_dir
-                    + dataset_directory_name
-                    + "/interim_preprocessing_files/1_maxfiltered/"
-                    + participant
-                    + "_run"
-                    + str(run)
-                    + "_raw_sss.fif"
-                )
-
-                # Load data
-                print_with_color("   Loading Raw data...", Fore.GREEN)
-
-                raw_fif_data_sss_movecomp_tr = mne.io.Raw(
-                    saved_maxfiltered_filename, preload=True
-                )
-
-                if not supress_excessive_plots_and_prompts:
-                    response = input_with_color(
-                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
-                        Fore.MAGENTA,
-                    )
-                    if response == "y":
-                        print("...Plotting Raw data.")
-                        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
-                    else:
-                        print(
-                            "[y] not pressed. Assuming you want to continue without looking at the raw data."
-                        )
-
-                # EEG channel interpolation
-                print_with_color("   Interpolating EEG...", Fore.GREEN)
-
-                print(
-                    "Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"])
-                )
-
-                # Channels marked as “bad” have been effectively repaired by SSS,
-                # eliminating the need to perform MEG interpolation.
-
-                raw_fif_data_sss_movecomp_tr = (
-                    raw_fif_data_sss_movecomp_tr.interpolate_bads(
-                        reset_bads=True, mode="accurate"
-                    )
-                )
-
-                # Use common average reference, not the nose reference.
-                print_with_color("   Use common average EEG reference...", Fore.GREEN)
-
-                if not meg_only:
-
-                    raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
-
-                # remove very slow drift
-                print_with_color("   Removing slow drift...", Fore.GREEN)
-                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
-                    l_freq=0.1, h_freq=None, picks=None
-                )
-
-                # Remove ECG, VEOH and HEOG
-
-                if remove_ecg or remove_veoh_and_heog:
-                    # remove both frequencies faster than 40Hz and slow drift less than 1hz
-                    filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(
-                        l_freq=1.0, h_freq=40
+                if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
+                    print_with_color(
+                        f"Skipping second pass cleaning (ICA) for {participant} [Run {str(run)}]...",
+                        Fore.GREEN,
                     )
 
-                    ica = mne.preprocessing.ICA(
-                        n_components=30,
-                        method="fastica",
-                        max_iter="auto",
-                        random_state=97,
+                else:
+                    # Preprocessing Participant and run info
+                    print_with_color(
+                        f"Loading participant {participant} [Run {str(run)}]...", Fore.GREEN
                     )
-                    ica.fit(filt_raw)
 
-                    explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
-                    for channel_type, ratio in explained_var_ratio.items():
-                        print(
-                            f"   Fraction of {channel_type} variance explained by all components: "
-                            f"   {ratio}"
-                        )
+                    # set filename. (Use .fif.gz extension to use gzip to compress)
+                    saved_maxfiltered_filename = (
+                        data_root_dir
+                        + dataset_directory_name
+                        + "/interim_preprocessing_files/1_maxfiltered/"
+                        + participant
+                        + "_run"
+                        + str(run)
+                        + "_raw_sss.fif"
+                    )
 
-                    ica.exclude = []
+                    # Load data
+                    print_with_color("   Loading Raw data...", Fore.GREEN)
 
-                    if supress_excessive_plots_and_prompts:
-                        _remove_ecg_eog(filt_raw, ica)
-
-                    else:
-                        if remove_ecg:
-                            _remove_ecg(filt_raw, ica)
-
-                        if remove_veoh_and_heog:
-                            _remove_veoh_and_heog(filt_raw, ica)
-
-                    ica.apply(raw_fif_data_sss_movecomp_tr)
+                    raw_fif_data_sss_movecomp_tr = mne.io.Raw(
+                        saved_maxfiltered_filename, preload=True
+                    )
 
                     if not supress_excessive_plots_and_prompts:
-                        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+                        response = input_with_color(
+                            "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                            Fore.MAGENTA,
+                        )
+                        if response == "y":
+                            print("...Plotting Raw data.")
+                            mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
+                        else:
+                            print(
+                                "[y] not pressed. Assuming you want to continue without looking at the raw data."
+                            )
 
-                raw_fif_data_sss_movecomp_tr.save(
-                    Path(
-                        cleaned_dir,
-                        participant + "_run" + str(run) + "_cleaned_raw.fif.gz",
-                    ),
-                    overwrite=True,
-                )
+                    # EEG channel interpolation
+                    print_with_color("   Interpolating EEG...", Fore.GREEN)
+
+                    print(
+                        "Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"])
+                    )
+
+                    # Channels marked as “bad” have been effectively repaired by SSS,
+                    # eliminating the need to perform MEG interpolation.
+
+                    raw_fif_data_sss_movecomp_tr = (
+                        raw_fif_data_sss_movecomp_tr.interpolate_bads(
+                            reset_bads=True, mode="accurate"
+                        )
+                    )
+
+                    # Use common average reference, not the nose reference.
+                    print_with_color("   Use common average EEG reference...", Fore.GREEN)
+
+                    if not meg_only:
+
+                        raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
+
+                    # remove very slow drift
+                    print_with_color("   Removing slow drift...", Fore.GREEN)
+                    raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
+                        l_freq=0.1, h_freq=None, picks=None
+                    )
+
+                    # Remove ECG, VEOH and HEOG
+
+                    if remove_ecg or remove_veoh_and_heog:
+                        # remove both frequencies faster than 40Hz and slow drift less than 1hz
+                        filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(
+                            l_freq=1.0, h_freq=40
+                        )
+
+                        ica = mne.preprocessing.ICA(
+                            n_components=30,
+                            method="fastica",
+                            max_iter="auto",
+                            random_state=97,
+                        )
+                        ica.fit(filt_raw)
+
+                        explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
+                        for channel_type, ratio in explained_var_ratio.items():
+                            print(
+                                f"   Fraction of {channel_type} variance explained by all components: "
+                                f"   {ratio}"
+                            )
+
+                        ica.exclude = []
+
+                        if supress_excessive_plots_and_prompts:
+                            _remove_ecg_eog(filt_raw, ica)
+
+                        else:
+                            if remove_ecg:
+                                _remove_ecg(filt_raw, ica)
+
+                            if remove_veoh_and_heog:
+                                _remove_veoh_and_heog(filt_raw, ica)
+
+                        ica.apply(raw_fif_data_sss_movecomp_tr)
+
+                        if not supress_excessive_plots_and_prompts:
+                            mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
+
+                    raw_fif_data_sss_movecomp_tr.save(
+                        Path(
+                            cleaned_dir,
+                            participant + "_run" + str(run) + "_cleaned_raw.fif.gz",
+                        ),
+                        overwrite=True,
+                    )       
 
 
 def _remove_veoh_and_heog(filt_raw, ica):

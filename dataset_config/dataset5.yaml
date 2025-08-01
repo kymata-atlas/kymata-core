@@ -8,19 +8,20 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 participants: [
-                'pilot_01',
-                'pilot_02',
-                'participant_01',
-                'participant_02',
-                'participant_03',
-                'participant_04',
-                'participant_05',
-                'participant_06',
-                'participant_07',
+                # 'pilot_01',
+                # 'pilot_02',
+                # 'participant_01',
+                # 'participant_02',
+                # 'participant_03',
+                # 'participant_04',
+                # 'participant_05',
+                # 'participant_06',
+                # 'participant_07',
                 # 'participant_08',
-                'participant_09',
+                # 'participant_09',
                 # 'participant_10',
-                # 'participant_11',
+                'participant_11',
+                # 'participant_11b',
                 # 'participant_12',
                 # 'participant_13',
                 # 'participant_14',
@@ -31,7 +32,7 @@ participants: [
                 # 'participant_19'
               ]
 number_of_runs: 5                    # number of runs (think about how runs can be different for each participant)
-repetitions_per_runs: 1              # number of repetitions per run
+repetitions_per_runs: 2              # number of repetitions per run
 stimulus_length: 660                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
