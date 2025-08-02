@@ -227,9 +227,9 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             Path(
                 data_root_dir,
                 dataset_directory_name,
-                "raw_emeg",
-                participant,
-                participant + "_run1_raw.fif",
+                "interim_preprocessing_files",
+                "1_maxfiltered",
+                participant + "_run1_raw_sss.fif",
             ),  # note this file is only used for the sensor positions.
             trans=Path(coregistration_dir, participant + "-trans.fif"),
             src=Path(src_dir, participant + "_ico5-src.fif"),
