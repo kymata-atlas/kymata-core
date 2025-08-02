@@ -316,8 +316,13 @@ def main():
         all_es = None
 
         for i in range(1, run_num + 1):
-            
-            emeg_filenames = [p + f"_run{i}" for p in participants]
+
+            num_reps = dataset_config.get('repetitions_per_runs', 1)
+
+            if num_reps > 1:
+                emeg_filenames = [p + f"_run{i}_rep{j}" for p in participants for j in range(1, num_reps + 1)]
+            else:
+                emeg_filenames = [p + f"_run{i}" for p in participants]
 
             start = time.time()
 

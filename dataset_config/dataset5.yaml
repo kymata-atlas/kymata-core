@@ -21,7 +21,7 @@ participants: [
                 # 'participant_09',
                 # 'participant_10',
                 'participant_11',
-                # 'participant_11b',
+                'participant_11b',
                 # 'participant_12',
                 # 'participant_13',
                 # 'participant_14',
@@ -33,7 +33,7 @@ participants: [
               ]
 number_of_runs: 5                    # number of runs (think about how runs can be different for each participant)
 repetitions_per_runs: 2              # number of repetitions per run
-stimulus_length: 660                 # seconds
+stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
 meg_only: True

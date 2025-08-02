@@ -1,8 +1,10 @@
 from logging import getLogger
-from os import path
+from os import path, environ
 from pathlib import Path
 import numpy as np
 import nibabel as nib
+import subprocess
+import tempfile
 
 import mne
 import mne.bem
@@ -12,11 +14,74 @@ from scipy.sparse import csr_matrix
 _logger = getLogger(__file__)
 
 
+def setup_freesurfer_environment():
+    """
+    Set up FreeSurfer environment variables if not already set.
+    """
+    freesurfer_home = '/imaging/local/software/freesurfer/6.0.0/x86_64'
+    if not Path(freesurfer_home).exists():
+        raise RuntimeError(f"FreeSurfer not found at expected path: {freesurfer_home}")
+    
+    if 'FREESURFER_HOME' not in environ:
+        _logger.info(f"Setting up FreeSurfer environment at {freesurfer_home}")
+        _setup_freesurfer_manually(freesurfer_home)
+    else:
+        _logger.info(f"FREESURFER_HOME already set to {environ['FREESURFER_HOME']}")
+        # Even if FREESURFER_HOME is set, make sure PATH is properly configured
+        fsfast_bin = freesurfer_home + '/fsfast/bin'
+        if fsfast_bin not in environ.get('PATH', ''):
+            _logger.info("Updating PATH to include FreeSurfer directories")
+            _setup_freesurfer_manually(freesurfer_home)
+
+
+def _setup_freesurfer_manually(freesurfer_home):
+    """
+    Manually set up FreeSurfer environment variables as fallback.
+    """
+    _logger.info("Setting up FreeSurfer environment manually")
+    
+    # Set other FreeSurfer environment variables
+    environ['SUBJECTS_DIR'] = environ.get('SUBJECTS_DIR', '')
+    environ['FUNCTIONALS_DIR'] = environ.get('FUNCTIONALS_DIR', freesurfer_home + '/sessions')
+    
+    # Set additional FreeSurfer environment variables that are typically set by SetUpFreeSurfer.sh
+    environ['FREESURFER_HOME'] = freesurfer_home
+    environ['FSFAST_HOME'] = freesurfer_home + '/fsfast'
+    environ['FSF_OUTPUT_FORMAT'] = 'nii.gz'
+    environ['MNI_DIR'] = freesurfer_home + '/mni'
+    environ['LOCAL_DIR'] = freesurfer_home + '/local'
+    environ['MINC_BIN_DIR'] = freesurfer_home + '/mni/bin'
+    environ['MINC_LIB_DIR'] = freesurfer_home + '/mni/lib'
+    environ['MNI_DATAPATH'] = freesurfer_home + '/mni/data'
+    environ['FMRI_ANALYSIS_DIR'] = freesurfer_home + '/fsfast'
+    environ['PERL5LIB'] = freesurfer_home + '/mni/lib/perl5/5.8.5'
+    environ['MNI_PERL5LIB'] = freesurfer_home + '/mni/lib/perl5/5.8.5'
+    
+    # Add additional paths to PATH for FreeSurfer tools
+    additional_paths = [
+        freesurfer_home + '/bin',
+        freesurfer_home + '/fsfast/bin',  # This is crucial for getpwdcmd
+        freesurfer_home + '/tktools',
+        freesurfer_home + '/mni/bin'
+    ]
+    
+    current_path = environ.get('PATH', '')
+    for path_to_add in additional_paths:
+        if path_to_add not in current_path:
+            current_path = path_to_add + ':' + current_path
+    environ['PATH'] = current_path
+    
+    _logger.info(f"Added FreeSurfer paths to PATH: {additional_paths}")
+
+
 def create_current_estimation_prerequisites(data_root_dir, config: dict):
     """
     Copy the structurals to the local Kymata folder,
     create the surfaces, the boundary element model solutions, and the source space
     """
+    
+    # Setup FreeSurfer environment before any FreeSurfer operations
+    setup_freesurfer_environment()
 
     list_of_participants = config["participants"]
     dataset_directory_name = config["dataset_directory_name"]
@@ -238,28 +303,52 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # Compute forward solution
     for participant in list_of_participants:
-        fwd = mne.make_forward_solution(
-            Path(
-                data_root_dir,
-                dataset_directory_name,
-                "raw_emeg",
-                participant,
-                participant + "_run1_raw.fif",
-            ),  # note this file is only used for the sensor positions.
-            trans=Path(coregistration_dir, participant + "-trans.fif"),
-            src=Path(src_dir, participant + "_ico5-src.fif"),
-            bem=Path(
-                mri_structurals_directory,
-                participant,
-                "bem",
-                participant + "-5120-5120-5120-bem-sol.fif",
-            ),
-            meg=config["meg"],
-            eeg=config["eeg"],
-            mindist=5.0,
-            n_jobs=None,
-            verbose=True,
-        )
+        try:
+            fwd = mne.make_forward_solution(
+                Path(
+                    data_root_dir,
+                    dataset_directory_name,
+                    "raw_emeg",
+                    participant,
+                    participant + "_run1_raw.fif",
+                ),  # note this file is only used for the sensor positions.
+                trans=Path(coregistration_dir, participant + "-trans.fif"),
+                src=Path(src_dir, participant + "_ico5-src.fif"),
+                bem=Path(
+                    mri_structurals_directory,
+                    participant,
+                    "bem",
+                    participant + "-5120-5120-5120-bem-sol.fif",
+                ),
+                meg=config["meg"],
+                eeg=config["eeg"],
+                mindist=5.0,
+                n_jobs=None,
+                verbose=True,
+            )
+        except:
+            fwd = mne.make_forward_solution(
+                Path(
+                    data_root_dir,
+                    dataset_directory_name,
+                    "raw_emeg",
+                    participant,
+                    participant + "_run1_rep1_raw.fif",
+                ),  # note this file is only used for the sensor positions.
+                trans=Path(coregistration_dir, participant + "-trans.fif"),
+                src=Path(src_dir, participant + "_ico5-src.fif"),
+                bem=Path(
+                    mri_structurals_directory,
+                    participant,
+                    "bem",
+                    participant + "-5120-5120-5120-bem-sol.fif",
+                ),
+                meg=config["meg"],
+                eeg=config["eeg"],
+                mindist=5.0,
+                n_jobs=None,
+                verbose=True,
+            )
         print(fwd)
 
         # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
@@ -333,14 +422,24 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             )
 
         # note this file is only used for the sensor positions.
-        raw = mne.io.Raw(
-            Path(
-                Path(path.abspath("")),
-                interim_preprocessing_directory,
-                "2_cleaned",
-                participant + "_run1_cleaned_raw.fif.gz",
+        try:
+            raw = mne.io.Raw(
+                Path(
+                    Path(path.abspath("")),
+                    interim_preprocessing_directory,
+                    "2_cleaned",
+                    participant + "_run1_cleaned_raw.fif.gz",
+                )
             )
-        )
+        except:
+            raw = mne.io.Raw(
+                Path(
+                    Path(path.abspath("")),
+                    interim_preprocessing_directory,
+                    "2_cleaned",
+                    participant + "_run1_rep1_cleaned_raw.fif.gz",
+                )
+            )
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
             raw.info,  # note this file is only used for the sensor positions.
@@ -377,6 +476,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         )
                     ),
                     inverse_operator,
+                    overwrite=True,
                 )
             else:
                 mne.minimum_norm.write_inverse_operator(
@@ -391,6 +491,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                         )
                     ),
                     inverse_operator,
+                    overwrite=True,
                 )
         elif config["eeg"]:
             mne.minimum_norm.write_inverse_operator(

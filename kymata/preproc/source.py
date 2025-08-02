@@ -438,6 +438,8 @@ def _strip_ave(name: str) -> str:
         return name[:-4]
     elif any(name.endswith(f"_run{i}") for i in range(1, 9)):
         return name[:-5]
+    elif any(name.endswith(f"_rep{i}") for i in range(1, 9)):
+        return name[:-10]
     else:
         return name
 

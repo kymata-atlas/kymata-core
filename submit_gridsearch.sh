@@ -27,11 +27,11 @@ python kymata/invokers/run_gridsearch.py \
   --transform-name LHSquareVib LHslowfluct RHSquareVib RHslowfluct  \
   --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/pilot_01-02_part_01-07_09/der_5' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/pilot_01-02_part_01-07_09/der_5' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/participant_11_11b' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/participant_11_11b' \
   --overwrite \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom1-inv.fif' \
   --morph \
-  --n-derangements 5 \
-  --n-splits 600
+  --n-derangements 6 \
+  --n-splits 400
