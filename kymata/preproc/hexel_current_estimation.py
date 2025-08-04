@@ -167,10 +167,12 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
             )
         )
 
-    # co-register data (make sure the MEG and EEG is aligned to the head)
+    # co-register data (make sure the MEG and EEG is aligned to the head
     # this will save a trans .fif file
     # for participant in list_of_participants:
     #    mne.gui.coregistration(subject=participant, subjects_dir=mri_structurals_directory, block=True)
+    # - note that either the original raw file or the maxfiltered version can be used for the digitisation
+    # positions - it is the digitisation that is needed to work out the head-to-fmri relationship.
 
     ### #Computing the actual BEM solution
     for participant in list_of_participants:
