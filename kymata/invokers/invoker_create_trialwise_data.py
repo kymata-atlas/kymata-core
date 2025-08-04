@@ -4,7 +4,7 @@ from pathlib import Path
 
 from kymata.io.config import load_config, get_root_dir
 from kymata.io.logging import log_message, date_format
-from kymata.preproc.data_cleansing import create_trialwise_data
+from kymata.preproc.data_cleansing import create_trialwise_data_yi
 
 
 def main(config_filename: str):
@@ -12,15 +12,16 @@ def main(config_filename: str):
         str(Path(Path(__file__).parent.parent.parent, "dataset_config", config_filename))
     )
 
-    create_trialwise_data(
-        data_root_dir=get_root_dir(config),
-        dataset_directory_name=config["dataset_directory_name"],
-        list_of_participants=config["participants"],
-        repetitions_per_runs=config["repetitions_per_runs"],
-        stimulus_length=config["stimulus_length"],
-        number_of_runs=config["number_of_runs"],
-        latency_range=config["latency_range"],
-    )
+    for i in range(1, 1 + config["section"]):
+        create_trialwise_data_yi(
+            data_root_dir=get_root_dir(config),
+            dataset_directory_name=config["dataset_directory_name"],
+            list_of_participants=config["participants"],
+            repetitions_per_runs=config["repetitions_per_runs"],
+            stimulus_length=config["stimulus_length"],
+            latency_range=config["latency_range"],
+            section = i,
+        )
 
 
 if __name__ == "__main__":

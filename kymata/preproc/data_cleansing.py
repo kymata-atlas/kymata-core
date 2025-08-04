@@ -752,6 +752,108 @@ def create_trialwise_data(
 
         evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
+def create_trialwise_data_yi(
+    data_root_dir: PathType,
+    dataset_directory_name: str,
+    list_of_participants: list[str],
+    repetitions_per_runs: int,
+    stimulus_length: int,  # seconds
+    latency_range: tuple[float, float],  # seconds
+    section: str,
+):
+    """Create trials objects from the raw data files (still in sensor space)"""
+
+    cleaned_dir = Path('/imaging/woolgar/projects/Yi/listen_imagine_speak/data/intermediate/a_2_band_pass_filter')
+    trialwise_sensorspace_dir = Path('/imaging/woolgar/projects/Tianyi/listen_imagine_speak/interim_preprocessing_files/3_trialwise_sensorspace')
+    trialwise_sensorspace_dir.mkdir(exist_ok=True)
+
+    evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
+    evoked_path.mkdir(exist_ok=True)
+
+    logs_path = Path(trialwise_sensorspace_dir, "logs")
+    logs_path.mkdir(exist_ok=True)
+
+    print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
+
+    for p in list_of_participants:
+  
+        raw_path = Path(cleaned_dir, p, f"block{section}.fif")
+        print(f"Loading {raw_path}...")
+        if os.path.isfile(raw_path):
+            raw = mne.io.Raw(raw_path, preload=True)
+
+        raw_events = mne.find_events(
+            raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
+        )
+        if p in ['P02', 'P03']:
+            repetition_events = mne.pick_events(raw_events, include=[10+section])
+        else:
+            repetition_events = mne.pick_events(raw_events, include=[2+10*section])
+        # import ipdb;ipdb.set_trace()
+
+        assert len(repetition_events) == 1
+
+        # Denote picks
+        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        picks: NDArray = mne.pick_types(
+            raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+        )
+        _logger.info(
+            f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
+        )
+
+        print(
+            f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
+        )
+
+        # Extract trial instances ('epochs')
+
+        if p in ['P02', 'P03']:
+
+            _tmin = latency_range[0] + 0.013
+            _tmax = (
+                stimulus_length
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2 + 0.013
+            )
+
+        else:
+
+            _tmin = latency_range[0] - 0.006
+            _tmax = (
+                stimulus_length
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2 - 0.006
+            )          
+
+        epochs = mne.Epochs(
+            raw,
+            repetition_events,
+            None,
+            _tmin,
+            _tmax,
+            picks=picks,
+            baseline=(None, None),
+            preload=True,
+        )
+        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+        # Log which channels are worst
+        dropfig = epochs.plot_drop_log(subject=p)
+        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+
+        # Average over repetitions
+        evoked = epochs.average()
+        _logger.info(
+            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+        )
+
+        evoked.save(Path(evoked_path, f"{p}_{section}-ave.fif"), overwrite=True)
+
 
 def apply_automatic_bad_channel_detection(
     raw_fif_data: mne.io.Raw, machine_used: str, plot: bool = True

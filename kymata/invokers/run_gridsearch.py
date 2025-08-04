@@ -113,8 +113,9 @@ def main():
 
     # Config defaults
     participants = dataset_config.get("participants")
+    section = dataset_config.get("section")
     base_dir = Path(
-        "/imaging/projects/cbu/kymata/data/",
+        "/imaging/woolgar/projects/Tianyi/",
         dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
     )
     inverse_operator_dir = dataset_config.get("inverse_operator")
@@ -142,7 +143,7 @@ def main():
             print("Concatenating repetitions together")
             emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
     else:
-        emeg_filenames = [p + "-ave" for p in participants]
+        emeg_filenames = [p + f'_{section}' + "-ave" for p in participants]
 
     start = time.time()
 

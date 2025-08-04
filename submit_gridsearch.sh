@@ -21,9 +21,9 @@ export PATH="$HOME/.local/bin:$PATH"
 cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
-  --config dataset4.yaml \
+  --config listen_imagine_speak.yaml \
   --input-stream auditory \
-  --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
+  --transform-path 'predicted_function_contours/stimulisig' \
   --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
   --plot-top-channels \
   --overwrite
