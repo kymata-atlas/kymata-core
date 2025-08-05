@@ -303,14 +303,19 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
 
     # Compute forward solution
     for participant in list_of_participants:
+        if '_emeg' in participant:
+            participant = participant.replace('_emeg', '')
+            emeg = True
+        else:
+            emeg = False
         try:
             fwd = mne.make_forward_solution(
                 Path(
                     data_root_dir,
                     dataset_directory_name,
-                    "raw_emeg",
-                    participant,
-                    participant + "_run1_raw.fif",
+                    "interim_preprocessing_files",
+                    "1_maxfiltered",
+                    participant + "_run1_raw_sss.fif",
                 ),  # note this file is only used for the sensor positions.
                 trans=Path(coregistration_dir, participant + "-trans.fif"),
                 src=Path(src_dir, participant + "_ico5-src.fif"),
@@ -331,9 +336,9 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 Path(
                     data_root_dir,
                     dataset_directory_name,
-                    "raw_emeg",
-                    participant,
-                    participant + "_run1_rep1_raw.fif",
+                    "interim_preprocessing_files",
+                    "1_maxfiltered",
+                    participant + "_run1_rep1_raw_sss.fif",
                 ),  # note this file is only used for the sensor positions.
                 trans=Path(coregistration_dir, participant + "-trans.fif"),
                 src=Path(src_dir, participant + "_ico5-src.fif"),
@@ -360,6 +365,10 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
             hemi="both",
         )
         fwd = mne.forward.restrict_forward_to_label(fwd, labels)
+
+        if emeg:
+
+            participant = participant + '_emeg'
 
         if config["meg"] and config["eeg"]:
             mne.write_forward_solution(
@@ -432,14 +441,24 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 )
             )
         except:
-            raw = mne.io.Raw(
-                Path(
-                    Path(path.abspath("")),
-                    interim_preprocessing_directory,
-                    "2_cleaned",
-                    participant + "_run1_rep1_cleaned_raw.fif.gz",
+            try:
+                raw = mne.io.Raw(
+                    Path(
+                        Path(path.abspath("")),
+                        interim_preprocessing_directory,
+                        "2_cleaned",
+                        participant + "_run1_rep1_cleaned_raw.fif.gz",
+                    )
                 )
-            )
+            except:
+                raw = mne.io.Raw(
+                    Path(
+                        Path(path.abspath("")),
+                        interim_preprocessing_directory,
+                        "2_cleaned",
+                        participant.replace('_emeg', '') + "_run1_rep1_cleaned_raw.fif.gz",
+                    )
+                )                
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
             raw.info,  # note this file is only used for the sensor positions.
@@ -728,7 +747,7 @@ def create_hexel_morph_maps(data_root_dir, config: dict):
 
             morph = mne.compute_source_morph(
                 src_from,
-                subject_from=participant,
+                subject_from=participant.replace('_emeg', ''),
                 subject_to="fsaverage",
                 src_to=src_to,
                 subjects_dir=mri_structurals_directory,

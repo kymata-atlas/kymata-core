@@ -38,6 +38,9 @@ def premorph_inverse_operator(
         inverse_operator_path, verbose=False
     )
     _validate_type(evoked, Evoked, "evoked")
+    # Set the reference to average if not already done
+    if evoked.info.get('custom_ref_applied', False) is not True and 'eeg' in evoked:
+        evoked.set_eeg_reference('average', projection=True, verbose=False)
     _check_reference(evoked, inverse_operator["info"]["ch_names"])
     _check_option("method", method, INVERSE_METHODS)
     _check_ori(pick_ori, inverse_operator["source_ori"], inverse_operator["src"])

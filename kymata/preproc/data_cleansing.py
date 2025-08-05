@@ -747,17 +747,32 @@ def estimate_noise_cov(
                 raw_fname = Path(cleaned_dir, p + "_run1" + "_cleaned_raw.fif.gz")
                 raw = mne.io.Raw(raw_fname, preload=True)
             except:
-                raw_fname = Path(cleaned_dir, p + "_run1" + "_rep1" + "_cleaned_raw.fif.gz")
-                raw = mne.io.Raw(raw_fname, preload=True)               
-            emptyroom_fname = (
+                if '_emeg' in p:
+                    raw_fname = Path(cleaned_dir, p.replace('_emeg', '') + "_run1" + "_cleaned_raw.fif.gz")
+                    raw = mne.io.Raw(raw_fname, preload=True)
+                else:
+                    raw_fname = Path(cleaned_dir, p + "_run1" + "_rep1" + "_cleaned_raw.fif.gz")
+                    raw = mne.io.Raw(raw_fname, preload=True)
+            if '_emeg' in p:     
+                emptyroom_fname = (
                 data_root_dir
                 + dataset_directory_name
                 + "/raw_emeg/"
-                + p
+                + p.replace('_emeg', '')  # Remove '_emeg' from participant name
                 + "/"
-                + p
+                + p.replace('_emeg', '')  # Remove '_emeg' from participant name
                 + "_empty_room_raw.fif"
-            )
+                )    
+            else:    
+                emptyroom_fname = (
+                    data_root_dir
+                    + dataset_directory_name
+                    + "/raw_emeg/"
+                    + p
+                    + "/"
+                    + p
+                    + "_empty_room_raw.fif"
+                )
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(
                 emptyroom_raw, raw=raw
@@ -836,23 +851,40 @@ def estimate_noise_cov(
             # First calculate the covariance for EEG using grandave
             cleaned_raws = []
             for run in range(1, n_runs + 1):
-                raw_fname = Path(
-                    cleaned_dir, p + "_run" + str(run) + "_cleaned_raw.fif.gz"
-                )
+                if '_emeg' in p:
+                    raw_fname = Path(
+                        cleaned_dir, p.replace('_emeg', '') + "_run" + str(run) + '_rep1' + "_cleaned_raw.fif.gz"
+                    )
+                else:
+                    raw_fname = Path(
+                        cleaned_dir, p + "_run" + str(run) + "_cleaned_raw.fif.gz"
+                    )
                 raw = mne.io.Raw(raw_fname, preload=True)
-                raw_cropped = raw.crop(tmin=0, tmax=800)
-                cleaned_raws.append(raw_cropped)
+                try:
+                    raw_cropped = raw.crop(tmin=0, tmax=800)
+                    cleaned_raws.append(raw_cropped)
+                except:
+                    raw_cropped = raw.crop(tmin=0, tmax=400)
+                    cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
-            raw_epoch = mne.make_fixed_length_epochs(
-                raw_combined, duration=800, preload=True, reject_by_annotation=False
-            )
+            try:
+                raw_epoch = mne.make_fixed_length_epochs(
+                    raw_combined, duration=800, preload=True, reject_by_annotation=False
+                )
+            except:
+                raw_epoch = mne.make_fixed_length_epochs(
+                    raw_combined, duration=400, preload=True, reject_by_annotation=False
+                )
             cov_eeg = mne.compute_covariance(
                 raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True
             )
             del cleaned_raws, raw_combined, raw_epoch
 
             # Now calcualte the covariance for MEG using emptyroom
-            emptyroom_fname = Path(emeg_dir, p, p + "_empty_room_raw.fif")
+            if '_emeg' in p:
+                emptyroom_fname = Path(emeg_dir, p.replace('_emeg', ''), p.replace('_emeg', '') + "_empty_room_raw.fif")
+            else:
+                emptyroom_fname = Path(emeg_dir, p, p + "_empty_room_raw.fif")
             emptyroom_raw = mne.io.Raw(emptyroom_fname, preload=True)
             emptyroom_raw = mne.preprocessing.maxwell_filter_prepare_emptyroom(
                 emptyroom_raw, raw=raw
@@ -964,12 +996,16 @@ def create_trialwise_data(
 
             print("Processing tactile data...")
 
+            if p == 'participant_11b_emeg':
+
+                p = 'participant_11b'
+
             for run in range(1, number_of_runs + 1):
                     
                 if repetitions_per_runs == 1:
                     
                     raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
-                    if Path(evoked_path, f"{p}_run{run}.fif").exists():
+                    if Path(evoked_path, f"{p}_run{run}.fif").exists() and meg_only:
                         print(f"Skipping {raw_path} as it already exists.")
                         continue
                     print(f"Loading {raw_path}...")
@@ -1033,14 +1069,17 @@ def create_trialwise_data(
                     _logger.info(
                         f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
                     )
-                    evoked.save(Path(evoked_path, f"{p}_run{run}.fif"), overwrite=True)
-                
+                    if meg_only:
+                        evoked.save(Path(evoked_path, f"{p}_run{run}.fif"), overwrite=True)
+                    else:
+                        evoked.save(Path(evoked_path, f"{p}_emeg_run{run}.fif"), overwrite=True)
+
                 else:
 
                     for rep in range(1, repetitions_per_runs + 1):
 
                         raw_path = Path(cleaned_dir, f"{p}_run{run}_rep{rep}_cleaned_raw.fif.gz")
-                        if Path(evoked_path, f"{p}_run{run}_rep{rep}.fif").exists():
+                        if Path(evoked_path, f"{p}_run{run}.fif").exists() and meg_only:
                             print(f"Skipping {raw_path} as it already exists.")
                             continue
                         print(f"Loading {raw_path}...")
@@ -1104,7 +1143,10 @@ def create_trialwise_data(
                         _logger.info(
                             f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
                         )
-                        evoked.save(Path(evoked_path, f"{p}_run{run}_rep{rep}.fif"), overwrite=True)
+                        if meg_only:
+                            evoked.save(Path(evoked_path, f"{p}_run{run}_rep{rep}.fif"), overwrite=True)
+                        else:
+                            evoked.save(Path(evoked_path, f"{p}_emeg_run{run}_rep{rep}.fif"), overwrite=True)
 
         else:
 

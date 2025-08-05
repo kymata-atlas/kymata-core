@@ -22,6 +22,7 @@ participants: [
                 # 'participant_10',
                 'participant_11',
                 'participant_11b',
+                # 'participant_11b_emeg',
                 # 'participant_12',
                 # 'participant_13',
                 # 'participant_14',
@@ -36,7 +37,7 @@ repetitions_per_runs: 2              # number of repetitions per run
 stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
-meg_only: True
+meg_only: False
 
 # Preprocessing pipeline
 meg_manufacturer: 'MEGIN'
