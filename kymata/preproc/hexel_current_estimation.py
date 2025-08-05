@@ -232,7 +232,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 "interim_preprocessing_files",
                 "1_maxfiltered",
                 participant + "_run1_raw_sss.fif",
-            ),  # note this file is only used for the sensor positions.
+            ), 
             trans=Path(coregistration_dir, participant + "-trans.fif"),
             src=Path(src_dir, participant + "_ico5-src.fif"),
             bem=Path(
@@ -319,7 +319,6 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
                 )
             )
 
-        # note this file is only used for the sensor positions.
         raw = mne.io.Raw(
             Path(
                 Path(path.abspath("")),
@@ -330,7 +329,7 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
         )
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
-            raw.info,  # note this file is only used for the sensor positions.
+            raw.info,
             fwd,
             noise_cov,
             loose=0.2,
