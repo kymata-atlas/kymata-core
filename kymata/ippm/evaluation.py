@@ -45,7 +45,7 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
             continue
 
         # If there aren't any points for this transform it can't cause a causality violation
-        if len(points_by_transform[transform]) == 0:
+        if transform not in points_by_transform.keys() or len(points_by_transform[transform]) == 0:
             continue
 
         earliest_latency_this_trans = _point_with_min_latency(points_by_transform[transform])
@@ -56,8 +56,12 @@ def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
             if upstream in ippm.candidate_transform_list.inputs:
                 latest_latency_upstream = 0
             else:
-                upstream_points = points_by_transform[upstream]
-                if len(upstream_points) == 0:
+                try:
+                    upstream_points = points_by_transform[upstream]
+                    if len(upstream_points) == 0:
+                        continue
+                # If the upstream function has no points, it can't cause a causality violation
+                except KeyError:
                     continue
                 latest_latency_upstream = _point_with_max_latency(upstream_points).latency
 
