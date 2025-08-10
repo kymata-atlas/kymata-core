@@ -7,8 +7,8 @@ from networkx import DiGraph
 
 from kymata.entities.expression import ExpressionPoint
 
-# Maps transforms to lists of names of parent/predecessor/upstream transforms
-TransformHierarchy = dict[str, list[str]]
+# Maps transforms to sets of names of parent/predecessor/upstream transforms
+TransformHierarchy = dict[str, set[str]]
 
 
 # transform_name → points
@@ -61,6 +61,14 @@ class CandidateTransformList:
         return True
 
     @property
+    def hierarchy(self) -> TransformHierarchy:
+        """A transform hierarchy representation of a CandidateTransformList."""
+        return {
+            trans: set(self.immediately_upstream(trans))
+            for trans in self.transforms
+        }
+
+    @property
     def transforms(self) -> set[str]:
         """
         All transforms in the CTL.
@@ -93,7 +101,7 @@ class CandidateTransformList:
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> list[set[str]]:
         """
         The serial sequence of parallel transforms.
 
@@ -101,10 +109,10 @@ class CandidateTransformList:
         parallelizable transforms, ordered by serial dependency.
 
         Returns:
-            list[list[str]]: A list of lists representing batches of parallel transforms in execution order.
+            list[set[str]]: A list of sets representing batches of parallel transforms in execution order.
         """
         # Add input nodes
-        seq = [sorted(self.inputs)]
+        seq = [self.inputs]
         parsed_transforms = self.inputs
         # Recursively add children
         remaining_transforms = self.transforms - self.inputs
@@ -121,7 +129,7 @@ class CandidateTransformList:
                             remaining_transforms.remove(candidate)
                         except KeyError:
                             pass
-            seq.append(sorted(batch))
+            seq.append(batch)
             parsed_transforms.update(batch)
         return seq
 
@@ -142,6 +150,25 @@ class CandidateTransformList:
             raise ValueError(transform)
 
         return set(self.graph.successors(transform))
+
+    @classmethod
+    def merge(cls, left: CandidateTransformList, right: CandidateTransformList) -> CandidateTransformList:
+        """
+        Merge two CandidateTransformLists.
+        Assumes disjoint (non-input) transforms.
+        """
+        overlapping_inputs = left.inputs & right.inputs
+        overlapping_transforms = (left.transforms & right.transforms) - overlapping_inputs
+        if len(overlapping_transforms) > 0:
+            raise NotImplementedError(f"Cannot merge CandidateTransformLists with overlapping transforms "
+                                      f"({overlapping_transforms})")
+
+        # Inputs are the ONLY keys which can be shared, and they (by definition) have empty sets of parents.
+        # The check above ensures there are no other shared transforms (which might otherwise have different sets of
+        # parents in each operand).
+        # Therefore, we can just union the dictionaries, dropping the shared keys.
+        combined_hierarchy = left.hierarchy | right.hierarchy
+        return CandidateTransformList(combined_hierarchy)
 
 
 def group_points_by_transform(points: Iterable[ExpressionPoint],
