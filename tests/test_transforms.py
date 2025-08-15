@@ -1,4 +1,5 @@
-from numpy import array, array_equal
+import numpy as np
+from numpy import array, array_equal, zeros_like
 
 from kymata.entities.transform import Transform, shift_by
 
@@ -28,6 +29,12 @@ def test_noninteger_downsample():
     ratio = t_downsampled.sample_rate / t.sample_rate
     assert len(t_downsampled.values) == floor(len(t.values) * ratio)
     assert array_equal(t_downsampled.values, array([0, 2, 5, 7]))
+
+
+def test_timestep():
+    t = Transform("test", array(range(10)), 500)
+    assert np.isclose(t.time_step, 0.002)
+
 
 
 def test_upsample_integer_ratio():
@@ -62,3 +69,8 @@ def test_shift_by_positive():
 def test_shift_by_negative():
     arr = array([1, 2, 3, 4, 5, 6, 7, 8])
     assert array_equal(shift_by(arr, -4), array([5, 6, 7, 8, 0, 0, 0, 0]))
+
+
+def test_shift_by_too_much():
+    arr = array([1, 2, 3, 4, 5, 6, 7, 8])
+    assert array_equal(shift_by(arr, 100), zeros_like(arr))
