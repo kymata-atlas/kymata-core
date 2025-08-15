@@ -21,7 +21,7 @@ def bandpass_filter(data,
         NDArray: filtered data
     """
     if not 0 < low_cutoff < high_cutoff < fs / 2:
-        raise ValueError(f"Require 0 < lowcut < highcut < fs / 2")
+        raise ValueError("Require 0 < lowcut < highcut < fs / 2")
     nyquist = 0.5 * fs
     low = low_cutoff / nyquist
     high = high_cutoff / nyquist
