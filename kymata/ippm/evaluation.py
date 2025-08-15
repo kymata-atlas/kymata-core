@@ -119,6 +119,7 @@ def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint])
     trans_present_in_graph = set(
         n.transform
         for n in ippm_graph.graph_last_to_first.nodes
+        if n.transform not in ippm_graph.inputs
     )
 
     n_detected_transforms = len(trans_present_in_graph)
