@@ -47,7 +47,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
     for participant in list_of_participants:
         config_path = Path(
-            raw_emeg_path, participant, f"{participant}_recording_config.yaml"
+            raw_emeg_path, participant, f"recording_config.yaml"
         )
         for run in range(1, n_runs + 1):
             # set filename. (Use .fif.gz extension to use gzip to compress)
@@ -75,7 +75,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 raw_fif_data = mne.io.Raw(
                     Path(
-                        raw_emeg_path, participant, f"{participant}_run{run!s}_raw.fif"
+                        raw_emeg_path, participant, 'meg', f"{participant}_task-movie_meg.fif"
                     ),
                     preload=True,
                 )
@@ -145,10 +145,6 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
                 meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
-
-                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
@@ -283,11 +279,6 @@ def run_second_pass_cleansing_and_eog_removal(
                     )
                 )
 
-                # Use common average reference, not the nose reference.
-                print_with_color("   Use common average EEG reference...", Fore.GREEN)
-
-                raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
-
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
                 raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
@@ -363,7 +354,7 @@ def _remove_veoh_and_heog(filt_raw, ica):
     # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
     ica.plot_sources(eog_evoked)
     # blinks
-    ica.plot_overlay(filt_raw, exclude=eog_indices, picks="eeg")
+    ica.plot_overlay(filt_raw, exclude=eog_indices, picks="meg")
 
 
 def _remove_ecg(filt_raw, ica):
