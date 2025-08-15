@@ -1,6 +1,6 @@
 from numpy import array, array_equal
 
-from kymata.entities.transform import Transform
+from kymata.entities.transform import Transform, shift_by
 
 
 def test_resample_to_same_rate():
@@ -47,3 +47,18 @@ def test_upsample_noninteger_ratio():
     ratio = t_upsampled.sample_rate / t.sample_rate
     assert len(t_upsampled.values) == floor(len(t.values) * ratio)
     assert array_equal(t_upsampled.values, array([0, 0, 1, 2, 2, 3, 4]))
+
+
+def test_shift_by_0():
+    arr = array([1, 2, 3, 4, 5, 6, 7, 8])
+    assert array_equal(shift_by(arr, 4), array([0, 0, 0, 0, 1, 2, 3, 4]))
+
+
+def test_shift_by_positive():
+    arr = array([1, 2, 3, 4, 5, 6, 7, 8])
+    assert array_equal(shift_by(arr, 0), arr)
+
+
+def test_shift_by_negative():
+    arr = array([1, 2, 3, 4, 5, 6, 7, 8])
+    assert array_equal(shift_by(arr, -4), array([5, 6, 7, 8, 0, 0, 0, 0]))
