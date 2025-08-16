@@ -88,7 +88,7 @@ def test_transform_recall_with_all_trans_found_should_return_1():
         ExpressionPoint("c3", 30, "f2", -2),
     ]
 
-    test_graph = IPPMGraph({"f1": [], "f2": ["f1"]}, points_by_block={"scalp": denoised_points})
+    test_graph = IPPMGraph({"input": [], "f1": ["input"], "f2": ["f1"]}, points_by_block={"scalp": denoised_points})
 
     ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
@@ -109,7 +109,7 @@ def test_transform_recall_with_half_trans_found_should_return_correct_ratio():
         ExpressionPoint("c2", 15, "f1", -35),
     ]
 
-    test_graph = IPPMGraph({"f1": []}, points_by_block={"scalp": denoised_points})
+    test_graph = IPPMGraph({"input": [], "f1": ["input"], }, points_by_block={"scalp": denoised_points})
 
     ratio, numer, denom = transform_recall(test_graph, noisy_points)
 
