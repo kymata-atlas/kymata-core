@@ -2,10 +2,10 @@
 Tests for kymata.ippm.evaluation
 """
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.evaluation import causality_violation_score, transform_recall, withinTransformDifference
+from kymata.ippm.evaluation import causality_violation_score, transform_recall, null_edge_difference
 from kymata.ippm.graph import IPPMGraph
 
-def test_within_transform_difference_with_no_null_edges():
+def test_null_edge_difference_with_no_null_edges():
     """
         There are 2 null edges, one for f3 and one for f5
          Map 1 is f0 -> f1 -> f2              -> f5 -> f5
@@ -29,11 +29,11 @@ def test_within_transform_difference_with_no_null_edges():
     map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
     map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
 
-    wtd = withinTransformDifference(map1, map2)
+    wtd = null_edge_difference(map1, map2)
     assert wtd == 0
 
 
-def test_within_transform_difference_with_perfect_agreement():
+def test_null_edge_difference_with_perfect_agreement():
     """
         There are 2 null edges, one for f3 and one for f5
          Map 1 is f0 -> f1 -> f2              -> f5 -> f5
@@ -61,10 +61,10 @@ def test_within_transform_difference_with_perfect_agreement():
     map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
     map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
 
-    wtd = withinTransformDifference(map1, map2)
+    wtd = null_edge_difference(map1, map2)
     assert wtd == 0
 
-def test_within_transform_difference_with_perfect_disagreement():
+def test_null_edge_difference_with_perfect_disagreement():
     """
         There are 2 null edges, one for f3 and one for f5
         Map 1 is f0 -> f1 -> f2              -> f5 -> f5
@@ -92,10 +92,10 @@ def test_within_transform_difference_with_perfect_disagreement():
     map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
     map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
 
-    wtd = withinTransformDifference(map1, map2)
+    wtd = null_edge_difference(map1, map2)
     assert wtd == 1
 
-def test_within_transform_difference_with_partial_agreement():
+def test_null_edge_difference_with_partial_agreement():
     """
         There are 2 null edges, one for f3 and one for f5
          Map 1 is f0 -> f1 -> f2              -> f5 -> f5
@@ -123,7 +123,7 @@ def test_within_transform_difference_with_partial_agreement():
     map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
     map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
 
-    wtd = withinTransformDifference(map1, map2)
+    wtd = null_edge_difference(map1, map2)
     assert wtd == 0.5
 
 

@@ -134,26 +134,26 @@ def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint])
     )
 
 
-def withinTransformDifference(graph1: IPPMGraph, graph2: IPPMGraph) -> float:
+def null_edge_difference(graph1: IPPMGraph, graph2: IPPMGraph) -> float:
     '''
         This metric is used to detect extra/missing null edges between two IPPMs. 
         Let S1 = set of null edges in IPPM 1, i.e., { (u,v) in IPPM_1 such that u.transform == v.transform }
             S2 = set of null edges in IPPM 2
         
         Then,
-            WithinTransformDifference (WTD): | (S1 UNION S2) DIFFERENCE (S1 INTERSECTION S2) | divided by | S1 UNION S2 |
+            null_edge_difference (NED): | (S1 UNION S2) DIFFERENCE (S1 INTERSECTION S2) | divided by | S1 UNION S2 |
 
         CONCEPTUAL EXPLANATION: what proportion of null edges across both maps is extra or missing? This is the question this metric answers
         If you get 0, then the maps agree perfectly on the null edges
         If you get 1, then the maps disagree completely on the null edges.
         If you get (0, 1), then the maps partially agree on the null edges.
 
-        In terms of importance, TR is most important, then CV, then WTD 
+        In terms of importance, TR is most important, then CV, then NED 
     '''
     assert graph1.candidate_transform_list == graph2.candidate_transform_list, "CTLs must be the same for both IPPMs!"
 
-    s1 = _generate_within_transform_set(graph1)
-    s2 = _generate_within_transform_set(graph2)
+    s1 = _generate_null_edge_set(graph1)
+    s2 = _generate_null_edge_set(graph2)
     union = s1.union(s2)
     intersection = s1.intersection(s2)
     if len(union) > 0:
@@ -161,19 +161,19 @@ def withinTransformDifference(graph1: IPPMGraph, graph2: IPPMGraph) -> float:
     return 0
 
 
-def _generate_within_transform_set(graph: IPPMGraph) -> set:
+def _generate_null_edge_set(graph: IPPMGraph) -> set:
     ctl = graph.candidate_transform_list
     # We need to do it per-transform to ensure labelling is consistent for each IPPM, i.e., add same index
-    edges_within_transform = {transform: [] for transform in ctl.transforms}
+    null_edges_per_transform = {transform: [] for transform in ctl.transforms}
     for edge_from, edge_to in graph.graph_full.edges:
         if edge_from.transform != edge_to.transform:
             continue
 
         transform = edge_from.transform
-        edge_label = f"{transform}_{len(edges_within_transform[transform])}"
-        edges_within_transform[transform].append(edge_label)
+        edge_label = f"{transform}_{len(null_edges_per_transform[transform])}"
+        null_edges_per_transform[transform].append(edge_label)
     
-    return set([edge for edge_list in edges_within_transform.values() for edge in edge_list]) # unpack into set of null edge labels of form transform_idx
+    return set([edge for edge_list in null_edges_per_transform.values() for edge in edge_list]) # unpack into set of null edge labels of form transform_idx
 
 
 
