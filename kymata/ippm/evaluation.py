@@ -156,8 +156,6 @@ def withinTransformDifference(graph1: IPPMGraph, graph2: IPPMGraph) -> float:
     s2 = _generate_within_transform_set(graph2)
     union = s1.union(s2)
     intersection = s1.intersection(s2)
-    print(s1)
-    print(s2)
     if len(union) > 0:
         return len(union.difference(intersection)) / len(union)
     return 0
