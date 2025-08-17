@@ -13,7 +13,7 @@ from networkx import DiGraph
 from networkx.utils import graphs_equal
 
 from kymata.entities.datatypes import Channel, Latency
-from kymata.entities.expression import ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP
+from kymata.entities.expression import BLOCK_MERGED, ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP
 from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transform, TransformHierarchy
 
 
@@ -51,7 +51,7 @@ def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | Non
         input_idx (int | None): Supply an int (the index/count of the input channel for this block) if this is
             an input block. Supply None if this is a non-input node.
     """
-    if block in {BLOCK_LEFT, BLOCK_RIGHT}:
+    if block in {BLOCK_LEFT, BLOCK_RIGHT, BLOCK_MERGED}:
         if input_idx is not None:
             return f"{block}_i{input_idx}"  # e.g. "left_i4"
         # Hexel

@@ -35,6 +35,7 @@ DIM_TRANSFORM = "transform"
 BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
+BLOCK_MERGED = "merged"
 
 
 class ExpressionPoint(NamedTuple):

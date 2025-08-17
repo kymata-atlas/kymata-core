@@ -4,7 +4,7 @@ from typing import Any
 from networkx.relabel import relabel_nodes
 
 from kymata.entities.expression import (
-    ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
+    BLOCK_MERGED, ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
 from kymata.io.atlas import API_URL, verify_kids
 from kymata.io.json import NumpyJSONEncoder, serialise_graph
 from kymata.ippm.denoising_strategies import (
@@ -31,6 +31,7 @@ class IPPM:
                  expression_set: ExpressionSet,
                  candidate_transform_list: CandidateTransformList | TransformHierarchy,
                  denoiser: str | None = _default_denoiser,
+                 merge_before_denoising: bool = False,
                  **kwargs: dict[str, Any]):
         """
         Args:
@@ -38,6 +39,7 @@ class IPPM:
            candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied
                to the expression set.
            denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
+           merge_before_denoising: If true, this will merge both hemispheres before running the denoiser.
            **kwargs: Additional arguments passed to the denoiser.
 
         Raises:
@@ -66,16 +68,24 @@ class IPPM:
 
         # Get and group the points to include in the graph
         if isinstance(expression_set, HexelExpressionSet):
-            if denoising_strategy is not None:
-                points_left, points_right = denoising_strategy.denoise(expression_set)
-            else:
-                points_left, points_right = expression_set.best_transforms()
+            if denoising_strategy is not None and merge_before_denoising:
+                points_merged = denoising_strategy.merge_and_denoise(expression_set)
 
-            # Group all points by their block (hemisphere) to pass to the graph constructor
-            all_points = {
-                BLOCK_LEFT: points_left,
-                BLOCK_RIGHT: points_right
-            }
+                # Group all points by their block (hemisphere) to pass to the graph constructor
+                all_points = {
+                    BLOCK_MERGED: points_merged
+                }
+            else:
+                if denoising_strategy is not None:
+                    points_left, points_right = denoising_strategy.denoise(expression_set)
+                else:
+                    points_left, points_right = expression_set.best_transforms()
+                
+                # Group all points by their block (hemisphere) to pass to the graph constructor
+                all_points = {
+                    BLOCK_LEFT: points_left,
+                    BLOCK_RIGHT: points_right
+                }
 
         elif isinstance(expression_set, SensorExpressionSet):
             if denoising_strategy is not None:
