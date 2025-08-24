@@ -2,8 +2,130 @@
 Tests for kymata.ippm.evaluation
 """
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.evaluation import causality_violation_score, transform_recall
+from kymata.ippm.evaluation import causality_violation_score, transform_recall, null_edge_difference
 from kymata.ippm.graph import IPPMGraph
+
+def test_null_edge_difference_with_no_null_edges():
+    """
+        There are 2 null edges, one for f3 and one for f5
+         Map 1 is f0 -> f1 -> f2              -> f5 -> f5
+                                -> f3 -> f3 
+                                -> f4 ->
+    """
+    ctl = {"f5": ["f4", "f3"], "f4": ["f2"], "f3": ["f2"], "f2": ["f1"], "f1": ["f0"], "f0": []}
+    map1_points = [
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 90, "f3", -77),
+        ExpressionPoint("c4", 100, "f4", -39),
+        ExpressionPoint("c5", 140, "f5", -75),
+    ]
+    map2_points = [
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 90, "f3", -77),
+        ExpressionPoint("c4", 100, "f4", -39),
+    ]
+    map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
+    map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
+
+    wtd = null_edge_difference(map1, map2)
+    assert wtd == 0
+
+
+def test_null_edge_difference_with_perfect_agreement():
+    """
+        There are 2 null edges, one for f3 and one for f5
+         Map 1 is f0 -> f1 -> f2              -> f5 -> f5
+                                -> f3 -> f3 
+                                -> f4 ->
+    """
+    ctl = {"f5": ["f4", "f3"], "f4": ["f2"], "f3": ["f2"], "f2": ["f1"], "f1": ["f0"], "f0": []}
+    map1_points = [
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 80,  "f3", -55),
+        ExpressionPoint("c4", 90, "f3", -77),
+        ExpressionPoint("c5", 100, "f4", -39),
+        ExpressionPoint("c6", 110, "f5", -48),
+        ExpressionPoint("c7", 140, "f5", -75),
+    ]
+    map2_points = [
+        ExpressionPoint("c1", 72, "f2", -25),
+        ExpressionPoint("c2", 80,  "f3", -55),
+        ExpressionPoint("c3", 90, "f3", -77),
+        ExpressionPoint("c4", 100, "f4", -39),
+        ExpressionPoint("c5", 110, "f5", -48),
+        ExpressionPoint("c6", 140, "f5", -75),
+    ]
+    map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
+    map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
+
+    wtd = null_edge_difference(map1, map2)
+    assert wtd == 0
+
+def test_null_edge_difference_with_perfect_disagreement():
+    """
+        There are 2 null edges, one for f3 and one for f5
+        Map 1 is f0 -> f1 -> f2              -> f5 -> f5
+                                -> f3 -> f3 
+                                -> f4 ->
+    """
+    ctl = {"f5": ["f4", "f3"], "f4": ["f2"], "f3": ["f2"], "f2": ["f1"], "f1": ["f0"], "f0": []}
+    map1_points = [
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 80,  "f3", -55),
+        ExpressionPoint("c4", 90, "f3", -77),
+        ExpressionPoint("c5", 100, "f4", -39),
+        ExpressionPoint("c6", 110, "f5", -48),
+        ExpressionPoint("c7", 140, "f5", -75),
+    ]
+    map2_points = [
+        # it is missing all null edges => perfect disagreement
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 90, "f3", -77),
+        ExpressionPoint("c4", 100, "f4", -39),
+        ExpressionPoint("c5", 140, "f5", -75),
+    ]
+    map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
+    map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
+
+    wtd = null_edge_difference(map1, map2)
+    assert wtd == 1
+
+def test_null_edge_difference_with_partial_agreement():
+    """
+        There are 2 null edges, one for f3 and one for f5
+         Map 1 is f0 -> f1 -> f2              -> f5 -> f5
+                                -> f3 -> f3 
+                                -> f4 ->
+    """
+    ctl = {"f5": ["f4", "f3"], "f4": ["f2"], "f3": ["f2"], "f2": ["f1"], "f1": ["f0"], "f0": []}
+    map1_points = [
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 72, "f2", -25),
+        ExpressionPoint("c3", 80,  "f3", -55),
+        ExpressionPoint("c4", 90, "f3", -77),
+        ExpressionPoint("c5", 100, "f4", -39),
+        ExpressionPoint("c6", 110, "f5", -48),
+        ExpressionPoint("c7", 140, "f5", -75),
+    ]
+    map2_points = [
+        # it is missing all null edges => perfect disagreement
+        ExpressionPoint("c1", 50,  "f1", -50),
+        ExpressionPoint("c2", 80,  "f3", -55),
+        ExpressionPoint("c3", 90, "f3", -77),
+        ExpressionPoint("c4", 100, "f4", -39),
+        ExpressionPoint("c5", 140, "f5", -75),
+    ]
+    map1 = IPPMGraph(ctl, points_by_block={"merged": map1_points})
+    map2 = IPPMGraph(ctl, points_by_block={"merged": map2_points})
+
+    wtd = null_edge_difference(map1, map2)
+    assert wtd == 0.5
+
 
 def test_causality_violation_with_right_hemi_should_succeed():
     test_points = [
