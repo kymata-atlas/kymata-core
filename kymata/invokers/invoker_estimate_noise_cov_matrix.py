@@ -20,6 +20,8 @@ def main(config_filename: str):
         cov_method=config["cov_method"],
         duration_emp=config["duration"],
         reg_method=config["reg_method"],
+        tmax=config["tmax"],
+        n_reps=config["repetitions_per_runs"],
     )
 
 

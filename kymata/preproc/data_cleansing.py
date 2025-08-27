@@ -694,6 +694,8 @@ def estimate_noise_cov(
     cov_method: str,
     duration_emp,
     reg_method,
+    tmax: int = 800,
+    n_reps: int = 1,
 ):
     emeg_dir = Path(data_root_dir, dataset_directory_name, "raw_emeg")
 
@@ -720,27 +722,29 @@ def estimate_noise_cov(
         if cov_method == "grandave":
             cleaned_raws = []
             for run in range(1, n_runs + 1):
-                raw_fname = Path(
-                    cleaned_dir, p + "_run" + str(run) + "_cleaned_raw.fif.gz"
-                )
-                raw = mne.io.Raw(raw_fname, preload=True)
-                raw_cropped = raw.crop(tmin=0, tmax=800)
-                cleaned_raws.append(raw_cropped)
+                try:
+                    raw_fname = Path(
+                        cleaned_dir, p + "_run" + str(run) + "_cleaned_raw.fif.gz"
+                    )
+                    raw = mne.io.Raw(raw_fname, preload=True)
+                    raw_cropped = raw.crop(tmin=0, tmax=tmax)
+                    cleaned_raws.append(raw_cropped)
+                except:
+                    for rep in range(1, n_reps + 1):
+                        raw_fname = Path(
+                            cleaned_dir, p + "_run" + str(run) + "_rep" + str(rep) + "_cleaned_raw.fif.gz"
+                        )
+                        raw = mne.io.Raw(raw_fname, preload=True)
+                        raw_cropped = raw.crop(tmin=0, tmax=tmax)
+                        cleaned_raws.append(raw_cropped)                  
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
             raw_epoch = mne.make_fixed_length_epochs(
-                raw_combined, duration=800, preload=True, reject_by_annotation=False
+                raw_combined, duration=tmax, preload=True, reject_by_annotation=False
             )
             cov = mne.compute_covariance(
                 raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True
             )
-            mne.write_cov(
-                data_root_dir
-                + dataset_directory_name
-                + "/interim_preprocessing_files/3_evoked_sensor_data/covariance_grand_average/"
-                + p
-                + "-grandave-cov.fif",
-                cov,
-            )
+            mne.write_cov(Path(cov_dir, p + "-grandave-cov.fif"), cov)
 
         elif cov_method == "emptyroom":
             try:
@@ -860,21 +864,12 @@ def estimate_noise_cov(
                         cleaned_dir, p + "_run" + str(run) + "_cleaned_raw.fif.gz"
                     )
                 raw = mne.io.Raw(raw_fname, preload=True)
-                try:
-                    raw_cropped = raw.crop(tmin=0, tmax=800)
-                    cleaned_raws.append(raw_cropped)
-                except:
-                    raw_cropped = raw.crop(tmin=0, tmax=400)
-                    cleaned_raws.append(raw_cropped)
+                raw_cropped = raw.crop(tmin=0, tmax=tmax)
+                cleaned_raws.append(raw_cropped)
             raw_combined = mne.concatenate_raws(raws=cleaned_raws, preload=True)
-            try:
-                raw_epoch = mne.make_fixed_length_epochs(
-                    raw_combined, duration=800, preload=True, reject_by_annotation=False
-                )
-            except:
-                raw_epoch = mne.make_fixed_length_epochs(
-                    raw_combined, duration=400, preload=True, reject_by_annotation=False
-                )
+            raw_epoch = mne.make_fixed_length_epochs(
+                raw_combined, duration=tmax, preload=True, reject_by_annotation=False
+            )
             cov_eeg = mne.compute_covariance(
                 raw_epoch, tmin=0, tmax=None, method=reg_method, return_estimators=True
             )
