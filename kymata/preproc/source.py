@@ -314,6 +314,7 @@ def load_emeg_pack(
     snr=4,
     old_morph=False,
     invsol_npy_dir=None,
+    participants=None,
 ):
     """
 
@@ -342,7 +343,7 @@ def load_emeg_pack(
     """
 
     emeg_paths = [Path(emeg_dir, emeg_fn) for emeg_fn in emeg_filenames]
-    n_reps = len(emeg_paths)
+    n_reps = int(len(emeg_paths) / len(participants)) if participants else len(emeg_paths)
     morph_paths = [
         Path(morph_dir, f"{_strip_ave(emeg_fn)}_fsaverage_morph.h5")
         if morph_dir is not None
@@ -385,19 +386,31 @@ def load_emeg_pack(
 
     # Load remaining ones in using the appropriate ave_mode
     if ave_mode == "concatenate":
-        # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
-        for i in range(1, len(emeg_paths)):
-            new_emeg, _ch_names = load_single_emeg(
-                emeg_paths[i],
-                need_names,
-                inverse_operator_paths[i],
-                snr,
-                morph_paths[i],
-                old_morph=old_morph,
-                premorphed_inverse_operator_path=invsol_paths[i],
-                ch_names_path=ch_names_path,
-            )
-            emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
+        emeg = None
+        emeg_all = None
+        for p in participants:
+            emeg_paths_p = [i for i in emeg_paths if p in str(i)]
+            # Concatenating all reps (or participant_averages - although this would be a non-standard use) into a single long stimulus
+            for i in range(len(emeg_paths_p)):
+                new_emeg, _ch_names = load_single_emeg(
+                    emeg_paths_p[i],
+                    need_names,
+                    inverse_operator_paths[i],
+                    snr,
+                    morph_paths[i],
+                    old_morph=old_morph,
+                    premorphed_inverse_operator_path=invsol_paths[i],
+                    ch_names_path=ch_names_path,
+                )
+                if emeg is None:
+                    emeg = np.expand_dims(new_emeg, 1)
+                else:
+                    emeg = np.concatenate((emeg, np.expand_dims(new_emeg, 1)), axis=1)
+            if emeg_all is None:
+                emeg_all = emeg
+            else:
+                emeg_all += emeg
+            emeg = None  # Reset for next participant
 
     elif ave_mode == "ave":
         # Averaging together all participants
@@ -416,11 +429,12 @@ def load_emeg_pack(
             emeg += np.expand_dims(new_emeg, 1)
 
         n_reps = 1  # n_reps is now 1 as all averaged
+        emeg_all = emeg
 
     elif len(emeg_paths) > 1:
         raise NotImplementedError(f'ave_mode "{ave_mode}" not known')
 
-    return emeg.astype(np.float32), emeg_names, n_reps
+    return emeg_all.astype(np.float32), emeg_names, n_reps
 
 
 def _strip_ave(name: str) -> str:

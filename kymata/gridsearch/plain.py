@@ -110,12 +110,12 @@ def do_gridsearch(
     _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate:.2f} s"
                  f" @ {transform.sample_rate} Hz")
 
-    trans_length = n_splits * n_trans_samples_per_split
+    trans_length = n_splits * n_trans_samples_per_split * n_reps
     if trans_length < transform.values.shape[0]:
-        _logger.warning(f"WARNING: not using full length of the file (only using {n_splits * seconds_per_split:.2f}s)")
-        trans = transform.values[:trans_length].reshape(n_splits, n_trans_samples_per_split)
+        _logger.warning(f"WARNING: not using full length of the file (only using {n_splits * seconds_per_split * n_reps:.2f}s)")
+        trans = transform.values[:trans_length].reshape(n_splits * n_reps, n_trans_samples_per_split)
     else:
-        trans = transform.values.reshape(n_splits, n_trans_samples_per_split)
+        trans = transform.values.reshape(n_splits * n_reps, n_trans_samples_per_split)
 
     # In case trans contains a fully constant split, normalize will involve a divide by zero error, resulting in a nan
     # which will infect everything downstream. Rather than try and catch and fix that, we instead kick it back to the
@@ -173,8 +173,8 @@ def do_gridsearch(
     emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
-    if n_reps > 1:
-        F_trans = np.tile(F_trans, (n_reps, 1))
+    # if n_reps > 1:
+    #     F_trans = np.tile(F_trans, (n_reps, 1))
     corrs = np.zeros(
         (n_channels, n_derangements + 1, n_splits * n_reps, n_trans_samples_per_split), dtype=np.float32
     )

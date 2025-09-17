@@ -143,7 +143,10 @@ def main():
             print("Concatenating repetitions together")
             emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
     else:
-        emeg_filenames = [p + f'_{section}' + "-ave" for p in participants]
+        if section == "all":
+            emeg_filenames = [p + f'_{section}' + "-ave" for p in participants for section in range(1, 10)]
+        else:
+            emeg_filenames = [p + f'_{section}' + "-ave" for p in participants]
 
     start = time.time()
 
@@ -191,7 +194,7 @@ def main():
         emeg_filenames,
         emeg_dir=emeg_path,
         morph_dir=morph_dir if args.morph else None,
-        need_names=True,
+        need_names=False,
         ave_mode=args.ave_mode,
         inverse_operator_dir=inverse_operator_dir
         if args.use_inverse_operator
@@ -201,6 +204,7 @@ def main():
         old_morph=False,
         invsol_npy_dir=invsol_npy_dir,
         ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
+        participants=participants,
     )
 
     time_to_load = time.time() - t0
