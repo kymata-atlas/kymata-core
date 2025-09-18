@@ -320,7 +320,17 @@ def main():
             num_reps = dataset_config.get('repetitions_per_runs', 1)
 
             if num_reps > 1:
-                emeg_filenames = [p + f"_run{i}_rep{j}" for p in participants for j in range(1, num_reps + 1)]
+                emeg_filenames = []
+                for p in participants:
+                    if not (i == 1 and '11' in p):
+                        if (
+                            p.startswith("participant_")
+                            and int(p.split("_")[1].rstrip("b")) > 10
+                        ):
+                            for j in range(1, num_reps + 1):
+                                emeg_filenames.append(p + f"_run{i}_rep{j}")
+                        else:
+                            emeg_filenames.append(p + f"_run{i}")
             else:
                 emeg_filenames = [p + f"_run{i}" for p in participants]
 

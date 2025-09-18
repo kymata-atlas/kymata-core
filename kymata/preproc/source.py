@@ -381,6 +381,7 @@ def load_emeg_pack(
         _logger.error(f"\tinverse operator {str(inverse_operator_paths[0])} or {str(invsol_paths[0])}")
         _logger.error(f"\tmorph {str(morph_paths[0])}")
         raise ex
+    emeg = emeg[:, :403001]
     emeg = np.expand_dims(emeg, 1)
 
     # Load remaining ones in using the appropriate ave_mode
@@ -419,6 +420,7 @@ def load_emeg_pack(
                     premorphed_inverse_operator_path=invsol_paths[i],
                     ch_names_path=ch_names_path,
                 )
+                new_emeg = new_emeg[:, :403001]
                 emeg += np.expand_dims(new_emeg, 1)
             except:
                 _logger.warning(

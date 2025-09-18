@@ -302,90 +302,90 @@ def create_forward_model_and_inverse_solution(data_root_dir, config: dict):
     inverse_operator_dir.mkdir(exist_ok=True)
 
     # # Compute forward solution
-    # for participant in list_of_participants:
-    #     if '_emeg' in participant:
-    #         participant = participant.replace('_emeg', '')
-    #         emeg = True
-    #     else:
-    #         emeg = False
-    #     try:
-    #         fwd = mne.make_forward_solution(
-    #             Path(
-    #                 data_root_dir,
-    #                 dataset_directory_name,
-    #                 "interim_preprocessing_files",
-    #                 "1_maxfiltered",
-    #                 participant + "_run1_raw_sss.fif",
-    #             ),  # note this file is only used for the sensor positions.
-    #             trans=Path(coregistration_dir, participant + "-trans.fif"),
-    #             src=Path(src_dir, participant + "_ico5-src.fif"),
-    #             bem=Path(
-    #                 mri_structurals_directory,
-    #                 participant,
-    #                 "bem",
-    #                 participant + "-5120-5120-5120-bem-sol.fif",
-    #             ),
-    #             meg=config["meg"],
-    #             eeg=config["eeg"],
-    #             mindist=5.0,
-    #             n_jobs=None,
-    #             verbose=True,
-    #         )
-    #     except:
-    #         fwd = mne.make_forward_solution(
-    #             Path(
-    #                 data_root_dir,
-    #                 dataset_directory_name,
-    #                 "interim_preprocessing_files",
-    #                 "1_maxfiltered",
-    #                 participant + "_run1_rep1_raw_sss.fif",
-    #             ),  # note this file is only used for the sensor positions.
-    #             trans=Path(coregistration_dir, participant + "-trans.fif"),
-    #             src=Path(src_dir, participant + "_ico5-src.fif"),
-    #             bem=Path(
-    #                 mri_structurals_directory,
-    #                 participant,
-    #                 "bem",
-    #                 participant + "-5120-5120-5120-bem-sol.fif",
-    #             ),
-    #             meg=config["meg"],
-    #             eeg=config["eeg"],
-    #             mindist=5.0,
-    #             n_jobs=None,
-    #             verbose=True,
-    #         )
-    #     print(fwd)
+    for participant in list_of_participants:
+        if '_emeg' in participant:
+            participant = participant.replace('_emeg', '')
+            emeg = True
+        else:
+            emeg = False
+        try:
+            fwd = mne.make_forward_solution(
+                Path(
+                    data_root_dir,
+                    dataset_directory_name,
+                    "interim_preprocessing_files",
+                    "1_maxfiltered",
+                    participant + "_run1_raw_sss.fif",
+                ),  # note this file is only used for the sensor positions.
+                trans=Path(coregistration_dir, participant + "-trans.fif"),
+                src=Path(src_dir, participant + "_ico5-src.fif"),
+                bem=Path(
+                    mri_structurals_directory,
+                    participant,
+                    "bem",
+                    participant + "-5120-5120-5120-bem-sol.fif",
+                ),
+                meg=config["meg"],
+                eeg=config["eeg"],
+                mindist=5.0,
+                n_jobs=None,
+                verbose=True,
+            )
+        except:
+            fwd = mne.make_forward_solution(
+                Path(
+                    data_root_dir,
+                    dataset_directory_name,
+                    "interim_preprocessing_files",
+                    "1_maxfiltered",
+                    participant + "_run1_rep1_raw_sss.fif",
+                ),  # note this file is only used for the sensor positions.
+                trans=Path(coregistration_dir, participant + "-trans.fif"),
+                src=Path(src_dir, participant + "_ico5-src.fif"),
+                bem=Path(
+                    mri_structurals_directory,
+                    participant,
+                    "bem",
+                    participant + "-5120-5120-5120-bem-sol.fif",
+                ),
+                meg=config["meg"],
+                eeg=config["eeg"],
+                mindist=5.0,
+                n_jobs=None,
+                verbose=True,
+            )
+        print(fwd)
 
-    #     # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
-    #     # which does not include those in the medial wall)
-    #     labels = mne.read_labels_from_annot(
-    #         subject=participant,
-    #         subjects_dir=mri_structurals_directory,
-    #         parc="aparc.a2009s",
-    #         hemi="both",
-    #     )
-    #     fwd = mne.forward.restrict_forward_to_label(fwd, labels)
+        # restrict forward vertices to those that make up cortex (i.e. all vertices that are in the annot file,
+        # which does not include those in the medial wall)
+        labels = mne.read_labels_from_annot(
+            subject=participant,
+            subjects_dir=mri_structurals_directory,
+            parc="aparc.a2009s",
+            hemi="both",
+        )
+        fwd = mne.forward.restrict_forward_to_label(fwd, labels)
 
-    #     if emeg:
+        if emeg:
 
-    #         participant = participant + '_emeg'
+            participant = participant + '_emeg'
 
-    #     if config["meg"] and config["eeg"]:
-    #         mne.write_forward_solution(
-    #             Path(forward_sol_dir, participant + "-fwd.fif"), fwd=fwd, overwrite=True
-    #         )
-    #     elif config["meg"]:
-    #         mne.write_forward_solution(
-    #             Path(forward_sol_dir, participant + "-megonly-fwd.fif"), fwd=fwd, overwrite=True
-    #         )
-    #     elif config["eeg"]:
-    #         mne.write_forward_solution(
-    #             Path(forward_sol_dir, participant + "-eegonly-fwd.fif"), fwd=fwd, overwrite=True
-    #         )
-    #     else:
-    #         raise Exception(
-    #             "eeg and meg in the dataset_config file cannot be both False"
-    #         )
+        if config["meg"] and config["eeg"]:
+            mne.write_forward_solution(
+                Path(forward_sol_dir, participant + "-fwd.fif"), fwd=fwd, overwrite=True
+            )
+        elif config["meg"]:
+            mne.write_forward_solution(
+                Path(forward_sol_dir, participant + "-megonly-fwd.fif"), fwd=fwd, overwrite=True
+            )
+        elif config["eeg"]:
+            mne.write_forward_solution(
+                Path(forward_sol_dir, participant + "-eegonly-fwd.fif"), fwd=fwd, overwrite=True
+            )
+        else:
+            raise Exception(
+                "eeg and meg in the dataset_config file cannot be both False"
+            )
 
     # Compute inverse operator
 

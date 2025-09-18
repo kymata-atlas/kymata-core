@@ -20,17 +20,17 @@ participants: [
                 # 'participant_08',
                 # 'participant_09',
                 # 'participant_10',
-                # 'participant_11',
-                # 'participant_11b',
+                'participant_11',
+                'participant_11b',
                 # 'participant_11b_emeg',
-                # 'participant_12',
-                # 'participant_13',
-                # 'participant_14',
-                # 'participant_15',
+                'participant_12',
+                'participant_13',
+                'participant_14',
+                'participant_15',
                 'participant_16',
-                # 'participant_17',
-                # 'participant_18',
-                # 'participant_19'
+                'participant_17',
+                'participant_18',
+                'participant_19'
               ]
 number_of_runs: 5                    # number of runs (think about how runs can be different for each participant)
 repetitions_per_runs: 2              # number of repetitions per run
@@ -59,7 +59,7 @@ inverse_operator: "interim_preprocessing_files/4_hexel_current_reconstruction/in
 
 # Method to estimate noise covariance matrix
 cov_method: 'emptyroom'              # grandave | emptyroom | runstart | fusion
-duration: 1                          # in seconds for the duration of the empty room condition used, can be None for whole duration
+duration: 60                          # in seconds for the duration of the empty room condition used, can be None for whole duration
 reg_method: 'empirical'              # None | 'auto'
 tmax: 400                            # maximum time in s for estimating noise covariance matrix
 
