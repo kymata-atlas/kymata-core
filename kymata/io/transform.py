@@ -221,10 +221,16 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
 
         elif 'salmonn' in str(transform_path_without_suffix):
             for s in range(14):
-                if s == 0:
-                    func = torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()
+                if 'omni' in str(transform_path_without_suffix):
+                    if s == 0:
+                        func = np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]
+                    else:
+                        func = np.concatenate((func, np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]), axis=1)
                 else:
-                    func = np.concatenate((func, torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()), axis = 1)
+                    if s == 0:
+                        func = torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()
+                    else:
+                        func = np.concatenate((func, torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()), axis = 1)
             T_max = 401
             s_num = T_max * 1000
             place_holder = np.zeros((func.shape[2], s_num))
@@ -232,8 +238,12 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             asr_text = []
             for s in range(14):
                 # Read the content of the file
-                with open(Path(transform_path_without_suffix, f'segment_{s}.txt'), 'r') as file:
-                    content = file.read()
+                if 'omni' in str(transform_path_without_suffix):
+                    with open(Path(transform_path_without_suffix, f'segment_{s}_wordpiece.txt'), 'r') as file:
+                        content = file.read()
+                else:
+                    with open(Path(transform_path_without_suffix, f'segment_{s}.txt'), 'r') as file:
+                        content = file.read()
                 # The content is a string representation of a list, so we need to evaluate it
                 word_pieces = eval(content)
                 # Remove the '▁' from each word piece
