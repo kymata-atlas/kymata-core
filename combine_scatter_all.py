@@ -35,8 +35,9 @@ def asr_models_loop_full():
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
     
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/ru_en/all_pilots/log/'
-    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/log/'
+    # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru/meg15_0081/log/'
     # log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ccn_paper/ru_en/all/log/'
+    log_dir_1 = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/log/'
     file_list = list_files_in_directory(log_dir_1)
 
     # log_dir_2 = f'/imaging/woolgar/projects/Tianyi/kymata-toolbox/kymata-toolbox-data/output/whisper_{size}_multi_log/decoder_all_der_5/'

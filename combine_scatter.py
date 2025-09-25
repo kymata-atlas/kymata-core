@@ -7,9 +7,9 @@ from statistics import NormalDist
 
 def asr_models_loop_full():
 
-    layer = 64 # 41 # 66 64 34 33
+    layer = 33 # 41 # 66 64 34 33
 
-    neuron = 1280 # 4096 5120
+    neuron = 4096 # 4096 5120
 
     thres = 20 # 15
 
@@ -25,11 +25,16 @@ def asr_models_loop_full():
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
-    log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/fc2/log/'
+    # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/fc2/log/'
+    # log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/log/'
+    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/log/'
 
     # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/log/'
 
-    log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/tvl/log/'
+    # log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/tvl/log/'
+    # log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/tvl/log/'
+    log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/tvl/log/'
+
 
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (2*200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
@@ -96,14 +101,19 @@ def asr_models_loop_full():
     #                 break
     
     for i in range(layer):
+        # file_name = f'slurm_log_sensor_{i}.txt'
         file_name = f'slurm_log_{i}.txt'
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
+            a = [line for line in a if 'Time' not in line]
             for ia in range(len(a)):
-                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
+                if 'layer' in a[ia] and 'Functions to be tested' not in a[ia] and 'Transforms to be tested' not in a[ia]:
                     for k in range(neuron):
                         _a = [j for j in a[ia].split()]
-                        lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        try:
+                            lat_sig[i % n, i // n, k] = [float(_a[3][:-1]), float(_a[6]), float(_a[9][:-1]), float(_a[11]), i // n, float(_a[0].split('_')[-1].rstrip(':'))]
+                        except:
+                            lat_sig[i % n, i // n, k] = [float(_a[10][:-1]), 0, float(_a[16][:-1]), float(_a[-1]), i // n, float(_a[7].split('_')[-1].rstrip(':'))]
                         ia += 1
                     break
 
@@ -159,11 +169,13 @@ def asr_models_loop_full():
     if exclude_tvl:
         lat_sig = np.zeros((n, layer, neuron, 6))
         for i in range(layer):
+            # file_name = f'slurm_log_sensor_{i}.txt'
             file_name = f'slurm_log_{i}.txt'
             with open(log_tvl_dir + file_name, 'r') as f:
                 a = f.readlines()
+                a = [line for line in a if 'Time' not in line]
                 for ia in range(len(a)):
-                    if 'layer' in a[ia] and 'Functions to be tested' not in a[ia]:
+                    if 'layer' in a[ia] and 'Functions to be tested' not in a[ia] and 'Transforms to be tested' not in a[ia]:
                         for k in range(neuron):
                             _a = [j for j in a[ia].split()]
                             try:
@@ -196,7 +208,9 @@ def asr_models_loop_full():
     plt.xlim(-200, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select_excl_tvl', dpi=600)
+    # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select_excl_tvl', dpi=600)
+    # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/scatter/{neuron_selection}_20', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/new_layer', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

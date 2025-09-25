@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/salmonn_omni/sensor/slurm_log_sensor_%a.txt
-#SBATCH --error=kymata-core-data/output/salmonn_omni/sensor/slurm_log_sensor_%a.txt
+#SBATCH --output=kymata-core-data/output/salmonn_omni/sensor/tvl/log/slurm_log_sensor_%a.txt
+#SBATCH --error=kymata-core-data/output/salmonn_omni/sensor/tvl/log/slurm_log_sensor_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=10G
@@ -30,6 +30,7 @@ python kymata/invokers/run_gridsearch.py \
   --asr-option 'all' \
   --num-neurons 4096 \
   --mfa True \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/tvl/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/tvl/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --low-level-function \
   --overwrite
