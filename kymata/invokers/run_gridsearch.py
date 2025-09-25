@@ -41,7 +41,7 @@ def main():
                              "if included with kymata-core.")
 
     parser.add_argument("--emeg-dir", type=str,
-                        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
+                        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_dataaa/",
                         help="EMEG directory, relative to base dir")
 
     # Analysis specific
@@ -114,7 +114,7 @@ def main():
     # Config defaults
     participants = dataset_config.get("participants")
     base_dir = Path(
-        "/imaging/projects/cbu/kymata/data/",
+        "/Users/derek/Desktop/Proj-w-YCTY/kymata-core/kymata/data/",
         dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
     )
     inverse_operator_dir = dataset_config.get("inverse_operator")
@@ -132,17 +132,28 @@ def main():
     else:
         raise NotImplementedError()
 
-    reps = [f"_rep{i}" for i in range(8)] + [
-        "-ave"
-    ]  # most of the time we will only use the -ave, not the individual reps
+    # reps = [f"_rep{i}" for i in range(8)] + [
+    #     "-ave"
+    # ]  # most of the time we will only use the -ave, not the individual reps
+    # if args.single_participant_override is not None:
+    #     if args.ave_mode == "ave":
+    #         emeg_filenames = [args.single_participant_override + "-ave"]
+    #     elif args.ave_mode == "concatenate":
+    #         print("Concatenating repetitions together")
+    #         emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
+    # else:
+    #     emeg_filenames = [p + "-ave" for p in participants]
+
     if args.single_participant_override is not None:
-        if args.ave_mode == "ave":
-            emeg_filenames = [args.single_participant_override + "-ave"]
-        elif args.ave_mode == "concatenate":
-            print("Concatenating repetitions together")
-            emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
+        emeg_filenames = [args.single_participant_override + "-200Hz-fulllength"]
     else:
-        emeg_filenames = [p + "-ave" for p in participants]
+        raise ValueError(
+            "For ECog-Podcast dataset we do not average participants because of different number and locaiton of electrons.\n "
+            "Please always use single-participant-override!"
+        )
+        
+    # emeg_filenames = [p + "-200Hz-fulllength" for p in participants]
+    # emeg_filenames = [p + "-200Hz-80s" for p in participants]
 
     start = time.time()
 
@@ -159,6 +170,7 @@ def main():
 
     # Load data
     emeg_path = Path(base_dir, args.emeg_dir)
+    # import ipdb; ipdb.set_trace()
     morph_dir = Path(
         base_dir,
         "interim_preprocessing_files",
@@ -186,6 +198,7 @@ def main():
 
     t0 = time.time()
 
+    # import ipdb; ipdb.set_trace()
     emeg_values, ch_names, n_reps = load_emeg_pack(
         emeg_filenames,
         emeg_dir=emeg_path,
@@ -290,7 +303,7 @@ def main():
     if args.single_participant_override is not None:
         fig_save_path = Path(
             args.save_plot_location,
-            combined_names + f"_{args.single_participant_override}",
+            combined_names,
         ).with_suffix(".png")
     else:
         fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
