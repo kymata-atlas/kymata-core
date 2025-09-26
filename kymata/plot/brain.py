@@ -101,16 +101,11 @@ def plot_minimap_hexel(
     minimap_kwargs: dict,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
 ):
-    # Ensure we have the FSAverage dataset downloaded
     from kymata.datasets.fsaverage import FSAverageDataset
 
+    # Ensure we have the FSAverage dataset downloaded
     fsaverage = FSAverageDataset(download=True)
     os.environ["SUBJECTS_DIR"] = str(fsaverage.path)
-
-    # There is a little circular dependency between the smoothing_steps in plot_kwargs below, which gets created after
-    # the colormap, and the colormap, which depends on the smoothing steps. So we short-circuit that here by pulling out
-    # the relevant value, if it's there, so it doesn't get out of sync
-    smoothing_steps = minimap_kwargs.pop("smoothing_steps", "nearest")
 
     colormap, colour_idx_lookup = _get_colormap_for_cortical_minimap(colors, show_transforms)
 
@@ -125,13 +120,34 @@ def plot_minimap_hexel(
         tmin=0,
         tstep=1,
     )
+
+    __plot_minimap_hexel_surface(
+        stc=stc,
+        view=view,
+        surface=surface,
+        lh_minimap_axis=lh_minimap_axis,
+        rh_minimap_axis=rh_minimap_axis,
+        colormap=colormap,
+        minimap_kwargs=minimap_kwargs,
+    )
+
+
+def __plot_minimap_hexel_surface(
+        stc,
+        view,
+        surface,
+        lh_minimap_axis,
+        rh_minimap_axis,
+        colormap,
+        minimap_kwargs,
+):
     warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
     plot_kwargs = dict(
         subject="fsaverage",
         surface=surface,
         views=view,
         colormap=colormap,
-        smoothing_steps=smoothing_steps,
+        smoothing_steps=minimap_kwargs.pop("smoothing_steps", "nearest"),
         cortex=dict(colormap="Greys", vmin=-3, vmax=6),
         background="white",
         spacing="ico5",
