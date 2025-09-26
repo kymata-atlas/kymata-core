@@ -1,12 +1,15 @@
 import os
+from pathlib import Path
 from warnings import warn
 
 from typing import Optional, Any
 
+import mne
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.colors import Colormap, ListedColormap
 from mne import SourceEstimate
+from mne.viz import plot_bem, plot_volume_source_estimates
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
@@ -121,25 +124,63 @@ def plot_minimap_hexel(
         tstep=1,
     )
 
-    __plot_minimap_hexel_surface(
+    if surface == "volumetric":
+        __plot_minimap_hexel_volumetric(
+            stc=stc,
+            src_loc=fsaverage.path / "fsaverage" / "bem" / "fsaverage-ico-5-src.fif",
+            view=view,
+            lh_minimap_axis=lh_minimap_axis,
+            rh_minimap_axis=rh_minimap_axis,
+            colormap=colormap,
+            minimap_kwargs=minimap_kwargs,
+        )
+    else:
+        __plot_minimap_hexel_surface(
+            stc=stc,
+            view=view,
+            surface=surface,
+            lh_minimap_axis=lh_minimap_axis,
+            rh_minimap_axis=rh_minimap_axis,
+            colormap=colormap,
+            minimap_kwargs=minimap_kwargs,
+        )
+
+
+def __plot_minimap_hexel_volumetric(
+        stc: SourceEstimate,
+        src_loc: Path,
+        view: str,
+        lh_minimap_axis: pyplot.Axes,
+        rh_minimap_axis: pyplot.Axes,
+        colormap: Colormap,
+        minimap_kwargs: dict,
+):
+    if view not in {"coronal", "sagital", "axial"}:
+        raise ValueError(f"{view} not a valid view. Please select one of coronal, sagital and axial.")
+
+    src = mne.read_source_spaces(src_loc)
+
+    fig = plot_volume_source_estimates(
         stc=stc,
-        view=view,
-        surface=surface,
-        lh_minimap_axis=lh_minimap_axis,
-        rh_minimap_axis=rh_minimap_axis,
+        src=src,
+        subject="fsaverage",
         colormap=colormap,
-        minimap_kwargs=minimap_kwargs,
     )
+
+    lh_minimap_axis.imshow(fig.screenshot())
+
+    hide_axes(lh_minimap_axis)
+    pyplot.close(fig)
 
 
 def __plot_minimap_hexel_surface(
-        stc,
-        view,
-        surface,
-        lh_minimap_axis,
-        rh_minimap_axis,
-        colormap,
-        minimap_kwargs,
+        stc: SourceEstimate,
+        view: str,
+        surface: str,
+        lh_minimap_axis: pyplot.Axes,
+        rh_minimap_axis: pyplot.Axes,
+        colormap: Colormap,
+        minimap_kwargs: dict,
 ):
     warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
     plot_kwargs = dict(

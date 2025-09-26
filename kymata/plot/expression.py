@@ -253,7 +253,8 @@ def expression_plot(
             `"sagittal"`: From the right side.
             `"coronal"`: From the rear.
             Default is `lateral`.
-        minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
+        minimap_surface (str, optional): The surface type for the minimap, such as "inflated".
+            Special value "volumetric" to swap to volumetric view à la MRICron. Default is "inflated".
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
