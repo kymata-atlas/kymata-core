@@ -14,6 +14,7 @@ from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
 from kymata.plot.axes import hide_axes
 from kymata.plot.color import transparent
+from kymata.plot.compositing import rasterize_as_array
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
@@ -153,8 +154,15 @@ def __plot_minimap_hexel_volumetric(
         colormap: Colormap,
         minimap_kwargs: dict,
 ):
-    if view not in {"coronal", "sagittal", "axial"}:
-        raise ValueError(f"{view} not a valid view. Please select one of coronal, sagital and axial.")
+    # Select nice-looking slice
+    if view == "coronal":
+        slice = [100]
+    elif view == "sagittal":
+        slice = [140]
+    elif view == "axial":
+        slice = [140]
+    else:
+        raise ValueError(f"{view} not a valid view. Please select one of coronal, sagittal and axial.")
 
     src = read_source_spaces(src_loc)
 
@@ -168,12 +176,14 @@ def __plot_minimap_hexel_volumetric(
         subject="fsaverage",
         src=src,
         orientation=view,
-        slices=None,
+        slices=slice,
+        show=False,
     )
 
-    lh_minimap_axis.imshow(fig.screenshot())
+    lh_minimap_axis.imshow(rasterize_as_array(fig))
 
     hide_axes(lh_minimap_axis)
+    hide_axes(rh_minimap_axis)
     pyplot.close(fig)
 
 
