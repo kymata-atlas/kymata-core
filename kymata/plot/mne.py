@@ -34,6 +34,7 @@ def plot_bem(
     show_indices=True,
     mri="T1.mgz",
     show_orientation=True,
+    draw_surfaces=False,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -70,6 +71,8 @@ def plot_bem(
         True (default) will only show it on the outside most edges of the
         figure, False will never show labels, and "always" will label each
         plot.
+    draw_surfaces : bool
+        Draw the surface contours. Default is False.
 
     Returns
     -------
@@ -149,6 +152,7 @@ def plot_bem(
         show_indices=show_indices,
         show_orientation=show_orientation,
         slices_as_subplots=True,
+        draw_surfaces=draw_surfaces,
     )
     return fig
 
@@ -166,6 +170,7 @@ def _plot_mri_contours(
     show_orientation=False,
     width=512,
     slices_as_subplots=True,
+    draw_surfaces=False,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -288,19 +293,20 @@ def _plot_mri_contours(
         ax.set_aspect("equal")  # XXX eventually could deal with zooms
 
         # and then plot the contours on top
-        for surf, color in surfs:
-            with warnings.catch_warnings(record=True):  # ignore contour warn
-                warnings.simplefilter("ignore")
-                ax.tricontour(
-                    surf["rr"][:, x],
-                    surf["rr"][:, y],
-                    surf["tris"],
-                    surf["rr"][:, axis],
-                    levels=[sl],
-                    colors=color,
-                    linewidths=1.0,
-                    zorder=1,
-                )
+        if draw_surfaces:
+            for surf, color in surfs:
+                with warnings.catch_warnings(record=True):  # ignore contour warn
+                    warnings.simplefilter("ignore")
+                    ax.tricontour(
+                        surf["rr"][:, x],
+                        surf["rr"][:, y],
+                        surf["tris"],
+                        surf["rr"][:, axis],
+                        levels=[sl],
+                        colors=color,
+                        linewidths=1.0,
+                        zorder=1,
+                    )
 
         if len(sources):
             in_slice = (sources[:, axis] >= lower) & (sources[:, axis] < upper)
