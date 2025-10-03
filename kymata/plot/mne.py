@@ -119,7 +119,6 @@ def plot_bem(
                 else:
                     raise OSError(f"Surface {surf_fname} does not exist.")
 
-    # TODO: Refactor with / improve _ensure_src to do this
     if isinstance(src, str | Path | os.PathLike):
         src = Path(src)
         if not src.exists():
