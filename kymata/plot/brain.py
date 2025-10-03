@@ -1,21 +1,19 @@
 import os
 from pathlib import Path
+from typing import Optional, Any
 from warnings import warn
 
-from typing import Optional, Any
-
-import mne
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.colors import Colormap, ListedColormap
-from mne import SourceEstimate
-from mne.viz import plot_bem, plot_volume_source_estimates
+from mne import SourceEstimate, read_source_spaces
+from mne.viz import plot_bem
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
-from kymata.plot.color import transparent
 from kymata.plot.axes import hide_axes
+from kymata.plot.color import transparent
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
@@ -155,16 +153,22 @@ def __plot_minimap_hexel_volumetric(
         colormap: Colormap,
         minimap_kwargs: dict,
 ):
-    if view not in {"coronal", "sagital", "axial"}:
+    if view not in {"coronal", "sagittal", "axial"}:
         raise ValueError(f"{view} not a valid view. Please select one of coronal, sagital and axial.")
 
-    src = mne.read_source_spaces(src_loc)
+    src = read_source_spaces(src_loc)
 
-    fig = plot_volume_source_estimates(
-        stc=stc,
-        src=src,
+    # Reset src's `'inuse'` with LH and RH vertices
+    src[0]["inuse"] = np.zeros_like(src[0]["inuse"])
+    src[1]["inuse"] = np.zeros_like(src[1]["inuse"])
+    src[0]["inuse"][np.where(stc.lh_data.squeeze() == 1.0)] = 1
+    src[1]["inuse"][np.where(stc.rh_data.squeeze() == 1.0)] = 1
+
+    fig = plot_bem(
         subject="fsaverage",
-        colormap=colormap,
+        src=src,
+        orientation=view,
+        slices=None,
     )
 
     lh_minimap_axis.imshow(fig.screenshot())
