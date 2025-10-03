@@ -7,7 +7,6 @@ import numpy as np
 from matplotlib import pyplot
 from matplotlib.colors import Colormap, ListedColormap
 from mne import SourceEstimate, read_source_spaces
-from mne.viz import plot_bem
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
@@ -15,6 +14,7 @@ from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
 from kymata.plot.axes import hide_axes
 from kymata.plot.color import transparent
 from kymata.plot.compositing import rasterize_as_array
+from kymata.plot.mne import plot_bem
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
