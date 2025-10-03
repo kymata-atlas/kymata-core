@@ -23,7 +23,7 @@ from mne.viz.utils import _prepare_trellis, _figure_agg, plt_show
 
 
 # Copied from mne.viz.misc.plot_bem to add functionality such as colour selection and multiple transforms
-def plot_bem(
+def plot_bem_with_source_values(
     subject,
     subjects_dir=None,
     orientation="coronal",
@@ -35,6 +35,7 @@ def plot_bem(
     mri="T1.mgz",
     show_orientation=True,
     draw_surfaces=False,
+    colormap=None,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -73,6 +74,8 @@ def plot_bem(
         plot.
     draw_surfaces : bool
         Draw the surface contours. Default is False.
+    colormap : matplotlib.colors.Colormap | None
+        Colormap to use when colouring nonzero values. If None (the default), use a default solid colour.
 
     Returns
     -------
@@ -152,6 +155,7 @@ def plot_bem(
         show_orientation=show_orientation,
         slices_as_subplots=True,
         draw_surfaces=draw_surfaces,
+        colormap=colormap,
     )
     return fig
 
@@ -170,6 +174,7 @@ def _plot_mri_contours(
     width=512,
     slices_as_subplots=True,
     draw_surfaces=False,
+    colormap=None,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -236,6 +241,7 @@ def _plot_mri_contours(
         surfs.append((surf, color))
 
     sources = list()
+    source_values = list()
     if src is not None:
         _ensure_src(src, extra=" or None")
         # Eventually we can relax this by allowing ``trans`` if need be
@@ -247,7 +253,9 @@ def _plot_mri_contours(
         for src_ in src:
             points = src_["rr"][src_["inuse"].astype(bool)]
             sources.append(apply_trans(mri_rasvox_t, points * 1e3))
+            source_values.append(src_["val"][src_["inuse"].astype(bool)])
         sources = np.concatenate(sources, axis=0)
+        source_values = np.concatenate(source_values, axis=0)
 
     # get the figure dimensions right
     if slices_as_subplots:
@@ -313,7 +321,7 @@ def _plot_mri_contours(
                 sources[in_slice, x],
                 sources[in_slice, y],
                 marker=".",
-                color="#FF00FF",
+                color="#FF00FF" if colormap is None else colormap(source_values[in_slice]),
                 s=1,
                 zorder=2,
             )

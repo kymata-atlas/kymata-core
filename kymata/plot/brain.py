@@ -14,7 +14,7 @@ from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
 from kymata.plot.axes import hide_axes
 from kymata.plot.color import transparent
 from kymata.plot.compositing import rasterize_as_array
-from kymata.plot.mne import plot_bem
+from kymata.plot.mne import plot_bem_with_source_values
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
@@ -166,18 +166,27 @@ def __plot_minimap_hexel_volumetric(
 
     src = read_source_spaces(src_loc)
 
+    lh_vals = stc.lh_data.squeeze()
+    rh_vals = stc.rh_data.squeeze()
+
     # Reset src's `'inuse'` with LH and RH vertices
     src[0]["inuse"] = np.zeros_like(src[0]["inuse"])
     src[1]["inuse"] = np.zeros_like(src[1]["inuse"])
-    src[0]["inuse"][np.where(stc.lh_data.squeeze() == 1.0)] = 1
-    src[1]["inuse"][np.where(stc.rh_data.squeeze() == 1.0)] = 1
+    src[0]["inuse"][np.where(lh_vals > 0)] = 1
+    src[1]["inuse"][np.where(rh_vals > 0)] = 1
+    # New `'val'` field to store actual values for colormap
+    src[0]["val"] = np.zeros_like(src[0]["inuse"], dtype=float)
+    src[1]["val"] = np.zeros_like(src[1]["inuse"], dtype=float)
+    src[0]["val"][np.where(lh_vals > 0)] = lh_vals[np.where(lh_vals > 0)]
+    src[1]["val"][np.where(rh_vals > 0)] = rh_vals[np.where(rh_vals > 0)]
 
-    fig = plot_bem(
+    fig = plot_bem_with_source_values(
         subject="fsaverage",
         src=src,
         orientation=view,
         slices=slice,
         show=False,
+        colormap=colormap,
     )
 
     lh_minimap_axis.imshow(rasterize_as_array(fig))
