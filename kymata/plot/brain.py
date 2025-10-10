@@ -20,10 +20,9 @@ from kymata.plot.mne import plot_bem_with_source_values
 class _DefaultSlices:
     """Chosen default slices for volumnetric visualisation."""
     # These slices chosen to be evenly spaced
-    sagittal_l =  [85]  # np.round(np.linspace(start=0, stop=256 - 1, num=4)).astype(int)[1]
-    sagittal_r = [170]  # np.round(np.linspace(start=0, stop=256 - 1, num=4)).astype(int)[2]
-    coronal    = [128]  # np.round(np.linspace(start=0, stop=256 - 1, num=3)).astype(int)[1]
-    axial      = [128]  # np.round(np.linspace(start=0, stop=256 - 1, num=3)).astype(int)[1]
+    sagittal   = [85, 170]  # L, R; [25, 170] = 1/3, 2/3
+    coronal    = [128]  # 128 = 1/2
+    axial      = [128]  # 128 = 1/2
 
 
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
@@ -191,14 +190,14 @@ def __plot_minimap_hexel_volumetric(
     for view, axis in axis_views:
         if view == "l":
             view = "sagittal"
-            slice = _DefaultSlices.sagittal_l
+            slice_ = _DefaultSlices.sagittal[0]
         elif view == "r":
             view = "sagittal"
-            slice = _DefaultSlices.sagittal_r
+            slice_ = _DefaultSlices.sagittal[1]
         elif view == "coronal":
-            slice = _DefaultSlices.coronal
+            slice_ = _DefaultSlices.coronal
         elif view == "axial":
-            slice = _DefaultSlices.axial
+            slice_ = _DefaultSlices.axial
         else:
             raise NotImplementedError()
 
@@ -206,7 +205,7 @@ def __plot_minimap_hexel_volumetric(
             subject="fsaverage",
             src=src,
             orientation=view,
-            slices=slice,
+            slices=slice_,
             show=False,
             colormap=colormap,
         )
