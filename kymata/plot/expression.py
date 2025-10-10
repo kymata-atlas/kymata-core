@@ -596,6 +596,11 @@ def expression_plot(
     )
 
     # Legend for plotted transform
+    if minimap == "large":
+        main_legend_ax = axes[_AxName.minimap_rh]
+    else:
+        main_legend_ax = top_ax
+    minor_legend_ax = bottom_ax
     legends = []
     if show_legend:
         split_legend_at_n_transforms = 15
@@ -611,7 +616,7 @@ def expression_plot(
                 if custom_label not in custom_labels_not_shown:
                     custom_labels_not_shown.append(custom_label)
                     dummy_patches.append(Patch(color=None, label=custom_label))
-            bottom_legend = bottom_ax.legend(
+            bottom_legend = minor_legend_ax.legend(
                 labels=custom_labels_not_shown,
                 fontsize="x-small",
                 alignment="left",
@@ -624,7 +629,7 @@ def expression_plot(
             for lh in bottom_legend.legend_handles:
                 lh.set_alpha(0)
             legends.append(bottom_legend)
-        top_legend = top_ax.legend(
+        main_legend = main_legend_ax.legend(
             handles=custom_handles,
             labels=custom_labels,
             fontsize="x-small",
@@ -634,7 +639,7 @@ def expression_plot(
             loc="upper left",
             bbox_to_anchor=(1.02, 1.02),
         )
-        legends.append(top_legend)
+        legends.append(main_legend)
 
     __reposition_axes_for_legends(fig, legends)
 
