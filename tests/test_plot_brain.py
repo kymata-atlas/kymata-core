@@ -175,6 +175,7 @@ class TestPlotMinimapHexel:
             expression_set=mock_expression_set,
             show_transforms=show_transforms,
             lh_minimap_axis=mock_axes,
+            main_minimap_axis=None,
             rh_minimap_axis=mock_axes,
             view='lateral',
             surface='inflated',
@@ -193,7 +194,8 @@ class TestPlotMinimapHexel:
             alpha_logp=-7.0,
             show_transforms=show_transforms,
             value_lookup={'transform_A': 0.5, 'transform_B': 1.0},
-            minimap_latency_range=(0.1, 0.5)
+            minimap_latency_range=(0.1, 0.5),
+            top_n=None,
         )
 
         assert mock_source_estimate.call_count == 1
