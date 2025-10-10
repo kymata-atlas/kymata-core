@@ -182,14 +182,8 @@ def __plot_minimap_hexel_volumetric(
     src[0]["val"][np.where(lh_vals > 0)] = lh_vals[np.where(lh_vals > 0)]
     src[1]["val"][np.where(rh_vals > 0)] = rh_vals[np.where(rh_vals > 0)]
 
-    axis_views = [
-        ("l", lh_minimap_axis),
-        (view,         main_minimap_axis),
-        ("r", rh_minimap_axis),
-    ]
-
-    # Plot three views
-    saggital_fig: Figure = plot_bem_with_source_values(
+    # Plot selected views
+    sagittal_fig: Figure = plot_bem_with_source_values(
             subject="fsaverage",
             src=src,
             orientation="sagittal",
@@ -214,19 +208,19 @@ def __plot_minimap_hexel_volumetric(
         colormap=colormap,
     )
 
-    left_img = rasterize_axes_as_array(saggital_fig.axes[0])
-    right_img = rasterize_axes_as_array(saggital_fig.axes[1])
+    left_img = rasterize_axes_as_array(sagittal_fig.axes[0])
+    right_img = rasterize_axes_as_array(sagittal_fig.axes[1])
     chosen_img = rasterize_axes_as_array(chosen_fig.axes[0])
-    pyplot.close(saggital_fig)
+    pyplot.close(sagittal_fig)
     pyplot.close(chosen_fig)
 
     # Sagittal view is always pointing to the right, so we'll flip the left hemi
     left_img = np.fliplr(left_img)
 
     # Display on axes
-    lh_minimap_axis.imshow(left_img, aspect="equal", extent=(0, left_img.shape[1], left_img.shape[0], 0))
-    rh_minimap_axis.imshow(right_img, aspect="equal", extent=(0, right_img.shape[1], right_img.shape[0], 0))
-    main_minimap_axis.imshow(chosen_img, aspect="equal", extent=(0, chosen_img.shape[1], chosen_img.shape[0], 0))
+    lh_minimap_axis.imshow(left_img)
+    rh_minimap_axis.imshow(right_img)
+    main_minimap_axis.imshow(chosen_img)
 
     hide_axes(lh_minimap_axis)
     hide_axes(rh_minimap_axis)

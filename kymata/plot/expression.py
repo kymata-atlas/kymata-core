@@ -107,10 +107,22 @@ def _minimap_mosaic(
             ]
         elif minimap_option == "standard":
             if expression_set_type == HexelExpressionSet:
-                spec = [
-                    [_AxName.minimap_lh, _AxName.expression_top_lh],
-                    [_AxName.minimap_rh, _AxName.expression_bottom_rh],
-                ]
+                if minimap_type == "volumetric":
+                    # Volumetric minimaps have L, main, and R views
+                    spec = [
+                        [_AxName.minimap_lh,   _AxName.expression_top_lh],
+                        [_AxName.minimap_lh,   _AxName.expression_top_lh],
+                        [_AxName.minimap_main, _AxName.expression_top_lh],
+                        [_AxName.minimap_main, _AxName.expression_bottom_rh],
+                        [_AxName.minimap_rh,   _AxName.expression_bottom_rh],
+                        [_AxName.minimap_rh,   _AxName.expression_bottom_rh],
+                    ]
+                else:
+                    # Cortical minimaps have only L and R views
+                    spec = [
+                        [_AxName.minimap_lh, _AxName.expression_top_lh],
+                        [_AxName.minimap_rh, _AxName.expression_bottom_rh],
+                    ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
                     [_AxName.minimap_main, _AxName.expression_top_lh],
