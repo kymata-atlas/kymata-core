@@ -557,7 +557,7 @@ def expression_plot(
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_lh],
                 rh_minimap_axis=axes[_AxName.minimap_rh],
-                main_minimap_axis=axes[_AxName.minimap_main],
+                main_minimap_axis=axes[_AxName.minimap_main] if _AxName.minimap_main in axes.keys() else None,
                 view=minimap_view,
                 surface=minimap_type,
                 colors=color,
