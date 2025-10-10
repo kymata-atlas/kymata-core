@@ -33,7 +33,7 @@ def plot_bem_with_source_values(
     show=True,
     show_indices=True,
     mri="T1.mgz",
-    show_orientation=True,
+    show_orientation=False,
     draw_surfaces=False,
     colormap=None,
 ):
