@@ -359,12 +359,8 @@ def expression_plot(
             minimap_view = "lateral"
 
     if plot_top_n is not None:
-        if isinstance(expression_set, HexelExpressionSet):
-            if minimap_type == "volumetric":
-                if plot_top_n < 1:
-                    raise ValueError("`plot_top_n` must be greater than or equal to 1")
-            else:
-                raise NotImplementedError("Plot top N not supported for cortical minimaps")
+        if plot_top_n < 1:
+            raise ValueError("`plot_top_n` must be greater than or equal to 1")
 
     best_transforms = expression_set.best_transforms()
 
