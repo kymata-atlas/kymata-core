@@ -579,19 +579,19 @@ def expression_plot(
             raise NotImplementedError()
 
     # Format one-off axis qualities
-    top_ax: pyplot.Axes
-    bottom_ax: pyplot.Axes
+    top_expression_ax: pyplot.Axes
+    bottom_expression_ax: pyplot.Axes
     if paired_axes:
-        top_ax = axes[_AxName.expression_top_lh]
-        bottom_ax = axes[_AxName.expression_bottom_rh]
-        top_ax.set_xticklabels([])
-        bottom_ax.invert_yaxis()
+        top_expression_ax = axes[_AxName.expression_top_lh]
+        bottom_expression_ax = axes[_AxName.expression_bottom_rh]
+        top_expression_ax.set_xticklabels([])
+        bottom_expression_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes[_AxName.expression_main]
-    top_ax.set_title(title)
-    bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
-    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
-    bottom_ax.xaxis.set_major_locator(
+        top_expression_ax = bottom_expression_ax = axes[_AxName.expression_main]
+    top_expression_ax.set_title(title)
+    bottom_expression_ax.set_xlabel("Latency (ms) relative to onset of the environment")
+    bottom_ax_xmin, bottom_ax_xmax = bottom_expression_ax.get_xlim()
+    bottom_expression_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
     )
 
@@ -599,8 +599,8 @@ def expression_plot(
     if minimap == "large":
         main_legend_ax = axes[_AxName.minimap_rh]
     else:
-        main_legend_ax = top_ax
-    minor_legend_ax = bottom_ax
+        main_legend_ax = top_expression_ax
+    minor_legend_ax = bottom_expression_ax
     legends = []
     if show_legend:
         split_legend_at_n_transforms = 15
@@ -643,7 +643,7 @@ def expression_plot(
 
     __reposition_axes_for_legends(fig, legends)
 
-    __add_axis_name_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim, minimap)
+    __add_axis_name_annotations(axes_names, top_expression_ax, bottom_expression_ax, fig, paired_axes, ylim, minimap)
 
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
