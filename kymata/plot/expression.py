@@ -13,11 +13,11 @@ from matplotlib.ticker import FixedLocator
 from seaborn import color_palette
 
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_up, round_down
 from kymata.plot.brain import plot_minimap_hexel
 from kymata.plot.sensor import get_sensor_left_right_assignment, restrict_sensors_by_type
-from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -233,6 +233,7 @@ def expression_plot(
     minimap_view: Optional[str] = None,
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
+    plot_top_n: Optional[int] = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -296,6 +297,8 @@ def expression_plot(
             restrict the minimap view to only the specified time window, and highlight the time window on the expression
             plot. Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for
             half-open intervals.
+        plot_top_n (Optional[int]): If not None, show only the N most significant sources. If None, plot all significant
+            sources. Default is None.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -355,6 +358,14 @@ def expression_plot(
         else:
             minimap_view = "lateral"
 
+    if plot_top_n is not None:
+        if isinstance(expression_set, HexelExpressionSet):
+            if minimap_type == "volumetric":
+                if plot_top_n < 1:
+                    raise ValueError("`plot_top_n` must be greater than or equal to 1")
+            else:
+                raise NotImplementedError("Plot top N not supported for cortical minimaps")
+
     best_transforms = expression_set.best_transforms()
 
     if paired_axes:
@@ -374,7 +385,7 @@ def expression_plot(
             )
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("",)
-            # Wrap into list
+            # Wrap into tuple
             best_transforms = (best_transforms,)
         else:
             raise NotImplementedError()
@@ -564,6 +575,7 @@ def expression_plot(
                 alpha_logp=sidak_corrected_alpha,
                 minimap_latency_range=minimap_latency_range,
                 minimap_kwargs=minimap_kwargs,
+                top_n=plot_top_n,
             )
         elif isinstance(expression_set, SensorExpressionSet):
             raise NotImplementedError("Minimap not yet implemented for sensor data")

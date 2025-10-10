@@ -1,18 +1,10 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import Optional, Iterable
-
 from networkx import DiGraph
 
-from kymata.entities.expression import ExpressionPoint
 
 # Maps transforms to lists of names of parent/predecessor/upstream transforms
 TransformHierarchy = dict[str, list[str]]
-
-
-# transform_name → points
-GroupedPoints = dict[str, list[ExpressionPoint]]
 
 
 class CandidateTransformList:
@@ -142,34 +134,3 @@ class CandidateTransformList:
             raise ValueError(transform)
 
         return set(self.graph.successors(transform))
-
-
-def group_points_by_transform(points: Iterable[ExpressionPoint],
-                              ctl: Optional[CandidateTransformList] = None,
-                              ) -> GroupedPoints:
-    """
-    Groups a list of expression points by their associated transforms.
-
-    This function organizes expression points into a dictionary, where each key is a transform, and each value is a list
-    of expression points associated with that transform.
-
-    If a CTL is provided, the function will initialize the dictionary with empty lists for all transforms in the CTL,
-    ensuring all transforms are represented, even if no expression points are associated with them.
-
-    Args:
-        points (list[ExpressionPoint]): A list of expression points to be grouped.
-        ctl (Optional[CandidateTransformList]): An optional transform list to initialize the dictionary with empty lists
-            for all transforms.
-
-    Returns:
-        GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
-            transform.
-    """
-    d = defaultdict(list)
-    if ctl is not None:
-        # Initialise with empty lists for transforms with no points
-        for t in ctl.transforms:
-            d[t] = []
-    for point in points:
-        d[point.transform].append(point)
-    return dict(d)

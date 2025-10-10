@@ -36,6 +36,7 @@ def plot_bem_with_source_values(
     show_orientation=False,
     draw_surfaces=False,
     colormap=None,
+    highlight=False,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -79,6 +80,8 @@ def plot_bem_with_source_values(
         Draw the surface contours. Default is False.
     colormap : matplotlib.colors.Colormap | None
         Colormap to use when colouring nonzero values. If None (the default), use a default solid colour.
+    highlight : bool
+        If True, outline plotted points
 
     Returns
     -------
@@ -159,6 +162,7 @@ def plot_bem_with_source_values(
         slices_as_subplots=slices_as_subplots,
         draw_surfaces=draw_surfaces,
         colormap=colormap,
+        highlight=highlight,
     )
     return fig
 
@@ -178,6 +182,7 @@ def _plot_mri_contours(
     slices_as_subplots=True,
     draw_surfaces=False,
     colormap=None,
+    highlight=False,
 ):
     """Plot BEM contours on anatomical MRI slices.
 
@@ -324,9 +329,20 @@ def _plot_mri_contours(
                 sources[in_slice, y],
                 marker=".",
                 color="#FF00FF" if colormap is None else colormap(source_values[in_slice]),
-                s=1,
+                s=2,
                 zorder=2,
             )
+            if highlight:
+                ax.scatter(
+                    sources[in_slice, x],
+                    sources[in_slice, y],
+                    marker="o",
+                    color="white",
+                    facecolors='none',
+                    alpha=0.5,
+                    s=3,
+                    zorder=2,
+                )
         if show_indices:
             ax.text(
                 dat.shape[1] // 8 + 0.5,

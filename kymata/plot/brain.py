@@ -1,6 +1,7 @@
 import os
+from collections import defaultdict
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, DefaultDict
 from warnings import warn
 
 import numpy as np
@@ -11,7 +12,7 @@ from mne import SourceEstimate, read_source_spaces
 from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
-from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
+from kymata.entities.expression import HexelExpressionSet, ExpressionPoint, group_points_by_transform
 from kymata.plot.axes import hide_axes
 from kymata.plot.color import transparent
 from kymata.plot.compositing import rasterize_axes_as_array
@@ -31,6 +32,7 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
                         show_transforms: list[str],
                         value_lookup: dict[str, int | float],
                         minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
+                        top_n: Optional[int] = None,
                         ) -> tuple[NDArray, NDArray]:
     """
     Generates data arrays for a minimap visualization of significant hexels in a HexelExpressionSet.
@@ -44,6 +46,8 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         value_lookup (dict[str, int]): A dictionary mapping transform names to values to set in the data arrays.
         minimap_latency_range: (Optional[tuple[float | None, float | None]]): The latency range to use in the minimap.
             Defaults to None.
+        plot_top_n (Optional[int]): If not None, show only the N most significant sources. If None, plot all significant
+            sources. Default is None.
 
 
     Returns:
@@ -60,12 +64,16 @@ def _hexel_minimap_data(expression_set: HexelExpressionSet,
         indicates whether the hexel is significant for any transform and, if so, which transform it is
         significant for.
     """
+    if top_n is not None:
+        assert top_n >= 1
     # Initialise with zeros: transparent everywhere
     data_left = np.zeros((len(expression_set.hexels_left),))
     data_right = np.zeros((len(expression_set.hexels_right),))
     best_transforms_left: list[ExpressionPoint]
     best_transforms_right: list[ExpressionPoint]
     best_transforms_left, best_transforms_right = expression_set.best_transforms()
+    if top_n is not None:
+        best_transforms_left, best_transforms_right = _restrict_to_top_n_per_transform((best_transforms_left, best_transforms_right), n=top_n)
     best_transforms_left  = [ep for ep in best_transforms_left  if ep.logp_value < alpha_logp]
     best_transforms_right = [ep for ep in best_transforms_right if ep.logp_value < alpha_logp]
     if minimap_latency_range is not None:
@@ -112,6 +120,7 @@ def plot_minimap_hexel(
     alpha_logp: float,
     minimap_kwargs: dict,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
+    top_n: Optional[int] = None,
 ):
     from kymata.datasets.fsaverage import FSAverageDataset
 
@@ -125,7 +134,9 @@ def plot_minimap_hexel(
                                                 alpha_logp=alpha_logp,
                                                 show_transforms=show_transforms,
                                                 value_lookup=colour_idx_lookup,
-                                                minimap_latency_range=minimap_latency_range)
+                                                minimap_latency_range=minimap_latency_range,
+                                                top_n=top_n,
+                                                )
     stc = SourceEstimate(
         data=np.concatenate([data_left, data_right]),
         vertices=[expression_set.hexels_left, expression_set.hexels_right],
@@ -142,6 +153,7 @@ def plot_minimap_hexel(
             rh_minimap_axis=rh_minimap_axis,
             main_minimap_axis=main_minimap_axis,
             colormap=colormap,
+            highlight=top_n is not None,
             minimap_kwargs=minimap_kwargs,
         )
     else:
@@ -164,6 +176,7 @@ def __plot_minimap_hexel_volumetric(
         rh_minimap_axis: pyplot.Axes,
         main_minimap_axis: pyplot.Axes,
         colormap: Colormap,
+        highlight: bool,
         minimap_kwargs: dict,
 ):
     src = read_source_spaces(src_loc)
@@ -191,6 +204,7 @@ def __plot_minimap_hexel_volumetric(
             show=False,
             show_indices=False,
             colormap=colormap,
+            highlight=highlight,
         )
     if view == "coronal":
         chosen_slice = _DefaultSlices.coronal
@@ -206,6 +220,7 @@ def __plot_minimap_hexel_volumetric(
         show=False,
         show_indices=False,
         colormap=colormap,
+        highlight=highlight,
     )
 
     left_img = rasterize_axes_as_array(sagittal_fig.axes[0])
@@ -307,3 +322,34 @@ def _get_colormap_for_cortical_minimap(colors: dict[str, Any],
     }
 
     return colormap, colormap_value_lookup
+
+
+def _restrict_to_top_n_per_transform(best_transforms: tuple[list[ExpressionPoint], ...], n: int) -> tuple[list[ExpressionPoint], ...]:
+    if n < 1:
+        raise ValueError("n ≥ 1 required")
+
+    # Collect all points together and group by transform
+    # transform → [(block_i, point)]
+    all_points: DefaultDict[str, list[tuple[int, ExpressionPoint]]] = defaultdict(list)
+    for block_i, best_transforms_this_block in enumerate(best_transforms):
+        for trans, points in group_points_by_transform(best_transforms_this_block).items():
+            all_points[trans].extend([(block_i, p) for p in points])
+
+    # For each transform, sort by logp, descending
+    restricted_points = dict()
+    for trans, block_points in all_points.items():
+        block_i: int
+        point: ExpressionPoint
+        block_points = sorted(block_points, key=lambda b_p: b_p[1].logp_value)
+        # Restrict to top n
+        restricted_points[trans] = block_points[:n]
+
+    # Group back into blocks
+    restricted_best_transforms = []
+    for i in range(len(best_transforms)):
+        this_block = []
+        for points in restricted_points.values():
+            this_block.extend([p for block_i, p in points if block_i == i])
+        restricted_best_transforms.append(sorted(this_block))
+
+    return tuple(restricted_best_transforms)

@@ -13,8 +13,9 @@ from networkx import DiGraph
 from networkx.utils import graphs_equal
 
 from kymata.entities.datatypes import Channel, Latency
-from kymata.entities.expression import BLOCK_MERGED, ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP
-from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transform, TransformHierarchy
+from kymata.entities.expression import (
+    BLOCK_MERGED, ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, group_points_by_transform)
+from kymata.ippm.hierarchy import CandidateTransformList,TransformHierarchy
 
 
 _logger = getLogger(__file__)
