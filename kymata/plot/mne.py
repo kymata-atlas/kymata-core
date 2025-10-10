@@ -2,7 +2,6 @@
 Functions copied from mne to add functionality.
 """
 
-import io
 import os
 import warnings
 from pathlib import Path
@@ -31,6 +30,7 @@ def plot_bem_with_source_values(
     brain_surfaces=None,
     src=None,
     show=True,
+    slices_as_subplots=True,
     show_indices=True,
     mri="T1.mgz",
     show_orientation=False,
@@ -62,6 +62,9 @@ def plot_bem_with_source_values(
         folder.
     show : bool
         Show figure if True.
+    slices_as_subplots : bool
+        Whether to add all slices as subplots to a single figure, or to
+        create a new figure for each slice. If ``False``, return list of open figs.
     show_indices : bool
         Show slice indices if True.
     mri : str
@@ -153,7 +156,7 @@ def plot_bem_with_source_values(
         show=show,
         show_indices=show_indices,
         show_orientation=show_orientation,
-        slices_as_subplots=True,
+        slices_as_subplots=slices_as_subplots,
         draw_surfaces=draw_surfaces,
         colormap=colormap,
     )
@@ -182,12 +185,11 @@ def _plot_mri_contours(
     ----------
     slices_as_subplots : bool
         Whether to add all slices as subplots to a single figure, or to
-        create a new figure for each slice. If ``False``, return NumPy
-        arrays instead of Matplotlib figures.
+        create a new figure for each slice. If ``False``, return list of open figs.
 
     Returns
     -------
-    matplotlib.figure.Figure | list of array
+    matplotlib.figure.Figure | list of matplotlib.figure.Figure
         The plotted slices.
     """
 
@@ -380,21 +382,12 @@ def _plot_mri_contours(
                 )
 
         if not slices_as_subplots:
-            # convert to NumPy array
-            with io.BytesIO() as buff:
-                fig.savefig(
-                    buff, format="raw", bbox_inches="tight", pad_inches=0, dpi=dpi
-                )
-                w_, h_ = fig.canvas.get_width_height()
-                plt.close(fig)
-                buff.seek(0)
-                fig_array = np.frombuffer(buff.getvalue(), dtype=np.uint8)
-
-            fig = fig_array.reshape((int(h_), int(w_), -1))
             figs.append(fig)
 
     if slices_as_subplots:
         plt_show(show, fig=fig)
         return fig
     else:
+        for f in figs:
+            plt_show(show, fig=f)
         return figs

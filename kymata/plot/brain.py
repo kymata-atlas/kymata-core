@@ -6,6 +6,7 @@ from warnings import warn
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.colors import Colormap, ListedColormap
+from matplotlib.figure import Figure
 from mne import SourceEstimate, read_source_spaces
 from numpy.typing import NDArray
 
@@ -13,7 +14,7 @@ from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import HexelExpressionSet, ExpressionPoint
 from kymata.plot.axes import hide_axes
 from kymata.plot.color import transparent
-from kymata.plot.compositing import rasterize_as_array
+from kymata.plot.compositing import rasterize_axes_as_array
 from kymata.plot.mne import plot_bem_with_source_values
 
 
@@ -187,33 +188,49 @@ def __plot_minimap_hexel_volumetric(
         ("r", rh_minimap_axis),
     ]
 
-    for view, axis in axis_views:
-        if view == "l":
-            view = "sagittal"
-            slice_ = _DefaultSlices.sagittal[0]
-        elif view == "r":
-            view = "sagittal"
-            slice_ = _DefaultSlices.sagittal[1]
-        elif view == "coronal":
-            slice_ = _DefaultSlices.coronal
-        elif view == "axial":
-            slice_ = _DefaultSlices.axial
-        else:
-            raise NotImplementedError()
-
-        fig = plot_bem_with_source_values(
+    # Plot three views
+    saggital_fig: Figure = plot_bem_with_source_values(
             subject="fsaverage",
             src=src,
-            orientation=view,
-            slices=slice_,
+            orientation="sagittal",
+            slices=_DefaultSlices.sagittal,
             show=False,
+            show_indices=False,
             colormap=colormap,
         )
+    if view == "coronal":
+        chosen_slice = _DefaultSlices.coronal
+    elif view == "axial":
+        chosen_slice = _DefaultSlices.axial
+    else:
+        raise NotImplementedError()
+    chosen_fig: pyplot.Figure = plot_bem_with_source_values(
+        subject="fsaverage",
+        src=src,
+        orientation=view,
+        slices=chosen_slice,
+        show=False,
+        show_indices=False,
+        colormap=colormap,
+    )
 
-        axis.imshow(rasterize_as_array(fig))
+    left_img = rasterize_axes_as_array(saggital_fig.axes[0])
+    right_img = rasterize_axes_as_array(saggital_fig.axes[1])
+    chosen_img = rasterize_axes_as_array(chosen_fig.axes[0])
+    pyplot.close(saggital_fig)
+    pyplot.close(chosen_fig)
 
-        hide_axes(axis)
-        pyplot.close(fig)
+    # Sagittal view is always pointing to the right, so we'll flip the left hemi
+    left_img = np.fliplr(left_img)
+
+    # Display on axes
+    lh_minimap_axis.imshow(left_img, aspect="equal", extent=(0, left_img.shape[1], left_img.shape[0], 0))
+    rh_minimap_axis.imshow(right_img, aspect="equal", extent=(0, right_img.shape[1], right_img.shape[0], 0))
+    main_minimap_axis.imshow(chosen_img, aspect="equal", extent=(0, chosen_img.shape[1], chosen_img.shape[0], 0))
+
+    hide_axes(lh_minimap_axis)
+    hide_axes(rh_minimap_axis)
+    hide_axes(main_minimap_axis)
 
 
 def __plot_minimap_hexel_surface(
