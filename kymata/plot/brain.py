@@ -17,6 +17,15 @@ from kymata.plot.compositing import rasterize_as_array
 from kymata.plot.mne import plot_bem_with_source_values
 
 
+class _DefaultSlices:
+    """Chosen default slices for volumnetric visualisation."""
+    # These slices chosen to be evenly spaced
+    sagittal_l =  [85]  # np.round(np.linspace(start=0, stop=256 - 1, num=4)).astype(int)[1]
+    sagittal_r = [170]  # np.round(np.linspace(start=0, stop=256 - 1, num=4)).astype(int)[2]
+    coronal    = [128]  # np.round(np.linspace(start=0, stop=256 - 1, num=3)).astype(int)[1]
+    axial      = [128]  # np.round(np.linspace(start=0, stop=256 - 1, num=3)).astype(int)[1]
+
+
 def _hexel_minimap_data(expression_set: HexelExpressionSet,
                         alpha_logp: float,
                         show_transforms: list[str],
@@ -96,6 +105,7 @@ def plot_minimap_hexel(
     show_transforms: list[str],
     lh_minimap_axis: pyplot.Axes,
     rh_minimap_axis: pyplot.Axes,
+    main_minimap_axis: pyplot.Axes | None,
     view: str,
     surface: str,
     colors: dict[str, Any],
@@ -130,6 +140,7 @@ def plot_minimap_hexel(
             view=view,
             lh_minimap_axis=lh_minimap_axis,
             rh_minimap_axis=rh_minimap_axis,
+            main_minimap_axis=main_minimap_axis,
             colormap=colormap,
             minimap_kwargs=minimap_kwargs,
         )
@@ -151,19 +162,10 @@ def __plot_minimap_hexel_volumetric(
         view: str,
         lh_minimap_axis: pyplot.Axes,
         rh_minimap_axis: pyplot.Axes,
+        main_minimap_axis: pyplot.Axes,
         colormap: Colormap,
         minimap_kwargs: dict,
 ):
-    # Select nice-looking slice
-    if view == "coronal":
-        slice = [100]
-    elif view == "sagittal":
-        slice = [140]
-    elif view == "axial":
-        slice = [140]
-    else:
-        raise ValueError(f"{view} not a valid view. Please select one of coronal, sagittal and axial.")
-
     src = read_source_spaces(src_loc)
 
     lh_vals = stc.lh_data.squeeze()
@@ -180,20 +182,39 @@ def __plot_minimap_hexel_volumetric(
     src[0]["val"][np.where(lh_vals > 0)] = lh_vals[np.where(lh_vals > 0)]
     src[1]["val"][np.where(rh_vals > 0)] = rh_vals[np.where(rh_vals > 0)]
 
-    fig = plot_bem_with_source_values(
-        subject="fsaverage",
-        src=src,
-        orientation=view,
-        slices=slice,
-        show=False,
-        colormap=colormap,
-    )
+    axis_views = [
+        ("l", lh_minimap_axis),
+        (view,         main_minimap_axis),
+        ("r", rh_minimap_axis),
+    ]
 
-    lh_minimap_axis.imshow(rasterize_as_array(fig))
+    for view, axis in axis_views:
+        if view == "l":
+            view = "sagittal"
+            slice = _DefaultSlices.sagittal_l
+        elif view == "r":
+            view = "sagittal"
+            slice = _DefaultSlices.sagittal_r
+        elif view == "coronal":
+            slice = _DefaultSlices.coronal
+        elif view == "axial":
+            slice = _DefaultSlices.axial
+        else:
+            raise NotImplementedError()
 
-    hide_axes(lh_minimap_axis)
-    hide_axes(rh_minimap_axis)
-    pyplot.close(fig)
+        fig = plot_bem_with_source_values(
+            subject="fsaverage",
+            src=src,
+            orientation=view,
+            slices=slice,
+            show=False,
+            colormap=colormap,
+        )
+
+        axis.imshow(rasterize_as_array(fig))
+
+        hide_axes(axis)
+        pyplot.close(fig)
 
 
 def __plot_minimap_hexel_surface(

@@ -29,7 +29,7 @@ class _AxName:
     expression_bottom_rh = "expression bottom rh"
     expression_main = "expression main"
     minimap_lh = "minimap lh"
-    minimap_rh = "minimap lh"
+    minimap_rh = "minimap rh"
     minimap_main = "minimap main"
 
 
@@ -55,11 +55,19 @@ class _MosaicSpec:
 def _minimap_mosaic(
     paired_axes: bool,
     minimap_option: str | None,
+    minimap_type: str,
     expression_set_type: Type[ExpressionSet],
     fig_size: tuple[float, float],
 ) -> _MosaicSpec:
-    # Set defaults:
+
+    # Convert keywords to lowercase
+    if minimap_option is not None:
+        minimap_option = minimap_option.lower()
+    minimap_type = minimap_type.lower()
+
+    # Set defaults for other parameters:
     if minimap_option is None:
+        # No minimap
         width_ratios = None
         height_ratios = None
         subplots_adjust = {
@@ -67,7 +75,7 @@ def _minimap_mosaic(
             "left": 0.08,
             "right": 0.84,
         }
-    elif minimap_option.lower() == "standard":
+    elif minimap_option == "standard":
         width_ratios = [1, 3]
         height_ratios = None
         subplots_adjust = {
@@ -76,9 +84,12 @@ def _minimap_mosaic(
             "left": 0.02,
             "right": 0.8,
         }
-    elif minimap_option.lower() == "large":
+    elif minimap_option == "large":
         width_ratios = None
-        height_ratios = [6, 1, 1]
+        if minimap_type == "volumetric":
+            height_ratios = [3, 1, 1]
+        else:
+            height_ratios = [6, 1, 1]
         subplots_adjust = {
             "hspace": 0,
             "wspace": 0.1,
@@ -94,7 +105,7 @@ def _minimap_mosaic(
                 [_AxName.expression_top_lh],
                 [_AxName.expression_bottom_rh],
             ]
-        elif minimap_option.lower() == "standard":
+        elif minimap_option == "standard":
             if expression_set_type == HexelExpressionSet:
                 spec = [
                     [_AxName.minimap_lh, _AxName.expression_top_lh],
@@ -107,13 +118,22 @@ def _minimap_mosaic(
                 ]
             else:
                 raise NotImplementedError()
-        elif minimap_option.lower() == "large":
+        elif minimap_option == "large":
             if expression_set_type == HexelExpressionSet:
-                spec = [
-                    [_AxName.minimap_lh, _AxName.minimap_rh],
-                    [_AxName.expression_top_lh, _AxName.expression_top_lh],
-                    [_AxName.expression_bottom_rh, _AxName.expression_bottom_rh]
-                ]
+                if minimap_type == "volumetric":
+                    # Volumetric minimaps have L, main, and R views
+                    spec = [
+                        [_AxName.minimap_lh] * 2 + [_AxName.minimap_main] * 2 + [_AxName.minimap_rh] * 2,
+                        [_AxName.expression_top_lh] * 6,
+                        [_AxName.expression_bottom_rh] * 6
+                    ]
+                else:
+                    # Cortical minimaps have only L and R views
+                    spec = [
+                        [_AxName.minimap_lh, _AxName.minimap_rh],
+                        [_AxName.expression_top_lh] * 2,
+                        [_AxName.expression_bottom_rh] * 2
+                    ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
                     [_AxName.minimap_main],
@@ -129,11 +149,11 @@ def _minimap_mosaic(
             spec = [
                 [_AxName.expression_main],
             ]
-        elif minimap_option.lower() == "standard":
+        elif minimap_option == "standard":
             spec = [
                 [_AxName.minimap_main, _AxName.expression_main],
             ]
-        elif minimap_option.lower() == "large":
+        elif minimap_option == "large":
             spec = [
                 [_AxName.minimap_main],
                 [_AxName.expression_main],
@@ -197,8 +217,8 @@ def expression_plot(
     fig_size: tuple[float, float] = (12, 7),
     # Display options
     minimap: str | None = None,
-    minimap_view: str = "lateral",
-    minimap_surface: str = "inflated",
+    minimap_type: str = "inflated",
+    minimap_view: Optional[str] = None,
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
     # I/O args
@@ -234,7 +254,11 @@ def expression_plot(
             `"standard"`: Show small minimal.
             `"large"`: Show a large minimal with smaller expression plot.
             Default is None.
-        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
+        minimap_type (str, optional): The type of minimap to display. Options include:
+            `"inflated"`, or any other valid keyword for a mne surface: This will plot on a 3D cortical mesh.
+            `"volumetric"`: plot in a volumetric view à la MRICron.
+            Default is "inflated".
+        minimap_view (Optional[str]): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
             `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is
                          visible.
@@ -251,9 +275,8 @@ def expression_plot(
             `"axial"`: From above with the brain pointing up (same as 'dorsal').
             `"sagittal"`: From the right side.
             `"coronal"`: From the rear.
-            Default is `lateral`.
-        minimap_surface (str, optional): The surface type for the minimap, such as "inflated".
-            Special value "volumetric" to swap to volumetric view à la MRICron. Default is "inflated".
+            Only `"axial"` and `"coronal"` are valid for volumetric view; sagittal views will always be plotted.
+            Default is None (lateral for cortical, axial for volumetric).
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
@@ -313,6 +336,13 @@ def expression_plot(
         if transform not in color:
             color[transform] = to_hex(next(cycol))
 
+    # Default views
+    if minimap_view is None:
+        if minimap_type == "volumetric":
+            minimap_view = "axial"
+        else:
+            minimap_view = "lateral"
+
     best_transforms = expression_set.best_transforms()
 
     if paired_axes:
@@ -358,6 +388,7 @@ def expression_plot(
     mosaic = _minimap_mosaic(
         paired_axes=paired_axes,
         minimap_option=minimap,
+        minimap_type=minimap_type,
         expression_set_type=type(expression_set),
         fig_size=fig_size,
     )
@@ -514,8 +545,9 @@ def expression_plot(
                 show_transforms=show_only,
                 lh_minimap_axis=axes[_AxName.minimap_lh],
                 rh_minimap_axis=axes[_AxName.minimap_rh],
+                main_minimap_axis=axes[_AxName.minimap_main],
                 view=minimap_view,
-                surface=minimap_surface,
+                surface=minimap_type,
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
                 minimap_latency_range=minimap_latency_range,
