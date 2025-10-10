@@ -25,12 +25,11 @@ _MAJOR_TICK_SIZE = 50
 
 class _AxName:
     """Canonical names for the axes."""
-
-    top = "top"
-    bottom = "bottom"
-    main = "main"
-    minimap_top = "minimap top"
-    minimap_bottom = "minimap bottom"
+    expression_top_lh = "expression top lh"
+    expression_bottom_rh = "expression bottom rh"
+    expression_main = "expression main"
+    minimap_lh = "minimap lh"
+    minimap_rh = "minimap lh"
     minimap_main = "minimap main"
 
 
@@ -92,34 +91,34 @@ def _minimap_mosaic(
     if paired_axes:
         if minimap_option is None:
             spec = [
-                [_AxName.top],
-                [_AxName.bottom],
+                [_AxName.expression_top_lh],
+                [_AxName.expression_bottom_rh],
             ]
         elif minimap_option.lower() == "standard":
             if expression_set_type == HexelExpressionSet:
                 spec = [
-                    [_AxName.minimap_top, _AxName.top],
-                    [_AxName.minimap_bottom, _AxName.bottom],
+                    [_AxName.minimap_lh, _AxName.expression_top_lh],
+                    [_AxName.minimap_rh, _AxName.expression_bottom_rh],
                 ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
-                    [_AxName.minimap_main, _AxName.top],
-                    [_AxName.minimap_main, _AxName.bottom],
+                    [_AxName.minimap_main, _AxName.expression_top_lh],
+                    [_AxName.minimap_main, _AxName.expression_bottom_rh],
                 ]
             else:
                 raise NotImplementedError()
         elif minimap_option.lower() == "large":
             if expression_set_type == HexelExpressionSet:
                 spec = [
-                    [_AxName.minimap_top, _AxName.minimap_bottom],
-                    [_AxName.top,         _AxName.top],
-                    [_AxName.bottom,      _AxName.bottom]
+                    [_AxName.minimap_lh, _AxName.minimap_rh],
+                    [_AxName.expression_top_lh, _AxName.expression_top_lh],
+                    [_AxName.expression_bottom_rh, _AxName.expression_bottom_rh]
                 ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
                     [_AxName.minimap_main],
-                    [_AxName.top],
-                    [_AxName.bottom],
+                    [_AxName.expression_top_lh],
+                    [_AxName.expression_bottom_rh],
                 ]
             else:
                 raise NotImplementedError()
@@ -128,16 +127,16 @@ def _minimap_mosaic(
     else:
         if minimap_option is None:
             spec = [
-                [_AxName.main],
+                [_AxName.expression_main],
             ]
         elif minimap_option.lower() == "standard":
             spec = [
-                [_AxName.minimap_main, _AxName.main],
+                [_AxName.minimap_main, _AxName.expression_main],
             ]
         elif minimap_option.lower() == "large":
             spec = [
                 [_AxName.minimap_main],
-                [_AxName.main],
+                [_AxName.expression_main],
             ]
         else:
             raise NotImplementedError()
@@ -370,11 +369,11 @@ def expression_plot(
     expression_axes_list: list[pyplot.Axes]
     if paired_axes:
         expression_axes_list = [
-            axes[_AxName.top],
-            axes[_AxName.bottom],
+            axes[_AxName.expression_top_lh],
+            axes[_AxName.expression_bottom_rh],
         ]  # For iterating over in a predictable order
     else:
-        expression_axes_list = [axes[_AxName.main]]
+        expression_axes_list = [axes[_AxName.expression_main]]
 
     fig.subplots_adjust(**mosaic.subplots_adjust_kwargs)
 
@@ -513,8 +512,8 @@ def expression_plot(
             plot_minimap_hexel(
                 expression_set,
                 show_transforms=show_only,
-                lh_minimap_axis=axes[_AxName.minimap_top],
-                rh_minimap_axis=axes[_AxName.minimap_bottom],
+                lh_minimap_axis=axes[_AxName.minimap_lh],
+                rh_minimap_axis=axes[_AxName.minimap_rh],
                 view=minimap_view,
                 surface=minimap_surface,
                 colors=color,
@@ -531,12 +530,12 @@ def expression_plot(
     top_ax: pyplot.Axes
     bottom_ax: pyplot.Axes
     if paired_axes:
-        top_ax = axes[_AxName.top]
-        bottom_ax = axes[_AxName.bottom]
+        top_ax = axes[_AxName.expression_top_lh]
+        bottom_ax = axes[_AxName.expression_bottom_rh]
         top_ax.set_xticklabels([])
         bottom_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes[_AxName.main]
+        top_ax = bottom_ax = axes[_AxName.expression_main]
     top_ax.set_title(title)
     bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
     bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
