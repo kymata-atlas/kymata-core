@@ -223,9 +223,15 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             for s in range(14):
                 if 'omni' in str(transform_path_without_suffix):
                     if s == 0:
-                        func = np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]
+                        if 'listen' not in str(transform_path_without_suffix):
+                            func = np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]
+                        else:
+                            func = np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))
                     else:
-                        func = np.concatenate((func, np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]), axis=1)
+                        if 'listen' not in str(transform_path_without_suffix):
+                            func = np.concatenate((func, np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]), axis=1)
+                        else:
+                            func = np.concatenate((func, np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))), axis=1)
                 else:
                     if s == 0:
                         func = torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()
@@ -235,28 +241,71 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             s_num = T_max * 1000
             place_holder = np.zeros((func.shape[2], s_num))
 
-            asr_text = []
-            for s in range(14):
-                # Read the content of the file
-                if 'omni' in str(transform_path_without_suffix):
-                    with open(Path(transform_path_without_suffix, f'segment_{s}_wordpiece.txt'), 'r') as file:
-                        content = file.read()
-                else:
-                    with open(Path(transform_path_without_suffix, f'segment_{s}.txt'), 'r') as file:
-                        content = file.read()
-                # The content is a string representation of a list, so we need to evaluate it
-                word_pieces = eval(content)
-                # Remove the '▁' from each word piece
-                # asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces if word != '</s>']
-                asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces]
+            if 'listen' not in str(transform_path_without_suffix):
 
-            mfa_text = load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_text.txt'))
-            mfa_time = np.array(load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
-            mfa_time_samples = (mfa_time * 1000).astype(int)
-            mfa_time_samples = np.append(mfa_time_samples, 402_000)
-            special_tokens = ['</s>', '-']
+                asr_text = []
+                for s in range(14):
+                    # Read the content of the file
+                    if 'omni' in str(transform_path_without_suffix):
+                        with open(Path(transform_path_without_suffix, f'segment_{s}_wordpiece.txt'), 'r') as file:
+                            content = file.read()
+                    else:
+                        with open(Path(transform_path_without_suffix, f'segment_{s}.txt'), 'r') as file:
+                            content = file.read()
+                    # The content is a string representation of a list, so we need to evaluate it
+                    word_pieces = eval(content)
+                    # Remove the '▁' from each word piece
+                    # asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces if word != '</s>']
+                    asr_text += [word.replace('▁', '').replace('‘', '\'').replace('’', '\'').lower() for word in word_pieces]
+
+                mfa_text = load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_text.txt'))
+                mfa_time = np.array(load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
+                mfa_time_samples = (mfa_time * 1000).astype(int)
+                mfa_time_samples = np.append(mfa_time_samples, 402_000)
+                special_tokens = ['</s>', '-']
+                
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 for j in range(place_holder.shape[0]):
+                    if 'listen' not in str(transform_path_without_suffix):
+                        k = 0       # k is the index for salmonn space, and i is the index for mfa space
+                        for i in range(len(mfa_time_samples) - 1):
+                            start_idx = mfa_time_samples[i]
+                            end_idx = mfa_time_samples[i + 1]
+                            if start_idx < s_num:
+                                while asr_text[k] in special_tokens:
+                                    k += 1
+                                if mfa_text[i] != asr_text[k]:
+                                    if mfa_text[i] == '<sp>' and 'phone' not in str(transform_path_without_suffix):
+                                        # if asr_text[k] == '.' or asr_text[k] == ',':
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                        # print('<sp> in mfa encountered')
+                                    else:
+                                        search_txt = asr_text[k]
+                                        id_tracker = [k]
+                                        # combine word pieces in asr text, and also combine potential '.' and ',' to the following word in salmonn
+                                        while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
+                                            k += 1
+                                            search_txt += asr_text[k]
+                                            id_tracker.append(k)
+                                        place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                        k += 1
+                                        # print(f'mapping is from the mfa token {[mfa_text[i]]} to the salmonn token {[asr_text[k] for k in id_tracker]}')
+                                else:
+                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                    k += 1
+                                    # print('match')
+                        # assert k == len(asr_text) - 1, 'end of asr text not reached'          
+                    else:
+                        timepoints = [0.225 + i * 0.08 for i in range(374)]  # first frame is at 225ms, then every 80ms
+                        for k in range(1,14):
+                            if k != 13:
+                                timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(374)])
+                            else:
+                                timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(144)])
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.array(timepoints), func[0, :, j])
+            else:
+                j = nn_neuron
+                if 'listen' not in str(transform_path_without_suffix):
                     k = 0       # k is the index for salmonn space, and i is the index for mfa space
                     for i in range(len(mfa_time_samples) - 1):
                         start_idx = mfa_time_samples[i]
@@ -284,37 +333,15 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                 k += 1
                                 # print('match')
-                    # assert k == len(asr_text) - 1, 'end of asr text not reached'                    
-            else:
-                j = nn_neuron
-                k = 0       # k is the index for salmonn space, and i is the index for mfa space
-                for i in range(len(mfa_time_samples) - 1):
-                    start_idx = mfa_time_samples[i]
-                    end_idx = mfa_time_samples[i + 1]
-                    if start_idx < s_num:
-                        while asr_text[k] in special_tokens:
-                            k += 1
-                        if mfa_text[i] != asr_text[k]:
-                            if mfa_text[i] == '<sp>' and 'phone' not in str(transform_path_without_suffix):
-                                # if asr_text[k] == '.' or asr_text[k] == ',':
-                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
-                                # print('<sp> in mfa encountered')
-                            else:
-                                search_txt = asr_text[k]
-                                id_tracker = [k]
-                                # combine word pieces in asr text, and also combine potential '.' and ',' to the following word in salmonn
-                                while len(search_txt) < len(mfa_text[i]) + 1 and mfa_text[i] not in search_txt:
-                                    k += 1
-                                    search_txt += asr_text[k]
-                                    id_tracker.append(k)
-                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
-                                k += 1
-                                # print(f'mapping is from the mfa token {[mfa_text[i]]} to the salmonn token {[asr_text[k] for k in id_tracker]}')
+                    # assert k == len(asr_text) - 1, 'end of asr text not reached'
+                else:
+                    timepoints = [0.225 + i * 0.08 for i in range(374)]  # first frame is at 225ms, then every 80ms
+                    for k in range(1,14):
+                        if k != 13:
+                            timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(374)])
                         else:
-                            place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
-                            k += 1
-                            # print('match')
-                # assert k == len(asr_text) - 1, 'end of asr text not reached'                        
+                            timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(144)])
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.array(timepoints), func[0, :, j])
 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
