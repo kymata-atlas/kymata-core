@@ -5,13 +5,14 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional
+from collections import defaultdict
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional, Iterable
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
-    ndarray, isclose,
-    array, array_equal, where, inf, float64)
+    ndarray,
+    isclose, array, array_equal, where, inf, float64)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
@@ -55,6 +56,30 @@ class ExpressionPoint(NamedTuple):
                 self.latency == other.latency and
                 self.transform == other.transform and
                 isclose(self.logp_value, other.logp_value))  # Use np.isclose for float comparison
+
+
+# transform_name → points
+GroupedPoints = dict[str, list[ExpressionPoint]]
+
+
+def group_points_by_transform(points: Iterable[ExpressionPoint]) -> GroupedPoints:
+    """
+    Groups a list of expression points by their associated transforms.
+
+    This function organizes expression points into a dictionary, where each key is a transform, and each value is a list
+    of expression points associated with that transform.
+
+    Args:
+        points (list[ExpressionPoint]): A list of expression points to be grouped.
+
+    Returns:
+        GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
+            transform.
+    """
+    d = defaultdict(list)
+    for point in points:
+        d[point.transform].append(point)
+    return dict(d)
 
 
 class ExpressionSet(ABC):

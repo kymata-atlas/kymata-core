@@ -10,8 +10,8 @@ from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG, points_to_matrix)
 from ..entities.expression import (
-    ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels)
-from .hierarchy import group_points_by_transform, GroupedPoints
+    ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels, GroupedPoints,
+    group_points_by_transform)
 
 
 class DenoisingStrategy(ABC):

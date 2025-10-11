@@ -2,9 +2,8 @@
 Metrics for evaluating IPPMs
 """
 
-from kymata.entities.expression import ExpressionPoint
+from kymata.entities.expression import ExpressionPoint, group_points_by_transform
 from kymata.ippm.graph import IPPMGraph
-from kymata.ippm.hierarchy import group_points_by_transform
 
 
 def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
