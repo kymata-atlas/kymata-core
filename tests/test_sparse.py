@@ -3,7 +3,7 @@ from numpy.random import rand
 from sparse import COO
 from numpy import array_equal
 
-from kymata.entities.sparse_data import expand_dims
+from kymata.entities.sparse_data import expand_dims, all_nonfill_close
 
 
 def test_expand_dims_in_middle():
@@ -45,3 +45,67 @@ def test_expand_dims_much_too_big():
 
     with pytest.raises(ValueError):
         expand_dims(matrix, -1)
+
+
+def test_all_nonfill_close_mismatched_coords():
+    coords_left = [
+        [0, 0, 0, 1, 1],
+        [0, 1, 2, 0, 3],
+        [0, 3, 2, 0, 1],
+    ]
+    coords_right = [
+        [0, 0, 0, 1, 2],
+        [0, 1, 2, 0, 3],
+        [0, 3, 2, 0, 1],
+    ]
+    data = [1, 2, 3, 4, 5]
+    shape = (3, 4, 5)
+    left = COO(coords_left, data, shape)
+    right = COO(coords_right, data, shape)
+
+    assert not all_nonfill_close(left, right)
+
+
+def test_all_nonfill_close_unequal_data():
+    coords = [
+        [0, 0, 0, 1, 1],
+        [0, 1, 2, 0, 3],
+        [0, 3, 2, 0, 1],
+    ]
+    data_left = [1.0, 2.0, 3.0, 4.0, 5.0]
+    data_right = [1.0, 2.0, 3.0, 4.0, 5.0001]  # close but not close enough
+    shape = (3, 4, 5)
+    left = COO(coords, data_left, shape)
+    right = COO(coords, data_right, shape)
+
+    assert not all_nonfill_close(left, right)
+
+
+def test_all_nonfill_close_close_data():
+    coords = [
+        [0, 0, 0, 1, 1],
+        [0, 1, 2, 0, 3],
+        [0, 3, 2, 0, 1],
+    ]
+    data_left = [1.0, 2.0, 3.0, 4.0, 5.0]
+    data_right = [1.0, 2.0, 3.0, 4.0, 5.000000000000000001]  # close enough
+    shape = (3, 4, 5)
+    left = COO(coords, data_left, shape)
+    right = COO(coords, data_right, shape)
+
+    assert all_nonfill_close(left, right)
+
+
+def test_all_nonfill_close_equal():
+    coords = [
+        [0, 0, 0, 1, 1],
+        [0, 1, 2, 0, 3],
+        [0, 3, 2, 0, 1],
+    ]
+    data = [1.0, 2.0, 3.0, 4.0, 5.0]
+    shape = (3, 4, 5)
+    from copy import copy
+    left = COO(copy(coords), copy(data), shape)
+    right = COO(copy(coords), copy(data), shape)
+
+    assert all_nonfill_close(left, right)

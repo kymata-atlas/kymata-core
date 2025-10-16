@@ -5,13 +5,14 @@ Classes and functions for storing expression information.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional
+from collections import defaultdict
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional, Iterable
 from warnings import warn
 
 from numpy import (
     # Can't use NDArray for isinstance checks
     ndarray,
-    array, array_equal, where, inf, float64)
+    isclose, array, array_equal, where, inf, float64)
 from numpy.typing import NDArray
 from sparse import SparseArray, COO
 from xarray import DataArray, concat
@@ -21,7 +22,7 @@ from kymata.entities.datatypes import (
     HexelDType, SensorDType, LatencyDType, TransformNameDType, Hexel, Sensor, Latency, Channel)
 from kymata.io.layouts import SensorLayout, get_meg_sensors, get_eeg_sensors
 from kymata.entities.iterables import all_equal
-from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
+from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix, all_nonfill_close
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -35,6 +36,7 @@ DIM_TRANSFORM = "transform"
 BLOCK_LEFT = HEMI_LEFT
 BLOCK_RIGHT = HEMI_RIGHT
 BLOCK_SCALP = "scalp"
+BLOCK_MERGED = "merged"
 
 
 class ExpressionPoint(NamedTuple):
@@ -45,6 +47,39 @@ class ExpressionPoint(NamedTuple):
     latency: Latency
     transform: str
     logp_value: float
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ExpressionPoint):
+            return False
+        # Compare numerical values with a tolerance
+        return (self.channel == other.channel and
+                self.latency == other.latency and
+                self.transform == other.transform and
+                isclose(self.logp_value, other.logp_value))  # Use np.isclose for float comparison
+
+
+# transform_name → points
+GroupedPoints = dict[str, list[ExpressionPoint]]
+
+
+def group_points_by_transform(points: Iterable[ExpressionPoint]) -> GroupedPoints:
+    """
+    Groups a list of expression points by their associated transforms.
+
+    This function organizes expression points into a dictionary, where each key is a transform, and each value is a list
+    of expression points associated with that transform.
+
+    Args:
+        points (list[ExpressionPoint]): A list of expression points to be grouped.
+
+    Returns:
+        GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
+            transform.
+    """
+    d = defaultdict(list)
+    for point in points:
+        d[point.transform].append(point)
+    return dict(d)
 
 
 class ExpressionSet(ABC):
@@ -392,7 +427,8 @@ class ExpressionSet(ABC):
 
     @abstractmethod
     def __eq__(self, other: ExpressionSet) -> bool:
-        # Override this method and provide additional checks after calling super().__eq__(other)
+        # Override this method and provide additional checks after calling super().__eq__(other).
+        # Overrides should use APPROXIMATE EQUALITY TESTS on logp values
         if type(self) is not type(other):
             return False
         if not self.transforms == other.transforms:
@@ -490,7 +526,7 @@ class ExpressionSet(ABC):
                     new_names.append(transforms[old_name])
                 else:
                     new_names.append(old_name)
-            self._data[bn][DIM_TRANSFORM] = new_names
+            self._data[bn][DIM_TRANSFORM] = array(new_names, dtype=TransformNameDType)
 
             # Channels
             new_channels = []
@@ -642,11 +678,21 @@ class HexelExpressionSet(ExpressionSet):
     def __eq__(self, other: HexelExpressionSet) -> bool:
         if not super().__eq__(other):
             return False
-        if not COO(self.left.data == other.left.data).all():
+        if not all_nonfill_close(self.left.data, other.left.data):
             return False
-        if not COO(self.right.data == other.right.data).all():
+        if not all_nonfill_close(self.right.data, other.right.data):
             return False
         return True
+
+    def __repr__(self) -> str:
+        return (f"{type(self).__name__}(\n"
+                f"    transforms = {self.transforms!r},\n"
+                f"    hexels_lh = {self.hexels_left!r},\n"
+                f"    hexels_rh = {self.hexels_right!r},\n"
+                f"    latencies = {self.latencies!r},\n"
+                f"    data_lh: {self._data[BLOCK_LEFT]!r},\n"
+                f"    data_rh: {self._data[BLOCK_RIGHT]!r},\n"
+                f")")
 
     def best_transforms(self) -> tuple[list[ExpressionPoint], list[ExpressionPoint]]:
         """
@@ -746,7 +792,7 @@ class SensorExpressionSet(ExpressionSet):
     def __eq__(self, other: SensorExpressionSet) -> bool:
         if not super().__eq__(other):
             return False
-        if not COO(self.scalp.data == other.scalp.data).all():
+        if not all_nonfill_close(self.scalp.data, other.scalp.data):
             return False
         if not self.sensor_layout == other.sensor_layout:
             return False
@@ -802,6 +848,15 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].data[:, :, transform_idxs],
             sensor_layout=self.sensor_layout,
         )
+
+    def __repr__(self) -> str:
+        return (f"{type(self).__name__}(\n"
+                f"    transforms = {self.transforms!r},\n"
+                f"    sensors = {self.sensors!r},\n"
+                f"    latencies = {self.latencies!r},\n"
+                f"    data_scalp: {self._data[BLOCK_SCALP]!r},\n"
+                f"    sensor_layout: {self.sensor_layout!r},\n"
+                f")")
 
     def crop(self, latency_start: float | None, latency_stop: float | None) -> SensorExpressionSet:
         if latency_start is None:

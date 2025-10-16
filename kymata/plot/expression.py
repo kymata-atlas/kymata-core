@@ -13,11 +13,11 @@ from matplotlib.ticker import FixedLocator
 from seaborn import color_palette
 
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
+from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_up, round_down
 from kymata.plot.brain import plot_minimap_hexel
 from kymata.plot.sensor import get_sensor_left_right_assignment, restrict_sensors_by_type
-from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
 _MAJOR_TICK_SIZE = 50
@@ -25,12 +25,11 @@ _MAJOR_TICK_SIZE = 50
 
 class _AxName:
     """Canonical names for the axes."""
-
-    top = "top"
-    bottom = "bottom"
-    main = "main"
-    minimap_top = "minimap top"
-    minimap_bottom = "minimap bottom"
+    expression_top_lh = "expression top lh"
+    expression_bottom_rh = "expression bottom rh"
+    expression_main = "expression main"
+    minimap_lh = "minimap lh"
+    minimap_rh = "minimap rh"
     minimap_main = "minimap main"
 
 
@@ -56,11 +55,19 @@ class _MosaicSpec:
 def _minimap_mosaic(
     paired_axes: bool,
     minimap_option: str | None,
+    minimap_type: str,
     expression_set_type: Type[ExpressionSet],
     fig_size: tuple[float, float],
 ) -> _MosaicSpec:
-    # Set defaults:
+
+    # Convert keywords to lowercase
+    if minimap_option is not None:
+        minimap_option = minimap_option.lower()
+    minimap_type = minimap_type.lower()
+
+    # Set defaults for other parameters:
     if minimap_option is None:
+        # No minimap
         width_ratios = None
         height_ratios = None
         subplots_adjust = {
@@ -68,7 +75,7 @@ def _minimap_mosaic(
             "left": 0.08,
             "right": 0.84,
         }
-    elif minimap_option.lower() == "standard":
+    elif minimap_option == "standard":
         width_ratios = [1, 3]
         height_ratios = None
         subplots_adjust = {
@@ -77,9 +84,12 @@ def _minimap_mosaic(
             "left": 0.02,
             "right": 0.8,
         }
-    elif minimap_option.lower() == "large":
+    elif minimap_option == "large":
         width_ratios = None
-        height_ratios = [6, 1, 1]
+        if minimap_type == "volumetric":
+            height_ratios = [3, 1, 1]
+        else:
+            height_ratios = [6, 1, 1]
         subplots_adjust = {
             "hspace": 0,
             "wspace": 0.1,
@@ -92,34 +102,55 @@ def _minimap_mosaic(
     if paired_axes:
         if minimap_option is None:
             spec = [
-                [_AxName.top],
-                [_AxName.bottom],
+                [_AxName.expression_top_lh],
+                [_AxName.expression_bottom_rh],
             ]
-        elif minimap_option.lower() == "standard":
+        elif minimap_option == "standard":
             if expression_set_type == HexelExpressionSet:
-                spec = [
-                    [_AxName.minimap_top, _AxName.top],
-                    [_AxName.minimap_bottom, _AxName.bottom],
-                ]
+                if minimap_type == "volumetric":
+                    # Volumetric minimaps have L, main, and R views
+                    spec = [
+                        [_AxName.minimap_lh,   _AxName.expression_top_lh],
+                        [_AxName.minimap_lh,   _AxName.expression_top_lh],
+                        [_AxName.minimap_main, _AxName.expression_top_lh],
+                        [_AxName.minimap_main, _AxName.expression_bottom_rh],
+                        [_AxName.minimap_rh,   _AxName.expression_bottom_rh],
+                        [_AxName.minimap_rh,   _AxName.expression_bottom_rh],
+                    ]
+                else:
+                    # Cortical minimaps have only L and R views
+                    spec = [
+                        [_AxName.minimap_lh, _AxName.expression_top_lh],
+                        [_AxName.minimap_rh, _AxName.expression_bottom_rh],
+                    ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
-                    [_AxName.minimap_main, _AxName.top],
-                    [_AxName.minimap_main, _AxName.bottom],
+                    [_AxName.minimap_main, _AxName.expression_top_lh],
+                    [_AxName.minimap_main, _AxName.expression_bottom_rh],
                 ]
             else:
                 raise NotImplementedError()
-        elif minimap_option.lower() == "large":
+        elif minimap_option == "large":
             if expression_set_type == HexelExpressionSet:
-                spec = [
-                    [_AxName.minimap_top, _AxName.minimap_bottom],
-                    [_AxName.top,         _AxName.top],
-                    [_AxName.bottom,      _AxName.bottom]
-                ]
+                if minimap_type == "volumetric":
+                    # Volumetric minimaps have L, main, and R views
+                    spec = [
+                        [_AxName.minimap_lh] * 2 + [_AxName.minimap_main] * 2 + [_AxName.minimap_rh] * 2,
+                        [_AxName.expression_top_lh] * 6,
+                        [_AxName.expression_bottom_rh] * 6
+                    ]
+                else:
+                    # Cortical minimaps have only L and R views
+                    spec = [
+                        [_AxName.minimap_lh, _AxName.minimap_rh],
+                        [_AxName.expression_top_lh] * 2,
+                        [_AxName.expression_bottom_rh] * 2
+                    ]
             elif expression_set_type == SensorExpressionSet:
                 spec = [
                     [_AxName.minimap_main],
-                    [_AxName.top],
-                    [_AxName.bottom],
+                    [_AxName.expression_top_lh],
+                    [_AxName.expression_bottom_rh],
                 ]
             else:
                 raise NotImplementedError()
@@ -128,16 +159,16 @@ def _minimap_mosaic(
     else:
         if minimap_option is None:
             spec = [
-                [_AxName.main],
+                [_AxName.expression_main],
             ]
-        elif minimap_option.lower() == "standard":
+        elif minimap_option == "standard":
             spec = [
-                [_AxName.minimap_main, _AxName.main],
+                [_AxName.minimap_main, _AxName.expression_main],
             ]
-        elif minimap_option.lower() == "large":
+        elif minimap_option == "large":
             spec = [
                 [_AxName.minimap_main],
-                [_AxName.main],
+                [_AxName.expression_main],
             ]
         else:
             raise NotImplementedError()
@@ -198,10 +229,11 @@ def expression_plot(
     fig_size: tuple[float, float] = (12, 7),
     # Display options
     minimap: str | None = None,
-    minimap_view: str = "lateral",
-    minimap_surface: str = "inflated",
+    minimap_type: str = "inflated",
+    minimap_view: Optional[str] = None,
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
+    plot_top_n: Optional[int] = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -235,7 +267,11 @@ def expression_plot(
             `"standard"`: Show small minimal.
             `"large"`: Show a large minimal with smaller expression plot.
             Default is None.
-        minimap_view (str, optional): The view type for the minimap, either "lateral" or other specified views.
+        minimap_type (str, optional): The type of minimap to display. Options include:
+            `"inflated"`, or any other valid keyword for a mne surface: This will plot on a 3D cortical mesh.
+            `"volumetric"`: plot in a volumetric view à la MRICron.
+            Default is "inflated".
+        minimap_view (Optional[str]): The view type for the minimap, either "lateral" or other specified views.
             Valid options are:
             `"lateral"`: From the left or right side such that the lateral (outside) surface of the given hemisphere is
                          visible.
@@ -252,8 +288,8 @@ def expression_plot(
             `"axial"`: From above with the brain pointing up (same as 'dorsal').
             `"sagittal"`: From the right side.
             `"coronal"`: From the rear.
-            Default is `lateral`.
-        minimap_surface (str, optional): The surface type for the minimap, such as "inflated". Default is "inflated".
+            Only `"axial"` and `"coronal"` are valid for volumetric view; sagittal views will always be plotted.
+            Default is None (lateral for cortical, axial for volumetric).
         show_only_sensors (str, optional): Show only one type of sensors. "meg" for MEG sensors, "eeg" for EEG sensors.
             None to show all sensors. Supplying this value with something other than a SensorExpressionSet causes will
             throw an exception. Default is None.
@@ -261,6 +297,8 @@ def expression_plot(
             restrict the minimap view to only the specified time window, and highlight the time window on the expression
             plot. Both `start_time` and `stop_time` are in seconds. Set `start_time` or `stop_time` to `None` for
             half-open intervals.
+        plot_top_n (Optional[int]): If not None, show only the N most significant sources. If None, plot all significant
+            sources. Default is None.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -313,6 +351,17 @@ def expression_plot(
         if transform not in color:
             color[transform] = to_hex(next(cycol))
 
+    # Default views
+    if minimap_view is None:
+        if minimap_type == "volumetric":
+            minimap_view = "axial"
+        else:
+            minimap_view = "lateral"
+
+    if plot_top_n is not None:
+        if plot_top_n < 1:
+            raise ValueError("`plot_top_n` must be greater than or equal to 1")
+
     best_transforms = expression_set.best_transforms()
 
     if paired_axes:
@@ -332,7 +381,7 @@ def expression_plot(
             )
         elif isinstance(expression_set, SensorExpressionSet):
             axes_names = ("",)
-            # Wrap into list
+            # Wrap into tuple
             best_transforms = (best_transforms,)
         else:
             raise NotImplementedError()
@@ -358,6 +407,7 @@ def expression_plot(
     mosaic = _minimap_mosaic(
         paired_axes=paired_axes,
         minimap_option=minimap,
+        minimap_type=minimap_type,
         expression_set_type=type(expression_set),
         fig_size=fig_size,
     )
@@ -369,11 +419,11 @@ def expression_plot(
     expression_axes_list: list[pyplot.Axes]
     if paired_axes:
         expression_axes_list = [
-            axes[_AxName.top],
-            axes[_AxName.bottom],
+            axes[_AxName.expression_top_lh],
+            axes[_AxName.expression_bottom_rh],
         ]  # For iterating over in a predictable order
     else:
-        expression_axes_list = [axes[_AxName.main]]
+        expression_axes_list = [axes[_AxName.expression_main]]
 
     fig.subplots_adjust(**mosaic.subplots_adjust_kwargs)
 
@@ -512,14 +562,16 @@ def expression_plot(
             plot_minimap_hexel(
                 expression_set,
                 show_transforms=show_only,
-                lh_minimap_axis=axes[_AxName.minimap_top],
-                rh_minimap_axis=axes[_AxName.minimap_bottom],
+                lh_minimap_axis=axes[_AxName.minimap_lh],
+                rh_minimap_axis=axes[_AxName.minimap_rh],
+                main_minimap_axis=axes[_AxName.minimap_main] if _AxName.minimap_main in axes.keys() else None,
                 view=minimap_view,
-                surface=minimap_surface,
+                surface=minimap_type,
                 colors=color,
                 alpha_logp=sidak_corrected_alpha,
                 minimap_latency_range=minimap_latency_range,
                 minimap_kwargs=minimap_kwargs,
+                top_n=plot_top_n,
             )
         elif isinstance(expression_set, SensorExpressionSet):
             raise NotImplementedError("Minimap not yet implemented for sensor data")
@@ -527,23 +579,28 @@ def expression_plot(
             raise NotImplementedError()
 
     # Format one-off axis qualities
-    top_ax: pyplot.Axes
-    bottom_ax: pyplot.Axes
+    top_expression_ax: pyplot.Axes
+    bottom_expression_ax: pyplot.Axes
     if paired_axes:
-        top_ax = axes[_AxName.top]
-        bottom_ax = axes[_AxName.bottom]
-        top_ax.set_xticklabels([])
-        bottom_ax.invert_yaxis()
+        top_expression_ax = axes[_AxName.expression_top_lh]
+        bottom_expression_ax = axes[_AxName.expression_bottom_rh]
+        top_expression_ax.set_xticklabels([])
+        bottom_expression_ax.invert_yaxis()
     else:
-        top_ax = bottom_ax = axes[_AxName.main]
-    top_ax.set_title(title)
-    bottom_ax.set_xlabel("Latency (ms) relative to onset of the environment")
-    bottom_ax_xmin, bottom_ax_xmax = bottom_ax.get_xlim()
-    bottom_ax.xaxis.set_major_locator(
+        top_expression_ax = bottom_expression_ax = axes[_AxName.expression_main]
+    top_expression_ax.set_title(title)
+    bottom_expression_ax.set_xlabel("Latency (ms) relative to onset of the environment")
+    bottom_ax_xmin, bottom_ax_xmax = bottom_expression_ax.get_xlim()
+    bottom_expression_ax.xaxis.set_major_locator(
         FixedLocator(_get_xticks((bottom_ax_xmin, bottom_ax_xmax)))
     )
 
     # Legend for plotted transform
+    if minimap == "large":
+        main_legend_ax = axes[_AxName.minimap_rh]
+    else:
+        main_legend_ax = top_expression_ax
+    minor_legend_ax = bottom_expression_ax
     legends = []
     if show_legend:
         split_legend_at_n_transforms = 15
@@ -559,7 +616,7 @@ def expression_plot(
                 if custom_label not in custom_labels_not_shown:
                     custom_labels_not_shown.append(custom_label)
                     dummy_patches.append(Patch(color=None, label=custom_label))
-            bottom_legend = bottom_ax.legend(
+            bottom_legend = minor_legend_ax.legend(
                 labels=custom_labels_not_shown,
                 fontsize="x-small",
                 alignment="left",
@@ -572,7 +629,7 @@ def expression_plot(
             for lh in bottom_legend.legend_handles:
                 lh.set_alpha(0)
             legends.append(bottom_legend)
-        top_legend = top_ax.legend(
+        main_legend = main_legend_ax.legend(
             handles=custom_handles,
             labels=custom_labels,
             fontsize="x-small",
@@ -582,11 +639,11 @@ def expression_plot(
             loc="upper left",
             bbox_to_anchor=(1.02, 1.02),
         )
-        legends.append(top_legend)
+        legends.append(main_legend)
 
     __reposition_axes_for_legends(fig, legends)
 
-    __add_axis_name_annotations(axes_names, top_ax, bottom_ax, fig, paired_axes, ylim, minimap)
+    __add_axis_name_annotations(axes_names, top_expression_ax, bottom_expression_ax, fig, paired_axes, ylim, minimap)
 
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
@@ -603,16 +660,15 @@ def expression_plot(
 def __reposition_axes_for_legends(fig, legends):
     """Adjust figure width to accommodate legend(s)"""
     buffer = 1.0
-    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes())
+    fig_width, _fig_height = fig.get_size_inches()
+    max_axes_right_inches = max(ax.get_position().xmax for ax in fig.get_axes()) * fig_width
     max_extent_inches = (max(leg.get_window_extent().xmax / fig.dpi
                              for leg in legends)
                          # Plus a bit extra because matplotlib
                          + buffer
                          if len(legends) > 0
                          else max_axes_right_inches)
-    fig.subplots_adjust(right=(fig.get_figwidth()
-                               * max_axes_right_inches
-                               / max_extent_inches))
+    fig.subplots_adjust(right=(max_axes_right_inches / max_extent_inches))
 
 
 def __add_axis_name_annotations(axes_names: Sequence[str],

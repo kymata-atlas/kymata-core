@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from math import floor
 
-from numpy import floor as np_floor, arange, zeros
+from numpy import floor as np_floor, arange, zeros, zeros_like
 from numpy.typing import NDArray
 
 
@@ -61,3 +61,29 @@ class Transform:
             float: The time step in seconds.
         """
         return 1 / self.sample_rate
+
+
+def shift_by(data: NDArray, samples: int) -> NDArray:
+    """
+    Shift signal in array by a number of samples.
+
+    Args:
+        data:
+        samples:
+    Returns:
+
+    """
+    if samples == 0:
+        return data
+
+    shifted = zeros_like(data)
+
+    if abs(samples) >= len(data):
+        return shifted
+
+    if samples > 0:
+        shifted[samples:] = data[:-samples]
+    if samples < 0:
+        shifted[:len(data) + samples] = data[-samples:]
+
+    return shifted

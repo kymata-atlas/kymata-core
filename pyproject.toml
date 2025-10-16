@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kymata"
-version = "1.0.2"
+version = "1.0.3"
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
 authors = [
     "Kymata Research Group <acgt2@cam.ac.uk>",
@@ -49,6 +49,7 @@ mkdocs-material = "^9.5.24"
 mkdocstrings = {extras = ["python"], version = "^0.29.0"}
 twine = "^5.1.1"
 networkx = "^3.4.2"
+nilearn = "^0.12.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
@@ -64,4 +65,9 @@ build-backend = "poetry.core.masonry.api"
 ignore = [
     # Ignore these bad linting rules
     "F842",  # Local variable `node` is annotated but never used
+]
+
+[tool.coverage.run]
+omit = [
+    "kymata/io/logging.py",
 ]
