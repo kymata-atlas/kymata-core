@@ -4,7 +4,6 @@ from typing import Optional, NamedTuple
 import matplotlib.patheffects as pe
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
@@ -408,7 +407,7 @@ def plot_ippm(
     # Y-axis
     y_padding = 0.5
     if node_y:
-    _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+        _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
     _ax.set_yticklabels([])
     _ax.yaxis.set_visible(False)
 
