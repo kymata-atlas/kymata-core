@@ -83,30 +83,38 @@ class _PlottableIPPMGraph:
             for node in ippm_graph.graph_full.nodes
         }
 
-        # hemisphere → {transforms represented in this hemisphere}
-        transforms_per_hemisphere: dict[str, list[str]] = {
-            hemisphere: sorted({
-                node.transform
-                for node in ippm_graph.graph_full.nodes
-                if node.hemisphere == hemisphere
-            }, reverse=True)
-            for hemisphere in hemispheres
-        }
-
         # hemisphere → transform → y-ordinate
         y_ordinates: dict[str, dict[str, float]]
+        # hemisphere → {transforms represented in this hemisphere}
+        transforms_per_hemisphere: dict[str, list[str]]
         if y_ordinate_style == _YOrdinateStyle.progressive:
+            # In this case, we want the transforms to be stacked without gaps, so the transforms-per-hemisphere dict
+            # is built only from the transforms present in the actual graph
+            transforms_per_hemisphere = {
+                hemisphere: sorted({
+                    node.transform
+                    for node in ippm_graph.graph_full.nodes
+                    if node.hemisphere == hemisphere
+                }, reverse=True)
+                for hemisphere in hemispheres
+            }
             y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_hemisphere, node_spacing)
-
         elif y_ordinate_style == _YOrdinateStyle.centered:
+            # In this case we want the transforms to be aligned with gaps for "missing" transforms, so the transforms-
+            # per-hemisphere dict is built from the CTL. At the moment we assume that the CTL is duplicated over all
+            # hemispheres.
+            transforms_per_hemisphere = {
+                hemisphere: sorted(ippm_graph.candidate_transform_list.transforms, reverse=True)
+                for hemisphere in hemispheres
+            }
             y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_hemisphere, node_spacing, avoid_collinearity)
         else:
             raise NotImplementedError()
 
         # Apply an offset for each hemisphere.
         # Shift up by the maximum plotted height of all hemispheres.
-        # (It's `node_spacing +` so that there is clear separation between the hemispheres; i.e. the last node of one does
-        # not overlap with the first node of the next)
+        # (It's `node_spacing +` so that there is clear separation between the hemispheres; i.e. the last node of one
+        # does not overlap with the first node of the next)
         hemisphere_separation_offset = node_spacing + max(
             y_ordinates[hemisphere][transform]
             for hemisphere, transforms in transforms_per_hemisphere.items()
@@ -116,8 +124,6 @@ class _PlottableIPPMGraph:
             for transform in transforms_per_hemisphere[hemisphere]:
                 y_ordinates[hemisphere][transform] += hemisphere_separation_offset * hemisphere_i
 
-        # Apply y-ordinates to desired graph
-
         if connection_style == IPPMConnectionStyle.last_to_first:
             preferred_graph = ippm_graph.graph_last_to_first
         elif connection_style == IPPMConnectionStyle.first_to_first:
@@ -126,7 +132,8 @@ class _PlottableIPPMGraph:
             # IPPMConnectionStyle.full typically has too many nodes and edges to be performant and should be avoided
             raise NotImplementedError()
 
-        # Update this section to use IPPMNode attributes
+        # Apply y-ordinates to desired graph
+
         node: IPPMNode
         self.graph: DiGraph = relabel_nodes(
             preferred_graph,
@@ -217,8 +224,8 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
     # hemisphere → serial step idx → number of "parallel" transforms this step which are present in this hemisphere
     totals_within_serial_step = {
         hemisphere: Counter(step_idx
-                       for trans, step_idx in step_idxs.items()
-                       if trans in transforms_per_hemisphere[hemisphere])
+                            for trans, step_idx in step_idxs.items()
+                            if trans in transforms_per_hemisphere[hemisphere])
         for hemisphere in hemispheres
     }
     # hemisphere → max "width" over the whole set of nodes this hemisphere
@@ -308,13 +315,15 @@ def plot_ippm(
         title = "IPPM Graph"
 
     # Pass the test_hemisphere_colors flag to _PlottableIPPMGraph
-    plottable_graph = _PlottableIPPMGraph(ippm_graph_to_plot,
-                                          avoid_collinearity=avoid_collinearity,
-                                          colors=colors,
-                                          y_ordinate_style=y_ordinate_style,
-                                          connection_style=IPPMConnectionStyle(connection_style),
-                                          scale_nodes=scale_nodes,
-                                          test_hemisphere_colors=_test_hemisphere_colors)
+    plottable_graph = _PlottableIPPMGraph(
+        ippm_graph_to_plot,
+        avoid_collinearity=avoid_collinearity,
+        colors=colors,
+        y_ordinate_style=y_ordinate_style,
+        connection_style=IPPMConnectionStyle(connection_style),
+        scale_nodes=scale_nodes,
+        test_hemisphere_colors=_test_hemisphere_colors,
+    )
 
     if arrowhead_dims is None:
         if plottable_graph.graph.nodes:
