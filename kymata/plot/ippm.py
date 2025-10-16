@@ -83,21 +83,30 @@ class _PlottableIPPMGraph:
             for node in ippm_graph.graph_full.nodes
         }
 
-        # hemisphere → {transforms represented in this hemisphere}
-        transforms_per_hemisphere: dict[str, list[str]] = {
-            hemisphere: sorted({
-                node.transform
-                for node in ippm_graph.graph_full.nodes
-                if node.hemisphere == hemisphere
-            }, reverse=True)
-            for hemisphere in hemispheres
-        }
-
         # hemisphere → transform → y-ordinate
         y_ordinates: dict[str, dict[str, float]]
+        # hemisphere → {transforms represented in this hemisphere}
+        transforms_per_hemisphere: dict[str, list[str]]
         if y_ordinate_style == _YOrdinateStyle.progressive:
+            # In this case, we want the transforms to be stacked without gaps, so the transforms-per-hemisphere dict
+            # is built only from the transforms present in the actual graph
+            transforms_per_hemisphere = {
+                hemisphere: sorted({
+                    node.transform
+                    for node in ippm_graph.graph_full.nodes
+                    if node.hemisphere == hemisphere
+                }, reverse=True)
+                for hemisphere in hemispheres
+            }
             y_ordinates = _all_y_ordinates_progressive(ippm_graph, transforms_per_hemisphere, node_spacing)
         elif y_ordinate_style == _YOrdinateStyle.centered:
+            # In this case we want the transforms to be aligned with gaps for "missing" transforms, so the transforms-
+            # per-hemisphere dict is built from the CTL. At the moment we assume that the CTL is duplicated over all
+            # hemispheres.
+            transforms_per_hemisphere = {
+                hemisphere: sorted(ippm_graph.candidate_transform_list.transforms, reverse=True)
+                for hemisphere in hemispheres
+            }
             y_ordinates = _all_y_ordinates_centered(ippm_graph, transforms_per_hemisphere, node_spacing, avoid_collinearity)
         else:
             raise NotImplementedError()
