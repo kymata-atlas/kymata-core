@@ -9,7 +9,7 @@ from kymata.preproc.data_cleansing import create_trialwise_data
 
 def main(config_filename: str):
     config = load_config(
-        str(Path(Path(__file__).parent.parent.parent, "dataset_config", config_filename))
+        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
     )
 
     create_trialwise_data(

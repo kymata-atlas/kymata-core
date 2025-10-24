@@ -3,13 +3,19 @@ from copy import deepcopy, copy
 import pytest
 
 from kymata.entities.expression import ExpressionPoint, BLOCK_SCALP
-from kymata.ippm.graph import IPPMGraph, _node_id_from_point
+from kymata.ippm.graph import IPPMGraph, _node_id_from_point, IPPMConnectionStyle
 from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 
 
 @pytest.fixture
 def sample_hierarchy() -> TransformHierarchy:
-    """A sample hierarchy to match with `sample_points`."""
+    """
+    A sample hierarchy to match with `sample_points`.
+
+             func1
+          ↗        ↘
+    input —————————→ func2 → func3 → func4
+    """
     return {
         "input": [],
         "func1": ["input"],
@@ -221,3 +227,65 @@ def test_ippmgraph_last_to_first():
     assert set(ftl.successors(node_c3_A)) == {node_c4_B, node_c5_C}
     assert set(ftl.successors(node_c4_B)) == set()
     assert set(ftl.successors(node_c5_C)) == set()
+
+
+def test_ippmgraph_points_for_transform(sample_hierarchy, sample_points):
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=sample_points))
+
+    assert graph.points_for_transform("func1") == [
+        ExpressionPoint("c", 10, "func1", -28),
+        ExpressionPoint("c", 25, "func1", -79),
+    ]
+    assert graph.points_for_transform("func2") == [
+        ExpressionPoint("c", 50, "func2", -61),
+    ]
+    assert graph.points_for_transform("func3") == [
+        ExpressionPoint("c", 60, "func3", -92),
+        ExpressionPoint("c", 65, "func3", -12),
+    ]
+    assert graph.points_for_transform("func4") == [
+        ExpressionPoint("c", 70, "func4", -42),
+    ]
+
+
+def test_ippmgraph_edges_for_transform(sample_hierarchy, sample_points):
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=sample_points))
+
+    connection_style = IPPMConnectionStyle.first_to_first
+    assert graph.edges_between_transforms("func1", "func2", connection_style) == [
+        (
+            ExpressionPoint("c", 10, "func1", -28),
+            ExpressionPoint("c", 50, "func2", -61),
+        ),
+    ]
+    assert graph.edges_between_transforms("func1", "func3", connection_style) == []
+    assert graph.edges_between_transforms("func1", "func4", connection_style) == []
+    assert graph.edges_between_transforms("func2", "func3", connection_style) == [
+        (
+            ExpressionPoint("c", 50, "func2", -61),
+            ExpressionPoint("c", 60, "func3", -92),
+        ),
+    ]
+    assert graph.edges_between_transforms("func2", "func4", connection_style) == []
+    assert graph.edges_between_transforms("func3", "func4", connection_style) == [
+        (
+            ExpressionPoint("c", 60, "func3", -92),
+            ExpressionPoint("c", 70, "func4", -42),
+        ),
+    ]
+
+
+def test_ippm_subgraph_with_input(sample_hierarchy, sample_points):
+    graph = IPPMGraph(sample_hierarchy, dict(scalp=sample_points))
+    select_transforms = {"input", "func1", "func2"}
+    subgraph = graph.subgraph(select_transforms)
+    expected = IPPMGraph(
+        # Restricted hierarchy
+        {
+            down: [up for up in ups if up in select_transforms]
+            for down, ups in sample_hierarchy.items()
+            if down in select_transforms
+        },
+        dict(scalp=[p for p in sample_points if p.transform in select_transforms])
+    )
+    assert subgraph == expected

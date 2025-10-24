@@ -53,9 +53,18 @@ def test_ctl_serial_sequence(ctl):
     ]
 
 
-def test_ctl_serial_sequence_more_complex():
-    # Not sure if this is realistic, but it should still be treated well
-    ctl = CandidateTransformList({
+@pytest.fixture
+def complicated_ctl_example() -> CandidateTransformList:
+    r"""
+    Not sure if this is realistic, but it should still be treated well
+
+          --- func1 ---       --- func3
+         /             \     /
+    input ------------- func2
+                             \
+                              --- func4
+    """
+    return CandidateTransformList({
         "input": [],
         "func1": ["input"],
         # "func2" also depends on "func1" so can't come in parallel with it, though it's a successor of "input"
@@ -64,15 +73,23 @@ def test_ctl_serial_sequence_more_complex():
         "func4": ["func2"],
     })
 
-    #       --- func1 ---       --- func3
-    #      /             \     /
-    # input ------------- func2
-    #                          \
-    #                           --- func4
 
-    assert ctl.serial_sequence == [
+def test_ctl_serial_sequence_more_complex(complicated_ctl_example):
+    assert complicated_ctl_example.serial_sequence == [
         ["input"],
         ["func1"],
         ["func2"],
         ["func3", "func4"],
     ]
+
+
+def test_ctl_subgraph(complicated_ctl_example):
+    assert complicated_ctl_example.subgraph(["input", "func1", "func2"]) == CandidateTransformList({
+        "input": [],
+        "func1": ["input"],
+        "func2": ["input", "func1"],
+    })
+    assert complicated_ctl_example.subgraph(["func1", "func4"]) == CandidateTransformList({
+        "func1": [],
+        "func4": [],
+    })

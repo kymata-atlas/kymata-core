@@ -64,7 +64,7 @@ def main():
                         help="If the transform contour contains NaN values, "
                              "this will replace them with the specified values.")
     parser.add_argument("--transform-sample-rate", type=float, required=False, default=1000,
-                        help="The sample rate of the transform contour.")
+                        help="The original sample rate of the transform contour.")
 
     # For source space
     parser.add_argument("--use-inverse-operator", action="store_true",
@@ -76,7 +76,9 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
+    parser.add_argument("--resample", type=float, required=False, default=200,
+                        help="Resample rate for both transform and EMEG data, in Hz. "
+                             "(E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
@@ -107,7 +109,7 @@ def main():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent.parent.parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 

@@ -4,7 +4,6 @@ from typing import Optional, NamedTuple
 import matplotlib.patheffects as pe
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
@@ -266,22 +265,24 @@ def _get_test_hemisphere_color(hemisphere: str) -> str:
 
 
 def plot_ippm(
-        ippm: IPPM,
-        colors: dict[str, str],
-        title: Optional[str] = None,
-        xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
-        y_ordinate_style: str = _YOrdinateStyle.centered,
-        connection_style: str = IPPMConnectionStyle.last_to_first,
-        scale_nodes: bool = False,
-        figheight: int = 5,
-        figwidth: int = 10,
-        arrowhead_dims: tuple[float, float] = None,
-        linewidth: float = 3,
-        show_labels: bool = True,
-        relabel: dict[str, str] | None = None,
-        avoid_collinearity: bool = False,
-        _test_hemisphere_colors: bool = False,
-) -> Figure:
+    ippm: IPPM,
+    colors: dict[str, str],
+    title: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
+    xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
+    y_ordinate_style: str = _YOrdinateStyle.centered,
+    connection_style: str = IPPMConnectionStyle.last_to_first,
+    scale_nodes: bool = False,
+    figheight: int = 5,
+    figwidth: int = 10,
+    arrowhead_dims: tuple[float, float] = None,
+    linewidth: float = 3,
+    show_labels: bool = True,
+    relabel: dict[str, str] | None = None,
+    avoid_collinearity: bool = False,
+    serial_sequence: Optional[list[list[str]]] = None,
+    _test_hemisphere_colors: bool = False,
+) -> plt.Axes:
     """
     Plots an IPPM graph, always including all available hemispheres.
 
@@ -302,7 +303,7 @@ def plot_ippm(
             hemisphere, for testing vertical separation. Defaults to False.
 
     Returns:
-        (pyplot.Figure): A figure of the IPPM graph.
+        (pyplot.Axes): Axes on which the IPPM was plotted.
     """
 
     if relabel is None:
@@ -367,15 +368,19 @@ def plot_ippm(
         bsplines += _make_bspline_paths(incoming_edge_endpoints)
 
     fig: plt.Figure
-    ax: plt.Axes
-    fig, ax = plt.subplots()
+    _ax: plt.Axes
+    if ax is None:
+        fig, _ax = plt.subplots()
+    else:
+        _ax = ax
+        fig = _ax.figure
 
     text_offset_x = -0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
-        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
+        _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
             display_label = relabel.get(label, f"{label}()")
-            ax.text(
+            _ax.text(
                 x=path[0][-1] + text_offset_x,
                 y=path[1][-1],
                 s=display_label,
@@ -384,14 +389,14 @@ def plot_ippm(
                 horizontalalignment="right", verticalalignment='center',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
-        ax.arrow(
+        _ax.arrow(
             x=path[0][-1], dx=0.001,
             y=path[1][-1], dy=0,
             shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
 
-    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+    _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 0.02
@@ -403,44 +408,47 @@ def plot_ippm(
                 solid_line_to = max(node_x) if node_x else 0.02
             solid_extension = solid_line_to + future_width / 2
             dotted_extension = solid_extension + future_width / 2
-            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="solid")
-            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="dotted")
+            _ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="solid")
+            _ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth, linestyle="dotted")
 
-    plt.title(title)
+        _ax.set_title(title)
 
     # Y-axis
     y_padding = 0.5
     if node_y:
-        ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
-    ax.set_yticklabels([])
-    ax.yaxis.set_visible(False)
+        _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    _ax.set_yticklabels([])
+    _ax.yaxis.set_visible(False)
 
     # X-axis
-    current_xmin, current_xmax = ax.get_xlim()
+    current_xmin, current_xmax = _ax.get_xlim()
     desired_xmin, desired_xmax = xlims_s
     if desired_xmin is None:
         desired_xmin = min(current_xmin, min(node_x)) if node_x else current_xmin
 
     if desired_xmax is None:
         desired_xmax = max(current_xmax, max(node_x) + future_width) if node_x else current_xmax + future_width
+    # Set tick labels
+    xticks = _ax.get_xticks()
+    _ax.set_xticks(xticks,
+                   [
+                       # Convert labels to ms, and round to avoid float-math issues
+                       round(tick * 1000)
+                       for tick in xticks
+                   ])
+    # Set decoration
+    _ax.set_xlabel("Latency (ms)")
 
-    ax.set_xlim((desired_xmin, desired_xmax))
+    _ax.spines["top"].set_visible(False)
+    _ax.spines["right"].set_visible(False)
+    _ax.spines["left"].set_visible(False)
 
-    xticks = ax.get_xticks()
-    plt.xticks(xticks,
-               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
-                for tick in xticks])
-    ax.set_xlabel("Latency (ms)")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
+    if ax is None:
+        # Figure created locally
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
 
-    fig.set_figheight(figheight)
-    fig.set_figwidth(figwidth)
-
-    return fig
+    return ax
 
 
 def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[float, float]:

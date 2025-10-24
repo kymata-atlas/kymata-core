@@ -1,21 +1,47 @@
+import sys
 from os import getcwd, getenv
+from os.path import abspath
 from pathlib import Path
 from typing import Optional
 
 from kymata.io.file import PathType
+from kymata.system.reflection import kymata_installed_as_dependency
 
 
 _DATA_PATH_ENVIRONMENT_VAR_NAME = "KYMATA_DATA_ROOT"
 DATA_DIR_NAME = "kymata-core-data"
 
-# Places downloaded datasets could go, in order of preference
-_preferred_default_data_locations = [
-    Path(
+
+def _default_location_when_source() -> Path:
+    """The default location for the data dir (parent) when kymata is being run from source."""
+    return Path(
         Path(__file__)  # data_root.py
         .parent         # datasets
         .parent         # kymata
         .parent         # kymata-core
-    ),  # kymata/../data_dir (next to kymata dir)
+    )  # kymata/../data_dir (next to kymata dir)
+
+
+def _default_location_when_dependency() -> Path:
+    """The default location for the data dir (parent) when kymata is being run as an installed package."""
+
+    # Generic "if __name__ == "__main__""
+    main_module = sys.modules.get("__main__")
+    if main_module and hasattr(main_module, "__file__"):
+        return Path(abspath(main_module.__file__))
+
+    # Otherwise return the location of the called script (may not work if the called script was an invoker)
+    elif sys.argv[0]:
+        return Path(abspath(sys.argv[0]))
+
+    # Otherwise fall back to the existing default
+    else:
+        return _default_location_when_source()
+
+
+# Places downloaded datasets could go, in order of preference
+_preferred_default_data_locations = [
+    _default_location_when_dependency if kymata_installed_as_dependency() else _default_location_when_source,
     Path(getcwd()),  # <cwd>/data_dir
     Path(Path.home(), "Documents"),  # ~/Documents/data_dir
     Path(Path.home()),  # ~/data_dir

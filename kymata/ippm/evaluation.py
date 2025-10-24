@@ -1,9 +1,75 @@
 """
 Metrics for evaluating IPPMs
 """
+from numpy import sign
 
 from kymata.entities.expression import ExpressionPoint, group_points_by_transform
-from kymata.ippm.graph import IPPMGraph
+from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle
+
+
+def relative_causality_violation_score(ippm_1: IPPMGraph, ippm_2: IPPMGraph,
+                                       connection_style: IPPMConnectionStyle = IPPMConnectionStyle.first_to_first,
+                                       include_inputs: bool = True,
+                                       ) -> tuple[float, int, int]:
+    """
+    Computes the relative causality violation score between two IPPMs for a given IPPMConnectionStyle.
+
+    Args:
+        ippm_1 (IPPMGraph):
+        ippm_2 (IPPMGraph):
+        connection_style (IPPMConnectionStyle, optional): The connection style to use. Must be one where there is at
+            most one edge between any pair of transforms. Defaults to IPPMConnectionStyle.first_to_first.
+        include_inputs (bool, optional): Whether to include inputs in the score. Defaults to True.
+
+    Returns:
+        float: violations / total edges
+        int: violations
+        int: total edges
+    """
+    # Will only work where there's at most one edge connecting each pair of transforms
+    if connection_style not in {IPPMConnectionStyle.first_to_first, IPPMConnectionStyle.last_to_first}:
+        raise NotImplementedError(f"IPPMs must have at most one edge connecting each pair of transforms:"
+                                  f" {connection_style} is unsupported")
+
+    # First, we assert that the CTL of each graph is the same
+    if ippm_1.candidate_transform_list != ippm_2.candidate_transform_list:
+        raise ValueError("IPPMs must have the same CTL")
+
+    # Now we can traverse the nodes and edges in the CTL and check for edges in each downstream graph.
+    # Note that this means we automatically ignore edges between runs of the same transform.
+    violations = 0
+    edges_intersection = 0
+    for edge in ippm_1.candidate_transform_list.graph.edges:
+
+        if not include_inputs:
+            if (edge[0] in ippm_1.candidate_transform_list.inputs
+                    or edge[1] in ippm_1.candidate_transform_list.inputs):
+                continue
+
+        ippm_1_edges = ippm_1.edges_between_transforms(*edge, connection_style=connection_style)
+        ippm_2_edges = ippm_2.edges_between_transforms(*edge, connection_style=connection_style)
+        # Skip any edges that aren't present in both graphs
+        # (this is the computation of $E_{1\cap2}$ in the paper)
+        if len(ippm_1_edges) == 0 or len(ippm_2_edges) == 0:
+            continue
+        # Get the corresponding edge from each graph
+        # (We know there will be only one of each
+        assert len(ippm_1_edges) == 1
+        assert len(ippm_2_edges) == 1
+        ippm_1_source, ippm_1_target = ippm_1_edges[0]
+        ippm_2_source, ippm_2_target = ippm_2_edges[0]
+
+        order_in_ippm_1 = sign(ippm_1_target.latency - ippm_1_source.latency)
+        order_in_ippm_2 = sign(ippm_2_target.latency - ippm_2_source.latency)
+        if order_in_ippm_1 != order_in_ippm_2:
+            violations += 1
+        edges_intersection += 1
+
+    return (
+        violations / edges_intersection if edges_intersection != 0 else 0,
+        violations,
+        edges_intersection,
+    )
 
 
 def causality_violation_score(ippm: IPPMGraph) -> tuple[float, int, int]:
@@ -129,7 +195,7 @@ def transform_recall(ippm_graph: IPPMGraph, noisy_points: list[ExpressionPoint])
     return (
         n_detected_transforms / n_transforms_in_data if n_transforms_in_data > 0 else 0,  # ratio
         n_detected_transforms,  # num
-        n_transforms_in_data,   # denom
+        n_transforms_in_data,  # denom
     )
 
 
