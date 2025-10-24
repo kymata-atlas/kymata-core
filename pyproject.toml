@@ -15,6 +15,9 @@ repository = "https://github.com/kymata-atlas/kymata-core"
 documentation = "https://kymata-atlas.github.io/kymata-core/"
 readme = "README.md"
 packages = [{include = "kymata"}]
+include = [
+    { path = "kymata/dataset_config", format = ["sdist", "wheel"] }
+]
 keywords = ["neuroscience", "neuroimaging"]
 classifiers = [
     "Intended Audience :: Science/Research",
