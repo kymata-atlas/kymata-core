@@ -24,6 +24,179 @@ class _YOrdinateStyle:
     centered = "centered"
 
 
+def plot_ippm(
+        ippm: IPPM,
+        colors: dict[str, str],
+        title: Optional[str] = None,
+        xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
+        y_ordinate_style: str = _YOrdinateStyle.centered,
+        connection_style: str = IPPMConnectionStyle.last_to_first,
+        scale_nodes: bool = False,
+        figheight: int = 5,
+        figwidth: int = 10,
+        arrowhead_dims: tuple[float, float] = None,
+        linewidth: float = 3,
+        show_labels: bool = True,
+        relabel: dict[str, str] | None = None,
+        avoid_collinearity: bool = False,
+) -> Figure:
+    """
+    Plots an IPPM graph, always including all available hemispheres.
+
+    Args:
+        ippm (IPPM): IPPM object to plot.
+        colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
+            Contains the color for each transform. The nodes and edges are colored accordingly.
+        title (str): Title of the plot.
+        scale_nodes (bool, optional): scales the node by the significance. Default is False
+        figheight (int, optional): Height of the plot. Defaults to 5.
+        figwidth (int, optional): Width of the plot. Defaults to 10.
+        show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
+        relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
+            original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
+        avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
+            serial step. Defaults to False.
+
+    Returns:
+        (pyplot.Figure): A figure of the IPPM graph.
+    """
+
+    if relabel is None:
+        relabel = dict()
+
+    # Always plot the entire graph
+    ippm_graph_to_plot = ippm.graph
+
+    if title is None:
+        title = "IPPM Graph"
+
+    plottable_graph = _PlottableIPPMGraph(
+        ippm_graph_to_plot,
+        avoid_collinearity=avoid_collinearity,
+        colors=colors,
+        y_ordinate_style=y_ordinate_style,
+        connection_style=IPPMConnectionStyle(connection_style),
+        scale_nodes=scale_nodes,
+    )
+
+    if arrowhead_dims is None:
+        if plottable_graph.graph.nodes:
+            max_y = max(node.y for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
+            max_x = max(node.x for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
+            arrowhead_dims = (
+                max_y / 30,
+                max_x / 30,
+            )
+        else:
+            arrowhead_dims = (0.1, 0.1)
+
+    # first lets aggregate all the information.
+    node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
+    node_y      = [] # y coordinates for nodes
+    node_colors = [] # color for nodes
+    node_sizes  = []  # size of nodes
+    edge_colors = []
+    bsplines = []
+    edge_labels = []
+
+    node: _PlottableNode
+    for i, plottable_node in enumerate(plottable_graph.graph.nodes):
+        node_colors.append(plottable_node.color)
+        node_sizes.append(plottable_node.size)
+        node_x.append(plottable_node.x)
+        node_y.append(plottable_node.y)
+
+        incoming_edge_endpoints = []
+        pred: _PlottableNode
+        for pred in plottable_graph.graph.predecessors(plottable_node):
+            incoming_edge_endpoints.append(
+                (
+                    (pred.x, pred.y),
+                    (plottable_node.x, plottable_node.y)
+                )
+            )
+            edge_colors.append(plottable_node.color)
+            edge_labels.append(plottable_node.label)
+
+        bsplines += make_bspline_paths(incoming_edge_endpoints)
+
+    fig: plt.Figure
+    ax: plt.Axes
+    fig, ax = plt.subplots()
+
+    text_offset_x = -0.01
+    for path, color, label in zip(bsplines, edge_colors, edge_labels):
+        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
+        if show_labels:
+            display_label = relabel.get(label, f"{label}()")
+            ax.text(
+                x=path[0][-1] + text_offset_x,
+                y=path[1][-1],
+                s=display_label,
+                color=color,
+                zorder=1,
+                horizontalalignment="right", verticalalignment='center',
+                path_effects=[pe.withStroke(linewidth=4, foreground="white")],
+            )
+        ax.arrow(
+            x=path[0][-1], dx=0.001,
+            y=path[1][-1], dy=0,
+            shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
+            length_includes_head=True, head_starts_at_zero=False,
+        )
+
+    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+
+    # Show lines trailing off into the future from terminal nodes
+    future_width = 0.02
+    for node in plottable_graph.graph.nodes:
+        if node.is_terminal:
+            if node.is_input:
+                solid_line_to = 0.02
+            else:
+                solid_line_to = max(node_x) if node_x else 0.02
+            solid_extension = solid_line_to + future_width / 2
+            dotted_extension = solid_extension + future_width / 2
+            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                    linestyle="solid")
+            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                    linestyle="dotted")
+
+    plt.title(title)
+
+    # Y-axis
+    y_padding = 0.5
+    if node_y:
+        ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    ax.set_yticklabels([])
+    ax.yaxis.set_visible(False)
+
+    # X-axis
+    current_xmin, current_xmax = ax.get_xlim()
+    desired_xmin, desired_xmax = xlims_s
+    if desired_xmin is None:
+        desired_xmin = min(current_xmin, min(node_x)) if node_x else current_xmin
+
+    if desired_xmax is None:
+        desired_xmax = max(current_xmax, max(node_x) + future_width) if node_x else current_xmax + future_width
+
+    ax.set_xlim((desired_xmin, desired_xmax))
+
+    xticks = ax.get_xticks()
+    plt.xticks(xticks,
+               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
+                for tick in xticks])
+    ax.set_xlabel("Latency (ms)")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    fig.set_figheight(figheight)
+    fig.set_figwidth(figwidth)
+
+    return fig
+
+
 class _PlottableNode(NamedTuple):
     x: float
     y: float
@@ -244,179 +417,6 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
             )
             idxs_within_level[step_idx] += 1
     return y_ordinates
-
-
-def plot_ippm(
-        ippm: IPPM,
-        colors: dict[str, str],
-        title: Optional[str] = None,
-        xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
-        y_ordinate_style: str = _YOrdinateStyle.centered,
-        connection_style: str = IPPMConnectionStyle.last_to_first,
-        scale_nodes: bool = False,
-        figheight: int = 5,
-        figwidth: int = 10,
-        arrowhead_dims: tuple[float, float] = None,
-        linewidth: float = 3,
-        show_labels: bool = True,
-        relabel: dict[str, str] | None = None,
-        avoid_collinearity: bool = False,
-) -> Figure:
-    """
-    Plots an IPPM graph, always including all available hemispheres.
-
-    Args:
-        ippm (IPPM): IPPM object to plot.
-        colors (dict[str, str]): Dictionary with keys as node names and values as colors in hexadecimal.
-            Contains the color for each transform. The nodes and edges are colored accordingly.
-        title (str): Title of the plot.
-        scale_nodes (bool, optional): scales the node by the significance. Default is False
-        figheight (int, optional): Height of the plot. Defaults to 5.
-        figwidth (int, optional): Width of the plot. Defaults to 10.
-        show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
-        relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
-            original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
-        avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
-            serial step. Defaults to False.
-
-    Returns:
-        (pyplot.Figure): A figure of the IPPM graph.
-    """
-
-    if relabel is None:
-        relabel = dict()
-
-    # Always plot the entire graph
-    ippm_graph_to_plot = ippm.graph
-
-    if title is None:
-        title = "IPPM Graph"
-
-    plottable_graph = _PlottableIPPMGraph(
-        ippm_graph_to_plot,
-        avoid_collinearity=avoid_collinearity,
-        colors=colors,
-        y_ordinate_style=y_ordinate_style,
-        connection_style=IPPMConnectionStyle(connection_style),
-        scale_nodes=scale_nodes,
-    )
-
-    if arrowhead_dims is None:
-        if plottable_graph.graph.nodes:
-            max_y = max(node.y for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
-            max_x = max(node.x for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
-            arrowhead_dims = (
-                max_y / 30,
-                max_x / 30,
-            )
-        else:
-            arrowhead_dims = (0.1, 0.1)
-
-    # first lets aggregate all the information.
-    node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
-    node_y      = [] # y coordinates for nodes
-    node_colors = [] # color for nodes
-    node_sizes  = []  # size of nodes
-    edge_colors = []
-    bsplines = []
-    edge_labels = []
-
-    node: _PlottableNode
-    for i, plottable_node in enumerate(plottable_graph.graph.nodes):
-        node_colors.append(plottable_node.color)
-        node_sizes.append(plottable_node.size)
-        node_x.append(plottable_node.x)
-        node_y.append(plottable_node.y)
-
-        incoming_edge_endpoints = []
-        pred: _PlottableNode
-        for pred in plottable_graph.graph.predecessors(plottable_node):
-            incoming_edge_endpoints.append(
-                (
-                    (pred.x, pred.y),
-                    (plottable_node.x, plottable_node.y)
-                )
-            )
-            edge_colors.append(plottable_node.color)
-            edge_labels.append(plottable_node.label)
-
-        bsplines += make_bspline_paths(incoming_edge_endpoints)
-
-    fig: plt.Figure
-    ax: plt.Axes
-    fig, ax = plt.subplots()
-
-    text_offset_x = -0.01
-    for path, color, label in zip(bsplines, edge_colors, edge_labels):
-        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
-        if show_labels:
-            display_label = relabel.get(label, f"{label}()")
-            ax.text(
-                x=path[0][-1] + text_offset_x,
-                y=path[1][-1],
-                s=display_label,
-                color=color,
-                zorder=1,
-                horizontalalignment="right", verticalalignment='center',
-                path_effects=[pe.withStroke(linewidth=4, foreground="white")],
-            )
-        ax.arrow(
-            x=path[0][-1], dx=0.001,
-            y=path[1][-1], dy=0,
-            shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
-            length_includes_head=True, head_starts_at_zero=False,
-        )
-
-    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
-
-    # Show lines trailing off into the future from terminal nodes
-    future_width = 0.02
-    for node in plottable_graph.graph.nodes:
-        if node.is_terminal:
-            if node.is_input:
-                solid_line_to = 0.02
-            else:
-                solid_line_to = max(node_x) if node_x else 0.02
-            solid_extension = solid_line_to + future_width / 2
-            dotted_extension = solid_extension + future_width / 2
-            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="solid")
-            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="dotted")
-
-    plt.title(title)
-
-    # Y-axis
-    y_padding = 0.5
-    if node_y:
-        ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
-    ax.set_yticklabels([])
-    ax.yaxis.set_visible(False)
-
-    # X-axis
-    current_xmin, current_xmax = ax.get_xlim()
-    desired_xmin, desired_xmax = xlims_s
-    if desired_xmin is None:
-        desired_xmin = min(current_xmin, min(node_x)) if node_x else current_xmin
-
-    if desired_xmax is None:
-        desired_xmax = max(current_xmax, max(node_x) + future_width) if node_x else current_xmax + future_width
-
-    ax.set_xlim((desired_xmin, desired_xmax))
-
-    xticks = ax.get_xticks()
-    plt.xticks(xticks,
-               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
-                for tick in xticks])
-    ax.set_xlabel("Latency (ms)")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-
-    fig.set_figheight(figheight)
-    fig.set_figwidth(figwidth)
-
-    return fig
 
 
 def _get_y_coordinate_progressive(
