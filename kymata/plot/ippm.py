@@ -3,6 +3,7 @@ from typing import Optional, NamedTuple
 import matplotlib.patheffects as pe
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+from networkx.algorithms.components import weakly_connected_components
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 
@@ -247,10 +248,10 @@ class _PlottableIPPMGraph:
         })
 
         # The hemispheres will be separated, so we'll proceed with each hemisphere in turn
-        # hemi → transform -> y-ordinate
+        # (hemi, comp_i) → transform -> y-ordinate
         y_ordinates = dict()
-        # hemi → [transforms]
-        transforms_per_hemisphere: dict[str, set[str]] = dict()
+        # hemi → [components]
+        components_per_hemi = dict()
         for hemisphere in hemispheres:
             transforms_this_hemi = {
                 node.transform
@@ -258,36 +259,47 @@ class _PlottableIPPMGraph:
                 if node.hemisphere == hemisphere
             }
 
-            transforms_per_hemisphere[hemisphere] = transforms_this_hemi
+            components_this_hemi = {
+                component & transforms_this_hemi
+                for component in ippm_graph.candidate_transform_list.connected_components
+            }
+            # Drop empty
+            components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
 
-            # Compute y-ordinates relative to the bottom of the segment of the graph for this hemisphere
-            if y_ordinate_style == _YOrdinateStyle.progressive:
-                y_ordinates_this_hemi = _y_ordinates_progressive(ippm_graph, transforms_this_hemi, node_spacing)
-            elif y_ordinate_style == _YOrdinateStyle.centered:
-                # todo; this comment
-                # In this case we want the transforms to be aligned with gaps for "missing" transforms, so the
-                # transforms- per-hemisphere dict is built from the CTL. At the moment we assume that the CTL is
-                # duplicated over all hemispheres.
-                y_ordinates_this_hemi = _all_y_ordinates_centered(
-                    ippm_graph, transforms_this_hemi, node_spacing, avoid_collinearity)
-            else:
-                raise NotImplementedError()
+            components_per_hemi[hemisphere] = components_this_hemi
 
-            y_ordinates[hemisphere] = y_ordinates_this_hemi
+            for component_i, component_transforms in enumerate(components_this_hemi):
 
+                # Compute y-ordinates relative to the bottom of the segment of the graph for this hemisphere
+                if y_ordinate_style == _YOrdinateStyle.progressive:
+                    y_ordinates_this_component = _y_ordinates_progressive(ippm_graph, set(component_transforms), node_spacing)
+                elif y_ordinate_style == _YOrdinateStyle.centered:
+                    y_ordinates_this_component = _all_y_ordinates_centered(ippm_graph, set(component_transforms), node_spacing, avoid_collinearity)
+                else:
+                    raise NotImplementedError()
 
-        # Apply an offset for each hemisphere.
-        # Shift up by the maximum plotted height of all hemispheres.
-        # (It's `node_spacing +` so that there is clear separation between the hemispheres; i.e. the last node of one
-        # does not overlap with the first node of the next)
-        hemisphere_separation_offset = node_spacing + max(
-            y_ordinates[hemisphere][transform]
-            for hemisphere, transforms in transforms_per_hemisphere.items()
-            for transform in transforms
-        )
+                y_ordinates[(hemisphere, component_i)] = y_ordinates_this_component
+
+        # Apply an offset for each component.
+        offset = 0
+        # (hemi, comp_i) → offset
+        component_offsets = dict()
         for hemi_i, hemi in enumerate(hemispheres):
-            for transform in sorted(transforms_per_hemisphere[hemi], reverse=True):
-                y_ordinates[hemi][transform] += hemisphere_separation_offset * hemi_i
+            for comp_i, component in enumerate(components_per_hemi[hemi]):
+                y_vals = list(y_ordinates[(hemi, comp_i)].values())
+                if len(y_vals) > 0:
+                    component_height = max(y_vals) - min(y_vals)
+                else:
+                    component_height = 0
+                component_offsets[(hemi, comp_i)] = offset
+                offset += component_height + node_spacing
+            # Gap between hemispheres
+            offset += node_spacing
+
+        # Actually shift up the transforms for each component
+        for (hemi, comp_i), y_vals in y_ordinates.items():
+            for trans in y_vals:
+                y_vals[trans] += component_offsets[(hemi, comp_i)]
 
         if connection_style == IPPMConnectionStyle.last_to_first:
             preferred_graph = ippm_graph.graph_last_to_first
@@ -299,6 +311,12 @@ class _PlottableIPPMGraph:
 
         # Apply y-ordinates to desired graph
 
+        def lookup_component_index(hemisphere: str, transform: str) -> int:
+            for i, comp in enumerate(components_per_hemi[hemisphere]):
+                if transform in comp:
+                    return i
+            raise RuntimeError(f"{transform=} not found in any component for {hemisphere=}")
+
         node: IPPMNode
         self.graph: DiGraph = relabel_nodes(
             preferred_graph,
@@ -306,7 +324,7 @@ class _PlottableIPPMGraph:
                 node: _PlottableNode(
                     label=node.transform,
                     x=node.latency,
-                    y=y_ordinates[node.hemisphere][node.transform],
+                    y=y_ordinates[(node.hemisphere, lookup_component_index(node.hemisphere, node.transform))][node.transform],
                     # Conditionally set color based on test_hemisphere_colors flag
                     color=colors[node.transform],
                     is_input=node.is_input,
@@ -319,15 +337,15 @@ class _PlottableIPPMGraph:
 
 
 def _y_ordinates_progressive(ippm_graph: IPPMGraph,
-                             transforms_this_hemisphere: set[str],
+                             transforms_this_component: set[str],
                              node_spacing: float,
                              ) -> dict[str, float]:
     """
-    Compute progressive y-ordinates for one hemisphere, relative to the bottom of that hemisphere in the graph.
+    Compute progressive y-ordinates for one component, relative to the bottom of that component in the graph.
 
     Args:
         ippm_graph: The IPPMGraph.
-        transforms_this_hemisphere (set[str]): Set of transform names for this hemisphere.
+        transforms_this_component (set[str]): Set of transform names for this component.
         node_spacing (float): Vertical spacing between vertically adjacent transforms.
 
     Returns:
@@ -338,7 +356,7 @@ def _y_ordinates_progressive(ippm_graph: IPPMGraph,
     inputs = sorted({
         node.transform
         for node in ippm_graph.graph_full.nodes
-        if node.is_input and node.transform in transforms_this_hemisphere
+        if node.is_input and node.transform in transforms_this_component
     }, reverse=True)
 
     serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
@@ -349,7 +367,7 @@ def _y_ordinates_progressive(ippm_graph: IPPMGraph,
             step_idxs[transform] = step_idx
     # Sort by serial sequence, then alphabetically
     # Do both sorts in reverse order
-    other_transforms = sorted((t for t in transforms_this_hemisphere if t not in inputs), reverse=True)
+    other_transforms = sorted((t for t in transforms_this_component if t not in inputs), reverse=True)
     other_transforms.sort(key=lambda trans: step_idxs[trans], reverse=True)
 
     # Stack inputs
@@ -365,16 +383,16 @@ def _y_ordinates_progressive(ippm_graph: IPPMGraph,
 
 
 def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
-                              transforms_this_hemisphere: set[str],
+                              transforms_this_component: set[str],
                               node_spacing: float,
                               avoid_collinearity: bool,
                               ) -> dict[str, float]:
     """
-    Compute centred y-ordinates for one hemisphere, relative to the bottom of that hemisphere in the graph.
+    Compute centred y-ordinates for one component, relative to the bottom of that component in the graph.
 
     Args:
         ippm_graph: The IPPMGraph.
-        transforms_this_hemisphere (set[str]): Set of transform names for this hemisphere.
+        transforms_this_component (set[str]): Set of transform names for this component.
         node_spacing (float): Vertical spacing between vertically adjacent transforms.
         avoid_collinearity (bool): Apply nudges to position to avoid collinearity.
 
@@ -389,9 +407,9 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
     # Build dictionary mapping function names to sequence steps
     serial_sequence = ippm_graph.candidate_transform_list.serial_sequence
 
-    # Filter the serial sequence to include only transforms present in this hemisphere
+    # Filter the serial sequence to include only transforms present in this component
     serial_seq_filtered = [
-        [t for t in step if t in transforms_this_hemisphere]
+        [t for t in step if t in transforms_this_component]
         for step in serial_sequence
     ]
     serial_seq_filtered = [s for s in serial_seq_filtered if len(s) > 0]
