@@ -3,7 +3,6 @@ from typing import Optional, NamedTuple
 import matplotlib.patheffects as pe
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
-from networkx.algorithms.components import weakly_connected_components
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 
