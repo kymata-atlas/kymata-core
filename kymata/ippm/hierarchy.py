@@ -7,6 +7,9 @@ from networkx.algorithms.components import weakly_connected_components
 # Maps transforms to lists of names of parent/predecessor/upstream transforms
 TransformHierarchy = dict[str, list[str]]
 
+# A serial sequence of parallel transforms
+SerialSequence = tuple[frozenset[str], ...]
+
 
 class CandidateTransformList:
     """A theoretical IPPM graph, in absence of data.
@@ -86,7 +89,7 @@ class CandidateTransformList:
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
     @property
-    def serial_sequence(self) -> tuple[set[str], ...]:
+    def serial_sequence(self) -> SerialSequence:
         """
         The serial sequence of parallel transforms.
 
@@ -94,10 +97,10 @@ class CandidateTransformList:
         parallelizable transforms, ordered by serial dependency.
 
         Returns:
-            tuple[set[str]]: A sequence of sets representing batches of parallel transforms in execution order.
+            SerialSequence: A sequence of sets representing batches of parallel transforms in execution order.
         """
         # Add input nodes
-        seq = [self.inputs]
+        seq = [frozenset(self.inputs)]
         parsed_transforms = self.inputs
         # Recursively add children
         remaining_transforms = self.transforms - self.inputs
@@ -114,12 +117,12 @@ class CandidateTransformList:
                             remaining_transforms.remove(candidate)
                         except KeyError:
                             pass
-            seq.append(set(batch))
+            seq.append(frozenset(batch))
             parsed_transforms.update(batch)
         return tuple(seq)
 
     @property
-    def connected_serial_sequences(self) -> set[tuple[frozenset[str]]]:
+    def connected_serial_sequences(self) -> set[SerialSequence]:
         """
         Returns the set of connected serial sequences for each of the connected components of the CTL.
         """
@@ -134,7 +137,6 @@ class CandidateTransformList:
                     seq.append(filtered)
             ret.add(tuple(seq))
         return ret
-
 
     @property
     def connected_components(self) -> set[frozenset[str]]:
