@@ -543,6 +543,10 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 def _get_y_coordinate_progressive(
         partition_number: int,
         spacing: float = 1) -> float:
+    """
+    For an integer index inside a partition of the graph, return the y-ordinate of the index, relative to the start of
+    the partition.
+    """
     return partition_number * spacing
 
 
@@ -552,6 +556,20 @@ def _get_y_coordinate_centered(
         max_function_total_within_level: int,
         positive_nudge_frac: float,
         spacing: float = 1) -> float:
+    """
+    Given a specification of a graph partition, and a pointer, return a y-ordinate of the pointer, relative to the start
+    of the partition.
+
+    Args:
+        function_idx_within_level (int): the pointer to the current transform within a serial step
+        function_total_within_level (int): the total number of items within the current serial step
+        max_function_total_within_level (int): the largest number of any items within any serial step
+        positive_nudge_frac: a little nudge to avoid collinearity
+        spacing: Space between vertically adjacent nodes
+
+    Returns:
+        float: y-ordinate
+    """
     total_height = (max_function_total_within_level - 1) * spacing
     this_height = (function_total_within_level - 1) * spacing
     baseline = (total_height - this_height) / 2

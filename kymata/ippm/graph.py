@@ -256,7 +256,7 @@ class IPPMGraph:
         transforms.
 
         Returns:
-            tuple[set[str]]: A sequence of sets representing the ordered transforms in the serial sequence.
+            SerialSequence: A sequence of sets representing the ordered transforms in the serial sequence.
         """
         subsequence = [
             frozenset(t for t in step if t in self.transforms)
