@@ -57,7 +57,6 @@ class _PlottableIPPMGraph:
                  avoid_collinearity: bool,
                  scale_nodes: bool,
                  connection_style: IPPMConnectionStyle,
-                 test_hemisphere_colors: bool,
                  ):
         """
         Initializes the _PlottableIPPMGraph by assigning coordinates, colors, and other visual attributes to each node.
@@ -71,13 +70,11 @@ class _PlottableIPPMGraph:
                 serial step.
             scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
                 points.
-            test_hemisphere_colors (bool): If True, overrides the `colors` to use predefined hemisphere colors.
         """
 
         # Vertical spacing between nodes
         node_spacing = 1
 
-        # Hemispheres present in the graph
         hemispheres: set[str] = {
             node.hemisphere
             for node in ippm_graph.graph_full.nodes
@@ -143,7 +140,7 @@ class _PlottableIPPMGraph:
                     x=node.latency,
                     y=y_ordinates[node.hemisphere][node.transform],
                     # Conditionally set color based on test_hemisphere_colors flag
-                    color=_get_test_hemisphere_color(node.hemisphere) if test_hemisphere_colors else colors[node.transform],
+                    color=colors[node.transform],
                     is_input=node.is_input,
                     is_terminal=node.transform in ippm_graph.terminals,
                     size=-1 * node.logp_value if scale_nodes else 150,
@@ -255,16 +252,6 @@ def _all_y_ordinates_centered(ippm_graph: IPPMGraph,
     return y_ordinates
 
 
-def _get_test_hemisphere_color(hemisphere: str) -> str:
-    """Helper function to return a specific color based on hemisphere for testing."""
-    if hemisphere == "LH":
-        return "red"
-    elif hemisphere == "RH":
-        return "blue"
-    else: # For SCALP or other
-        return "green"
-
-
 def plot_ippm(
         ippm: IPPM,
         colors: dict[str, str],
@@ -280,7 +267,6 @@ def plot_ippm(
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
         avoid_collinearity: bool = False,
-        _test_hemisphere_colors: bool = False,
 ) -> Figure:
     """
     Plots an IPPM graph, always including all available hemispheres.
@@ -298,8 +284,6 @@ def plot_ippm(
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
         avoid_collinearity (bool, optional): Whether to apply a small offset to avoid collinearity between nodes in the same
             serial step. Defaults to False.
-        _test_hemisphere_colors (bool, optional): If True, overrides the `colors` dict to color nodes according to their
-            hemisphere, for testing vertical separation. Defaults to False.
 
     Returns:
         (pyplot.Figure): A figure of the IPPM graph.
@@ -314,7 +298,6 @@ def plot_ippm(
     if title is None:
         title = "IPPM Graph"
 
-    # Pass the test_hemisphere_colors flag to _PlottableIPPMGraph
     plottable_graph = _PlottableIPPMGraph(
         ippm_graph_to_plot,
         avoid_collinearity=avoid_collinearity,
@@ -322,7 +305,6 @@ def plot_ippm(
         y_ordinate_style=y_ordinate_style,
         connection_style=IPPMConnectionStyle(connection_style),
         scale_nodes=scale_nodes,
-        test_hemisphere_colors=_test_hemisphere_colors,
     )
 
     if arrowhead_dims is None:
