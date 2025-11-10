@@ -10,7 +10,6 @@ from networkx.relabel import relabel_nodes
 from numpy.typing import NDArray
 from scipy.interpolate import splev
 
-from kymata.entities.expression import ExpressionSet
 from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode
 from kymata.ippm.ippm import IPPM
 
@@ -423,23 +422,6 @@ def plot_ippm(
     fig.set_figwidth(figwidth)
 
     return fig
-
-
-def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[float, float]:
-    """
-    Get an appropriate set of xlims from an ExpressionSet.
-
-    Args:
-        es (ExpressionSet):
-        padding (float): The amount of padding to add either side of the IPPM plot, in seconds. Default is 0.05 (50ms).
-
-    Returns:
-        tuple[float, float]: xmin, xmax
-    """
-    return (
-        es.latencies.min() - padding,
-        es.latencies.max() + padding,
-    )
 
 
 def _make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[NDArray]]:
