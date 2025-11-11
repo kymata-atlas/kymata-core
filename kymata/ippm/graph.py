@@ -15,7 +15,7 @@ from networkx.utils import graphs_equal
 from kymata.entities.datatypes import Channel, Latency
 from kymata.entities.expression import (
     BLOCK_MERGED, ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, group_points_by_transform)
-from kymata.ippm.hierarchy import CandidateTransformList,TransformHierarchy
+from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy, SerialSequence
 
 
 _logger = getLogger(__file__)
@@ -204,7 +204,6 @@ class IPPMGraph:
 
         return IPPMGraph(ctl=copy(self.candidate_transform_list), points_by_block=reconstructed_points_by_block)
 
-
     def __eq__(self, other: IPPMGraph) -> bool:
         """
         Tests for equality of graphs.
@@ -249,7 +248,7 @@ class IPPMGraph:
         return set(n.transform for n in terminal_nodes)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> SerialSequence:
         """
         The serial sequence of transforms in the graph.
 
@@ -257,14 +256,14 @@ class IPPMGraph:
         transforms.
 
         Returns:
-            list[list[str]]: A list of lists representing the ordered transforms in the serial sequence.
+            SerialSequence: A sequence of sets representing the ordered transforms in the serial sequence.
         """
         subsequence = [
-            [t for t in step if t in self.transforms]
+            frozenset(t for t in step if t in self.transforms)
             for step in self.candidate_transform_list.serial_sequence
         ]
         # Skip any steps which were completely excluded due to missing data
-        return [step for step in subsequence if len(step) > 0]
+        return tuple(step for step in subsequence if len(step) > 0)
 
     @property
     def graph_last_to_first(self) -> DiGraph:

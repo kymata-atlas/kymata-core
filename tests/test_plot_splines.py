@@ -12,14 +12,10 @@ from unittest.mock import patch
 
 import numpy as np
 
-from kymata.plot.ippm import (
-    _make_bspline_paths,
-    _make_bspline_ctr_points,
-    _make_bspline_path,
-)
+from kymata.plot.splines import make_bspline_paths, _make_bspline_ctr_points, _make_bspline_path
 
 
-@patch("kymata.plot.ippm.splev")
+@patch("kymata.plot.splines.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
     expected_b_spline_paths = [
         np.array(range(65, 100, 10)),
@@ -49,14 +45,14 @@ def test_IPPMPlotter_MakeBSplineCtrPoints_Successfully():
         assert isclose(expected_point[1], actual_point[1])
 
 
-@patch("kymata.plot.ippm.splev")
+@patch("kymata.plot.splines.splev")
 def test_IPPMPlotter_MakeBSplinePath_Successfully(mock_splev):
     mock_splev.return_value = [
         np.array(range(65, 100, 10)),
         np.array(np.linspace(0.8, 1, 10)),
     ]
     pairs = [[(65, 0.8), (70, 1)]]
-    actual_b_splines = _make_bspline_paths(pairs)
+    actual_b_splines = make_bspline_paths(pairs)
     expected_b_spline_paths = [
         np.array(range(65, 100, 10)),
         np.array(np.linspace(0.8, 1, 10)),
