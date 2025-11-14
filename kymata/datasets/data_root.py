@@ -41,7 +41,7 @@ def _default_location_when_dependency() -> Path:
 
 # Places downloaded datasets could go, in order of preference
 _preferred_default_data_locations = [
-    _default_location_when_dependency if kymata_installed_as_dependency() else _default_location_when_source,
+    _default_location_when_dependency if kymata_installed_as_dependency() else _default_location_when_source(),
     Path(getcwd()),  # <cwd>/data_dir
     Path(Path.home(), "Documents"),  # ~/Documents/data_dir
     Path(Path.home()),  # ~/data_dir
