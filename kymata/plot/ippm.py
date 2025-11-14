@@ -122,7 +122,7 @@ def plot_ippm(
 
     fig: plt.Figure
     _ax: plt.Axes
-    if _ax is None:
+    if ax is None:
         fig, _ax = plt.subplots()
     else:
         _ax = ax
