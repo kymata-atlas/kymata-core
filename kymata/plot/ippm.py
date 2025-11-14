@@ -281,23 +281,24 @@ class _PlottableIPPMGraph:
         # (hemi, comp_i) → transform -> y-ordinate
         y_ordinates = dict()
         # hemi → [components]
-        components_per_hemi = dict()
+        components_per_hemi: dict[str, list[frozenset[str]]] = dict()
         for hemisphere in self.hemispheres:
+            this_is_second_hemisphere = (len(self.hemispheres) == 2 and hemisphere == self.hemispheres[1])
             if y_ordinate_style == _YOrdinateStyle.progressive:
                 # Progressive wants stacked transforms without gaps, so we build set of components from the transforms
                 # in the graph
 
                 # { components } where component is { transforms }
-                components_this_hemi: set[frozenset[str]] = {
+                components_this_hemi: list[frozenset[str]] = [
                     frozenset({
                         node.transform
                         for node in ippm_graph.graph_full.nodes
                         if (node.hemisphere == hemisphere) and (node.transform in component)
                     })
                     for component in ippm_graph.candidate_transform_list.connected_components
-                }
+                ]
                 # Drop empty
-                components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
+                components_this_hemi = [c for c in components_this_hemi if len(c) > 0]
                 components_per_hemi[hemisphere] = components_this_hemi
                 for component_i, component_transforms in enumerate(components_this_hemi):
                     y_ordinates[(hemisphere, component_i)] = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
@@ -305,7 +306,10 @@ class _PlottableIPPMGraph:
             elif y_ordinate_style == _YOrdinateStyle.centered:
                 # Centered wants gaps where there are "missing" transforms in the graph, so we build the list of
                 # transforms from the ctl
-                components_this_hemi = ippm_graph.candidate_transform_list.connected_components
+                components_this_hemi = sorted(ippm_graph.candidate_transform_list.connected_components)
+                # Want order of components to be mirrored between the hemispheres
+                if this_is_second_hemisphere:
+                    components_this_hemi.reverse()
                 components_per_hemi[hemisphere] = components_this_hemi
                 for component_i, component_transforms in enumerate(components_this_hemi):
                     y_ordinates[(hemisphere, component_i)] = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
