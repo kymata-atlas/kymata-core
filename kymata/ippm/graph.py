@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from math import inf
-from typing import Collection, Optional, Iterable
+from collections import defaultdict
 from copy import copy, deepcopy
+from dataclasses import dataclass
 from enum import StrEnum
 from logging import getLogger
-from collections import defaultdict
+from math import inf
+from typing import Collection, Optional
 
 from networkx import DiGraph
 from networkx.utils import graphs_equal
