@@ -13,6 +13,7 @@ from kymata.io.nkg import save_expression_set
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.preproc.source import load_emeg_pack
 from kymata.plot.expression import expression_plot
+from kymata.system.reflection import kymata_installed_as_dependency
 
 
 _default_output_dir = Path(data_root_path(), "output")
