@@ -1,6 +1,7 @@
 from typing import Optional, NamedTuple
 
 import matplotlib.patheffects as pe
+from kymata.entities.expression import BLOCK_LEFT, BLOCK_RIGHT
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from networkx.classes import DiGraph
@@ -161,6 +162,23 @@ def plot_ippm(
             ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
                     linestyle="dotted")
 
+    # Add separation line and left/right labels
+    if {BLOCK_LEFT, BLOCK_RIGHT} <= set(plottable_graph.hemispheres):
+        # Plot midline
+        height = (max(node_y) - min(node_y))
+        midline = min(node_y) + height / 2
+        xlims = (min(node_x), max(node_x) + future_width)
+        ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
+        # Text labels
+        bottom_height = min(node_y) + height / 4
+        top_height = min(node_y) + (3 * height / 4)
+        ax.text(s="left hemisphere",  x=min(node_x) - future_width, y=top_height,
+                rotation="vertical", horizontalalignment="center", verticalalignment="center",
+                fontsize="small")
+        ax.text(s="right hemisphere", x=min(node_x) - future_width, y=bottom_height,
+                rotation="vertical", horizontalalignment="center", verticalalignment="center",
+                fontsize="small")
+
     plt.title(title)
 
     # Y-axis
@@ -239,9 +257,9 @@ class _PlottableIPPMGraph:
         """
 
         # Vertical spacing between nodes
-        node_spacing = 1
+        self.node_spacing = 1
 
-        hemispheres: list[str] = sorted({
+        self.hemispheres: list[str] = sorted({
             node.hemisphere
             for node in ippm_graph.graph_full.nodes
         })
@@ -251,7 +269,7 @@ class _PlottableIPPMGraph:
         y_ordinates = dict()
         # hemi → [components]
         components_per_hemi = dict()
-        for hemisphere in hemispheres:
+        for hemisphere in self.hemispheres:
             transforms_this_hemi = {
                 node.transform
                 for node in ippm_graph.graph_full.nodes
@@ -271,9 +289,9 @@ class _PlottableIPPMGraph:
 
                 # Compute y-ordinates relative to the bottom of the segment of the graph for this hemisphere
                 if y_ordinate_style == _YOrdinateStyle.progressive:
-                    y_ordinates_this_component = _y_ordinates_progressive(ippm_graph, set(component_transforms), node_spacing)
+                    y_ordinates_this_component = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
                 elif y_ordinate_style == _YOrdinateStyle.centered:
-                    y_ordinates_this_component = _all_y_ordinates_centered(ippm_graph, set(component_transforms), node_spacing, avoid_collinearity)
+                    y_ordinates_this_component = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
                 else:
                     raise NotImplementedError()
 
@@ -283,7 +301,7 @@ class _PlottableIPPMGraph:
         offset = 0
         # (hemi, comp_i) → offset
         component_offsets = dict()
-        for hemi_i, hemi in enumerate(hemispheres):
+        for hemi_i, hemi in enumerate(reversed(self.hemispheres)):  # reversed so hemispheres go top-to-bottom
             for comp_i, component in enumerate(components_per_hemi[hemi]):
                 y_vals = list(y_ordinates[(hemi, comp_i)].values())
                 if len(y_vals) > 0:
@@ -291,9 +309,9 @@ class _PlottableIPPMGraph:
                 else:
                     component_height = 0
                 component_offsets[(hemi, comp_i)] = offset
-                offset += component_height + node_spacing
+                offset += component_height + self.node_spacing
             # Gap between hemispheres
-            offset += node_spacing
+            offset += self.node_spacing
 
         # Actually shift up the transforms for each component
         for (hemi, comp_i), y_vals in y_ordinates.items():
