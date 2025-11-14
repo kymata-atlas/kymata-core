@@ -88,13 +88,13 @@ def test_ippmgraph_build_successfully(sample_hierarchy, sample_points):
             == {node_func1_10, node_func1_25, node_func2_50}
     )
 
-    assert graph.serial_sequence == [
-        ["input"],
-        ["func1"],
-        ["func2"],
-        ["func3"],
-        ["func4"],
-    ]
+    assert graph.serial_sequence == (
+        {"input"},
+        {"func1"},
+        {"func2"},
+        {"func3"},
+        {"func4"},
+    )
 
 
 def test_ippmgraph_empty_points_builds_successfully(sample_hierarchy, empty_points):
@@ -169,12 +169,12 @@ def test_ippmgraph_missing_points(sample_hierarchy, sample_points):
             == {node_func2_50} # Ensure we are comparing IPPMNode objects
     )
 
-    assert graph.serial_sequence == [
-        ["input"],
-        ["func2"],
-        ["func3"],
-        ["func4"],
-    ]
+    assert graph.serial_sequence == (
+        {"input"},
+        {"func2"},
+        {"func3"},
+        {"func4"},
+    )
 
 
 def test_ippmgraph_last_to_first():

@@ -4,9 +4,14 @@ from copy import copy
 from typing import Iterable
 
 from networkx import DiGraph
+from networkx.algorithms.components import weakly_connected_components
+
 
 # Maps transforms to lists of names of parent/predecessor/upstream transforms
 TransformHierarchy = dict[str, list[str]]
+
+# A serial sequence of parallel transforms
+SerialSequence = tuple[frozenset[str], ...]
 
 
 class CandidateTransformList:
@@ -93,7 +98,7 @@ class CandidateTransformList:
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> SerialSequence:
         """
         The serial sequence of parallel transforms.
 
@@ -101,10 +106,10 @@ class CandidateTransformList:
         parallelizable transforms, ordered by serial dependency.
 
         Returns:
-            list[list[str]]: A list of lists representing batches of parallel transforms in execution order.
+            SerialSequence: A sequence of sets representing batches of parallel transforms in execution order.
         """
         # Add input nodes
-        seq = [sorted(self.inputs)]
+        seq = [frozenset(self.inputs)]
         parsed_transforms = self.inputs
         # Recursively add children
         remaining_transforms = self.transforms - self.inputs
@@ -121,9 +126,37 @@ class CandidateTransformList:
                             remaining_transforms.remove(candidate)
                         except KeyError:
                             pass
-            seq.append(sorted(batch))
+            seq.append(frozenset(batch))
             parsed_transforms.update(batch)
-        return seq
+        return tuple(seq)
+
+    @property
+    def connected_serial_sequences(self) -> set[SerialSequence]:
+        """
+        Returns the set of connected serial sequences for each of the connected components of the CTL.
+        """
+        serial_seq = self.serial_sequence
+        # for each component, run through the sequence and filter out those items
+        ret = set()
+        for component in self.connected_components:
+            seq = []
+            for step in serial_seq:
+                filtered = frozenset(trans for trans in step if trans in component)
+                if len(filtered) > 0:
+                    seq.append(filtered)
+            ret.add(tuple(seq))
+        return ret
+
+    @property
+    def connected_components(self) -> set[frozenset[str]]:
+        """
+        The set of transforms in each of the set of connected components of the CTL (which will typically be more than
+        one when the CTL is the result of combining multiple sub-CTLs.
+        """
+        return {
+            frozenset(component)
+            for component in weakly_connected_components(self.graph)
+        }
 
     def immediately_upstream(self, transform: str) -> set[str]:
         """
