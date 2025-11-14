@@ -283,32 +283,34 @@ class _PlottableIPPMGraph:
         # hemi → [components]
         components_per_hemi = dict()
         for hemisphere in self.hemispheres:
-            transforms_this_hemi = {
-                node.transform
-                for node in ippm_graph.graph_full.nodes
-                if node.hemisphere == hemisphere
-            }
+            if y_ordinate_style == _YOrdinateStyle.progressive:
+                # Progressive wants stacked transforms without gaps, so we build set of components from the transforms
+                # in the graph
 
-            components_this_hemi = {
-                component & transforms_this_hemi
-                for component in ippm_graph.candidate_transform_list.connected_components
-            }
-            # Drop empty
-            components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
+                # { components } where component is { transforms }
+                components_this_hemi: set[frozenset[str]] = {
+                    frozenset({
+                        node.transform
+                        for node in ippm_graph.graph_full.nodes
+                        if (node.hemisphere == hemisphere) and (node.transform in component)
+                    })
+                    for component in ippm_graph.candidate_transform_list.connected_components
+                }
+                # Drop empty
+                components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
+                components_per_hemi[hemisphere] = components_this_hemi
+                for component_i, component_transforms in enumerate(components_this_hemi):
+                    y_ordinates[(hemisphere, component_i)] = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
 
-            components_per_hemi[hemisphere] = components_this_hemi
-
-            for component_i, component_transforms in enumerate(components_this_hemi):
-
-                # Compute y-ordinates relative to the bottom of the segment of the graph for this hemisphere
-                if y_ordinate_style == _YOrdinateStyle.progressive:
-                    y_ordinates_this_component = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
-                elif y_ordinate_style == _YOrdinateStyle.centered:
-                    y_ordinates_this_component = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
-                else:
-                    raise NotImplementedError()
-
-                y_ordinates[(hemisphere, component_i)] = y_ordinates_this_component
+            elif y_ordinate_style == _YOrdinateStyle.centered:
+                # Centered wants gaps where there are "missing" transforms in the graph, so we build the list of
+                # transforms from the ctl
+                components_this_hemi = ippm_graph.candidate_transform_list.connected_components
+                components_per_hemi[hemisphere] = components_this_hemi
+                for component_i, component_transforms in enumerate(components_this_hemi):
+                    y_ordinates[(hemisphere, component_i)] = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
+            else:
+                raise NotImplementedError()
 
         # Apply an offset for each component.
         offset = 0
