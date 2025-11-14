@@ -2,8 +2,10 @@
 Tests for kymata.ippm.evaluation
 """
 from kymata.entities.expression import ExpressionPoint
-from kymata.ippm.evaluation import causality_violation_score, transform_recall, null_edge_difference
+from kymata.ippm.evaluation import causality_violation_score, transform_recall, null_edge_difference, \
+    _point_with_min_latency, _point_with_max_latency, _generate_null_edge_set, relative_causality_violation_score
 from kymata.ippm.graph import IPPMGraph
+
 
 def test_null_edge_difference_with_no_null_edges():
     """
@@ -238,3 +240,144 @@ def test_transform_recall_with_half_trans_found_should_return_correct_ratio():
     assert ratio == 1 / 2
     assert numer == 1 # f1 detected
     assert denom == 2 # f1, f2 in noisy data
+
+
+def test_point_with_min_latency_should_return_smallest_latency_point():
+    points = [
+        ExpressionPoint("c1", logp_value=-10, transform="f1", latency=-5),
+        ExpressionPoint("c2", logp_value=-10, transform="f1", latency=-50),
+        ExpressionPoint("c3", logp_value=-10, transform="f1", latency=-20),
+    ]
+    p = _point_with_min_latency(points)
+    assert p.latency == -50
+
+
+def test_point_with_max_latency_should_return_largest_latency_point():
+    points = [
+        ExpressionPoint("c1", logp_value=-10, transform="f1", latency=-5),
+        ExpressionPoint("c2", logp_value=-10, transform="f1", latency=10),
+        ExpressionPoint("c3", logp_value=-10, transform="f1", latency=3),
+    ]
+    p = _point_with_max_latency(points)
+    assert p.latency == 10
+
+
+def test_generate_null_edge_set_should_return_correct_number_of_null_edges():
+    ctl = {"f1": [], "f2": ["f1"]}
+    points = [
+        ExpressionPoint("c1", 10, "f1", -10),
+        ExpressionPoint("c2", 20, "f1", -5),   # <- null edge f1
+        ExpressionPoint("c3", 30, "f2", -3),
+        ExpressionPoint("c4", 40, "f2", -1),   # <- null edge f2
+    ]
+
+    g = IPPMGraph(ctl, points_by_block={"merged": points})
+
+    null_edges = _generate_null_edge_set(g)
+
+    assert len(null_edges) == 2
+    # Structure: {"f1_0", "f2_0"} but exact label order shouldn't matter
+    assert any(label.startswith("f1_") for label in null_edges)
+    assert any(label.startswith("f2_") for label in null_edges)
+
+
+def test_relative_causality_violation_score_with_no_violations():
+    ctl = {"f2": ["f1"], "f1": []}
+
+    # Graph 1 points
+    p1 = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 20, "f2", -10),
+    ]
+
+    # Graph 2 points — same ordering, no violation
+    p2 = [
+        ExpressionPoint("c1", 10, "f1", -35),
+        ExpressionPoint("c2", 20, "f2", -5),
+    ]
+
+    g1 = IPPMGraph(ctl, points_by_block={"merged": p1})
+    g2 = IPPMGraph(ctl, points_by_block={"merged": p2})
+
+    ratio, num, denom = relative_causality_violation_score(g1, g2)
+
+    assert ratio == 0
+    assert num == 0
+    assert denom == 1
+
+
+def test_relative_causality_violation_score_with_single_violation():
+    ctl = {"f2": ["f1"], "f1": []}
+
+    # Graph 1: f1 -> f2 (correct)
+    p1 = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 20, "f2", -10),
+    ]
+
+    # Graph 2: reversed in latency → violation
+    p2 = [
+        ExpressionPoint("c1", 20, "f1", -5),
+        ExpressionPoint("c2", 10, "f2", -30),
+    ]
+
+    g1 = IPPMGraph(ctl, points_by_block={"merged": p1})
+    g2 = IPPMGraph(ctl, points_by_block={"merged": p2})
+
+    ratio, num, denom = relative_causality_violation_score(g1, g2)
+
+    assert ratio == 1
+    assert num == 1
+    assert denom == 1
+
+
+def test_relative_causality_violation_score_ignores_missing_edges():
+    """
+    If an edge is present in only one graph, it should be skipped.
+    """
+    ctl = {"f2": ["f1"], "f1": []}
+
+    # Graph 1 has both f1 and f2
+    p1 = [
+        ExpressionPoint("c1", 10, "f1", -30),
+        ExpressionPoint("c2", 20, "f2", -10),
+    ]
+
+    # Graph 2 missing f2 completely → edge ignored
+    p2 = [
+        ExpressionPoint("c1", 10, "f1", -30),
+    ]
+
+    g1 = IPPMGraph(ctl, points_by_block={"merged": p1})
+    g2 = IPPMGraph(ctl, points_by_block={"merged": p2})
+
+    ratio, num, denom = relative_causality_violation_score(g1, g2)
+
+    assert ratio == 0
+    assert num == 0
+    assert denom == 0  # no overlapping edges → denom = 0 per implementation
+
+
+def test_relative_causality_violation_score_excludes_inputs_when_flag_is_false():
+    ctl = {"input": [], "f1": ["input"]}
+
+    p1 = [
+        ExpressionPoint("c1", 10, "input", -100),
+        ExpressionPoint("c2", 20, "f1", -20),
+    ]
+
+    p2 = [
+        ExpressionPoint("c1", 10, "input", -100),
+        ExpressionPoint("c2", 20, "f1", -25),
+    ]
+
+    g1 = IPPMGraph(ctl, points_by_block={"merged": p1})
+    g2 = IPPMGraph(ctl, points_by_block={"merged": p2})
+
+    ratio, num, denom = relative_causality_violation_score(
+        g1, g2, include_inputs=False
+    )
+
+    assert ratio == 0
+    assert num == 0
+    assert denom == 0  # input edges excluded entirely
