@@ -38,7 +38,7 @@ class IPPMNode:
     KID: Optional[str] = None
 
     def __repr__(self) -> str:
-        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
+        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', latency='{self.latency:.3f}', KID='{self.KID}')"
 
 
 def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
@@ -180,17 +180,6 @@ class IPPMGraph:
         self.candidate_transform_list: CandidateTransformList = ctl
         self.graph_full: DiGraph = graph
 
-        # For testing, try not to use
-        self._points_by_transform = points_by_transform
-
-    def subgraph(self, transforms: Iterable[str]) -> IPPMGraph:
-        """The IPPMGraph formed by restricting to the subset of transforms provided."""
-        new_points = [
-            p for p in self.graph_full.nodes
-            if p.transform in transforms
-        ]
-        return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
-
     def __copy__(self) -> IPPMGraph:
         """
         Creates a shallow copy of the current IPPMGraph instance.
@@ -236,11 +225,13 @@ class IPPMGraph:
         """
         return set(n.transform for n in self.graph_full.nodes)
 
-    def points_for_transform(self, transform: str) -> list[ExpressionPoint]:
+    def points_for_transform(self, transform: str) -> dict[str, list[ExpressionPoint]]:
         """
         Gets the list of points associated with a given transform.
 
         If there are no points associated with the transform, but it is still in the CTL, an empty list is returned.
+
+        Mainly for testing!
 
         Args:
             transform (str): The transform name.
@@ -249,13 +240,14 @@ class IPPMGraph:
             KeyError: When transform is not present in the CTL.
 
         Returns:
-            list[ExpressionPoint]: The list of points associated with the transform.
+            dict[str, list[ExpressionPoint]]: The list of points associated with the transform, for each hemisphere.
         """
         if transform not in self.candidate_transform_list.transforms:
             raise KeyError(f"Transform {transform} not present in transform list.")
-        if transform not in self._points_by_transform:
-            return []
-        return self._points_by_transform[transform]
+        return {
+            block: self._points_by_transform[block][transform] if transform in self._points_by_transform[block] else []
+            for block, points_by_transform in self._points_by_transform.items()
+        }
 
     def edges_between_transforms(self,
                                  upstream_transform: str,
@@ -276,7 +268,7 @@ class IPPMGraph:
             (source, target)
             for source, target in self.graph_with_connection_style(connection_style).edges
             if source.transform == upstream_transform
-               and target.transform == downstream_transform
+            and target.transform == downstream_transform
         ]
 
     @property
