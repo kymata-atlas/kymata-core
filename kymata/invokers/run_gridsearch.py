@@ -13,6 +13,7 @@ from kymata.io.nkg import save_expression_set
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.preproc.source import load_emeg_pack
 from kymata.plot.expression import expression_plot
+from kymata.system.reflection import kymata_installed_as_dependency
 
 
 _default_output_dir = Path(data_root_path(), "output")
@@ -64,7 +65,7 @@ def main():
                         help="If the transform contour contains NaN values, "
                              "this will replace them with the specified values.")
     parser.add_argument("--transform-sample-rate", type=float, required=False, default=1000,
-                        help="The sample rate of the transform contour.")
+                        help="The original sample rate of the transform contour.")
 
     # For source space
     parser.add_argument("--use-inverse-operator", action="store_true",
@@ -76,7 +77,9 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
+    parser.add_argument("--resample", type=float, required=False, default=200,
+                        help="Resample rate for both transform and EMEG data, in Hz. "
+                             "(E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
@@ -93,12 +96,12 @@ def main():
 
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
-    parser.add_argument("--save-expression-set-location", type=Path, default=Path(_default_output_dir),
-                        help="Save the results of the gridsearch into an ExpressionSet .nkg file")
-    parser.add_argument("--save-plot-location", type=Path, default=Path(_default_output_dir),
-                        help="Save an expression plots, and other plots, in this location")
-    parser.add_argument("--plot-top-channels", action="store_true",
-                        help="Plots the p-values and correlations of the top channels in the gridsearch.")
+    # Save locations are non-optional when running as a dependency
+    save_loc_default = dict(default=Path(_default_output_dir)) if not kymata_installed_as_dependency() else dict()
+    parser.add_argument("--save-expression-set-location", type=Path, help="Save the results of the gridsearch into an ExpressionSet .nkg file", **save_loc_default)
+    parser.add_argument("--save-plot-location", type=Path, help="Save an expression plots, and other plots, in this location", **save_loc_default)
+
+    parser.add_argument("--plot-top-channels", action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
     args = parser.parse_args()
 
@@ -107,7 +110,7 @@ def main():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent.parent.parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 

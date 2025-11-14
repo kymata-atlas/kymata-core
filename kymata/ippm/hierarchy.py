@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from copy import copy
+from typing import Iterable
+
 from networkx import DiGraph
 from networkx.algorithms.components import weakly_connected_components
 
@@ -47,6 +50,12 @@ class CandidateTransformList:
                 graph.add_edge(parent, trans)
 
         self.graph: DiGraph = graph
+
+    def subgraph(self, transforms: Iterable[str]) -> CandidateTransformList:
+        """The CTL formed by restricting to the subset of transforms provided."""
+        new_graph = copy(self)
+        new_graph.graph = DiGraph(new_graph.graph.subgraph(transforms))
+        return new_graph
 
     def __eq__(self, other: CandidateTransformList) -> bool:
         # Check nodes and edges

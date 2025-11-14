@@ -3,7 +3,6 @@ from typing import Optional, NamedTuple
 import matplotlib.patheffects as pe
 from kymata.entities.expression import BLOCK_LEFT, BLOCK_RIGHT
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from networkx.classes import DiGraph
 from networkx.relabel import relabel_nodes
 
@@ -28,6 +27,7 @@ def plot_ippm(
         ippm: IPPM,
         colors: dict[str, str],
         title: Optional[str] = None,
+        ax: Optional[plt.Axes] = None,
         xlims_s: tuple[Optional[float], Optional[float]] = (None, None),
         y_ordinate_style: str = _YOrdinateStyle.centered,
         connection_style: str = IPPMConnectionStyle.last_to_first,
@@ -39,7 +39,7 @@ def plot_ippm(
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
         avoid_collinearity: bool = False,
-) -> Figure:
+) -> plt.Axes:
     """
     Plots an IPPM graph, always including all available hemispheres.
 
@@ -58,7 +58,7 @@ def plot_ippm(
             serial step. Defaults to False.
 
     Returns:
-        (pyplot.Figure): A figure of the IPPM graph.
+        (pyplot.Axes): Axes on which the IPPM was plotted
     """
 
     if relabel is None:
@@ -121,15 +121,19 @@ def plot_ippm(
         bsplines += make_bspline_paths(incoming_edge_endpoints)
 
     fig: plt.Figure
-    ax: plt.Axes
-    fig, ax = plt.subplots()
+    _ax: plt.Axes
+    if ax is None:
+        fig, _ax = plt.subplots()
+    else:
+        _ax = ax
+        fig = _ax.figure
 
     text_offset_x = -0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
-        ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
+        _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
             display_label = relabel.get(label, f"{label}()")
-            ax.text(
+            _ax.text(
                 x=path[0][-1] + text_offset_x,
                 y=path[1][-1],
                 s=display_label,
@@ -138,14 +142,14 @@ def plot_ippm(
                 horizontalalignment="right", verticalalignment='center',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
-        ax.arrow(
+        _ax.arrow(
             x=path[0][-1], dx=0.001,
             y=path[1][-1], dy=0,
             shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
 
-    ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+    _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 0.02
@@ -157,10 +161,10 @@ def plot_ippm(
                 solid_line_to = max(node_x) if node_x else 0.02
             solid_extension = solid_line_to + future_width / 2
             dotted_extension = solid_extension + future_width / 2
-            ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="solid")
-            ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
-                    linestyle="dotted")
+            _ax.plot([node.x, solid_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                     linestyle="solid")
+            _ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
+                     linestyle="dotted")
 
     # Add separation line and left/right labels
     if {BLOCK_LEFT, BLOCK_RIGHT} <= set(plottable_graph.hemispheres):
@@ -168,28 +172,28 @@ def plot_ippm(
         height = (max(node_y) - min(node_y))
         midline = min(node_y) + height / 2
         xlims = (min(node_x), max(node_x) + future_width)
-        ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
+        _ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
         # Text labels
         bottom_height = min(node_y) + height / 4
         top_height = min(node_y) + (3 * height / 4)
-        ax.text(s="left hemisphere",  x=min(node_x) - future_width, y=top_height,
-                rotation="vertical", horizontalalignment="center", verticalalignment="center",
-                fontsize="small")
-        ax.text(s="right hemisphere", x=min(node_x) - future_width, y=bottom_height,
-                rotation="vertical", horizontalalignment="center", verticalalignment="center",
-                fontsize="small")
+        _ax.text(s="left hemisphere", x=min(node_x) - future_width, y=top_height,
+                 rotation="vertical", horizontalalignment="center", verticalalignment="center",
+                 fontsize="small")
+        _ax.text(s="right hemisphere", x=min(node_x) - future_width, y=bottom_height,
+                 rotation="vertical", horizontalalignment="center", verticalalignment="center",
+                 fontsize="small")
 
-    plt.title(title)
+    _ax.set_title(title)
 
     # Y-axis
     y_padding = 0.5
     if node_y:
-        ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
-    ax.set_yticklabels([])
-    ax.yaxis.set_visible(False)
+        _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    _ax.set_yticklabels([])
+    _ax.yaxis.set_visible(False)
 
     # X-axis
-    current_xmin, current_xmax = ax.get_xlim()
+    current_xmin, current_xmax = _ax.get_xlim()
     desired_xmin, desired_xmax = xlims_s
     if desired_xmin is None:
         desired_xmin = min(current_xmin, min(node_x)) if node_x else current_xmin
@@ -197,21 +201,30 @@ def plot_ippm(
     if desired_xmax is None:
         desired_xmax = max(current_xmax, max(node_x) + future_width) if node_x else current_xmax + future_width
 
-    ax.set_xlim((desired_xmin, desired_xmax))
+    _ax.set_xlim((desired_xmin, desired_xmax))
 
-    xticks = ax.get_xticks()
-    plt.xticks(xticks,
-               [round(tick * 1000)  # Convert labels to ms, and round to avoid float-math issues
-                for tick in xticks])
-    ax.set_xlabel("Latency (ms)")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
+    # Set tick labels
+    xticks = _ax.get_xticks()
+    _ax.set_xticks(xticks,
+                   [
+                       # Convert labels to ms, and round to avoid float-math issues
+                       round(tick * 1000)
+                       for tick in xticks
+                   ])
 
-    fig.set_figheight(figheight)
-    fig.set_figwidth(figwidth)
+    # Set decoration
+    _ax.set_xlabel("Latency (ms)")
 
-    return fig
+    _ax.spines["top"].set_visible(False)
+    _ax.spines["right"].set_visible(False)
+    _ax.spines["left"].set_visible(False)
+
+    if ax is None:
+        # Figure created locally
+        fig.set_figheight(figheight)
+        fig.set_figwidth(figwidth)
+
+    return _ax
 
 
 class _PlottableNode(NamedTuple):
@@ -270,32 +283,34 @@ class _PlottableIPPMGraph:
         # hemi → [components]
         components_per_hemi = dict()
         for hemisphere in self.hemispheres:
-            transforms_this_hemi = {
-                node.transform
-                for node in ippm_graph.graph_full.nodes
-                if node.hemisphere == hemisphere
-            }
+            if y_ordinate_style == _YOrdinateStyle.progressive:
+                # Progressive wants stacked transforms without gaps, so we build set of components from the transforms
+                # in the graph
 
-            components_this_hemi = {
-                component & transforms_this_hemi
-                for component in ippm_graph.candidate_transform_list.connected_components
-            }
-            # Drop empty
-            components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
+                # { components } where component is { transforms }
+                components_this_hemi: set[frozenset[str]] = {
+                    frozenset({
+                        node.transform
+                        for node in ippm_graph.graph_full.nodes
+                        if (node.hemisphere == hemisphere) and (node.transform in component)
+                    })
+                    for component in ippm_graph.candidate_transform_list.connected_components
+                }
+                # Drop empty
+                components_this_hemi = {c for c in components_this_hemi if len(c) > 0}
+                components_per_hemi[hemisphere] = components_this_hemi
+                for component_i, component_transforms in enumerate(components_this_hemi):
+                    y_ordinates[(hemisphere, component_i)] = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
 
-            components_per_hemi[hemisphere] = components_this_hemi
-
-            for component_i, component_transforms in enumerate(components_this_hemi):
-
-                # Compute y-ordinates relative to the bottom of the segment of the graph for this hemisphere
-                if y_ordinate_style == _YOrdinateStyle.progressive:
-                    y_ordinates_this_component = _y_ordinates_progressive(ippm_graph, set(component_transforms), self.node_spacing)
-                elif y_ordinate_style == _YOrdinateStyle.centered:
-                    y_ordinates_this_component = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
-                else:
-                    raise NotImplementedError()
-
-                y_ordinates[(hemisphere, component_i)] = y_ordinates_this_component
+            elif y_ordinate_style == _YOrdinateStyle.centered:
+                # Centered wants gaps where there are "missing" transforms in the graph, so we build the list of
+                # transforms from the ctl
+                components_this_hemi = ippm_graph.candidate_transform_list.connected_components
+                components_per_hemi[hemisphere] = components_this_hemi
+                for component_i, component_transforms in enumerate(components_this_hemi):
+                    y_ordinates[(hemisphere, component_i)] = _all_y_ordinates_centered(ippm_graph, set(component_transforms), self.node_spacing, avoid_collinearity)
+            else:
+                raise NotImplementedError()
 
         # Apply an offset for each component.
         offset = 0

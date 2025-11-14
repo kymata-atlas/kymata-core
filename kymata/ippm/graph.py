@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from math import inf
-from typing import Collection, Optional
-
+from collections import defaultdict
 from copy import copy, deepcopy
+from dataclasses import dataclass
 from enum import StrEnum
 from logging import getLogger
-from collections import defaultdict
+from math import inf
+from typing import Collection, Optional
 
 from networkx import DiGraph
 from networkx.utils import graphs_equal
@@ -39,7 +38,7 @@ class IPPMNode:
     KID: Optional[str] = None
 
     def __repr__(self) -> str:
-        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
+        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', latency='{self.latency:.3f}', KID='{self.KID}')"
 
 
 def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
@@ -226,6 +225,52 @@ class IPPMGraph:
         """
         return set(n.transform for n in self.graph_full.nodes)
 
+    def points_for_transform(self, transform: str) -> dict[str, list[ExpressionPoint]]:
+        """
+        Gets the list of points associated with a given transform.
+
+        If there are no points associated with the transform, but it is still in the CTL, an empty list is returned.
+
+        Mainly for testing!
+
+        Args:
+            transform (str): The transform name.
+
+        Raises:
+            KeyError: When transform is not present in the CTL.
+
+        Returns:
+            dict[str, list[ExpressionPoint]]: The list of points associated with the transform, for each hemisphere.
+        """
+        if transform not in self.candidate_transform_list.transforms:
+            raise KeyError(f"Transform {transform} not present in transform list.")
+        return {
+            block: self._points_by_transform[block][transform] if transform in self._points_by_transform[block] else []
+            for block, points_by_transform in self._points_by_transform.items()
+        }
+
+    def edges_between_transforms(self,
+                                 upstream_transform: str,
+                                 downstream_transform: str,
+                                 connection_style: IPPMConnectionStyle,
+                                 ) -> list[tuple[ExpressionPoint, ExpressionPoint]]:
+        """
+
+        Args:
+            upstream_transform (str): The upstream transform.
+            downstream_transform (str): The downstream transform.
+            connection_style (IPPMConnectionStyle): The connection style to use when building the graph.
+
+        Returns:
+            list[tuple[ExpressionPoint, ExpressionPoint]]: The list of edges between the two transforms.
+        """
+        return [
+            (source, target)
+            for source, target in self.graph_with_connection_style(connection_style).edges
+            if source.transform == upstream_transform
+            and target.transform == downstream_transform
+        ]
+
     @property
     def inputs(self) -> set[str]:
         """
@@ -264,6 +309,25 @@ class IPPMGraph:
         ]
         # Skip any steps which were completely excluded due to missing data
         return tuple(step for step in subsequence if len(step) > 0)
+
+    def graph_with_connection_style(self, connection_style: IPPMConnectionStyle) -> DiGraph:
+        """
+        Returns the graph with the appropriate connection style.
+
+        Args:
+            connection_style (IPPMConnectionStyle): The connection style to use.
+
+        Returns:
+            DiGraph: A directed graph representing this version of the graph.
+        """
+        if connection_style == IPPMConnectionStyle.full:
+            return self.graph_full
+        if connection_style == IPPMConnectionStyle.last_to_first:
+            return self.graph_last_to_first
+        if connection_style == IPPMConnectionStyle.first_to_first:
+            return self.graph_first_to_first
+        else:
+            raise ValueError(f"Unknown connection style {connection_style}")
 
     @property
     def graph_last_to_first(self) -> DiGraph:

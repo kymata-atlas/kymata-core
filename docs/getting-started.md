@@ -48,7 +48,7 @@ we welcome users using this codebase, we are unable to prioritise installation s
 
 ### Running tests, linting, and generating documentation
 
-This will be done automatically via Github actions.
+This will be done automatically via GitHub actions.
 
 To run the tests manually, run:
 ```
