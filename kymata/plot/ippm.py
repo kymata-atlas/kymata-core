@@ -171,16 +171,16 @@ def plot_ippm(
         # Plot midline
         height = (max(node_y) - min(node_y))
         midline = min(node_y) + height / 2
-        xlims = (min(node_x), max(node_x) + future_width)
+        xlims = (0, 0.050)
         _ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
         # Text labels
-        bottom_height = min(node_y) + height / 4
-        top_height = min(node_y) + (3 * height / 4)
-        _ax.text(s="left hemisphere", x=min(node_x) - future_width, y=top_height,
-                 rotation="vertical", horizontalalignment="center", verticalalignment="center",
+        bottom_height = min(node_y) + midline - 0.2
+        top_height = min(node_y) + midline + 0.2
+        _ax.text(s="left", x=0, y=top_height,
+                horizontalalignment="left", verticalalignment="center",
                  fontsize="small")
-        _ax.text(s="right hemisphere", x=min(node_x) - future_width, y=bottom_height,
-                 rotation="vertical", horizontalalignment="center", verticalalignment="center",
+        _ax.text(s="right", x=0, y=bottom_height,
+                horizontalalignment="left", verticalalignment="center",
                  fontsize="small")
 
     _ax.set_title(title)
