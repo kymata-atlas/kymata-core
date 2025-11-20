@@ -33,14 +33,14 @@ we welcome users using this codebase, we are unable to prioritise installation s
    ```sh
    $ git clone https://github.com/kymata-atlas/kymata-core.git
    ```
-3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
+2. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
    type:
    ```sh
    $ poetry install
    ```
    to load the pakages needed.
 
-4. At this point, you should be able to either run the xx from the terminal
+3. At this point, you should be able to either run the xx from the terminal
    ```sh
    $ poetry run invokers/run_gridsearch.py
    ```
