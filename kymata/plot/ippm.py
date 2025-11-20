@@ -52,6 +52,8 @@ def plot_ippm(
         scale_nodes (bool, optional): scales the node by the significance. Default is False
         vertical_spacing (float, optional): Vertical space between adjacent nodes.
         figwidth (float, optional): Width of the plot. Height will be scaled to match. Defaults to 10.
+        arrowhead_dims (tuple[float, float], optional): Tuple of arrowhead length and thickness.
+        linewidth (float, optional): Thickness of the transform lines.
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
         relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
@@ -81,24 +83,13 @@ def plot_ippm(
         scale_nodes=scale_nodes,
     )
 
-    if arrowhead_dims is None:
-        if plottable_graph.graph.nodes:
-            max_y = max(node.y for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
-            max_x = max(node.x for node in plottable_graph.graph.nodes) if plottable_graph.graph.nodes else 1
-            arrowhead_dims = (
-                max_y / 30,
-                max_x / 30,
-            )
-        else:
-            arrowhead_dims = (0.1, 0.1)
-
     # first lets aggregate all the information.
     node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = []  # y coordinates for nodes
     node_colors = []  # color for nodes
     node_sizes  = []  # size of nodes
     edge_colors = []
-    bsplines = []
+    bsplines    = []
     edge_labels = []
 
     node: _PlottableNode
@@ -122,6 +113,9 @@ def plot_ippm(
 
         bsplines += make_bspline_paths(incoming_edge_endpoints)
 
+    node_x_extent_s = (max(node_x) - min(node_x))  # Seconds
+    node_y_extent = (max(node_y) - min(node_y))
+
     fig: plt.Figure
     _ax: plt.Axes
     if ax is None:
@@ -130,6 +124,14 @@ def plot_ippm(
         _ax = ax
         fig = _ax.figure
 
+    # Plot arrows
+    if arrowhead_dims is not None:
+        arrowhead_length, arrowhead_thickness = arrowhead_dims
+    else:
+        # Thickness is fixed because the vertical size of the figure increases with additional nodes
+        arrowhead_thickness = 6
+        # Length is rescaled as a fixed fraction of the width of the graph
+        arrowhead_length = node_x_extent_s / 28  # Adjusted until it looked good
     text_offset_x = -0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
@@ -147,7 +149,8 @@ def plot_ippm(
         _ax.arrow(
             x=path[0][-1], dx=0.001,
             y=path[1][-1], dy=0,
-            shape="full", width=0, lw=0, head_width=arrowhead_dims[0], head_length=arrowhead_dims[1], color=color,
+            shape="full", width=0, lw=0,
+            head_width=arrowhead_thickness, head_length=arrowhead_length, color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
 
@@ -171,10 +174,8 @@ def plot_ippm(
     # Add separation line and left/right labels if there are two hemispheres
     if {BLOCK_LEFT, BLOCK_RIGHT} <= set(plottable_graph.hemispheres):
         # Plot midline
-        height = (max(node_y) - min(node_y))
-        midline = min(node_y) + height / 2
-        xlims = (0, 0.050)
-        _ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
+        midline = min(node_y) + node_y_extent / 2
+        _ax.plot((0, 0.050), (midline, midline), color="black", linewidth=1, linestyle="solid")
         # Text labels
         bottom_label_height = min(node_y) + midline - (0.3 * vertical_spacing)
         top_label_height    = min(node_y) + midline + (0.3 * vertical_spacing)
@@ -188,8 +189,8 @@ def plot_ippm(
     _ax.set_title(title)
 
     # Y-axis
-    y_extent = min(node_y) - vertical_spacing, max(node_y) + vertical_spacing
-    _ax.set_ylim(*y_extent)
+    node_y_extent = min(node_y) - vertical_spacing, max(node_y) + vertical_spacing
+    _ax.set_ylim(*node_y_extent)
     _ax.set_yticklabels([])
     _ax.yaxis.set_visible(False)
 
@@ -224,7 +225,7 @@ def plot_ippm(
         # Figure created locally
         # First set to standard size to make sure vertical spacing is preserved
         fig.set_figwidth(10)
-        fig.set_figheight((y_extent[1] - y_extent[0]) / 25)  # This fraction adjusted until it looks good
+        fig.set_figheight((node_y_extent[1] - node_y_extent[0]) / 25)  # This fraction adjusted until it looks good
         # Then resize to desired size
         resize_fig_keep_aspect(fig, figwidth)
 
