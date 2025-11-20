@@ -6,7 +6,7 @@ from scipy.interpolate import splev
 _XY = tuple[float, float]
 
 
-def make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[list[NDArray]]:
+def make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[tuple[NDArray, NDArray]]:
     """
     Given a list of spike positions pairs, return a list of
     b-splines. First, find the control points, and second
@@ -17,15 +17,22 @@ def make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[li
             for the start and end of a BSpline, e.g., [(0, 1), (1, 0)].
 
     Returns:
-        List[List[np.array]]: A list of a list of np arrays. Each list contains two np.arrays. The first np.array contains
-            the x-axis points and the second one contains the y-axis points. Together, they define a BSpline. Thus, it is
-            a list of BSplines.
+        List[tuple[np.array, np.array]]: A list of a list of np arrays. Each list contains two np.arrays. The first np.array
+            contains the x-axis points and the second one contains the y-axis points. Together, they define a BSpline.
+            Thus, it is a list of BSplines.
     """
-    bspline_path_array = []
+    bspline_path_array: list[tuple[NDArray, NDArray]] = []
     for pair in spike_coordinate_pairs:
+        ((start_x, start_y), (end_x, end_y)) = pair
 
-        ctr_pts = _make_bspline_ctr_points(pair)
-        bspline_path_array.append(_make_bspline_path(ctr_pts))
+        if start_y == end_y:
+            # It's a straight horizontal line, so we don't need a spline
+            bspline_path_array.append((np.array([start_x, end_x]), np.array([start_y, end_y])))
+        else:
+            # It's a non-horizontal path, so we need a spline
+            ctr_pts = _make_bspline_ctr_points(pair)
+            path = _make_bspline_path(ctr_pts)
+            bspline_path_array.append(path)
 
     return bspline_path_array
 
@@ -49,15 +56,6 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
 
     start_X, start_Y = start_and_end_node_coordinates[0]
     end_X, end_Y = start_and_end_node_coordinates[1]
-
-    # allow for hexel radius offset for arrowhead.
-    start_X = start_X + 0.003
-    end_X = end_X - 0.003
-
-    if end_X < start_X:
-        # reverse BSpline
-        start_X, end_X = end_X, start_X
-        start_Y, end_Y = end_Y, start_Y
 
     # Offset points: chosen for aesthetics, but with a squish down to evenly-spaced when nodes are too small
     x_diff = end_X - start_X
@@ -86,20 +84,20 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
     return ctr_points
 
 
-def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
+def _make_bspline_path(center_points: NDArray) -> tuple[NDArray, NDArray]:
     """
     With an input of six control points, return an interpolated
     b-spline path which corresponds to a curved edge from one node to another.
 
     Args:
-        ctr_points (NDArray): 2d NDArray containing the coordinates of the center points.
+        center_points (NDArray): 2d NDArray containing the coordinates of the center points.
 
     Returns:
-        List[NDArray]: A list of NDArrays that represent one BSpline path. The first list is a list of x-axis coordinates
-            the second is a list of y-axis coordinates.
+        tuple[NDArray, NDArray]: A pair of NDArrays that represent one BSpline path. The first array is a list of 
+        x-coordinates. the second is a list of y-coordinates.
     """
-    x = ctr_points[:, 0]
-    y = ctr_points[:, 1]
+    x = center_points[:, 0]
+    y = center_points[:, 1]
 
     length = len(x)
     t = np.linspace(0, 1, length - 2, endpoint=True)
@@ -108,8 +106,7 @@ def _make_bspline_path(ctr_points: NDArray) -> list[NDArray]:
 
     tck = [t, [x, y], 3]
     u3 = np.linspace(0, 1, (max(length * 2, 70)), endpoint=True)
-    # Don't know why this is raising a warning
-    # noinspection PyTypeChecker
-    bspline_path: list[NDArray] = splev(u3, tck)
+    spline = splev(u3, tck)
+    bspline_path = (spline[0], spline[1])
 
     return bspline_path
