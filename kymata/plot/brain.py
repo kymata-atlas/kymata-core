@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 
 from kymata.entities.datatypes import TransformNameDType
 from kymata.entities.expression import HexelExpressionSet, ExpressionPoint, group_points_by_transform
-from kymata.plot.axes import hide_axes
+from kymata.plot.figure import hide_axes
 from kymata.plot.color import transparent
 from kymata.plot.compositing import rasterize_axes_as_array
 from kymata.plot.mne import plot_bem_with_source_values

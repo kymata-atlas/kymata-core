@@ -25,3 +25,16 @@ def xlims_from_expressionset(es: ExpressionSet, padding: float = 0.05) -> tuple[
         es.latencies.min() - padding,
         es.latencies.max() + padding,
     )
+
+
+def resize_fig_keep_aspect(fig: pyplot.Figure, width: float) -> None:
+    """
+    Resize a figure to the specified width, but maintain the aspect ratio.
+
+    Args:
+        fig (matplotlib.pyplot.Figure):
+        width (float):
+    """
+    old_width, old_height = fig.get_size_inches()
+    aspect = old_height / old_width
+    fig.set_size_inches(width, width * aspect)
