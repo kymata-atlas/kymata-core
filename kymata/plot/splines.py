@@ -84,20 +84,20 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
     return ctr_points
 
 
-def _make_bspline_path(center_points: NDArray) -> tuple[NDArray, NDArray]:
+def _make_bspline_path(control_points: NDArray) -> tuple[NDArray, NDArray]:
     """
     With an input of six control points, return an interpolated
     b-spline path which corresponds to a curved edge from one node to another.
 
     Args:
-        center_points (NDArray): 2d NDArray containing the coordinates of the center points.
+        control_points (NDArray): 2d NDArray containing the coordinates of the control points.
 
     Returns:
         tuple[NDArray, NDArray]: A pair of NDArrays that represent one BSpline path. The first array is a list of 
         x-coordinates. the second is a list of y-coordinates.
     """
-    x = center_points[:, 0]
-    y = center_points[:, 1]
+    x = control_points[:, 0]
+    y = control_points[:, 1]
 
     length = len(x)
     t = np.linspace(0, 1, length - 2, endpoint=True)
