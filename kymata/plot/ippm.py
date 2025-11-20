@@ -83,7 +83,7 @@ def plot_ippm(
         scale_nodes=scale_nodes,
     )
 
-    # first lets aggregate all the information.
+    # Iterate over each node in the graph, and store its colour, incoming edge label, and incoming-edge path
     node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = []  # y coordinates for nodes
     node_colors = []  # color for nodes
@@ -91,7 +91,6 @@ def plot_ippm(
     edge_colors = []
     bsplines    = []
     edge_labels = []
-
     node: _PlottableNode
     for i, plottable_node in enumerate(plottable_graph.graph.nodes):
         node_colors.append(plottable_node.color)
@@ -124,14 +123,7 @@ def plot_ippm(
         _ax = ax
         fig = _ax.figure
 
-    # Plot arrows
-    if arrowhead_dims is not None:
-        arrowhead_length, arrowhead_thickness = arrowhead_dims
-    else:
-        # Thickness is fixed because the vertical size of the figure increases with additional nodes
-        arrowhead_thickness = 6
-        # Length is rescaled as a fixed fraction of the width of the graph
-        arrowhead_length = node_x_extent_s / 28  # Adjusted until it looked good
+    # Plot paths
     text_offset_x = -0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
@@ -146,15 +138,41 @@ def plot_ippm(
                 horizontalalignment="right", verticalalignment='center',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
+
+    # Plot points as little hexes
+    _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+
+    # Plot arrows
+    if arrowhead_dims is not None:
+        arrowhead_length, arrowhead_thickness = arrowhead_dims
+    else:
+        # Thickness is fixed because the vertical size of the figure increases with additional nodes
+        arrowhead_thickness = 6
+        # Length is rescaled as a fixed fraction of the width of the graph
+        arrowhead_length = node_x_extent_s / 28  # Adjusted until it looked good
+    for path, color in zip(bsplines, edge_colors):
+        path_start_x = path[0][0]
+        path_start_y = path[1][0]
+        path_end_x   = path[0][-1]
+        path_end_y   = path[1][-1]
+        # If the arrow points backwards, the start and end are swapped
+        if path_start_x < path_end_x:
+            x = path_end_x
+            y = path_end_y
+        else:
+            x = path_start_x
+            y = path_start_y
         _ax.arrow(
-            x=path[0][-1], dx=0.001,
-            y=path[1][-1], dy=0,
+            # Apply negative x offset so the arrow points to the edge of the hex
+            x=x - 0.003,
+            y=y,
+            # Give direction to the right
+            dx=0.001, dy=0,
             shape="full", width=0, lw=0,
-            head_width=arrowhead_thickness, head_length=arrowhead_length, color=color,
+            head_width=arrowhead_thickness, head_length=arrowhead_length,
+            color=color,
             length_includes_head=True, head_starts_at_zero=False,
         )
-
-    _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 0.02
