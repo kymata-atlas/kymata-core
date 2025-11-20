@@ -8,6 +8,7 @@ from networkx.relabel import relabel_nodes
 
 from kymata.ippm.graph import IPPMGraph, IPPMConnectionStyle, IPPMNode
 from kymata.ippm.ippm import IPPM
+from kymata.plot.figure import resize_fig_keep_aspect
 from kymata.plot.splines import make_bspline_paths
 
 
@@ -32,8 +33,8 @@ def plot_ippm(
         y_ordinate_style: str = _YOrdinateStyle.centered,
         connection_style: str = IPPMConnectionStyle.last_to_first,
         scale_nodes: bool = False,
-        figheight: int = 5,
-        figwidth: int = 10,
+        vertical_spacing: float = 11,
+        figwidth: float = 10,
         arrowhead_dims: tuple[float, float] = None,
         linewidth: float = 3,
         show_labels: bool = True,
@@ -49,8 +50,8 @@ def plot_ippm(
             Contains the color for each transform. The nodes and edges are colored accordingly.
         title (str): Title of the plot.
         scale_nodes (bool, optional): scales the node by the significance. Default is False
-        figheight (int, optional): Height of the plot. Defaults to 5.
-        figwidth (int, optional): Width of the plot. Defaults to 10.
+        vertical_spacing (float, optional): Vertical space between adjacent nodes.
+        figwidth (float, optional): Width of the plot. Height will be scaled to match. Defaults to 10.
         show_labels (bool, optional): Show transform names as labels on the graph. Defaults to True.
         relabel (dict[str, str], optional): Dictionary to specify optional labels for each node. Dictionary should map
             original transform labels to desired labels. Missing keys will be ignored. Defaults to None (no change).
@@ -75,6 +76,7 @@ def plot_ippm(
         avoid_collinearity=avoid_collinearity,
         colors=colors,
         y_ordinate_style=y_ordinate_style,
+        spacing=vertical_spacing,
         connection_style=IPPMConnectionStyle(connection_style),
         scale_nodes=scale_nodes,
     )
@@ -91,9 +93,9 @@ def plot_ippm(
             arrowhead_dims = (0.1, 0.1)
 
     # first lets aggregate all the information.
-    node_x      = [] # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
-    node_y      = [] # y coordinates for nodes
-    node_colors = [] # color for nodes
+    node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
+    node_y      = []  # y coordinates for nodes
+    node_colors = []  # color for nodes
     node_sizes  = []  # size of nodes
     edge_colors = []
     bsplines = []
@@ -166,7 +168,7 @@ def plot_ippm(
             _ax.plot([solid_extension, dotted_extension], [node.y, node.y], color=node.color, linewidth=linewidth,
                      linestyle="dotted")
 
-    # Add separation line and left/right labels
+    # Add separation line and left/right labels if there are two hemispheres
     if {BLOCK_LEFT, BLOCK_RIGHT} <= set(plottable_graph.hemispheres):
         # Plot midline
         height = (max(node_y) - min(node_y))
@@ -174,21 +176,20 @@ def plot_ippm(
         xlims = (0, 0.050)
         _ax.plot(xlims, (midline, midline), color="black", linewidth=1, linestyle="solid")
         # Text labels
-        bottom_height = min(node_y) + midline - 0.2
-        top_height = min(node_y) + midline + 0.2
-        _ax.text(s="left", x=0, y=top_height,
-                horizontalalignment="left", verticalalignment="center",
+        bottom_label_height = min(node_y) + midline - (0.3 * vertical_spacing)
+        top_label_height    = min(node_y) + midline + (0.3 * vertical_spacing)
+        _ax.text(s="left", x=0, y=top_label_height,
+                 horizontalalignment="left", verticalalignment="center",
                  fontsize="small")
-        _ax.text(s="right", x=0, y=bottom_height,
-                horizontalalignment="left", verticalalignment="center",
+        _ax.text(s="right", x=0, y=bottom_label_height,
+                 horizontalalignment="left", verticalalignment="center",
                  fontsize="small")
 
     _ax.set_title(title)
 
     # Y-axis
-    y_padding = 0.5
-    if node_y:
-        _ax.set_ylim(min(node_y) - y_padding, max(node_y) + y_padding)
+    y_extent = min(node_y) - vertical_spacing, max(node_y) + vertical_spacing
+    _ax.set_ylim(*y_extent)
     _ax.set_yticklabels([])
     _ax.yaxis.set_visible(False)
 
@@ -221,8 +222,11 @@ def plot_ippm(
 
     if ax is None:
         # Figure created locally
-        fig.set_figheight(figheight)
-        fig.set_figwidth(figwidth)
+        # First set to standard size to make sure vertical spacing is preserved
+        fig.set_figwidth(10)
+        fig.set_figheight((y_extent[1] - y_extent[0]) / 25)  # This fraction adjusted until it looks good
+        # Then resize to desired size
+        resize_fig_keep_aspect(fig, figwidth)
 
     return _ax
 
@@ -251,6 +255,7 @@ class _PlottableIPPMGraph:
                  ippm_graph: IPPMGraph,
                  colors: dict[str, str],
                  y_ordinate_style: str,
+                 spacing: float,
                  avoid_collinearity: bool,
                  scale_nodes: bool,
                  connection_style: IPPMConnectionStyle,
@@ -263,6 +268,7 @@ class _PlottableIPPMGraph:
             colors (dict[str, str]): A dictionary mapping transform names to colors for node visualization.
             y_ordinate_style (str): Defines the style for the vertical positioning of nodes.
                 Options include "progressive" or "centered" (members of `_YOrdinateStyle`).
+            spacing (float): Vertical space between adjacent nodes.
             avoid_collinearity (bool): Whether to apply a small offset to avoid collinearity between nodes in the same
                 serial step.
             scale_nodes (bool): Whether to scale node sizes based on the significance of the corresponding expression
@@ -270,7 +276,7 @@ class _PlottableIPPMGraph:
         """
 
         # Vertical spacing between nodes
-        self.node_spacing = 1
+        self.node_spacing = spacing
 
         self.hemispheres: list[str] = sorted({
             node.hemisphere
