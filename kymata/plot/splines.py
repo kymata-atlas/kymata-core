@@ -23,20 +23,9 @@ def make_bspline_paths(spike_coordinate_pairs: list[tuple[_XY, _XY]]) -> list[li
     """
     bspline_path_array = []
     for pair in spike_coordinate_pairs:
-        start_X = pair[0][0]
-        start_Y = pair[0][1]
-        end_X = pair[1][0]
-        end_Y = pair[1][1]
 
-        if start_X + 35 > end_X and start_Y == end_Y:
-            # the nodes are too close to use a bspline. Null edge.
-            # add 2d np array where the first element is xs and second is ys
-            xs = np.linspace(start_X, end_X, 100, endpoint=True)
-            ys = np.array([start_Y] * 100)
-            bspline_path_array.append([xs, ys])
-        else:
-            ctr_pts = _make_bspline_ctr_points(pair)
-            bspline_path_array.append(_make_bspline_path(ctr_pts))
+        ctr_pts = _make_bspline_ctr_points(pair)
+        bspline_path_array.append(_make_bspline_path(ctr_pts))
 
     return bspline_path_array
 
@@ -60,6 +49,10 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
 
     start_X, start_Y = start_and_end_node_coordinates[0]
     end_X, end_Y = start_and_end_node_coordinates[1]
+
+    # allow for hexel radius offset for arrowhead.
+    end_X = end_X - 0.003
+    start_X = start_X - 0.003
 
     if end_X < start_X:
         # reverse BSpline
