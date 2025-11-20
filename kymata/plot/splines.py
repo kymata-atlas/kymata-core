@@ -51,8 +51,8 @@ def _make_bspline_ctr_points(start_and_end_node_coordinates: tuple[_XY, _XY]) ->
     end_X, end_Y = start_and_end_node_coordinates[1]
 
     # allow for hexel radius offset for arrowhead.
+    start_X = start_X + 0.003
     end_X = end_X - 0.003
-    start_X = start_X - 0.003
 
     if end_X < start_X:
         # reverse BSpline
