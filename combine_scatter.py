@@ -13,27 +13,27 @@ def asr_models_loop_full():
 
     thres = 20 # 15
 
-    x_upper = 800
+    x_upper = 200
 
     size = 'large'
 
     neuron_selection = 'layer'
 
-    exclude_tvl = True
+    exclude_tvl = False
     
     n = 1
     
     lat_sig = np.zeros((n, layer, neuron, 6)) # ( model, layer, neuron, (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no) )
 
     # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/fc2/log/'
-    # log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/log/'
-    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/log/'
+    log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni_listen_tf/sensor_early_lat/log/'
+    # log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/log/'
 
     # log_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/{size}/log/'
 
     # log_tvl_dir = f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/{size}/tvl/log/'
-    # log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/tvl/log/'
-    log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/tvl/log/'
+    log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni_listen_tf/sensor/tvl/log/'
+    # log_tvl_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/tvl/log/'
 
 
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
@@ -101,8 +101,8 @@ def asr_models_loop_full():
     #                 break
     
     for i in range(layer):
-        # file_name = f'slurm_log_sensor_{i}.txt'
-        file_name = f'slurm_log_{i}.txt'
+        file_name = f'slurm_log_sensor_{i}.txt'
+        # file_name = f'slurm_log_{i}.txt'
         with open(log_dir + file_name, 'r') as f:
             a = f.readlines()
             a = [line for line in a if 'Time' not in line]
@@ -169,8 +169,8 @@ def asr_models_loop_full():
     if exclude_tvl:
         lat_sig = np.zeros((n, layer, neuron, 6))
         for i in range(layer):
-            # file_name = f'slurm_log_sensor_{i}.txt'
-            file_name = f'slurm_log_{i}.txt'
+            file_name = f'slurm_log_sensor_{i}.txt'
+            # file_name = f'slurm_log_{i}.txt'
             with open(log_tvl_dir + file_name, 'r') as f:
                 a = f.readlines()
                 a = [line for line in a if 'Time' not in line]
@@ -205,12 +205,12 @@ def asr_models_loop_full():
     plt.ylabel('Layer number')
     plt.xlabel('Latencies (ms)')
     plt.title(f'Threshold -log(p-value): {thres}')
-    plt.xlim(-200, x_upper)
+    plt.xlim(-800, x_upper)
     # plt.legend()
     # plt.xlim(-10, 60)
     # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/scatter/{size}_{neuron_selection}_select_excl_tvl', dpi=600)
-    # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni/sensor/scatter/{neuron_selection}_20', dpi=600)
-    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/new_layer', dpi=600)
+    plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/salmonn_omni_listen_tf/sensor_early_lat/scatter/{neuron_selection}', dpi=600)
+    # plt.savefig(f'/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/salmonn_7b_word/new_layer', dpi=600)
 
 if __name__ == '__main__':
     asr_models_loop_full()

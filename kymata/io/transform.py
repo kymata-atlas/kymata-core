@@ -16,7 +16,7 @@ _logger = getLogger(__file__)
 
 
 def load_transform(transform_path_without_suffix: PathType, trans_name: str, replace_nans: Optional[bool] = None,
-                  n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: str = 'ave', mfa: bool = False) -> Transform:
+                  n_derivatives: int = 0, n_hamming: int = 0, bruce_neurons: tuple = (5, 10), nn_neuron: str = 'ave', mfa: bool = False, trans_len: int = 400) -> Transform:
     transform_path_without_suffix = Path(transform_path_without_suffix)
     func: NDArray
     if 'neurogram' in trans_name:
@@ -220,7 +220,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             trans_name += f'_{str(nn_neuron)}'
 
         elif 'salmonn' in str(transform_path_without_suffix):
-            for s in range(14):
+            for s in range(trans_len//30 + 1):
                 if 'omni' in str(transform_path_without_suffix):
                     if s == 0:
                         if 'listen' not in str(transform_path_without_suffix):
@@ -237,14 +237,14 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                         func = torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()
                     else:
                         func = np.concatenate((func, torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()), axis = 1)
-            T_max = 401
+            T_max = trans_len
             s_num = T_max * 1000
             place_holder = np.zeros((func.shape[2], s_num))
 
             if 'listen' not in str(transform_path_without_suffix):
 
                 asr_text = []
-                for s in range(14):
+                for s in range(trans_len//30 + 1):
                     # Read the content of the file
                     if 'omni' in str(transform_path_without_suffix):
                         with open(Path(transform_path_without_suffix, f'segment_{s}_wordpiece.txt'), 'r') as file:
@@ -261,7 +261,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 mfa_text = load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_text.txt'))
                 mfa_time = np.array(load_txt(Path(transform_path_without_suffix.parent, 'teacher_mfa_stime.txt'))).astype(float)
                 mfa_time_samples = (mfa_time * 1000).astype(int)
-                mfa_time_samples = np.append(mfa_time_samples, 402_000)
+                mfa_time_samples = np.append(mfa_time_samples, s_num + 1000)
                 special_tokens = ['</s>', '-']
                 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
@@ -342,11 +342,10 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                         else:
                             timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(144)])
                     place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.array(timepoints), func[0, :, j])
-
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
-                func = np.mean(place_holder[:, :400_000], axis=0) #func[nn_neuron]
+                func = np.mean(place_holder[:, :trans_len*1000], axis=0) #func[nn_neuron]
             else:
-                func = place_holder[nn_neuron, :400_000]
+                func = place_holder[nn_neuron, :trans_len*1000]
             trans_name += f'_{str(nn_neuron)}'
                         
         else:

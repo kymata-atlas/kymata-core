@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 from logging import getLogger
 from warnings import warn
+from scipy.signal import resample
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,90 +36,101 @@ def load_single_emeg(
     emeg_path_npy = emeg_path.with_suffix(".npy")
     emeg_path_fif = emeg_path.with_suffix(".fif")
 
-    if inverse_operator_path is None:
-        ch_names_path = Path(emeg_path.parent, "ch_names.npy")
+    if 'ecog' in emeg_path.name.lower() or 'ieeg' in emeg_path.name.lower():
 
-    if (
-        isfile(emeg_path_npy)
-        and (not need_names)
-        and (inverse_operator_path is None)
-        and (morph_path is None)
-    ):
-        # Load npy-format sensor data
-        channel_names: list[str] = np.load(ch_names_path)
+        ch_names_path = Path(emeg_path.parent, "ch_names_kmeans300.npy")
+        channel_names: list[str] = np.load(ch_names_path, allow_pickle=True)
         emeg = np.load(emeg_path_npy)
+        emeg = resample(emeg, 360000, axis=1)
 
         return emeg, channel_names
 
-    _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
-    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
-    assert len(evoked) == 1
-    evoked = evoked[0]
+    else:
 
-    if inverse_operator_path is None:
-        # Want sensor data
-        emeg = evoked.get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
-        return emeg, evoked.ch_names
+        if inverse_operator_path is None:
+            ch_names_path = Path(emeg_path.parent, "ch_names.npy")
 
-    if old_morph:
-        # Load and apply fif-format morph data
-        _logger.info(f"Reading source morph from {morph_path}")
-        morph_map = (
-            mne.read_source_morph(morph_path)
-            if morph_path is not None
-            else None
-        )
+        if (
+            isfile(emeg_path_npy)
+            and (not need_names)
+            and (inverse_operator_path is None)
+            and (morph_path is None)
+        ):
+            # Load npy-format sensor data
+            channel_names: list[str] = np.load(ch_names_path)
+            emeg = np.load(emeg_path_npy)
 
-        lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(evoked, inverse_operator_path, snr, morph_map=morph_map)
-        # Stack into a single matrix, to be split after gridsearch
-        emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
+            return emeg, channel_names
 
-        return emeg, morph_hexel_names
+        _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
+        evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
+        assert len(evoked) == 1
+        evoked = evoked[0]
 
-    if premorphed_inverse_operator_path is not None:
-        common_channels_path = Path(
-            premorphed_inverse_operator_path.parent,
-            Path(premorphed_inverse_operator_path.name).stem
-            + "_list_of_common_channels",
-        )
-        if not Path(premorphed_inverse_operator_path).exists():
-            # Compute premorphed operator path
-            inverse_operator, premorphed_inverse_operator, morph_hexel_names = (
-                premorph_inverse_operator(
-                    morph_path,
-                    evoked,
-                    inverse_operator_path,
-                    snr**-2,
-                    "MNE",
-                    pick_ori="normal",
-                )
+        if inverse_operator_path is None:
+            # Want sensor data
+            emeg = evoked.get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
+            return emeg, evoked.ch_names
+
+        if old_morph:
+            # Load and apply fif-format morph data
+            _logger.info(f"Reading source morph from {morph_path}")
+            morph_map = (
+                mne.read_source_morph(morph_path)
+                if morph_path is not None
+                else None
             )
 
-            # Common channels to restrict to
-            common_channels = pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
+            lh_emeg, rh_emeg, morph_hexel_names = inverse_operate(evoked, inverse_operator_path, snr, morph_map=morph_map)
+            # Stack into a single matrix, to be split after gridsearch
+            emeg = np.concatenate((lh_emeg, rh_emeg), axis=0)
 
-            np.save(premorphed_inverse_operator_path, premorphed_inverse_operator)
-            np.save(ch_names_path, morph_hexel_names)
-            np.save(common_channels_path, common_channels)
+            return emeg, morph_hexel_names
+
+        if premorphed_inverse_operator_path is not None:
+            common_channels_path = Path(
+                premorphed_inverse_operator_path.parent,
+                Path(premorphed_inverse_operator_path.name).stem
+                + "_list_of_common_channels",
+            )
+            if not Path(premorphed_inverse_operator_path).exists():
+                # Compute premorphed operator path
+                inverse_operator, premorphed_inverse_operator, morph_hexel_names = (
+                    premorph_inverse_operator(
+                        morph_path,
+                        evoked,
+                        inverse_operator_path,
+                        snr**-2,
+                        "MNE",
+                        pick_ori="normal",
+                    )
+                )
+
+                # Common channels to restrict to
+                common_channels = pick_channels_inverse_operator(evoked.ch_names, inverse_operator)
+
+                np.save(premorphed_inverse_operator_path, premorphed_inverse_operator)
+                np.save(ch_names_path, morph_hexel_names)
+                np.save(common_channels_path, common_channels)
+
+            else:
+                # Load precomputed
+                premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
+                morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
+                common_channels = np.load(common_channels_path.with_suffix(".npy"))
+
+            emeg = np.matmul(
+                premorphed_inverse_operator,
+                # Restrict to common channels
+                evoked.data[common_channels],
+            )
+
+            del evoked, premorphed_inverse_operator
 
         else:
-            # Load precomputed
-            premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
-            morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
-            common_channels = np.load(common_channels_path.with_suffix(".npy"))
+            raise ValueError("Please supply premorphed_inverse_operator_path or old_morph.")
 
-        emeg = np.matmul(
-            premorphed_inverse_operator,
-            # Restrict to common channels
-            evoked.data[common_channels],
-        )
-
-        del evoked, premorphed_inverse_operator
-
-    else:
-        raise ValueError("Please supply premorphed_inverse_operator_path or old_morph.")
-
-    return emeg, morph_hexel_names
+        return emeg, morph_hexel_names
 
 
 def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None):

@@ -1,3 +1,317 @@
 /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
   warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
-[['main']]
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+[['minimap top', 'minimap bottom'], ['top', 'top'], ['bottom', 'bottom']]
+Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data.
+Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
+Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data"
+Downloading dataset: fsaverage
+0 files missing from root.txt in /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage
+0 files missing from bem.txt in /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage/fsaverage
+/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata/plot/brain.py:128: UserWarning: Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.
+  warn("Plotting on the fsaverage brain. Ensure that hexel numbers match those of the fsaverage brain.")
+Using pyvistaqt 3d backend.
+True
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+True
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+For automatic theme detection, "darkdetect" has to be installed! You can install it with `pip install darkdetect`
+Script completed in 65.25 seconds (1.09 minutes)

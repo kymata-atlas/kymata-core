@@ -17,4 +17,4 @@
 
 export PATH="$HOME/.local/bin:$PATH"
 source $(poetry env info --path)/bin/activate
-python kymata/invokers/invoker_run_nkg_plotting_all.py
+xvfb-run -a poetry run python -m kymata.invokers.invoker_run_scatter_plotting_new

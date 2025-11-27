@@ -309,20 +309,67 @@ def main():
 
         # expression_data  = load_expression_set(Path(path_to_nkg_files, 'russian_incremental/first_14_rus_gridsearch.nkg'))
         # expression_data  = load_expression_set('/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/11_transforms_gridsearch.nkg')
-        expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl/11_transforms_gridsearch_gridsearch.nkg')
+        # expression_data = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl/11_transforms_gridsearch_gridsearch.nkg')
+        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/english_TVL_family_source_baseline.nkg')
+        expression_data_phone = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/source_nkg/phone.nkg')
+        expression_data_word = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/source_nkg/word.nkg')
+        expression_data_morpheme = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/source_nkg/morpheme.nkg')
+        expression_data_wordpiece = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/source_nkg/wordpiece.nkg')
+        phone_name = expression_data_phone.transforms
+        word_name = expression_data_word.transforms
+        morpheme_name = expression_data_morpheme.transforms
+        wordpiece_name = expression_data_wordpiece.transforms
+        tvl_name = expression_data_tvl.transforms
+        IL_name = [i for i in tvl_name if i != 'STL']
+        STL_name = ['STL']
+
+        for i in range(len(phone_name)):
+            expression_data_phone.rename({phone_name[i]:f'{phone_name[i]}_phone'})
+        phone_name = expression_data_phone.transforms
+
+        for i in range(len(word_name)):
+            expression_data_word.rename({word_name[i]:f'{word_name[i]}_word'})
+        word_name = expression_data_word.transforms        
+
+        for i in range(len(morpheme_name)):
+            expression_data_morpheme.rename({morpheme_name[i]:f'{morpheme_name[i]}_morpheme'})
+        morpheme_name = expression_data_morpheme.transforms
+
+        for i in range(len(wordpiece_name)):
+            expression_data_wordpiece.rename({wordpiece_name[i]:f'{wordpiece_name[i]}_wordpiece'})
+        wordpiece_name = expression_data_wordpiece.transforms
 
         # import ipdb;ipdb.set_trace()
 
-        fig = expression_plot(expression_data, paired_axes=True, minimap='standard', show_legend=True,
-                              color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
-                              | constant_color_dict(['IL'], 'red')
-                              | constant_color_dict(['STL'], 'pink'))
+        # fig = expression_plot(expression_data, paired_axes=True, minimap='standard', show_legend=True,
+        #                       color=gradient_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], start_color = 'blue', stop_color="purple")
+        #                       | constant_color_dict(['IL'], 'red')
+        #                       | constant_color_dict(['STL'], 'pink'))
                             #     color=constant_color_dict(['IL1', 'IL2', 'IL3', 'IL4', 'IL5','IL6', 'IL7', 'IL8', 'IL9'], '#941de0')
                             #   | constant_color_dict(['IL'], '#4320aa')
                             #   | constant_color_dict(['STL'], '#ca8bb5'))
 
+        expression_data_all = expression_data_tvl + expression_data_phone + expression_data_word + expression_data_morpheme + expression_data_wordpiece
+
+        # import ipdb;ipdb.set_trace()
+
+        fig = expression_plot(expression_data_all, paired_axes=True, minimap='large', show_legend=True, show_only=word_name + phone_name + morpheme_name,
+                                color=constant_color_dict(word_name, color= 'red')
+                                    | constant_color_dict(IL_name, color= 'purple')
+                                    | constant_color_dict(STL_name, color= 'pink')
+                                    | constant_color_dict(phone_name, color='green')
+                                    | constant_color_dict(morpheme_name, color='blue')
+                                    | constant_color_dict(wordpiece_name, color='orange'),
+                                legend_display=legend_display_dict(word_name, 'SALMONN word features')
+                                    | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
+                                    | legend_display_dict(phone_name, 'SALMONN phone features')
+                                    | legend_display_dict(morpheme_name, 'SALMONN morpheme features')
+                                    | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
+
         # fig.savefig("/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output/music/20_participants/all_segments/music.png")
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl/last_four_reps_source.png")
+        # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/last_four_reps_tvl/last_four_reps_source.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/new_exp/with_morpheme_and_wordpiece_show_lang.png")
 
     elif transform_family_type == 'ANN':
 

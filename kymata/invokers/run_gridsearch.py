@@ -208,7 +208,8 @@ def main():
                                             trans_name=transform_name,
                                             replace_nans=args.replace_nans,
                                             bruce_neurons=(5, 10),
-                                            mfa=args.mfa,)
+                                            mfa=args.mfa,
+                                            trans_len=args.n_splits + 1)
             emeg_values[i, 0, :400000] = func.values  # (400000,)
 
         n_reps = 1
@@ -229,27 +230,30 @@ def main():
             stimulus_delivery_latency = dataset_config["tactile_delivery_latency"]
         else:
             raise NotImplementedError()
-
-        reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
-        if args.single_participant_override is not None:
-            if args.ave_mode == 'ave':
-                emeg_filenames = [args.single_participant_override + "-ave"]
-            elif args.ave_mode == 'concatenate':
-                print('Concatenating repetitions together')
-                emeg_filenames = [
-                    args.single_participant_override + r
-                    for r in reps[:-1]
-                ]
-        elif args.number_of_participant is not None:
-            emeg_filenames = [
-                p + '-ave'
-                for p in participants[:args.number_of_participant]
-            ]
+        
+        if 'ecog' in dataset_config.get('dataset_directory_name').lower():
+            emeg_filenames = [args.single_participant_override + "_task-podcast_ieeg"]
         else:
-            emeg_filenames = [
-                p + '-ave'
-                for p in participants
-            ]
+            reps = [f'_rep{i}' for i in range(8)] + ['-ave']  # most of the time we will only use the -ave, not the individual reps
+            if args.single_participant_override is not None:
+                if args.ave_mode == 'ave':
+                    emeg_filenames = [args.single_participant_override + "-ave"]
+                elif args.ave_mode == 'concatenate':
+                    print('Concatenating repetitions together')
+                    emeg_filenames = [
+                        args.single_participant_override + r
+                        for r in reps[:-1]
+                    ]
+            elif args.number_of_participant is not None:
+                emeg_filenames = [
+                    p + '-ave'
+                    for p in participants[:args.number_of_participant]
+                ]
+            else:
+                emeg_filenames = [
+                    p + '-ave'
+                    for p in participants
+                ]
 
         start = time.time()
 
@@ -309,6 +313,7 @@ def main():
                                 trans_name=args.transform_name[0],
                                 nn_neuron=nn_i,
                                 mfa=args.mfa,
+                                trans_len=args.n_splits + 1
                                 )
         # func = load_transform(args.transform_path,
         #                      trans_name=args.transform_name,
@@ -376,6 +381,7 @@ def main():
                                 trans_name=transform_name,
                                 nn_neuron=nn_i,
                                 mfa=args.mfa,
+                                trans_len=args.n_splits + 1
                                 )
             function_values = function_values.resampled(args.resample)
 
@@ -421,6 +427,7 @@ def main():
                             trans_name=args.transform_name[0],
                             nn_neuron=args.num_neurons[0],
                             mfa=args.mfa,
+                            trans_len=args.n_splits + 1
                             )
     
         function_values = function_values.resampled(args.resample)
@@ -461,7 +468,8 @@ def main():
                                             trans_name=transform_name,
                                             replace_nans=args.replace_nans,
                                             bruce_neurons=(5, 10),
-                                            mfa=args.mfa,)
+                                            mfa=args.mfa,
+                                            trans_len=args.n_splits + 1)
             function_values = function_values.resampled(args.resample)
 
             es = do_gridsearch(
