@@ -35,7 +35,7 @@ def plot_ippm(
         scale_nodes: bool = False,
         vertical_spacing: float = 11,
         figwidth: float = 10,
-        arrowhead_dims: tuple[float, float] = None,
+        arrowhead_dims: tuple[float, float] = (12, 12),
         linewidth: float = 3,
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
@@ -83,7 +83,13 @@ def plot_ippm(
         scale_nodes=scale_nodes,
     )
 
-    # first lets aggregate all the information.
+    node_x_extent = (max([n.x for n in plottable_graph.graph.nodes]) - min([n.x for n in plottable_graph.graph.nodes]))
+    node_y_extent = (max([n.y for n in plottable_graph.graph.nodes]) - min([n.y for n in plottable_graph.graph.nodes]))
+
+    # Amount by which the arrow stops short of the target node, to avoid "snubbing" the arrowhead
+    path_shortfall = node_x_extent / 28  # Adjusted until it looks good, but scaled by figure width
+
+    # Iterate over each node in the graph, and store its colour, incoming edge label, and incoming-edge path
     node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = []  # y coordinates for nodes
     node_colors = []  # color for nodes
@@ -91,7 +97,6 @@ def plot_ippm(
     edge_colors = []
     bsplines    = []
     edge_labels = []
-
     node: _PlottableNode
     for i, plottable_node in enumerate(plottable_graph.graph.nodes):
         node_colors.append(plottable_node.color)
@@ -100,21 +105,18 @@ def plot_ippm(
         node_y.append(plottable_node.y)
 
         incoming_edge_endpoints = []
-        pred: _PlottableNode
-        for pred in plottable_graph.graph.predecessors(plottable_node):
+        predecessor_node: _PlottableNode
+        for predecessor_node in plottable_graph.graph.predecessors(plottable_node):
             incoming_edge_endpoints.append(
                 (
-                    (pred.x, pred.y),
-                    (plottable_node.x, plottable_node.y)
+                    (predecessor_node.x, predecessor_node.y),
+                    (plottable_node.x - path_shortfall, plottable_node.y)
                 )
             )
             edge_colors.append(plottable_node.color)
             edge_labels.append(plottable_node.label)
 
         bsplines += make_bspline_paths(incoming_edge_endpoints)
-
-    node_x_extent_s = (max(node_x) - min(node_x))  # Seconds
-    node_y_extent = (max(node_y) - min(node_y))
 
     fig: plt.Figure
     _ax: plt.Axes
@@ -124,21 +126,14 @@ def plot_ippm(
         _ax = ax
         fig = _ax.figure
 
-    # Plot arrows
-    if arrowhead_dims is not None:
-        arrowhead_length, arrowhead_thickness = arrowhead_dims
-    else:
-        # Thickness is fixed because the vertical size of the figure increases with additional nodes
-        arrowhead_thickness = 6
-        # Length is rescaled as a fixed fraction of the width of the graph
-        arrowhead_length = node_x_extent_s / 28  # Adjusted until it looked good
-    text_offset_x = -0.01
+    # Plot paths
+    text_offset_x  = 0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
             display_label = relabel.get(label, f"{label}()")
             _ax.text(
-                x=path[0][-1] + text_offset_x,
+                x=path[0][-1] - text_offset_x,
                 y=path[1][-1],
                 s=display_label,
                 color=color,
@@ -146,15 +141,28 @@ def plot_ippm(
                 horizontalalignment="right", verticalalignment='center',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
-        _ax.arrow(
-            x=path[0][-1], dx=0.001,
-            y=path[1][-1], dy=0,
-            shape="full", width=0, lw=0,
-            head_width=arrowhead_thickness, head_length=arrowhead_length, color=color,
-            length_includes_head=True, head_starts_at_zero=False,
-        )
 
+    # Plot points as little hexes
     _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
+
+    # Plot arrows
+    head_length, head_thickness = arrowhead_dims
+    for path, color in zip(bsplines, edge_colors):
+        # If the arrow points backwards, the start and end are swapped
+        arrow_x = path[0][-1]  # Path end x
+        arrow_y = path[1][-1]  # Path end y
+        _ax.annotate(
+            text="",
+            # Arrow starts halfway through the edge shortfall, so it doesn't get "snubbed" by the thick line
+            xy=(arrow_x + (path_shortfall/2), arrow_y),
+            xytext=(-1, 0),
+            textcoords="offset points",
+            arrowprops={
+                "headwidth": head_thickness,
+                "headlength": head_length,
+                "color": color
+            }
+        )
 
     # Show lines trailing off into the future from terminal nodes
     future_width = 0.02
