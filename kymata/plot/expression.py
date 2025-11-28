@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from itertools import cycle
 from pathlib import Path
 from typing import Optional, Sequence, Type, Literal
-from warnings import warn
 
 import numpy as np
 from matplotlib import pyplot
@@ -234,6 +233,7 @@ def expression_plot(
     show_only_sensors: Optional[Literal["eeg", "meg"]] = None,
     minimap_latency_range: Optional[tuple[float | None, float | None]] = None,
     plot_top_n: Optional[int] = None,
+    use_sensor_layout: SensorLayout | Literal["CBU", "cbu"] | None = None,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -299,6 +299,10 @@ def expression_plot(
             half-open intervals.
         plot_top_n (Optional[int]): If not None, show only the N most significant sources. If None, plot all significant
             sources. Default is None.
+        use_sensor_layout (Optional[SensorLayout | "CBU"]): Specify a sensor layout to use when determining
+            left/right sensor assignment from a SensorExpressionSet. If None is specified (the default), the layout
+            specified in the SensorExpressionSet will be used, if it is set. If "CBU" is specified, the
+            VectorView/EasyCap layout will be used.
         save_to (Optional[Path], optional): Path to save the generated plot. If None, the plot is not saved.
             Default is None.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -443,17 +447,24 @@ def expression_plot(
         # We have a special case with paired sensor data, in that some sensors need to appear
         # on both sides of the midline.
         if paired_axes and isinstance(expression_set, SensorExpressionSet):
-            if expression_set.sensor_layout is not None:
-                sensor_layout = expression_set.sensor_layout
+
+            if isinstance(use_sensor_layout, SensorLayout):
+                left_channels, right_channels = get_sensor_left_right_assignment(use_sensor_layout)
+            elif use_sensor_layout.lower() == "cbu":
+                left_channels, right_channels = get_sensor_left_right_assignment(SensorLayout(meg=MEGLayout.Vectorview,
+                                                                                              eeg=EEGLayout.Easycap))
+            elif use_sensor_layout is not None:
+                # These are the only valid values for use_sensor_layout
+                raise ValueError(f"Invalid value {use_sensor_layout} for sensor layout")
+            elif expression_set.sensor_layout is not None:
+                left_channels, right_channels = get_sensor_left_right_assignment(expression_set.sensor_layout)
             else:
-                sensor_layout = SensorLayout(meg=MEGLayout.Vectorview, eeg=EEGLayout.Easycap)
-                warn(f"SensorExpressionSet had no sensor layout for assignment of sensors to left/right. "
-                     f"Attempting to use default value {sensor_layout}, but beware of display issues.")
-            assign_left_right_channels = get_sensor_left_right_assignment(sensor_layout)
+                # No axis assignment
+                left_channels, right_channels = chosen_channels, chosen_channels
 
             # Some points will be plotted on one axis, filled, some on both, empty
-            top_chans = set(assign_left_right_channels[0].axis_channels) & chosen_channels
-            bottom_chans = set(assign_left_right_channels[1].axis_channels) & chosen_channels
+            top_chans = left_channels & chosen_channels
+            bottom_chans = right_channels & chosen_channels
             # Symmetric difference
             both_chans = top_chans & bottom_chans
             top_chans -= both_chans
