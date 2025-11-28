@@ -35,7 +35,7 @@ def plot_ippm(
         scale_nodes: bool = False,
         vertical_spacing: float = 11,
         figwidth: float = 10,
-        arrowhead_dims: tuple[float, float] = None,
+        arrowhead_dims: tuple[float, float] = (12, 12),
         linewidth: float = 3,
         show_labels: bool = True,
         relabel: dict[str, str] | None = None,
@@ -83,6 +83,9 @@ def plot_ippm(
         scale_nodes=scale_nodes,
     )
 
+    # Amount by which the arrow stops short of the target node
+    path_shortfall = .005
+
     # Iterate over each node in the graph, and store its colour, incoming edge label, and incoming-edge path
     node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
     node_y      = []  # y coordinates for nodes
@@ -99,12 +102,12 @@ def plot_ippm(
         node_y.append(plottable_node.y)
 
         incoming_edge_endpoints = []
-        pred: _PlottableNode
-        for pred in plottable_graph.graph.predecessors(plottable_node):
+        predecessor_node: _PlottableNode
+        for predecessor_node in plottable_graph.graph.predecessors(plottable_node):
             incoming_edge_endpoints.append(
                 (
-                    (pred.x, pred.y),
-                    (plottable_node.x, plottable_node.y)
+                    (predecessor_node.x, predecessor_node.y),
+                    (plottable_node.x - path_shortfall, plottable_node.y)
                 )
             )
             edge_colors.append(plottable_node.color)
@@ -112,7 +115,6 @@ def plot_ippm(
 
         bsplines += make_bspline_paths(incoming_edge_endpoints)
 
-    node_x_extent_s = (max(node_x) - min(node_x))  # Seconds
     node_y_extent = (max(node_y) - min(node_y))
 
     fig: plt.Figure
@@ -143,35 +145,22 @@ def plot_ippm(
     _ax.scatter(x=node_x, y=node_y, c=node_colors, s=node_sizes, marker="H", zorder=2)
 
     # Plot arrows
-    if arrowhead_dims is not None:
-        arrowhead_length, arrowhead_thickness = arrowhead_dims
-    else:
-        # Thickness is fixed because the vertical size of the figure increases with additional nodes
-        arrowhead_thickness = 6
-        # Length is rescaled as a fixed fraction of the width of the graph
-        arrowhead_length = node_x_extent_s / 28  # Adjusted until it looked good
+    head_length, head_thickness = arrowhead_dims
     for path, color in zip(bsplines, edge_colors):
-        path_start_x = path[0][0]
-        path_start_y = path[1][0]
-        path_end_x   = path[0][-1]
-        path_end_y   = path[1][-1]
         # If the arrow points backwards, the start and end are swapped
-        if path_start_x < path_end_x:
-            x = path_end_x
-            y = path_end_y
-        else:
-            x = path_start_x
-            y = path_start_y
-        _ax.arrow(
-            # Apply negative x offset so the arrow points to the edge of the hex
-            x=x - 0.003,
-            y=y,
-            # Give direction to the right
-            dx=0.001, dy=0,
-            shape="full", width=0, lw=0,
-            head_width=arrowhead_thickness, head_length=arrowhead_length,
-            color=color,
-            length_includes_head=True, head_starts_at_zero=False,
+        arrow_x = path[0][-1]  # Path end x
+        arrow_y = path[1][-1]  # Path end y
+        _ax.annotate(
+            text="",
+            # Arrow starts halfway through the edge shortfall, so it doesn't get "snubbed" by the thick line
+            xy=(arrow_x + (path_shortfall/2), arrow_y),
+            xytext=(-1, 0),
+            textcoords="offset points",
+            arrowprops={
+                "headwidth": head_thickness,
+                "headlength": head_length,
+                "color": color
+            }
         )
 
     # Show lines trailing off into the future from terminal nodes
