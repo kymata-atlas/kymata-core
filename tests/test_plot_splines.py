@@ -17,10 +17,10 @@ from kymata.plot.splines import make_bspline_paths, _make_bspline_ctr_points, _m
 
 @patch("kymata.plot.splines.splev")
 def test_IPPMPlotter_MakeBSplinePaths_Successfully(mock_splev):
-    expected_b_spline_paths = [
+    expected_b_spline_paths = (
         np.array(range(65, 100, 10)),
         np.array(np.linspace(0.8, 1, 10)),
-    ]
+    )
     mock_splev.return_value = expected_b_spline_paths
     ctr_points = np.array(
         [
