@@ -1,11 +1,9 @@
-import pytest
 from numpy import array
 from numpy.typing import NDArray
 
 from kymata.entities.expression import SensorExpressionSet
 from kymata.ippm.ippm import IPPM
 from kymata.math.probability import p_to_logp
-from kymata.plot import expression_plot
 from kymata.plot.ippm import plot_ippm
 
 sensors = [str(i) for i in range(4)]
