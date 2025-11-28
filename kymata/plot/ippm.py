@@ -83,8 +83,11 @@ def plot_ippm(
         scale_nodes=scale_nodes,
     )
 
-    # Amount by which the arrow stops short of the target node
-    path_shortfall = .005
+    node_x_extent = (max([n.x for n in plottable_graph.graph.nodes]) - min([n.x for n in plottable_graph.graph.nodes]))
+    node_y_extent = (max([n.y for n in plottable_graph.graph.nodes]) - min([n.y for n in plottable_graph.graph.nodes]))
+
+    # Amount by which the arrow stops short of the target node, to avoid "snubbing" the arrowhead
+    path_shortfall = node_x_extent / 28  # Adjusted until it looks good, but scaled by figure width
 
     # Iterate over each node in the graph, and store its colour, incoming edge label, and incoming-edge path
     node_x      = []  # x coordinates for nodes eg. (x, y) = (node_x[i], node_y[i])
@@ -115,8 +118,6 @@ def plot_ippm(
 
         bsplines += make_bspline_paths(incoming_edge_endpoints)
 
-    node_y_extent = (max(node_y) - min(node_y))
-
     fig: plt.Figure
     _ax: plt.Axes
     if ax is None:
@@ -126,13 +127,13 @@ def plot_ippm(
         fig = _ax.figure
 
     # Plot paths
-    text_offset_x = -0.01
+    text_offset_x  = 0.01
     for path, color, label in zip(bsplines, edge_colors, edge_labels):
         _ax.plot(path[0], path[1], color=color, linewidth=linewidth, zorder=-1)
         if show_labels:
             display_label = relabel.get(label, f"{label}()")
             _ax.text(
-                x=path[0][-1] + text_offset_x,
+                x=path[0][-1] - text_offset_x,
                 y=path[1][-1],
                 s=display_label,
                 color=color,
