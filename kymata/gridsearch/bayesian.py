@@ -7,22 +7,22 @@ import numpy as np
 import math
 from numpy.typing import NDArray, ArrayLike
 from scipy import stats
+from matplotlib import pyplot as plt
 
-from kymata.entities.functions import Function
+from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
+from kymata.io.layouts import SensorLayout
 from kymata.math.vector import normalize, get_stds
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
-from kymata.math.p_values import log_base, p_to_logp
-from kymata.plot.plot import plot_top_five_channels_of_gridsearch
-
-from matplotlib import pyplot as plt
+from kymata.math.probability import LOGP_BASE, p_to_logp
+from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
 
 _logger = getLogger(__name__)
 
 
 def do_gridsearch(
         emeg_values: NDArray,  # chan x time
-        function_data: dict,
+        transform_data: dict,
         channel_names: list,
         channel_space: str,
         start_latency: float,   # ms
@@ -30,7 +30,7 @@ def do_gridsearch(
         stimulus_shift_correction: float,  # seconds/second
         stimulus_delivery_latency: float,  # seconds
         plot_location: Optional[Path] = None,
-        emeg_sample_rate: int = 1000,  # Hertz
+        emeg_sample_rate: float = 1000,  # Hertz
         n_derangements: int = 1,
         seconds_per_split: float = 1,
         n_splits: int = 400,
@@ -47,7 +47,7 @@ def do_gridsearch(
 
     Args:
         emeg_values (NDArray): A 2D array of EMEG values with shape (n_channels, time).
-        function (Function): The function against which the EMEG data will be correlated. It should
+        transform_data (dict): The function against which the EMEG data will be correlated. It should
             have a `values` attribute representing the function's values and a `sample_rate`
             attribute indicating its sample rate.
         channel_names (list): List of channel names corresponding to the EMEG data. For 'sensor' space,
@@ -93,7 +93,7 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     n_channels = emeg_values.shape[0]
-    num_functions = len(function_data)
+    num_functions = len(transform_data)
 
     '''might need to do drift correction here'''
 
@@ -107,8 +107,8 @@ def do_gridsearch(
 
     posterior_emeg = np.zeros((n_channels, num_latencies, num_functions))
 
-    function_mat = np.vstack(list(function_data.values()))
-    function_names = list(function_data.keys())
+    function_mat = np.vstack(list(transform_data.values()))
+    function_names = list(transform_data.keys())
 
     '''to discuss with kaibo: are different latencies independent between each other'''
 
@@ -131,44 +131,44 @@ def do_gridsearch(
     # put drift correction into matrix format
     # try both stretch and squeeze
 
-    # '''all function posterior'''
-    # for latency in range(0, emeg_end, latency_step):
-    #     '''emeg_values start from emeg_t_start (-200)'''
-    #     print('latency: ', latency)
-    #     emeg_values_cut = emeg_values[:, :,
-    #                       audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
-    #     for channel in range(n_channels):
-    #         single_channel = emeg_values_cut[channel][0]
-    #         '''put my plausibility code here'''
-    #         diff_mat = stretched_samples - single_channel
-    #         evidence = np.log(prior_hypothesis) + \
-    #                    -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-    #         single_channel_neg = - single_channel
-    #         diff_mat_neg = stretched_samples - single_channel_neg
-    #         evidence_neg = np.log(prior_hypothesis) + \
-    #                    -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-    #         evidence_final = np.ones(num_functions)/num_functions
-    #         for ct in range(len(evidence_final)):
-    #             if evidence[ct] >= evidence_neg[ct]:
-    #                 evidence_final[ct] = evidence[ct]
-    #             else:
-    #                 evidence_final[ct] = evidence_neg[ct]
-    #         posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))  # avoid dividing by a minus number
-    #         # diff_mat = function_mat_x_paired - single_channel
-    #         # evidence = np.log(prior_hypothesis_0_paired) + \
-    #         #            -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-    #         # single_channel_neg = - single_channel
-    #         # diff_mat_neg = function_mat_x_paired - single_channel_neg
-    #         # evidence_neg = np.log(prior_hypothesis_0_paired) + \
-    #         #            -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-    #         # if evidence[0] >= evidence_neg[0]:
-    #         #     evidence_final = evidence
-    #         # else:
-    #         #     evidence_final = evidence_neg
-    #         # posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))
+    '''all function posterior'''
+    for latency in range(0, emeg_end, latency_step):
+        '''emeg_values start from emeg_t_start (-200)'''
+        print('latency: ', latency)
+        emeg_values_cut = emeg_values[:, :,
+                          audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
+        for channel in range(n_channels):
+            single_channel = emeg_values_cut[channel][0]
+            '''put my plausibility code here'''
+            diff_mat = stretched_samples - single_channel
+            evidence = np.log(prior_hypothesis) + \
+                       -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)  # log posterior
+            single_channel_neg = - single_channel
+            diff_mat_neg = stretched_samples - single_channel_neg
+            evidence_neg = np.log(prior_hypothesis) + \
+                       -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+            evidence_final = np.ones(num_functions)/num_functions
+            for ct in range(len(evidence_final)):  # over transforms
+                if evidence[ct] >= evidence_neg[ct]:
+                    evidence_final[ct] = evidence[ct]
+                else:
+                    evidence_final[ct] = evidence_neg[ct]
+            posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))  # avoid dividing by a minus number
+            # diff_mat = function_mat_x_paired - single_channel
+            # evidence = np.log(prior_hypothesis_0_paired) + \
+            #            -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+            # single_channel_neg = - single_channel
+            # diff_mat_neg = function_mat_x_paired - single_channel_neg
+            # evidence_neg = np.log(prior_hypothesis_0_paired) + \
+            #            -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+            # if evidence[0] >= evidence_neg[0]:
+            #     evidence_final = evidence
+            # else:
+            #     evidence_final = evidence_neg
+            # posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))
 
-    '''load posterior'''
-    posterior_emeg = np.load('figures/posterior_emeg_all_posneg_250516.npy')
+    # '''load posterior'''
+    # posterior_emeg = np.load('figures/posterior_emeg_all_posneg_250516.npy')
 
     # '''random function'''
     # mean = np.mean(stretched_samples[0])

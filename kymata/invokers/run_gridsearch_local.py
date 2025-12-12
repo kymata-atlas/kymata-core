@@ -5,7 +5,7 @@ import time
 from sys import stdout
 
 from kymata.datasets.data_root import data_root_path
-from kymata.gridsearch.bayesian import do_gridsearch
+from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.transform import load_transform
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
@@ -77,7 +77,7 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=1000,
+    parser.add_argument("--resample", type=float, required=False, default=200,
                         help="Resample rate for both transform and EMEG data, in Hz. "
                              "(E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.")
 
@@ -226,7 +226,6 @@ def main():
         eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
-    transform_data = {}
     for transform_name in args.transform_name:
         _logger.info(f"Running gridsearch on {transform_name}")
         transform = load_transform(
@@ -239,73 +238,72 @@ def main():
 
         # Resample transform to match target sample rate if specified, else emeg sample rate
         transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
-        # if transform.sample_rate != transform_resample_rate:
-        #     _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
-        #                  f"({transform_resample_rate} Hz). Transform will be resampled to match. "
-        #                  f"({transform.sample_rate} → {transform_resample_rate} Hz)")
-        #
-        #     transform = transform.resampled(transform_resample_rate)
-        transform_data[transform_name] = transform.values
+        if transform.sample_rate != transform_resample_rate:
+            _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
+                         f"({transform_resample_rate} Hz). Transform will be resampled to match. "
+                         f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+            transform = transform.resampled(transform_resample_rate)
 
-    es = do_gridsearch(
-        emeg_values=emeg_values,
-        channel_names=ch_names,
-        channel_space=channel_space,
-        transform_data=transform_data,
-        seconds_per_split=args.seconds_per_split,
-        n_derangements=args.n_derangements,
-        n_splits=args.n_splits,
-        n_reps=n_reps,
-        emeg_sample_rate=emeg_sample_rate,
-        start_latency=args.start_latency,
-        plot_location=args.save_plot_location,
-        emeg_t_start=args.emeg_t_start,
-        stimulus_shift_correction=stimulus_shift_correction,
-        stimulus_delivery_latency=stimulus_delivery_latency,
-        plot_top_five_channels=args.plot_top_channels,
+        es = do_gridsearch(
+            emeg_values=emeg_values,
+            channel_names=ch_names,
+            channel_space=channel_space,
+            transform=transform,
+            seconds_per_split=args.seconds_per_split,
+            n_derangements=args.n_derangements,
+            n_splits=args.n_splits,
+            n_reps=n_reps,
+            emeg_sample_rate=emeg_sample_rate,
+            start_latency=args.start_latency,
+            plot_location=args.save_plot_location,
+            emeg_t_start=args.emeg_t_start,
+            stimulus_shift_correction=stimulus_shift_correction,
+            stimulus_delivery_latency=stimulus_delivery_latency,
+            plot_top_five_channels=args.plot_top_channels,
+            overwrite=args.overwrite,
+            emeg_layout=sensor_layout,
+        )
+
+        if combined_expression_set is None:
+            combined_expression_set = es
+        else:
+            combined_expression_set += es
+
+    assert combined_expression_set is not None
+
+    combined_names: str
+    if args.save_name is not None and len(args.save_name) > 0:
+        combined_names = args.save_name
+    elif len(args.transform_name) > 2:
+        combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
+    else:
+        combined_names = "_+_".join(args.transform_name) + "_gridsearch"
+
+    if args.save_expression_set_location is not None:
+        es_save_path = Path(
+            args.save_expression_set_location, combined_names
+        ).with_suffix(".nkg")
+        _logger.info(f"Saving expression set to {es_save_path!s}")
+        save_expression_set(
+            combined_expression_set,
+            to_path_or_file=es_save_path,
+            overwrite=args.overwrite,
+        )
+
+    if args.single_participant_override is not None:
+        fig_save_path = Path(
+            args.save_plot_location,
+            combined_names + f"_{args.single_participant_override}",
+        ).with_suffix(".png")
+    else:
+        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
+    _logger.info(f"Saving expression plot to {fig_save_path!s}")
+    expression_plot(
+        combined_expression_set,
+        paired_axes=channel_space == "source",
+        save_to=fig_save_path,
         overwrite=args.overwrite,
     )
-    #
-    # if combined_expression_set is None:
-    #     combined_expression_set = es
-    # else:
-    #     combined_expression_set += es
-    #
-    # assert combined_expression_set is not None
-    #
-    # combined_names: str
-    # if args.save_name is not None and len(args.save_name) > 0:
-    #     combined_names = args.save_name
-    # elif len(args.transform_name) > 2:
-    #     combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
-    # else:
-    #     combined_names = "_+_".join(args.transform_name) + "_gridsearch"
-    #
-    # if args.save_expression_set_location is not None:
-    #     es_save_path = Path(
-    #         args.save_expression_set_location, combined_names
-    #     ).with_suffix(".nkg")
-    #     _logger.info(f"Saving expression set to {es_save_path!s}")
-    #     save_expression_set(
-    #         combined_expression_set,
-    #         to_path_or_file=es_save_path,
-    #         overwrite=args.overwrite,
-    #     )
-    #
-    # if args.single_participant_override is not None:
-    #     fig_save_path = Path(
-    #         args.save_plot_location,
-    #         combined_names + f"_{args.single_participant_override}",
-    #     ).with_suffix(".png")
-    # else:
-    #     fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
-    # _logger.info(f"Saving expression plot to {fig_save_path!s}")
-    # expression_plot(
-    #     combined_expression_set,
-    #     paired_axes=channel_space == "source",
-    #     save_to=fig_save_path,
-    #     overwrite=args.overwrite,
-    # )
 
     total_time_in_seconds = time.time() - start
     _logger.info(
