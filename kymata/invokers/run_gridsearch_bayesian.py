@@ -110,14 +110,20 @@ def main():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 
     # Config defaults
     participants = dataset_config.get("participants")
+    if dataset_config["data_location"] == "cbu":
+        root_dir = Path("/imaging/projects/cbu/kymata/data/")
+    elif dataset_config["data_location"] == "local":
+        root_dir = data_root_path() / "emeg_study_data"
+    else:
+        raise NotImplementedError()
     base_dir = Path(
-        "/imaging/projects/cbu/kymata/data/",
+        root_dir,
         dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
     )
     inverse_operator_dir = dataset_config.get("inverse_operator")
@@ -193,7 +199,7 @@ def main():
         emeg_filenames,
         emeg_dir=emeg_path,
         morph_dir=morph_dir if args.morph else None,
-        need_names=True,
+        need_names=False,
         ave_mode=args.ave_mode,
         inverse_operator_dir=inverse_operator_dir
         if args.use_inverse_operator

@@ -304,43 +304,10 @@ def do_gridsearch(
 
 
     # derive pvalues
-    evidence = '???'
-
-    latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
-
-    # if plot_top_five_channels:
-    #     plot_top_five_channels_of_gridsearch(
-    #         corrs=corrs,
-    #         auto_corrs=auto_corrs,
-    #         function=function,
-    #         n_reps=n_reps,
-    #         n_splits=n_splits,
-    #         n_samples_per_split=n_samples_per_split,
-    #         latencies=latencies_ms,
-    #         save_to=plot_location,
-    #         log_pvalues=log_pvalues,
-    #         overwrite=overwrite,
-    #     )
+    # evidence = '???'
     #
-    # if channel_space == "sensor":
-    #     es = SensorExpressionSet(
-    #         functions=function.name,
-    #         latencies=latencies_ms / 1000,  # seconds
-    #         sensors=channel_names,
-    #         data=log_pvalues,
-    #     )
-    # elif channel_space == "source":
-    #     es = HexelExpressionSet(
-    #         functions=function.name,
-    #         latencies=latencies_ms / 1000,  # seconds
-    #         hexels_lh=channel_names[0],
-    #         hexels_rh=channel_names[1],
-    #         # Unstack the data
-    #         data_lh=log_pvalues[:len(channel_names[0]), :],
-    #         data_rh=log_pvalues[len(channel_names[0]):, :],
-    #     )
-    # else:
-    #     raise NotImplementedError(channel_space)
-
-    es = '???'
-    return es
+    # latencies_ms = np.linspace(start_latency, start_latency + (seconds_per_split * 1000), n_func_samples_per_split + 1)[:-1]
+    #
+    # es = '???'
+    #
+    # return es
