@@ -7,7 +7,7 @@ the [Kymata Research Group](https://kymata.org).
 It is comprised of both a python package, `kymata`, and a number of invokers that instantiate the main Kymata Atlas pipeline, including:
 
 * Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
-* Gridsearch approaches for function mapping;
+* Gridsearch approaches for transform mapping;
 * Information Processing Pathway Map generation (both offline generation and evaluation);
 * Plotting functionality
 
@@ -21,7 +21,7 @@ welcomed, we are unable to prioritise installation support.
 
 Please use the following reference in all citations: 
 
-> TBC
+> T.B.C
 
 ## Usage
 

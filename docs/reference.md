@@ -2,7 +2,7 @@
 
 ## kymata
 
-::: kymata.plot.plot
+::: kymata.plot.expression
 
 ::: kymata.gridsearch.plain
 
@@ -10,8 +10,8 @@
 
 ::: kymata.io.config
 
-::: kymata.ippm.plotter
+::: kymata.plot.ippm
 
-::: kymata.ippm.builder
+::: kymata.ippm.ippm
 
 ::: kymata.entities.expression

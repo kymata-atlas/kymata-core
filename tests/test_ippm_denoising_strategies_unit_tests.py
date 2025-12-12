@@ -1,207 +1,211 @@
 from copy import deepcopy
-from math import isclose
+from typing import List
 from unittest.mock import patch, MagicMock
 
-import pandas as pd
-from pandas.testing import assert_frame_equal
+import numpy as np
+from numpy._typing import ArrayLike
 
-import math
-from kymata.ippm.data_tools import IPPMHexel
-from kymata.ippm.denoising_strategies import DenoisingStrategy
+from kymata.entities.constants import HEMI_RIGHT
+from kymata.entities.expression import ExpressionPoint, HexelExpressionSet
+from kymata.ippm.denoising_strategies import DenoisingStrategy, MaxPoolingStrategy
 
-test_data_func1 = [
-    [-100, 1e-50],
-    [-90, 1e-34],
-    [-95, 1e-8],
-    [-75, 1e-75],
-    [-70, 1e-27],
-    [0, 1e-1],
-    [30, 1e-100],
-    [32, 1e-93],
-    [35, 1e-72],
-    [50, 1e-9],
-    [176, 1e-50],
-    [199, 1e-90],
-    [200, 1e-50],
-    [210, 1e-44],
-    [211, 1e-55]
-]
-significant_test_data_func1 = [
-    [-100, 1e-50],
-    [-90, 1e-34],
-    [-75, 1e-75],
-    [-70, 1e-27],
-    [30, 1e-100],
-    [32, 1e-93],
-    [35, 1e-72],
-    [176, 1e-50],
-    [199, 1e-90],
-    [200, 1e-50],
-    [210, 1e-44],
-    [211, 1e-55]
-]
-significant_test_data_func1_labels = [0, 0, 0, -1, 1, 1, 1, -1, 2, 2, 2, 2]
-test_df_func1 = pd.DataFrame(significant_test_data_func1, columns=["Latency", "Mag"])
-denoised_func1 = [
-    (-75, 1e-75),
-    (30, 1e-100),
-    (199, 1e-90)
-]
+"""
+    To construct a HexelExpressionSet, we need to create a matrix with logp values. The dimensions for the matrix are
+    (DIM_CHANNEL, DIM_LATENCY, DIM_TRANSFORM). Fill in values up to 5*12 = [0,60] (inclusive) or 13 values. 
+    Note that each (channel, latency, transform) -> single magnitude, so at most 1 value per c, l, h.
 
-test_empty_df = pd.DataFrame([], columns=["Latency", "Mag"])
+    The denoising procedure currently operates by extracting the most significant point per channel, followed
+    by grouping them into a key, value struct where key is transform id, denoising it using a clusterer, then returning
+    the extracted points.
+"""
+N_CHANNELS = 8
+N_LATENCIES = 13  # goes from 0, 5, 10, ..., 60 (inclusive)
+N_TIMEPOINTS = 201
+N_HEXELS = 200_000
 
-test_data_func2 = [
-    [-30, 1e-2],
-    [23, 1e-44],
-    [26, 1e-59],
-    [30, 1e-99],
-    [130, 1e-81],
-    [131, 1e-23],
-    [131, 1e-76],
-    [131, 1e-4],
-    [200, 1e-2]
+# Scenario: [cluster1, noise, cluster2, noise]
+noisy_data1 = [
+    # Cluster 1
+    ExpressionPoint(0, 0, "f1", -50),
+    ExpressionPoint(2, 5, "f1", -34),
+    ExpressionPoint(1, 5, "f1", -70),
+
+    # Noise 1
+    ExpressionPoint(5, 15, "f1", -15),
+    ExpressionPoint(6, 25, "f1", -7),
+
+    # Cluster 2
+    ExpressionPoint(3, 30, "f1", -100),
+    ExpressionPoint(4, 35, "f1", -50),
+
+    # Noise 2
+    ExpressionPoint(7, 40, "f1", -3),
+
+    # Magnitudes per channel must be less than the clustered ones cf HexelExpressionSet.best_transforms
+    ExpressionPoint(1, 10, "f1", -20),
+    ExpressionPoint(1, 45, "f1", -9),
+    ExpressionPoint(0, 15, "f1", -20),
+    ExpressionPoint(2, 15, "f1", -22),
+    ExpressionPoint(2, 30, "f1", -11),
+    ExpressionPoint(3, 50, "f1", -3),
+    ExpressionPoint(4, 40, "f1", -45),
 ]
-significant_test_data_func2 = [
-    [23, 1e-44],
-    [26, 1e-59],
-    [30, 1e-99],
-    [130, 1e-81],
-    [131, 1e-23],
-    [131, 1e-76],
-]
-test_df_func2 = pd.DataFrame(significant_test_data_func2, columns=["Latency", "Mag"])
-denoised_func2 = [
-    (30, 1e-99),
-    (130, 1e-81)
+# best transforms = take max per channel. This is what is clustered on
+best_data1 = noisy_data1[:8]
+grouped_data1 = {"f1": best_data1}
+denoised_data1 = [
+    ExpressionPoint(1, 5, "f1", -70),
+    ExpressionPoint(3, 30, "f1", -100)
 ]
 
-noisy_test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2")
-}
-noisy_test_hexels["func1"].right_best_pairings = test_data_func1
-noisy_test_hexels["func2"].right_best_pairings = test_data_func2
+# Scenario: [noise, cluster1, noise]
+noisy_data2 = [
+    # Noise
+    ExpressionPoint(0, 0, "f2", -2),
+    ExpressionPoint(1, 5, "f2", -50),
 
-denoised_test_hexels = {
-    "func1": IPPMHexel("func1"),
-    "func2": IPPMHexel("func2")
-}
-denoised_test_hexels["func1"].right_best_pairings = denoised_func1
-denoised_test_hexels["func2"].right_best_pairings = denoised_func2
+    # Cluster
+    ExpressionPoint(2, 25, "f2", -99),
+    ExpressionPoint(3, 25, "f2", -78),
+    ExpressionPoint(4, 30, "f2", -23),
+
+    # Noise
+    ExpressionPoint(5, 40, "f2", -77),
+    ExpressionPoint(6, 50, "f2", -54),
+    ExpressionPoint(7, 55, "f2", -4),
+
+    # Noise
+    ExpressionPoint(0, 35, "f2", -1),
+    ExpressionPoint(1, 15, "f2", -44),
+    ExpressionPoint(2, 40, "f2", -59),
+    ExpressionPoint(3, 20, "f2", -37),
+    ExpressionPoint(4, 55, "f2", -5),
+    ExpressionPoint(5, 60, "f2", -23),
+    ExpressionPoint(6, 55, "f2", -26),
+    ExpressionPoint(7, 5, "f2", -2),
+]
+best_data2 = noisy_data2[:8]  # first 8 are max over channel
+grouped_data2 = {"f2": best_data2}
+denoised_data2 = [
+    ExpressionPoint(2, 25, "f2", -99)
+]
 
 
-def test_DenoisingStrategy_EstimateThresholdForSignificance_Successfully():
-    expected_threshold = 3.55e-15
-    actual_threshold = DenoisingStrategy._estimate_threshold_for_significance(5)
-    assert isclose(expected_threshold, actual_threshold, abs_tol=1e-15)
+def create_data_block(
+        test_data: List[ExpressionPoint],
+        transform_idx: int,
+        time_range: int,
+        n_channels: int
+) -> ArrayLike:
+    # default value for transform. Set transform_idx values manually, zero out other transforms
+    default_values = [np.nan, 0] if transform_idx == 0 else [0, np.nan]
+    data = np.array([
+        [default_values for _ in range(time_range)] for _ in range(n_channels)
+    ])
+
+    for point in test_data:
+        latency_idx = point.latency // 5
+        data[point.channel][latency_idx][transform_idx] = point.logp_value
+
+    data = np.nan_to_num(data, nan=0)
+    return data
 
 
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._map_hexels_to_df")
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._preprocess")
+noisy_test_hexel_expr_set = HexelExpressionSet(
+    transforms=["f1", "f2"],
+    hexels_lh=[i for i in range(N_CHANNELS)],
+    hexels_rh=[i for i in range(N_CHANNELS)],
+    latencies=[i for i in range(0, N_LATENCIES * 5, 5)],
+    # Data follows (DIM_CHANNEL, DIM_LATENCY, DIM_TRANSFORM)
+    data_lh=create_data_block(
+        noisy_data1,
+        transform_idx=0,
+        time_range=N_LATENCIES,
+        n_channels=N_CHANNELS
+    ),
+    data_rh=create_data_block(
+        noisy_data2,
+        transform_idx=1,
+        time_range=N_LATENCIES,
+        n_channels=N_CHANNELS
+    )
+)
+
+
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._denoise_spikes")
+@patch("kymata.ippm.denoising_strategies.group_points_by_transform")
+@patch("kymata.ippm.denoising_strategies.HexelExpressionSet.best_transforms")
+def test_DenoisingStrategy_DenoiseHexelExpressionSet_Successfully(
+        mock_best_transforms,
+        mock_group_by,
+        mock_denoise,
+):
+    # set-up mocks
+    mock_best_transforms.return_value = best_data1, best_data2
+    mock_group_by.side_effect = [grouped_data2, grouped_data1]
+    mock_denoise.side_effect = [
+        {"f2": denoised_data2},
+        {"f1": denoised_data1}
+    ]
+
+    hexel_expr_set = deepcopy(noisy_test_hexel_expr_set)
+    strategy = DenoisingStrategy()
+    actual_spikes_left, actual_spikes_right = strategy._denoise_hexel_expression_set(hexel_expr_set)
+
+    assert actual_spikes_left == denoised_data1
+    assert actual_spikes_right == denoised_data2
+
+
 @patch("kymata.ippm.denoising_strategies.DenoisingStrategy._get_denoised_time_series")
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._postprocess")
-def test_DenoisingStrategy_Denoise_Successfully(
-        mock_postprocess,
-        mock_get_denoised,
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._preprocess")
+@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_points")
+def test_DenoisingStrategy_DenoiseSpikes_Successfully(
+        mock_filter_points,
         mock_preprocess,
-        mock_map_hexels
-    ):
-    expected_hexels = deepcopy(noisy_test_hexels)
-    func1_hexel = deepcopy(expected_hexels["func1"])  # return value from _postprocess
-    func2_hexel = deepcopy(expected_hexels["func2"])  # return value from _postprocess
-    func1_hexel.right_best_pairings = denoised_func1
-    func2_hexel.right_best_pairings = denoised_func2
-    expected_hexels["func1"].right_best_pairings = denoised_func1
-    expected_hexels["func2"].right_best_pairings = denoised_func2
+        mock_get_denoised
+):
+    mock_filter_points.return_value = list(filter(lambda x: x.logp_value < -5, best_data1))
+    mock_preprocess.return_value = [
+        [0, -50], [30, -100], [5, -34], [15, -15], [5, -70], [25, -7], [35, -50]
+    ]
+    mock_clusterer = MagicMock()
+    mock_clusterer.labels_ = [0, 0, 0, -1, 1, 1]
+    mock_get_denoised.return_value = denoised_data1
 
-    # To mock a generator, you have to return an iterable.
-    mock_map_hexels.return_value = iter([("func1", test_df_func1), ("func2", test_df_func2)])
-    mock_preprocess.side_effect = [test_df_func1, test_df_func2]
-    clusterer = MagicMock()
-    clusterer.fit.return_value = clusterer
-    mock_get_denoised.side_effect = [denoised_func1, denoised_func2]
-    mock_postprocess.side_effect = [func1_hexel, func2_hexel]
+    strategy = DenoisingStrategy()
+    strategy._clusterer = mock_clusterer
+    actual = strategy._denoise_spikes(grouped_data1, -5)
 
-    strategy = DenoisingStrategy("rightHemisphere")
-    strategy._clusterer = clusterer
-    actual_hexels = strategy.denoise(noisy_test_hexels)
-
-    assert actual_hexels["func1"].right_best_pairings == expected_hexels["func1"].right_best_pairings
-    assert actual_hexels["func2"].right_best_pairings == expected_hexels["func2"].right_best_pairings
-
-
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._filter_out_insignificant_spikes")
-def test_DenoisingStrategy_MapHexelsToDF_Successfully(mock_filter):
-    mock_filter.side_effect = [significant_test_data_func1, significant_test_data_func2]
-    strategy = DenoisingStrategy("rightHemisphere")
-    actual_dfs = []
-    for func, df in strategy._map_hexels_to_df(noisy_test_hexels):
-        actual_dfs.append((func, df))
-
-    assert actual_dfs[0][0] == "func1"
-    assert actual_dfs[1][0] == "func2"
-    assert_frame_equal(actual_dfs[0][1], test_df_func1)
-    assert_frame_equal(actual_dfs[1][1], test_df_func2)
-
-
-def test_DenoisingStrategy_FilterOutInsignificantSpikes_Successfully():
-    strategy = DenoisingStrategy("rightHemisphere")
-    actual_datapoints = strategy._filter_out_insignificant_spikes(test_data_func1)
-    expected_datapoints = significant_test_data_func1
-    assert actual_datapoints == expected_datapoints
-
-
-def test_DenoisingStrategy_UpdatePairings_Successfully():
-    actual_hexel = deepcopy(noisy_test_hexels["func1"])
-    strategy = DenoisingStrategy("rightHemisphere")
-    actual_hexel = strategy._update_pairings(actual_hexel, denoised_func1)
-    assert actual_hexel.right_best_pairings == denoised_func1
+    assert actual["f1"] == denoised_data1
 
 
 def test_DenoisingStrategy_Preprocess_Successfully():
-    df = deepcopy(test_df_func2)
-    latencies_only_test_data_2 = map(lambda x: x[0], significant_test_data_func2)
-    sqrt_sum_squared_latencies = math.sqrt(sum(map(lambda x: x**2, latencies_only_test_data_2)))
-    normed_latencies = list(map(lambda x: x[0] / sqrt_sum_squared_latencies, significant_test_data_func2))
-    expected_df = pd.DataFrame(normed_latencies, columns=["Latency"])
-    expected_df["Mag"] = df["Mag"]
+    test_data = deepcopy(noisy_data2)
+    latencies_only_test_data = [p.latency for p in test_data]
+    sum_latency = sum(latencies_only_test_data)
+    normed_latencies = [latency / sum_latency for latency in list(latencies_only_test_data)]
 
-    strategy = DenoisingStrategy("rightHemisphere", should_normalise=True, should_cluster_only_latency=True)
-    preprocessed_df = strategy._preprocess(df)
+    strategy = MaxPoolingStrategy(should_normalise=True, should_cluster_only_latency=True)
+    preprocessed_pairings = strategy._preprocess(test_data)
 
-    assert_frame_equal(expected_df, preprocessed_df)
+    assert [p for p in preprocessed_pairings] == normed_latencies
 
 
 def test_DenoisingStrategy_GetDenoisedTimeSeries_Successfully():
+    signif_best_data1 = list(filter(lambda x: x.logp_value < -10, best_data1))
     mocked_clusterer = MagicMock()
-    mocked_clusterer.labels_ = significant_test_data_func1_labels
-    strategy = DenoisingStrategy("rightHemisphere")
+    mocked_clusterer.labels_ = [0, 0, 0, -1, 1, 1]
+    strategy = MaxPoolingStrategy()
     strategy._clusterer = mocked_clusterer
-    actual = strategy._get_denoised_time_series(test_df_func1)
+    actual = strategy._get_denoised_time_series(signif_best_data1)
 
-    assert denoised_func1 == actual
-
-
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._perform_max_pooling")
-@patch("kymata.ippm.denoising_strategies.DenoisingStrategy._update_pairings")
-def test_DenoisingStrategy_Postprocess_Successfully(mock_update_pairings, mock_perform_max):
-    mock_update_pairings.return_value = denoised_test_hexels["func1"]
-
-    max_pooled_hexel = deepcopy(denoised_test_hexels["func1"])
-    max_pooled_hexel.right_best_pairings = [(30, 1e-100)]
-    mock_perform_max.return_value = max_pooled_hexel
-
-    strategy = DenoisingStrategy("rightHemisphere", should_max_pool=True)
-    actual_hexel = strategy._postprocess(noisy_test_hexels["func1"], denoised_func1)
-
-    assert actual_hexel == max_pooled_hexel
+    assert actual == denoised_data1
 
 
 def test_DenoisingStrategy_PerformMaxPooling_Successfully():
-    max_pooled_hexel = deepcopy(denoised_test_hexels["func1"])
-    max_pooled_hexel.right_best_pairings = [(30, 1e-100)]
+    max_pooled_spike = [ExpressionPoint(3, 30, "f1", -100)]
 
-    strategy = DenoisingStrategy("rightHemisphere")
-    actual_max_pooled = strategy._perform_max_pooling(denoised_test_hexels["func1"])
+    strategy = DenoisingStrategy(HEMI_RIGHT, n_timepoints=N_TIMEPOINTS, n_hexels=N_HEXELS)
+    actual_max_pooled = strategy._perform_max_pooling(denoised_data1)
 
-    assert actual_max_pooled.right_best_pairings == max_pooled_hexel.right_best_pairings
+    assert actual_max_pooled == max_pooled_spike

@@ -1,6 +1,6 @@
 import pytest
 
-from kymata.entities.iterables import all_equal
+from kymata.entities.iterables import all_equal, interleave
 
 
 @pytest.fixture
@@ -40,9 +40,45 @@ def test_nothing_is_equal():
 
 def test_list_of_arrays_is_equal():
     from numpy import array
-    assert all_equal([
-        array([0, 0]),
-        array([0, 0]),
-        array([0, 0]),
-        array([0, 0]),
-    ])
+
+    assert all_equal(
+        [
+            array([0, 0]),
+            array([0, 0]),
+            array([0, 0]),
+            array([0, 0]),
+        ]
+    )
+
+
+def test_interleave_equal_length_two_lists():
+    list_1 = [1, 2, 3, 4, 5]
+    list_2 = list("abcde")
+    interleaved = interleave(list_1, list_2)
+
+    assert interleaved == [1, "a", 2, "b", 3, "c", 4, "d", 5, "e"]
+
+
+def test_interleave_unequal_length_two_lists_first_shorter():
+    list_1 = [1, 2, 3]
+    list_2 = list("abcde")
+    interleaved = interleave(list_1, list_2)
+
+    assert interleaved == [1, "a", 2, "b", 3, "c"]
+
+
+def test_interleave_unequal_length_two_lists_second_shorter():
+    list_1 = [1, 2, 3, 4, 5]
+    list_2 = list("abc")
+    interleaved = interleave(list_1, list_2)
+
+    assert interleaved == [1, "a", 2, "b", 3, "c"]
+
+
+def test_interleave_equal_length_three_lists():
+    list_1 = [1, 2, 3, 4, 5]
+    list_2 = list("abcde")
+    list_3 = list("ABCDE")
+    interleaved = interleave(list_1, list_2, list_3)
+
+    assert interleaved == [1, "a", "A", 2, "b", "B", 3, "c", "C", 4, "d", "D", 5, "e", "E"]
