@@ -31,7 +31,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
         return fallback
 
 
-def main():
+def main(raw_args=None):
     _default_output_dir.mkdir(exist_ok=True, parents=False)
 
     parser = argparse.ArgumentParser(description="Gridsearch Params")
@@ -103,7 +103,7 @@ def main():
 
     parser.add_argument("--plot-top-channels", action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
 
     specified_config_file = Path(args.config)
     if specified_config_file.exists():
