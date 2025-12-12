@@ -29,7 +29,7 @@ def do_gridsearch(
         emeg_t_start: float,    # ms
         stimulus_shift_correction: float,  # seconds/second
         stimulus_delivery_latency: float,  # seconds
-        plot_location: Optional[Path] = None,
+        plot_location: Path,
         emeg_sample_rate: float = 1000,  # Hertz
         n_derangements: int = 1,
         seconds_per_split: float = 1,
@@ -167,6 +167,8 @@ def do_gridsearch(
             #     evidence_final = evidence_neg
             # posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))
 
+    np.save(plot_location / "posterior.npy", posterior_emeg)
+
     # '''load posterior'''
     # posterior_emeg = np.load('figures/posterior_emeg_all_posneg_250516.npy')
 
@@ -261,7 +263,7 @@ def do_gridsearch(
         plt.ylabel('evidence')
 
         plt.title(f'plausibility across latencies for all channel: {function_names[func]}')
-        save_dir = './figures/each function with all channels'
+        save_dir = plot_location
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         plt.savefig(os.path.join(save_dir, function_names[func] + '.png'))
