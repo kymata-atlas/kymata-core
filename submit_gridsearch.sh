@@ -23,12 +23,12 @@ source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset5.yaml \
   --input-stream tactile \
-  --transform-path 'predicted_function_contours/stimulisig_new' \
-  --transform-name LHSquareVib LHslowfluct RHSquareVib RHslowfluct  \
+  --transform-path 'predicted_function_contours/touchsim_indent_lstm' \
+  --transform-name LH_ident_lstm RH_ident_lstm  \
   --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/two_reps_without_11_thumb' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/two_reps_without_11_thumb' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
   --overwrite \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \
