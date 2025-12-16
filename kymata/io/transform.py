@@ -219,7 +219,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 func = place_holder[nn_neuron, :400_000]
             trans_name += f'_{str(nn_neuron)}'
 
-        elif 'salmonn' in str(transform_path_without_suffix):
+        elif 'salmonn' in str(transform_path_without_suffix) or 'qwen' in str(transform_path_without_suffix):
             for s in range(trans_len//30 + 1):
                 if 'omni' in str(transform_path_without_suffix):
                     if s == 0:
@@ -333,6 +333,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                                 place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                 k += 1
                                 # print('match')
+                    # import ipdb; ipdb.set_trace()
                     # assert k == len(asr_text) - 1, 'end of asr text not reached'
                 else:
                     timepoints = [0.225 + i * 0.08 for i in range(374)]  # first frame is at 225ms, then every 80ms
