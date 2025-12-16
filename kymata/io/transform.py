@@ -219,9 +219,9 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 func = place_holder[nn_neuron, :400_000]
             trans_name += f'_{str(nn_neuron)}'
 
-        elif 'salmonn' in str(transform_path_without_suffix) or 'qwen' in str(transform_path_without_suffix):
+        elif 'salmonn' in str(transform_path_without_suffix) or ('qwen' in str(transform_path_without_suffix) and 'decoder' in str(transform_path_without_suffix)):
             for s in range(trans_len//30 + 1):
-                if 'omni' in str(transform_path_without_suffix):
+                if 'salmonn_omni' in str(transform_path_without_suffix):
                     if s == 0:
                         if 'listen' not in str(transform_path_without_suffix):
                             func = np.load(Path(transform_path_without_suffix, f'segment_{s}-{trans_name}.npy'))[None, ...]
@@ -246,7 +246,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 asr_text = []
                 for s in range(trans_len//30 + 1):
                     # Read the content of the file
-                    if 'omni' in str(transform_path_without_suffix):
+                    if 'salmonn_omni' in str(transform_path_without_suffix):
                         with open(Path(transform_path_without_suffix, f'segment_{s}_wordpiece.txt'), 'r') as file:
                             content = file.read()
                     else:
