@@ -32,7 +32,7 @@ python kymata/invokers/run_gridsearch.py \
   --asr-option 'all' \
   --num-neurons 1280 \
   --mfa True \
-  --n-splits 411 \
+  --n-splits 400 \
   --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --overwrite
