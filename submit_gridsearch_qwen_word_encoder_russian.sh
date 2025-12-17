@@ -1,16 +1,16 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/qwen_russian/sensor/decoder/log/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/qwen_russian/sensor/decoder/log/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/qwen_russian/sensor/encoder/log/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/qwen_russian/sensor/encoder/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-28
+#SBATCH --array=0-31
 #SBATCH --exclusive
 
 layer_num=()
-for ((i=0; i<29; i++)); do
+for ((i=0; i<32; i++)); do
     layer_num+=("layer$i")
 done
 
@@ -26,15 +26,15 @@ python kymata/invokers/run_gridsearch.py \
   --config dataset3.yaml \
   --input-stream auditory \
   --plot-top-channels \
-  --transform-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/qwen2.5-omni-7b/decoder' \
+  --transform-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/qwen2.5-omni-7b/encoder' \
   --transform-name "${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --n-derangements 5 \
   --asr-option 'all' \
-  --num-neurons 3584 \
+  --num-neurons 1280 \
   --mfa True \
   --n-splits 411 \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/decoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/decoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --overwrite
 
   # --low-level-function \
