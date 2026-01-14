@@ -135,25 +135,62 @@ def do_gridsearch(
     for latency in range(0, emeg_end, latency_step):
         '''emeg_values start from emeg_t_start (-200)'''
         print('latency: ', latency)
+
+        # Cut the EMEG data for the current latency window
         emeg_values_cut = emeg_values[:, :,
                           audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
+
         for channel in range(n_channels):
             single_channel = emeg_values_cut[channel][0]
-            '''put my plausibility code here'''
-            diff_mat = stretched_samples - single_channel
+
+            # --- FIX 1: Normalize (Z-score) to compare SHAPE, not AMPLITUDE ---
+            # This prevents "quieter" functions from winning just because they are closer to 0.
+            # We add a tiny epsilon (1e-9) to avoid division by zero if a signal is flat.
+
+            # Normalize the channel data
+            channel_mean = np.mean(single_channel)
+            channel_std = np.std(single_channel)
+            single_channel_norm = (single_channel - channel_mean) / (channel_std + 1e-9)
+
+            # Normalize the function data (stretched_samples)
+            # We calculate mean/std along axis 1 (time) to normalize each function row independently
+            funcs_mean = np.mean(stretched_samples, axis=1, keepdims=True)
+            funcs_std = np.std(stretched_samples, axis=1, keepdims=True)
+            stretched_samples_norm = (stretched_samples - funcs_mean) / (funcs_std + 1e-9)
+
+            # --- Calculate Log-Likelihood (Evidence) ---
+            # We compare the normalized channel to the normalized functions (POSITIVE correlation)
+            diff_mat = stretched_samples_norm - single_channel_norm
             evidence = np.log(prior_hypothesis) + \
-                       -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)  # log posterior
-            single_channel_neg = - single_channel
-            diff_mat_neg = stretched_samples - single_channel_neg
+                       -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+
+            # We compare the normalized channel to the NEGATED normalized channel (NEGATIVE correlation)
+            # Note: Comparing (Func - (-Channel)) is mathematically same as (Func + Channel)
+            single_channel_neg_norm = -single_channel_norm
+            diff_mat_neg = stretched_samples_norm - single_channel_neg_norm
             evidence_neg = np.log(prior_hypothesis) + \
-                       -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-            evidence_final = np.ones(num_functions)/num_functions
-            for ct in range(len(evidence_final)):  # over transforms
+                           -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+
+            # --- Select Best Fit (Positive vs Negative Phase) ---
+            evidence_final = np.zeros(num_functions)
+            for ct in range(len(evidence_final)):
                 if evidence[ct] >= evidence_neg[ct]:
                     evidence_final[ct] = evidence[ct]
                 else:
                     evidence_final[ct] = evidence_neg[ct]
-            posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))  # avoid dividing by a minus number
+
+            # --- FIX 2: Softmax to convert Log-Likelihood to Probability ---
+            # 1. Subtract max to prevent overflow (numerical stability trick)
+            # 2. Exponentiate to get raw probability mass
+            # 3. Normalize so sum is 1.0
+
+            # This shifts the logs so the highest value is 0, making the exp() result 1.0 for the max.
+            # Everything else scales relative to that.
+            max_evidence = np.max(evidence_final)
+            raw_probs = np.exp(evidence_final - max_evidence)
+
+            # Normalize to get actual probabilities (sum = 1)
+            posterior_emeg[channel, latency//latency_step] = raw_probs / np.sum(raw_probs) # avoid dividing by a minus number
             # diff_mat = function_mat_x_paired - single_channel
             # evidence = np.log(prior_hypothesis_0_paired) + \
             #            -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
