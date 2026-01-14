@@ -97,7 +97,7 @@ def do_gridsearch(
 
     '''might need to do drift correction here'''
 
-    assumed_std_noise_of_observations = 0.5
+    assumed_std_noise_of_observations = 40
 
     prior_hypothesis = np.ones(num_functions)/num_functions
 
@@ -295,9 +295,10 @@ def do_gridsearch(
             # plt.vlines(max_x, ymin, max_y, colors='r', linestyles='--')
         pass
         plt.xlim(-200, 801)
+        plt.ylim(0, 1)
         plt.xticks(np.arange(-200, 801, 100))
         plt.xlabel('latency')
-        plt.ylabel('evidence')
+        plt.ylabel('probability')
 
         plt.title(f'plausibility across latencies for all channel: {function_names[func]}')
         save_dir = plot_location
