@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from logging import getLogger
 from math import inf
-from typing import Collection, Optional
+from typing import Collection, Optional, Iterable
 
 from networkx import DiGraph
 from networkx.utils import graphs_equal
@@ -41,7 +41,7 @@ class IPPMNode:
         return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', latency='{self.latency:.3f}', KID='{self.KID}')"
 
 
-def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
+def node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
     """
     Canonical naming rules for IPPMNodes.
 
@@ -105,7 +105,7 @@ class IPPMGraph:
         graph = DiGraph()
 
         # Create nodes with metadata from real data points
-        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()  # for testing
+        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()
         for block, points in points_by_block.items():
             points_by_transform = group_points_by_transform(points)
             for transform, points_this_transform in points_by_transform.items():
@@ -113,7 +113,7 @@ class IPPMGraph:
                     raise ValueError(f"Points supplied for transform {transform}, not present in transform list.")
                 for point in sorted(points_this_transform, key=lambda p: p.latency):
                     graph.add_node(IPPMNode(
-                        node_id=_node_id_from_point(point=point, block=block, input_idx=None),
+                        node_id=node_id_from_point(point=point, block=block, input_idx=None),
                         is_input=False,
                         hemisphere=block,
                         channel=point.channel,
@@ -142,7 +142,7 @@ class IPPMGraph:
                 input_idx = input_node_idxs[block]
                 pseudo_point = input_stream_pseudo_expression_point(input_transform)
                 node = IPPMNode(
-                    node_id=_node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
+                    node_id=node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
                     is_input=True,
                     hemisphere=block,
                     channel=input_idx,
@@ -214,6 +214,19 @@ class IPPMGraph:
         if self.candidate_transform_list != other.candidate_transform_list:
             return False
         return graphs_equal(self.graph_full, other.graph_full)
+
+    def subgraph(self, transforms: Iterable[str]) -> IPPMGraph:
+        """The IPPMGraph formed by restricting to the subset of transforms provided."""
+        new_points = {
+            block: [
+                point
+                for _transform, points_this_transform in grouped_points_this_block.items()
+                for point in points_this_transform
+                if point.transform in transforms
+            ]
+            for block, grouped_points_this_block in self._points_by_transform.items()
+        }
+        return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
 
     @property
     def transforms(self) -> set[str]:
