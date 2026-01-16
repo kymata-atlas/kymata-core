@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from logging import getLogger
 from math import inf
-from typing import Collection, Optional
+from typing import Collection, Optional, Iterable
 
 from networkx import DiGraph
 from networkx.utils import graphs_equal
@@ -105,7 +105,7 @@ class IPPMGraph:
         graph = DiGraph()
 
         # Create nodes with metadata from real data points
-        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()  # for testing
+        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()
         for block, points in points_by_block.items():
             points_by_transform = group_points_by_transform(points)
             for transform, points_this_transform in points_by_transform.items():
@@ -214,6 +214,18 @@ class IPPMGraph:
         if self.candidate_transform_list != other.candidate_transform_list:
             return False
         return graphs_equal(self.graph_full, other.graph_full)
+
+    def subgraph(self, transforms: Iterable[str]) -> IPPMGraph:
+        """The IPPMGraph formed by restricting to the subset of transforms provided."""
+        new_points = {
+            block: [
+                point
+                for _transform, points_this_transform in grouped_points_this_block.items()
+                for point in points_this_transform
+            ]
+            for block, grouped_points_this_block in self._points_by_transform.values()
+        }
+        return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
 
     @property
     def transforms(self) -> set[str]:
