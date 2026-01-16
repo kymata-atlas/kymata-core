@@ -223,7 +223,7 @@ class IPPMGraph:
                 for _transform, points_this_transform in grouped_points_this_block.items()
                 for point in points_this_transform
             ]
-            for block, grouped_points_this_block in self._points_by_transform.values()
+            for block, grouped_points_this_block in self._points_by_transform.items()
         }
         return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
 
