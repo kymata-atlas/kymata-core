@@ -222,6 +222,7 @@ class IPPMGraph:
                 point
                 for _transform, points_this_transform in grouped_points_this_block.items()
                 for point in points_this_transform
+                if point.transform in transforms
             ]
             for block, grouped_points_this_block in self._points_by_transform.items()
         }
