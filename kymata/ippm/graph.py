@@ -41,7 +41,7 @@ class IPPMNode:
         return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', latency='{self.latency:.3f}', KID='{self.KID}')"
 
 
-def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
+def node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
     """
     Canonical naming rules for IPPMNodes.
 
@@ -113,7 +113,7 @@ class IPPMGraph:
                     raise ValueError(f"Points supplied for transform {transform}, not present in transform list.")
                 for point in sorted(points_this_transform, key=lambda p: p.latency):
                     graph.add_node(IPPMNode(
-                        node_id=_node_id_from_point(point=point, block=block, input_idx=None),
+                        node_id=node_id_from_point(point=point, block=block, input_idx=None),
                         is_input=False,
                         hemisphere=block,
                         channel=point.channel,
@@ -142,7 +142,7 @@ class IPPMGraph:
                 input_idx = input_node_idxs[block]
                 pseudo_point = input_stream_pseudo_expression_point(input_transform)
                 node = IPPMNode(
-                    node_id=_node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
+                    node_id=node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
                     is_input=True,
                     hemisphere=block,
                     channel=input_idx,
