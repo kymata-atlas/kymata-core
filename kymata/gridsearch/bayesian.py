@@ -97,7 +97,7 @@ def do_gridsearch(
 
     '''might need to do drift correction here'''
 
-    assumed_std_noise_of_observations = 0.5
+    assumed_std_noise_of_observations = 30
 
     prior_hypothesis = np.ones(num_functions)/num_functions
 
@@ -108,7 +108,7 @@ def do_gridsearch(
     posterior_emeg = np.zeros((n_channels, num_latencies, num_functions))
 
     function_mat = np.vstack(list(transform_data.values()))
-    function_names = list(transform_data.keys())
+    function_names = list(transform_data.keys()) + ["Null Hypothesis"]
 
     '''to discuss with kaibo: are different latencies independent between each other'''
 
@@ -131,29 +131,94 @@ def do_gridsearch(
     # put drift correction into matrix format
     # try both stretch and squeeze
 
+    # UPDATE: Set a "Loudness" factor for your hypothesis.
+    # 1.0 = Expect Perfect Correlation (Requires r > 0.5 to beat Null)
+    # 0.3 = Expect Weak Correlation (Requires r > 0.15 to beat Null)
+    prediction_scale = 0.2
+
+    # just priors to account for the extra "Null" hypothesis
+    # If we have 11 functions, we now have 12 hypotheses.
+    # You can tune this: specific priors for functions vs null if you want.
+    num_total_hypotheses = num_functions + 1
+    prior_hypothesis = np.ones(num_functions) / num_total_hypotheses
+    prior_null = 1.0 / num_total_hypotheses
+
     '''all function posterior'''
+    # We need to expand the storage to hold the extra Null hypothesis column
+    # Shape: (n_channels, num_latencies, num_functions + 1)
+    posterior_emeg = np.zeros((n_channels, num_latencies, num_functions + 1))
+
     for latency in range(0, emeg_end, latency_step):
         '''emeg_values start from emeg_t_start (-200)'''
         print('latency: ', latency)
+
+        # Cut the EMEG data for the current latency window
         emeg_values_cut = emeg_values[:, :,
                           audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
+
         for channel in range(n_channels):
             single_channel = emeg_values_cut[channel][0]
-            '''put my plausibility code here'''
-            diff_mat = stretched_samples - single_channel
+
+            # --- FIX 1: Normalize (Z-score) to compare SHAPE, not AMPLITUDE ---
+            # This prevents "quieter" functions from winning just because they are closer to 0.
+            # We add a tiny epsilon (1e-9) to avoid division by zero if a signal is flat.
+
+            # Normalize the channel data
+            channel_mean = np.mean(single_channel)
+            channel_std = np.std(single_channel)
+            single_channel_norm = (single_channel - channel_mean) / (channel_std + 1e-9)
+
+            # Normalize the function data (stretched_samples)
+            # We calculate mean/std along axis 1 (time) to normalize each function row independently
+            funcs_mean = np.mean(stretched_samples, axis=1, keepdims=True)
+            funcs_std = np.std(stretched_samples, axis=1, keepdims=True)
+            stretched_samples_norm = (stretched_samples - funcs_mean) / (funcs_std + 1e-9)
+
+            # --- Calculate Log-Likelihood (Evidence) ---
+            # We compare the normalized channel to the normalized functions (POSITIVE correlation)
+
+            # --- APPLY SCALING HERE ---
+            # We shrink the predictor to match the expected low correlation (r ~ 0.2)
+            scaled_predictors = stretched_samples_norm * prediction_scale
+
+            # --- 1. Evidence for Actual Functions ---
+            # Compare Data vs Scaled Predictor
+            diff_mat = scaled_predictors - single_channel_norm
             evidence = np.log(prior_hypothesis) + \
-                       -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)  # log posterior
-            single_channel_neg = - single_channel
-            diff_mat_neg = stretched_samples - single_channel_neg
+                       -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+
+            # We compare the normalized channel to the NEGATED normalized channel (NEGATIVE correlation)
+            # Note: Comparing (Func - (-Channel)) is mathematically same as (Func + Channel)
+            single_channel_neg_norm = -single_channel_norm
+            diff_mat_neg = scaled_predictors - single_channel_neg_norm
             evidence_neg = np.log(prior_hypothesis) + \
-                       -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
-            evidence_final = np.ones(num_functions)/num_functions
-            for ct in range(len(evidence_final)):  # over transforms
-                if evidence[ct] >= evidence_neg[ct]:
-                    evidence_final[ct] = evidence[ct]
-                else:
-                    evidence_final[ct] = evidence_neg[ct]
-            posterior_emeg[channel, latency//latency_step] = evidence_final / (-np.sum(evidence_final))  # avoid dividing by a minus number
+                           -np.sum((diff_mat_neg / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
+
+            # Combine Positive/Negative (Max)
+            evidence_functions = np.zeros(num_functions)
+            for ct in range(len(evidence_functions)):
+                evidence_functions[ct] = max(evidence[ct], evidence_neg[ct])
+
+            # --- 2. Evidence for Null Hypothesis (No Signal) ---
+            # The Null Hypothesis predicts "0" (no correlation).
+            # In Z-score space, this compares the Data to a Zero Vector.
+            # SSE = sum((0 - Data_norm)^2) = sum(Data_norm^2)
+            # Since Data is Z-scored, sum(Data_norm^2) is approx N (number of samples).
+
+            diff_null = np.zeros_like(single_channel_norm) - single_channel_norm
+            evidence_null = np.log(prior_null) + \
+                            -np.sum((diff_null / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2)
+
+            # --- 3. Combine All Hypotheses ---
+            # Append Null Evidence to the end of the function evidence
+            evidence_final = np.append(evidence_functions, evidence_null)
+
+            # --- 4. Softmax (Probability Conversion) ---
+            max_evidence = np.max(evidence_final)
+            raw_probs = np.exp(evidence_final - max_evidence)
+
+            # Normalize to get actual probabilities (sum = 1)
+            posterior_emeg[channel, latency//latency_step] = raw_probs / np.sum(raw_probs) # avoid dividing by a minus number
             # diff_mat = function_mat_x_paired - single_channel
             # evidence = np.log(prior_hypothesis_0_paired) + \
             #            -np.sum((diff_mat / (math.sqrt(2) * assumed_std_noise_of_observations)) ** 2, axis=1)
@@ -170,7 +235,7 @@ def do_gridsearch(
     np.save(plot_location / "posterior.npy", posterior_emeg)
 
     # '''load posterior'''
-    # posterior_emeg = np.load('figures/posterior_emeg_all_posneg_250516.npy')
+    # posterior_emeg = np.load('plot_location/posterior.npy')
 
     # '''random function'''
     # mean = np.mean(stretched_samples[0])
@@ -242,7 +307,7 @@ def do_gridsearch(
     # plt.close()
 
     '''ensemble: each function with all channels'''
-    for func in range(num_functions):
+    for func in range(len(function_names)):
         evidence_of_function_across_latencies = posterior_emeg[:, :, func]
         for chann in range(n_channels):
             if chann == 25:
@@ -258,9 +323,10 @@ def do_gridsearch(
             # plt.vlines(max_x, ymin, max_y, colors='r', linestyles='--')
         pass
         plt.xlim(-200, 801)
+        plt.ylim(0, 1)
         plt.xticks(np.arange(-200, 801, 100))
         plt.xlabel('latency')
-        plt.ylabel('evidence')
+        plt.ylabel('probability')
 
         plt.title(f'plausibility across latencies for all channel: {function_names[func]}')
         save_dir = plot_location
