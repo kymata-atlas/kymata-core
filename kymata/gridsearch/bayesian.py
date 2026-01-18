@@ -108,7 +108,7 @@ def do_gridsearch(
     posterior_emeg = np.zeros((n_channels, num_latencies, num_functions))
 
     function_mat = np.vstack(list(transform_data.values()))
-    function_names = list(transform_data.keys())
+    function_names = list(transform_data.keys()) + ["Null Hypothesis"]
 
     '''to discuss with kaibo: are different latencies independent between each other'''
 
@@ -307,7 +307,7 @@ def do_gridsearch(
     # plt.close()
 
     '''ensemble: each function with all channels'''
-    for func in range(num_functions):
+    for func in range(len(function_names)):
         evidence_of_function_across_latencies = posterior_emeg[:, :, func]
         for chann in range(n_channels):
             if chann == 25:
