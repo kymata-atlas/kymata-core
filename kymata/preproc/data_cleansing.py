@@ -7,6 +7,7 @@ import mne
 from numpy import nanmin
 from numpy.typing import NDArray
 from pandas import DataFrame, Index
+from pymatreader import read_mat
 from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -18,8 +19,8 @@ from kymata.io.file import PathType
 
 _logger = getLogger(__name__)
 
-CHANNEL_TRIGGER = "STI101"
-TRIGGER_REP_ONSET = 3
+CHANNEL_TRIGGER = "Trigger"
+TRIGGER_REP_ONSET = 5
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(
@@ -52,7 +53,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
         for run in range(1, n_runs + 1):
             # set filename. (Use .fif.gz extension to use gzip to compress)
             saved_maxfiltered_path = Path(
-                processed_path, f"{participant}_run{run!s}_raw_sss.fif"
+                processed_path, f"{participant}_run{run!s}_raw.fif"
             )
 
             if (
@@ -73,131 +74,255 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 # Load data
                 print_with_color("   Loading Raw data...", Fore.GREEN)
 
-                raw_fif_data = mne.io.Raw(
-                    Path(
-                        raw_emeg_path, participant, f"{participant}_run{run!s}_raw.fif"
-                    ),
-                    preload=True,
+                # 1. Load the raw data arrays directly from the .mat file
+                #    This ignores the messy 'grad' structure that is causing the crash.
+                ft_file_path = Path(raw_emeg_path, participant, f"{participant}_run{run!s}_raw.mat")
+                mat_data = read_mat(ft_file_path)
+
+                # 2. Extract the Data and Sampling Rate
+                #    FieldTrip structures usually store data in: struct.trial{1}
+                #    Note: FieldTrip data is (n_channels, n_samples)
+                data_array = mat_data['rawData']['trial']
+                sfreq = mat_data['rawData']['fsample']
+
+                # 3. Create the Channel Info manually
+                #    We need to give MNE a list of channel names and types.
+                ch_names = mat_data['rawData']['label']
+
+                #    Note: FieldTrip calls this 'chantype' or sometimes 'label' context
+                ft_types = mat_data['rawData']['chantype']
+
+                # Ensure it's a list of strings (handling pymatreader's specific output)
+                if not isinstance(ft_types, list):
+                    ft_types = ft_types.tolist()
+
+                # 2. Define your Translation Map
+                #    Keys = What is in the .mat file
+                #    Values = What MNE expects ('mag', 'grad', 'ref_meg', 'eeg', 'stim', 'misc')
+                type_map = {
+                    'MEG': 'mag',
+                    'MEG REF': 'ref_meg',
+                    'Stim': 'stim',  # Common in FieldTrip, maps to MNE stimulus
+                    'EEG': 'eeg'  # Just in case
+                }
+
+                # 3. Convert the list
+                #    We use .get(t, 'misc') to safely handle any string we didn't anticipate.
+                #    'misc' is a safe catch-all in MNE that won't cause crashes.
+                mne_types = [type_map.get(t, 'misc') for t in ft_types]
+
+                # 3. Apply Scaling ONLY to Magnetic Channels
+                #    We multiply mag/ref channels by 1e-15 (fT -> T)
+                #    We leave 'stim'/'misc' alone (preserving Volts)
+                tesla_scaling_factor = 1e-15
+
+                # Find indices
+                mag_indices = [i for i, t in enumerate(mne_types) if t in ['mag', 'ref_meg']]
+
+                # Apply scaling to those rows only
+                data_array[mag_indices, :] *= tesla_scaling_factor
+
+                # 4. Create the Info object using the specific list
+                info = mne.create_info(
+                    ch_names=ch_names,
+                    sfreq=sfreq,
+                    ch_types=mne_types  # Pass the full list here
                 )
 
-                # Rename any channels that require it, and their type
-                recording_config = load_config(config_path)
-                ecg_and_eog_channel_name_and_type_overwrites = recording_config[
-                    "ECG_and_EOG_channel_name_and_type_overwrites"
-                ]
 
-                # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
-                ecg_and_eog_channel_type_overwrites = {}
-                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
-                    ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
-                raw_fif_data.set_channel_types(
-                    ecg_and_eog_channel_type_overwrites, verbose=None
+                # ---------------- Create the Raw object-----------
+                raw_fif_data = mne.io.RawArray(data_array, info)
+
+                # --------------------add in locations-------------
+
+                # 1. Extract the arrays
+                #    Make sure to match these names to what you found in the print statement above!
+                ft_pos = mat_data['rawData']['grad']['coilpos']
+                ft_ori = mat_data['rawData']['grad']['coilori']
+
+                # rescale 0.01
+                scaling_factor_pos = 0.01  # Example: 0.01 if source is cm, 1.0 if meters
+                ft_pos = ft_pos * scaling_factor_pos
+
+                # 3. Inject into MNE Info
+                #    MNE stores this in a specific 12-element vector called 'loc' for each channel.
+                #    [r0_x, r0_y, r0_z, ex_x, ex_y, ex_z, ey_x, ey_y, ey_z, ez_x, ez_y, ez_z]
+                #    We need:
+                #       Indices 0-2: Position (r0)
+                #       Indices 9-11: Orientation (ez - the normal vector)
+
+                # 1. Prepare FieldTrip Labels for Lookup
+                #    We need the list of names that correspond to the positions in 'grad'
+                ft_labels = mat_data['rawData']['grad']['label']
+
+                #    (Clean up pymatreader output if necessary)
+                if not isinstance(ft_labels, list):
+                    ft_labels = ft_labels.tolist()
+
+                # 2. Loop through MNE channels and find their match
+                for i, ch_name in enumerate(raw_fif_data.ch_names):
+
+                    # Check if this MNE channel exists in the FieldTrip geometry list
+                    if ch_name in ft_labels:
+
+                        # Find which index this channel is at in the FieldTrip arrays
+                        ft_index = ft_labels.index(ch_name)
+
+                        # Get the position and orientation for THIS specific index
+                        this_pos = ft_pos[ft_index]
+                        this_ori = ft_ori[ft_index]
+
+                        # Inject into MNE
+                        ch_dict = raw_fif_data.info['chs'][i]
+
+                        # Position (first 3)
+                        ch_dict['loc'][:3] = this_pos
+
+                        # Orientation (last 3 - normal vector)
+                        ch_dict['loc'][9:] = this_ori
+
+                        # Save back to info
+                        raw_fif_data.info['chs'][i] = ch_dict
+
+                    else:
+                        # This handles Triggers, Stims, or missing sensors safely
+                        print(f"Skipping geometry for channel: {ch_name} (Not found in 'grad')")
+
+                print("Geometry injection complete.")
+
+
+                # Print unique types present in the data
+                unique_types = set(raw_fif_data.get_channel_types())
+                print(f"Unique channel types: {unique_types}")
+
+                # Print the first 10 channel names and their types
+                print("\nAll Channels:")
+                for name in raw_fif_data.ch_names[:]:
+                    # get_channel_types(picks=...) returns a list, so we take the first element [0]
+                    ch_type = raw_fif_data.get_channel_types(picks=[name])[0]
+                    print(f"  {name}: {ch_type}")
+
+                # Optional: Set the approximate date if needed (OPM systems often lack this in the header)
+                # raw_fif_data.set_meas_date(None)
+
+                raw_fif_data = raw_fif_data.resample(
+                    sfreq=1000,
+                    npad='auto'
                 )
 
-                # Set EOG and ECG names for clarity
-                ecg_and_eog_channel_name_overwrites = {}
-                for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
-                    ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
-                raw_fif_data.rename_channels(
-                    ecg_and_eog_channel_name_overwrites, allow_duplicates=False
-                )
+
+           #     # Set EOG and ECG types for clarity (normally shouldn't change anything, but we do it anyway)
+           #     ecg_and_eog_channel_type_overwrites = {}
+           #     for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+           #         ecg_and_eog_channel_type_overwrites[key] = value["new_type"]
+           #     raw_fif_data.set_channel_types(
+           #         ecg_and_eog_channel_type_overwrites, verbose=None
+           #     )
+
+            #    # Set EOG and ECG names for clarity
+            #    ecg_and_eog_channel_name_overwrites = {}
+            #    for key, value in ecg_and_eog_channel_name_and_type_overwrites.items():
+            #        ecg_and_eog_channel_name_overwrites[key] = value["new_name"]
+            #    raw_fif_data.rename_channels(
+            #        ecg_and_eog_channel_name_overwrites, allow_duplicates=False
+            #    )
 
                 # Set bad channels (manually)
-                print_with_color("   Setting bad channels...", Fore.GREEN)
-                print_with_color("   ...manual", Fore.GREEN)
+            #    print_with_color("   Setting bad channels...", Fore.GREEN)
+            #    print_with_color("   ...manual", Fore.GREEN)
 
-                raw_fif_data.info["bads"] = recording_config["bad_channels"]
+            #    raw_fif_data.info["bads"] = recording_config["bad_channels"]
 
-                response = input_with_color(
-                    "Would you like to see the raw data? Recommended if you want to confirm"
-                    + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    + " (y/n)",
-                    Fore.MAGENTA,
-                )
-                if response == "y":
-                    print("...Plotting Raw data.")
-                    mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
-                else:
-                    print("...assuming you want to continue without looking at the raw data.")
-
+            #    response = input_with_color(
+            #        "Would you like to see the raw data? Recommended if you want to confirm"
+            #        + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+            #        + " (y/n)",
+            #        Fore.MAGENTA,
+            #    )
+            #    if response == "y":
+            #        print("...Plotting Raw data.")
+            #        mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
+            #    else:
+            #        print("...assuming you want to continue without looking at the raw data.")
+#
                 # Write back selected bad channels back to participant's config .yaml file
-                modify_param_config(
-                    config_path,
-                    "bad_channels",
-                    [str(item) for item in sorted(raw_fif_data.info["bads"])],
-                )
-
+            #    modify_param_config(
+            #        config_path,
+            #        "bad_channels",
+            #        [str(item) for item in sorted(raw_fif_data.info["bads"])],
+            #    )
+#
                 # Get the head positions
-                chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
-                chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
-                head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
+            #    chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw_fif_data)
+            #    chpi_locs = mne.chpi.compute_chpi_locs(raw_fif_data.info, chpi_amplitudes)
+            #    head_pos_data = mne.chpi.compute_head_pos(raw_fif_data.info, chpi_locs, verbose=True)
 
-                print_with_color("   Removing CHPI ...", Fore.GREEN)
+            #    print_with_color("   Removing CHPI ...", Fore.GREEN)
 
                 # Remove hpi & line
-                raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
+            #    raw_fif_data = mne.chpi.filter_chpi(raw_fif_data, include_line=False)
 
-                print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
+            #    print_with_color("   Removing mains component (50Hz and harmonics) from MEG & EEG...", Fore.GREEN)
 
-                raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                #raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
 
                 # note that EEG and MEG do not have the same frequencies, so we remove them seperately
                 meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
-                meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
+                meg_freqs = (220, 250, 441, 482)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
-                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+#                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+#                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+#                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
                 psd_checks_dir.mkdir(exist_ok=True)
                 fig.savefig(Path(psd_checks_dir,f"{participant}_run{run!s}_power_spectral_density_after_notch_filters.png"))
 
-                if automatic_bad_channel_detection_requested:
-                    print_with_color("   ...automatic", Fore.GREEN)
-                    raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
+            #    if automatic_bad_channel_detection_requested:
+            #        print_with_color("   ...automatic", Fore.GREEN)
+            #        raw_fif_data = apply_automatic_bad_channel_detection(raw_fif_data, empty_room_estimate_year)
 
                 # Apply SSS and movement compensation
-                print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
+            #    print_with_color("   Applying SSS and movement compensation...", Fore.GREEN)
 
-                fine_cal_file = str(Path(Path(__file__).parent.parent,
-                        "data",
-                        "cbu_specific_files/SSS/sss_cal_"
-                        + empty_room_estimate_year
-                        + ".dat",))
-                crosstalk_file = str(Path(Path(__file__).parent.parent,
-                        "data",
-                        "cbu_specific_files/SSS/ct_sparse_"
-                        + empty_room_estimate_year
-                        + ".fif"))
+            #    fine_cal_file = str(Path(Path(__file__).parent.parent,
+            #            "data",
+            #            "cbu_specific_files/SSS/sss_cal_"
+            #            + empty_room_estimate_year
+            #            + ".dat",))
+            #    crosstalk_file = str(Path(Path(__file__).parent.parent,
+            #            "data",
+            #            "cbu_specific_files/SSS/ct_sparse_"
+            #            + empty_room_estimate_year
+            #            + ".fif"))
 
-                if not supress_excessive_plots_and_prompts:
-                    mne.viz.plot_head_positions(
-                        head_pos_data,
-                        mode="field",
-                        destination=raw_fif_data.info["dev_head_t"],
-                        info=raw_fif_data.info,
-                    )
+            #    if not supress_excessive_plots_and_prompts:
+            #        mne.viz.plot_head_positions(
+            #            head_pos_data,
+            #            mode="field",
+            #            destination=raw_fif_data.info["dev_head_t"],
+            #            info=raw_fif_data.info,
+            #        )
 
-                raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
-                    raw_fif_data,
-                    cross_talk=crosstalk_file,
-                    calibration=fine_cal_file,
-                    head_pos=head_pos_data,
-                    coord_frame="head",
-                    st_correlation=0.980,
-                    st_duration=10,
-                    destination=(0, 0, 0.04),
-                    # note that using extended_proj/eSSS makes no difference
-                    verbose=True,
-                )
+            #    raw_fif_data_sss_movecomp_tr = mne.preprocessing.maxwell_filter(
+            #        raw_fif_data,
+            #        cross_talk=crosstalk_file,
+            #        calibration=fine_cal_file,
+            #        head_pos=head_pos_data,
+            ##        coord_frame="head",
+            #        st_correlation=0.980,
+            #        st_duration=10,
+            #        destination=(0, 0, 0.04),
+            #        # note that using extended_proj/eSSS makes no difference
+            #        verbose=True,
+            #    )
 
-                fig = raw_fif_data_sss_movecomp_tr.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
+                fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 fig.savefig(Path(psd_checks_dir, f"{participant}_run{run!s}_power_spectral_density_aftermaxfilter.png"))
 
-                raw_fif_data_sss_movecomp_tr.save(saved_maxfiltered_path, fmt="short")
+                raw_fif_data.save(saved_maxfiltered_path, fmt="double")
 
 
 def run_second_pass_cleansing_and_eog_removal(
@@ -244,7 +369,7 @@ def run_second_pass_cleansing_and_eog_removal(
                     + participant
                     + "_run"
                     + str(run)
-                    + "_raw_sss.fif"
+                    + "_raw.fif"
                 )
 
                 # Load data
@@ -274,65 +399,9 @@ def run_second_pass_cleansing_and_eog_removal(
                     "Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"])
                 )
 
-                # Channels marked as “bad” have been effectively repaired by SSS,
-                # eliminating the need to perform MEG interpolation.
-
-                raw_fif_data_sss_movecomp_tr = (
-                    raw_fif_data_sss_movecomp_tr.interpolate_bads(
-                        reset_bads=True, mode="accurate"
-                    )
-                )
-
-                # Use common average reference, not the nose reference.
-                print_with_color("   Use common average EEG reference...", Fore.GREEN)
-
-                raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
-
-                # remove very slow drift
-                print_with_color("   Removing slow drift...", Fore.GREEN)
                 raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
-                    l_freq=0.1, h_freq=None, picks=None
+                    l_freq=0.1, h_freq=250, picks=None
                 )
-
-                # Remove ECG, VEOH and HEOG
-
-                if remove_ecg or remove_veoh_and_heog:
-                    # remove both frequencies faster than 40Hz and slow drift less than 1hz
-                    filt_raw = raw_fif_data_sss_movecomp_tr.copy().filter(
-                        l_freq=1.0, h_freq=40
-                    )
-
-                    ica = mne.preprocessing.ICA(
-                        n_components=30,
-                        method="fastica",
-                        max_iter="auto",
-                        random_state=97,
-                    )
-                    ica.fit(filt_raw)
-
-                    explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
-                    for channel_type, ratio in explained_var_ratio.items():
-                        print(
-                            f"   Fraction of {channel_type} variance explained by all components: "
-                            f"   {ratio}"
-                        )
-
-                    ica.exclude = []
-
-                    if supress_excessive_plots_and_prompts:
-                        _remove_ecg_eog(filt_raw, ica)
-
-                    else:
-                        if remove_ecg:
-                            _remove_ecg(filt_raw, ica)
-
-                        if remove_veoh_and_heog:
-                            _remove_veoh_and_heog(filt_raw, ica)
-
-                    ica.apply(raw_fif_data_sss_movecomp_tr)
-
-                    if not supress_excessive_plots_and_prompts:
-                        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr)
 
                 raw_fif_data_sss_movecomp_tr.save(
                     Path(
@@ -681,6 +750,27 @@ def create_trialwise_data(
             if os.path.isfile(raw_path):
                 raw = mne.io.Raw(raw_path, preload=True)
                 cleaned_raws.append(raw)
+
+        for i, raw in enumerate(cleaned_raws):
+                print(f"File {i}: {raw.info['nchan']} channels")
+
+        # Convert channel lists to sets for easy comparison
+        ch_set_0 = set(cleaned_raws[0].ch_names)
+        ch_set_1 = set(cleaned_raws[1].ch_names)
+
+        # Check what is in File 0 but MISSING in File 1
+        diff_0 = ch_set_0 - ch_set_1
+        if diff_0:
+            print(f"Channels in File 0 but NOT in File 1: {diff_0}")
+
+        # Check what is in File 1 but MISSING in File 0
+        diff_1 = ch_set_1 - ch_set_0
+        if diff_1:
+            print(f"Channels in File 1 but NOT in File 0: {diff_1}")
+
+        cleaned_raws[0].drop_channels(['LP14z'])
+        cleaned_raws[0].drop_channels(['RT08z'])
+        cleaned_raws[1].drop_channels(['RF02z'])
 
         raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
