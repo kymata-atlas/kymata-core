@@ -3,7 +3,7 @@ from copy import deepcopy, copy
 import pytest
 
 from kymata.entities.expression import ExpressionPoint, BLOCK_SCALP
-from kymata.ippm.graph import IPPMGraph, _node_id_from_point, IPPMConnectionStyle, IPPMNode
+from kymata.ippm.graph import IPPMGraph, node_id_from_point, IPPMConnectionStyle, IPPMNode
 from kymata.ippm.hierarchy import TransformHierarchy, CandidateTransformList
 
 
@@ -206,7 +206,7 @@ def test_ippmgraph_last_to_first():
     for p in points:
         # Check if the IPPMNode corresponding to the ExpressionPoint is in ftl.nodes
         # This requires reconstructing the IPPMNode as the node_id now includes block information
-        node_id_for_point = _node_id_from_point(p, BLOCK_SCALP, None)
+        node_id_for_point = node_id_from_point(p, BLOCK_SCALP, None)
         assert any(n.node_id == node_id_for_point for n in ftl.nodes)
 
     for inp in inputs:
@@ -259,7 +259,7 @@ def test_ippmgraph_points_for_transform(sample_hierarchy, sample_points):
 
 def node_from_point(point: ExpressionPoint, hemi: str) -> IPPMNode:
     return IPPMNode(
-        node_id=_node_id_from_point(point, block=hemi, input_idx=None),
+        node_id=node_id_from_point(point, block=hemi, input_idx=None),
         is_input=False,
         hemisphere=hemi,
         channel=point.channel,

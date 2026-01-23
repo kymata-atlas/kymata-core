@@ -4,7 +4,8 @@ from typing import Any
 from networkx.relabel import relabel_nodes
 
 from kymata.entities.expression import (
-    BLOCK_MERGED, ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT)
+    BLOCK_MERGED, ExpressionSet, HexelExpressionSet, SensorExpressionSet, BLOCK_SCALP, BLOCK_LEFT, BLOCK_RIGHT,
+    ExpressionPoint)
 from kymata.io.atlas import API_URL, verify_kids
 from kymata.io.json import NumpyJSONEncoder, serialise_graph
 from kymata.ippm.denoising_strategies import (
@@ -28,14 +29,15 @@ class IPPM:
     from an expression set.
     """
     def __init__(self,
-                 expression_set: ExpressionSet,
+                 expression_set: ExpressionSet | list[ExpressionPoint],
                  candidate_transform_list: CandidateTransformList | TransformHierarchy,
                  denoiser: str | None = _default_denoiser,
                  merge_before_denoising: bool = False,
                  **kwargs: dict[str, Any]):
         """
         Args:
-           expression_set (ExpressionSet): The ExpressionSet from which to build the IPPM.
+           expression_set (ExpressionSet | list[ExpressionPoint]): The ExpressionSet from which to build the IPPM.
+               Alternatively supply a list of ExpressionPoints to build an IPPM from them directly.
            candidate_transform_list (CandidateTransformList): The CTL (i.e. underlying hypothetical IPPM) to be applied
                to the expression set.
            denoiser (str, optional): The denoising method to be applied to the expression set. Default is None.
@@ -50,11 +52,20 @@ class IPPM:
         # Validate CTL
         if not isinstance(candidate_transform_list, CandidateTransformList):
             candidate_transform_list = CandidateTransformList(candidate_transform_list)
-        for transform in candidate_transform_list.transforms - candidate_transform_list.inputs:
-            if transform not in expression_set.transforms:
-                raise ValueError(f"Transform {transform} from hierarchy not in expression set")
+        # For actual ExpressionSets, we can check if the ES's transform list matches the CTL.
+        # For lists of points, we can't because there may be some missing.
+        if isinstance(expression_set, ExpressionSet):
+            for transform in candidate_transform_list.transforms - candidate_transform_list.inputs:
+                if transform not in expression_set.transforms:
+                    raise ValueError(f"Transform {transform} from hierarchy not in expression set")
 
-        expression_set = expression_set[candidate_transform_list.transforms & set(expression_set.transforms)]
+        # Filter data by CTL's transforms
+        if isinstance(expression_set, ExpressionSet):
+            expression_set = expression_set[candidate_transform_list.transforms & set(expression_set.transforms)]
+        elif isinstance(expression_set, list):
+            expression_set = [p for p in expression_set if p.transform in candidate_transform_list.transforms]
+        else:
+            raise TypeError(f"expression_set must be an ExpressionSet or a list of ExpressionPoints. Was {type(expression_set)!s}")
 
         denoising_strategy: DenoisingStrategy | None
         if denoiser is not None:
@@ -94,6 +105,13 @@ class IPPM:
                 points = expression_set.best_transforms()
 
             # For consistency, we still pass a dictionary, even with one block
+            all_points = {BLOCK_SCALP: points}
+
+        elif isinstance(expression_set, list):
+            if denoising_strategy is not None:
+                points = denoising_strategy.denoise_points(expression_set)
+            else:
+                points = expression_set
             all_points = {BLOCK_SCALP: points}
 
         else:
