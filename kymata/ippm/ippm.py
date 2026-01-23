@@ -52,10 +52,12 @@ class IPPM:
         # Validate CTL
         if not isinstance(candidate_transform_list, CandidateTransformList):
             candidate_transform_list = CandidateTransformList(candidate_transform_list)
-        data_transforms = expression_set.transforms if isinstance(expression_set, ExpressionSet) else {p.transform for p in expression_set}
-        for transform in candidate_transform_list.transforms - candidate_transform_list.inputs:
-            if transform not in data_transforms:
-                raise ValueError(f"Transform {transform} from hierarchy not in expression set")
+        # For actual ExpressionSets, we can check if the ES's transform list matches the CTL.
+        # For lists of points, we can't because there may be some missing.
+        if isinstance(expression_set, ExpressionSet):
+            for transform in candidate_transform_list.transforms - candidate_transform_list.inputs:
+                if transform not in expression_set.transforms:
+                    raise ValueError(f"Transform {transform} from hierarchy not in expression set")
 
         # Filter data by CTL's transforms
         if isinstance(expression_set, ExpressionSet):
