@@ -14,13 +14,13 @@ number_of_runs: 2                    # number of runs
 repetitions_per_runs: 1              # number of repetitions per run
 stimulus_length: 1704                # seconds
 mri_structural_type: "n/a"           # T1 | flash
-sample_rate: 2000                    # Hz
+sample_rate: 1000                    # Hz
 
 # Preprocessing pipeline
 meg_manufacturer: 'Marvel'
 meg_sss_noise_estimate_year: 2023
-meg_sensor_layout: 'n\a'
-eeg_sensor_layout: 'n\a'
+meg_sensor_layout: 'Vectorview'
+eeg_sensor_layout: 'Easycap'
 emeg_machine_used_to_record_data: 'n\a'
 skip_maxfilter_if_previous_runs_exist: False
 skip_ica_if_previous_runs_exist: True
