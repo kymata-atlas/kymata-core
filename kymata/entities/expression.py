@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional, Iterable
+from typing import Self, NamedTuple, Sequence, Union, get_args, TypeVar, Collection, Optional, Iterable, TypeAlias
 from warnings import warn
 
 from numpy import (
@@ -59,7 +59,7 @@ class ExpressionPoint(NamedTuple):
 
 
 # transform_name → points
-GroupedPoints = dict[str, list[ExpressionPoint]]
+GroupedPoints: TypeAlias = dict[str, list[ExpressionPoint]]
 
 
 def group_points_by_transform(points: Iterable[ExpressionPoint]) -> GroupedPoints:

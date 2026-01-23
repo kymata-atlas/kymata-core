@@ -450,17 +450,21 @@ def expression_plot(
 
             if isinstance(use_sensor_layout, SensorLayout):
                 left_channels, right_channels = get_sensor_left_right_assignment(use_sensor_layout)
-            elif use_sensor_layout.lower() == "cbu":
+            elif use_sensor_layout is None:
+                # No axis assignment
+                left_channels, right_channels = chosen_channels, chosen_channels
+            elif isinstance(use_sensor_layout, str) and use_sensor_layout.lower() == "cbu":
                 left_channels, right_channels = get_sensor_left_right_assignment(SensorLayout(meg=MEGLayout.Vectorview,
                                                                                               eeg=EEGLayout.Easycap))
             elif use_sensor_layout is not None:
-                # These are the only valid values for use_sensor_layout
+                # Not none but not a SensorLayout or str: invalid
                 raise ValueError(f"Invalid value {use_sensor_layout} for sensor layout")
             elif expression_set.sensor_layout is not None:
                 left_channels, right_channels = get_sensor_left_right_assignment(expression_set.sensor_layout)
             else:
-                # No axis assignment
-                left_channels, right_channels = chosen_channels, chosen_channels
+                # These are the only valid values for use_sensor_layout and expression_set.sensor_layout
+                raise ValueError(f"Invalid values {use_sensor_layout} for sensor layout and "
+                                 f"{expression_set.sensor_layout} for expression set sensor layout")
 
             # Some points will be plotted on one axis, filled, some on both, empty
             top_chans = left_channels & chosen_channels
