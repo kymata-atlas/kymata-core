@@ -152,7 +152,7 @@ def main(raw_args=None):
         if args.ave_mode == "ave":
             emeg_filenames = [args.single_participant_override + "-ave"]
         elif args.ave_mode == "concatenate":
-            print("Concatenating repetitions together")
+            _logger.info("Concatenating repetitions together")
             emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
     else:
         emeg_filenames = [p + "-ave" for p in participants]

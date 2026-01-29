@@ -17,6 +17,7 @@ from kymata.entities.expression import ExpressionSet, SensorExpressionSet, Hexel
 from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
 
+
 _logger = getLogger(__name__)
 
 
@@ -144,7 +145,7 @@ def do_gridsearch(
 
     for latency in range(0, emeg_end, latency_step):
         '''emeg_values start from emeg_t_start (-200)'''
-        print('latency: ', latency)
+        _logger.info('latency: ', latency)
 
         # Cut the EMEG data for the current latency window
         emeg_values_cut = emeg_values[:, :,
@@ -246,7 +247,7 @@ def do_gridsearch(
     #
     # for latency in range(0, emeg_end, latency_step):
     #     '''emeg_values start from emeg_t_start (-200)'''
-    #     print('latency: ', latency)
+    #     _logger.info('latency: ', latency)
     #     emeg_values_cut = emeg_values[:, :,
     #                       audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
     #     for channel in range(n_channels):
