@@ -33,6 +33,7 @@ class DenoisingStrategy(ABC):
         exclude_points_above_n_sigma: Optional[float] = None,
         exclude_logp_vals_above: Optional[float] = None,
         should_shuffle: bool = True,
+        flip_orientation: bool = False,
         **kwargs,
     ):
         """
@@ -85,6 +86,7 @@ class DenoisingStrategy(ABC):
         self._should_max_pool = should_max_pool
         self._logp_threshold_from_expression_set: Callable[[ExpressionSet], float | None] = get_logp_threshold
         self._should_shuffle = should_shuffle
+        self._flip_orientation = flip_orientation
 
     @overload
     def denoise(self, expression_set: HexelExpressionSet) -> HexelExpressionSet:
@@ -318,7 +320,10 @@ class DenoisingStrategy(ABC):
                 "logp":  [p.logp_value for p in points_],
                 "label":   labels,
             })
-            idxs = df.groupby("label")["logp"].idxmin()
+            if self._flip_orientation:
+                idxs = df.groupby("label")["logp"].idxmax()
+            else:
+                idxs = df.groupby("label")["logp"].idxmin()
 
             return (
                 [points_[i] for i in idxs],  # Filtered points
@@ -340,9 +345,14 @@ class DenoisingStrategy(ABC):
         :returns: same spike but with only one spike.
         """
         # we take minimum because smaller is more significant.
-        return [
-            min(spike, key=lambda x: x.logp_value)
-        ]
+        if self._flip_orientation:
+            return [
+                max(spike, key=lambda x: x.logp_value)
+            ]
+        else:
+            return [
+                min(spike, key=lambda x: x.logp_value)
+            ]
 
 
 class MaxPoolingStrategy(DenoisingStrategy):
@@ -356,6 +366,7 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_shuffle: bool = True,
             bin_significance_threshold: int = 1,
             bin_size: int = 1,
+            flip_orientation: bool = False,
     ):
         super().__init__(
             should_normalise=should_normalise,
@@ -363,7 +374,8 @@ class MaxPoolingStrategy(DenoisingStrategy):
             should_max_pool=should_max_pool,
             exclude_logp_vals_above=exclude_logp_vals_above,
             exclude_points_above_n_sigma=exclude_points_above_n_sigma,
-            should_shuffle=should_shuffle
+            should_shuffle=should_shuffle,
+            flip_orientation=flip_orientation,
         )
         self._clusterer = MaxPoolClusterer(bin_significance_threshold, bin_size)
 
