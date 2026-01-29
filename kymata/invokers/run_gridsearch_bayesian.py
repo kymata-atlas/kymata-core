@@ -97,8 +97,8 @@ def main(raw_args=None):
     # Additional Bayesian args
     parser.add_argument("--noise-std",        type=float, default=30)
     parser.add_argument("--prediction-scale", type=float, default=0.2)
-    parser.add_argument("--latency-max",  type=int, default=800+200, help="ms (add 200ms for pre-0)")
-    parser.add_argument("--latency-step", type=int, default=5,   help="ms")
+    parser.add_argument("--latency-max",      type=int,   default=800+200, help="ms (add 200ms for pre-0)")
+    parser.add_argument("--latency-step",     type=int,   default=5,       help="ms")
 
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
