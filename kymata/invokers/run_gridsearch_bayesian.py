@@ -216,9 +216,9 @@ def main(raw_args=None):
     )
 
     time_to_load = time.time() - t0
+    _logger.info(f"Time to load emeg: {time_to_load:.4f}")
     print(f"Time to load emeg: {time_to_load:.4f}")
     stdout.flush()  # make sure the above print statement shows up as soon as print is called
-    _logger.info(f"Time to load emeg: {time_to_load:.4f}")
 
     combined_expression_set = None
 

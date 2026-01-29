@@ -145,7 +145,7 @@ def do_gridsearch(
 
     for latency in range(0, emeg_end, latency_step):
         '''emeg_values start from emeg_t_start (-200)'''
-        _logger.info('latency: ', latency)
+        _logger.info(f'{latency=}')
 
         # Cut the EMEG data for the current latency window
         emeg_values_cut = emeg_values[:, :,
@@ -247,7 +247,7 @@ def do_gridsearch(
     #
     # for latency in range(0, emeg_end, latency_step):
     #     '''emeg_values start from emeg_t_start (-200)'''
-    #     _logger.info('latency: ', latency)
+    #     _logger.info(f'{latency=}')
     #     emeg_values_cut = emeg_values[:, :,
     #                       audio_start_correction+latency: audio_start_correction+stretched_samples.shape[1]+latency]
     #     for channel in range(n_channels):
