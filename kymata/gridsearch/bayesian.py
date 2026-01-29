@@ -43,6 +43,8 @@ def do_gridsearch(
         # 1.0 = Expect Perfect Correlation (Requires r > 0.5 to beat Null)
         # 0.3 = Expect Weak Correlation (Requires r > 0.15 to beat Null)
         prediction_scale = 0.2,
+        latency_max = 800 - (-200),
+        latency_step = 5,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given function.
@@ -103,9 +105,7 @@ def do_gridsearch(
 
     '''might need to do drift correction here'''
 
-    emeg_end = 800 - (-200)
-    latency_step = 5
-    num_latencies = len(list(range(0, emeg_end, latency_step)))
+    num_latencies = len(list(range(0, latency_max, latency_step)))
 
     function_mat = np.vstack(list(transform_data.values()))
     function_names = list(transform_data.keys()) + ["Null Hypothesis"]
@@ -143,7 +143,7 @@ def do_gridsearch(
     # Shape: (n_channels, num_latencies, num_functions + 1)
     posterior_emeg = np.zeros((n_channels, num_latencies, num_functions + 1))
 
-    for latency in range(0, emeg_end, latency_step):
+    for latency in range(0, latency_max, latency_step):
         '''emeg_values start from emeg_t_start (-200)'''
         _logger.info(f'{latency=}')
 
