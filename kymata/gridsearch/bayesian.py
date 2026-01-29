@@ -37,6 +37,11 @@ def do_gridsearch(
         n_reps: int = 1,
         plot_top_five_channels: bool = False,
         overwrite: bool = True,
+        assumed_std_noise_of_observations = 30,
+        # UPDATE: Set a "Loudness" factor for your hypothesis.
+        # 1.0 = Expect Perfect Correlation (Requires r > 0.5 to beat Null)
+        # 0.3 = Expect Weak Correlation (Requires r > 0.15 to beat Null)
+        prediction_scale = 0.2,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given function.
@@ -97,15 +102,9 @@ def do_gridsearch(
 
     '''might need to do drift correction here'''
 
-    assumed_std_noise_of_observations = 30
-
-    prior_hypothesis = np.ones(num_functions)/num_functions
-
     emeg_end = 800 - (-200)
     latency_step = 5
     num_latencies = len(list(range(0, emeg_end, latency_step)))
-
-    posterior_emeg = np.zeros((n_channels, num_latencies, num_functions))
 
     function_mat = np.vstack(list(transform_data.values()))
     function_names = list(transform_data.keys()) + ["Null Hypothesis"]
@@ -130,11 +129,6 @@ def do_gridsearch(
     # things to do:
     # put drift correction into matrix format
     # try both stretch and squeeze
-
-    # UPDATE: Set a "Loudness" factor for your hypothesis.
-    # 1.0 = Expect Perfect Correlation (Requires r > 0.5 to beat Null)
-    # 0.3 = Expect Weak Correlation (Requires r > 0.15 to beat Null)
-    prediction_scale = 0.2
 
     # just priors to account for the extra "Null" hypothesis
     # If we have 11 functions, we now have 12 hypotheses.

@@ -94,6 +94,10 @@ def main(raw_args=None):
     parser.add_argument("--emeg-t-start", type=float, default=-0.2,
                         help="Start of the emeg evoked files relative to the start of the transform")
 
+    # Additional Bayesian args
+    parser.add_argument("--noise_std",        type=float, default=30)
+    parser.add_argument("--prediction_scale", type=float, default=0.2)
+
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
     # Save locations are non-optional when running as a dependency
@@ -270,6 +274,8 @@ def main(raw_args=None):
         stimulus_delivery_latency=stimulus_delivery_latency,
         plot_top_five_channels=args.plot_top_channels,
         overwrite=args.overwrite,
+        assumed_std_noise_of_observations=args.noise_std,
+        prediction_scale=args.prediction_scale,
     )
     #
     # if combined_expression_set is None:
