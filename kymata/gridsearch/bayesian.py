@@ -324,8 +324,7 @@ def do_gridsearch(
 
         plt.title(f'plausibility across latencies for all channel: {function_names[func]}')
         save_dir = plot_location
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
         plt.savefig(os.path.join(save_dir, function_names[func] + '.png'))
         plt.close()
 

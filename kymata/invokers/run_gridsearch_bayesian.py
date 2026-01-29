@@ -95,8 +95,8 @@ def main(raw_args=None):
                         help="Start of the emeg evoked files relative to the start of the transform")
 
     # Additional Bayesian args
-    parser.add_argument("--noise_std",        type=float, default=30)
-    parser.add_argument("--prediction_scale", type=float, default=0.2)
+    parser.add_argument("--noise-std",        type=float, default=30)
+    parser.add_argument("--prediction-scale", type=float, default=0.2)
 
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
