@@ -268,7 +268,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 # note that EEG and MEG do not have the same frequencies, so we remove them seperately
                 meg_picks = mne.pick_types(raw_fif_data.info, meg=True)
-                meg_freqs = (220, 250, 441, 482)
+                meg_freqs = (150, 220, 250, 441, 482)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
 #                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
@@ -400,7 +400,7 @@ def run_second_pass_cleansing_and_eog_removal(
                 )
 
                 raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
-                    l_freq=0.1, h_freq=250, picks=None
+                    l_freq=0.1, h_freq=None, picks=None
                 )
 
                 raw_fif_data_sss_movecomp_tr.save(
