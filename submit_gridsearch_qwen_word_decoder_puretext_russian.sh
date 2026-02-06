@@ -26,7 +26,7 @@ python kymata/invokers/run_gridsearch.py \
   --config dataset3.yaml \
   --input-stream auditory \
   --plot-top-channels \
-  --transform-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/qwen2.5-omni-7b/decoder' \
+  --transform-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/qwen2.5-omni-7b/decoder_puretext' \
   --transform-name "${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --n-derangements 5 \
   --asr-option 'all' \

@@ -219,7 +219,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 func = place_holder[nn_neuron, :400_000]
             trans_name += f'_{str(nn_neuron)}'
 
-        elif 'salmonn' in str(transform_path_without_suffix) or ('qwen' in str(transform_path_without_suffix) and 'decoder' in str(transform_path_without_suffix)):
+        elif 'salmonn' in str(transform_path_without_suffix) or ('qwen' in str(transform_path_without_suffix) and 'decoder' in str(transform_path_without_suffix) and 'decoder_audio' not in str(transform_path_without_suffix)):
             for s in range(trans_len//30 + 1):
                 if 'salmonn_omni' in str(transform_path_without_suffix):
                     if s == 0:
@@ -239,7 +239,6 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                         func = np.concatenate((func, torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()), axis = 1)
             T_max = trans_len
             s_num = T_max * 1000
-            place_holder = np.zeros((func.shape[2], s_num))
 
             if 'listen' not in str(transform_path_without_suffix):
 
@@ -265,6 +264,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                 special_tokens = ['</s>', '-']
                 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                place_holder = np.zeros((func.shape[2], s_num))
                 for j in range(place_holder.shape[0]):
                     if 'listen' not in str(transform_path_without_suffix):
                         k = 0       # k is the index for salmonn space, and i is the index for mfa space
@@ -304,6 +304,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                                 timepoints.extend([0.225 + k * 30 + i * 0.08 for i in range(144)])
                         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.array(timepoints), func[0, :, j])
             else:
+                place_holder = np.zeros((s_num,), dtype=np.float32)
                 j = nn_neuron
                 if 'listen' not in str(transform_path_without_suffix):
                     k = 0       # k is the index for salmonn space, and i is the index for mfa space
@@ -316,7 +317,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                             if mfa_text[i] != asr_text[k]:
                                 if mfa_text[i] == '<sp>' and 'phone' not in str(transform_path_without_suffix):
                                     # if asr_text[k] == '.' or asr_text[k] == ',':
-                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                    place_holder[start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                     # print('<sp> in mfa encountered')
                                 else:
                                     search_txt = asr_text[k]
@@ -326,11 +327,11 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                                         k += 1
                                         search_txt += asr_text[k]
                                         id_tracker.append(k)
-                                    place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
+                                    place_holder[start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) , np.average([func[0, k, j] for k in id_tracker]))
                                     k += 1
                                     # print(f'mapping is from the mfa token {[mfa_text[i]]} to the salmonn token {[asr_text[k] for k in id_tracker]}')
                             else:
-                                place_holder[j, start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
+                                place_holder[start_idx:end_idx] = np.full((min(end_idx, s_num) - start_idx, ) ,func[0, k, j])
                                 k += 1
                                 # print('match')
                     # import ipdb; ipdb.set_trace()
@@ -346,7 +347,7 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :trans_len*1000], axis=0) #func[nn_neuron]
             else:
-                func = place_holder[nn_neuron, :trans_len*1000]
+                func = place_holder[:trans_len*1000]
             trans_name += f'_{str(nn_neuron)}'
 
         elif 'qwen' in str(transform_path_without_suffix) and 'encoder' in str(transform_path_without_suffix):
@@ -361,16 +362,39 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 for j in range(place_holder.shape[0]):
-                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.48, func.shape[1]), func[0, :, j])
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.46, func.shape[1]), func[0, :, j])
             else:
                 j = nn_neuron
-                place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.48, func.shape[1]), func[0, :, j])
+                place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.46, func.shape[1]), func[0, :, j])
 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :trans_len*1000], axis=0) #func[nn_neuron]
             else:
                 func = place_holder[nn_neuron, :trans_len*1000]
             trans_name += f'_{str(nn_neuron)}'
+
+        elif 'qwen' in str(transform_path_without_suffix) and 'decoder' in str(transform_path_without_suffix) and 'decoder_audio' in str(transform_path_without_suffix):
+            for s in range(trans_len//30 + 1):
+                if s == 0:
+                    func = torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()
+                else:
+                    func = np.concatenate((func, torch.load(Path(transform_path_without_suffix, f'segment_{s}_{trans_name}.pt'), map_location=torch.device('cpu')).detach().numpy()), axis = 1)
+            T_max = trans_len
+            s_num = T_max * 1000
+            place_holder = np.zeros((func.shape[2], s_num))
+
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                for j in range(place_holder.shape[0]):
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.44, func.shape[1]), func[0, :, j])
+            else:
+                j = nn_neuron
+                place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.44, func.shape[1]), func[0, :, j])
+
+            if nn_neuron in ('avr', 'ave', 'mean', 'all'):
+                func = np.mean(place_holder[:, :trans_len*1000], axis=0) #func[nn_neuron]
+            else:
+                func = place_holder[nn_neuron, :trans_len*1000]
+            trans_name += f'_{str(nn_neuron)}'            
 
         else:
             trans_dict = np.load(transform_path_without_suffix.with_suffix(".npz"))
