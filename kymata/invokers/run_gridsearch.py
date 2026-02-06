@@ -102,6 +102,7 @@ def main():
                         help='Whether to get the output from all neurons (all) or do the average (ave) or with only one neuron (one) or with some neurons (some)')
     parser.add_argument('--num-neurons', type=int, nargs='+', default=[512],
                         help='Number of neurons in each layer / list of neurons to be used (depending on the asr_option)')
+    parser.add_argument('--batch', type=str, default='first', choices=['first', 'last'], help='Which batch of neurons to use.')
     parser.add_argument('--mfa', type=bool, default=True,
                         help='Whether to use timestamps from mfa')
     # For source space
@@ -307,7 +308,12 @@ def main():
 
     if (args.asr_option == 'all' and 'asr' in args.transform_path) or 'linguistics' in args.transform_path:
 
-        for nn_i in range(0, args.num_neurons[0]):
+        if args.batch == 'first':
+            neuron_indices = list(range(0, args.num_neurons[0]))
+        elif args.batch == 'last':
+            neuron_indices = list(range(args.num_neurons[0], 4096))
+
+        for ind, nn_i in enumerate(neuron_indices):
             # func = load_transform(Path(args.base_dir, args.transform_path),
             function_values = load_transform(args.transform_path,
                                 trans_name=args.transform_name[0],
@@ -321,7 +327,7 @@ def main():
         
             function_values = function_values.resampled(args.resample)
 
-            if nn_i == 0:
+            if ind == 0:
                 es = do_gridsearch(
                     emeg_values=emeg_values,
                     channel_names=ch_names,

@@ -38,7 +38,8 @@ def load_single_emeg(
 
     if 'ecog' in emeg_path.name.lower() or 'ieeg' in emeg_path.name.lower():
 
-        ch_names_path = Path(emeg_path.parent, "ch_names_kmeans300.npy")
+        sub = emeg_path.stem.split("_")[0].removeprefix("sub-")
+        ch_names_path = Path(emeg_path.parent, f"ch_names_{sub}.npy")
         channel_names: list[str] = np.load(ch_names_path, allow_pickle=True)
         emeg = np.load(emeg_path_npy)
         emeg = resample(emeg, 360000, axis=1)

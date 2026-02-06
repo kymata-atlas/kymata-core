@@ -120,6 +120,10 @@ def do_gridsearch(
     # In case trans contains a fully constant split, normalize will involve a divide by zero error, resulting in a nan
     # which will infect everything downstream. Rather than try and catch and fix that, we instead kick it back to the
     # invoker to say, just ensure that this can't happen.
+
+    if emeg_t_start > start_latency:
+        trans = trans[1:, :]
+
     try:
         trans = normalize(trans)
     except (ZeroDivisionError, FloatingPointError) as ex:
@@ -156,18 +160,30 @@ def do_gridsearch(
         split_initial_timesteps = split_initial_timesteps[1:]
         trans = trans[1:, :]
 
-    emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split), dtype=np.float32)
-    for j in range(n_reps):
-        for split_i in range(n_splits):
-            split_start = split_initial_timesteps[split_i]
-            split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
-            emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
-                :, j, split_start:split_stop:downsample_rate
-            ]
+    if emeg_t_start > start_latency:
+        emeg_reshaped = np.zeros((n_channels, (n_splits-1) * n_reps, n_samples_per_split), dtype=np.float32)
+        for j in range(n_reps):
+            for split_i in range(1, n_splits):
+                split_start = split_initial_timesteps[split_i]
+                split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+                emeg_reshaped[:, split_i + (j * n_splits) - 1, :] = emeg_values[
+                    :, j, split_start:split_stop:downsample_rate
+                ]
+    else:
+        emeg_reshaped = np.zeros((n_channels, n_splits * n_reps, n_samples_per_split), dtype=np.float32)
+        for j in range(n_reps):
+            for split_i in range(n_splits):
+                split_start = split_initial_timesteps[split_i]
+                split_stop = split_start + int(2 * emeg_sample_rate * seconds_per_split)
+                emeg_reshaped[:, split_i + (j * n_splits), :] = emeg_values[
+                    :, j, split_start:split_stop:downsample_rate
+                ]
 
     del emeg_values
 
     # Derangements for null distribution
+    if emeg_t_start > start_latency:
+        n_splits -= 1
     derangements = np.zeros((n_derangements, n_splits * n_reps), dtype=int)
     for der_i in range(n_derangements):
         derangements[der_i, :] = generate_derangement(n_splits * n_reps, n_splits)
@@ -201,8 +217,8 @@ def do_gridsearch(
     log_pvalues = _ttest(corrs)
 
     latencies_ms = np.linspace(
-        (start_latency * emeg_sample_rate),
-        (start_latency * emeg_sample_rate) + (seconds_per_split * 1000),
+        (start_latency * 1000),
+        (start_latency * 1000) + (seconds_per_split * 1000),
         n_trans_samples_per_split + 1,
     )[:-1]
 

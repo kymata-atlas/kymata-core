@@ -14,6 +14,7 @@ def asr_models_loop_full(log_dir):
     thres = 20 # 15
 
     x_upper = 800
+    x_upper = 800
 
     size = 'large'
 
@@ -39,6 +40,11 @@ def asr_models_loop_full(log_dir):
 
 
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
+    thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*neuron*layer)))))
+    # thres = 25
+
+    # import ipdb;ipdb.set_trace()
     thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*neuron*layer))))) # maybe we should get rid of the 2 here because we don't split the hemispheres
     # thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*424)))))
     thres_tvl = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*11*neuron*layer)))))
