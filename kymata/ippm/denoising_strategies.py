@@ -390,6 +390,7 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             exclude_points_above_n_sigma: Optional[float] = None,
             bin_significance_threshold: int = 1,
             base_bin_size: int = 1,
+            flip_orientation: bool = False,
     ):
         super().__init__(
             should_normalise=should_normalise,
@@ -397,6 +398,7 @@ class AdaptiveMaxPoolingStrategy(DenoisingStrategy):
             should_max_pool=should_max_pool,
             exclude_logp_vals_above=exclude_logp_vals_above,
             exclude_points_above_n_sigma=exclude_points_above_n_sigma,
+            flip_orientation=flip_orientation,
             should_shuffle=False,  # AMP assumes a sorted time series, so avoid shuffling.
         )                          # Mainly because AMP uses a sliding window algorithm to merge significant clusters.
         self._clusterer = AdaptiveMaxPoolClusterer(bin_significance_threshold, base_bin_size)
@@ -418,6 +420,7 @@ class GMMStrategy(DenoisingStrategy):
             init_params: str = "kmeans",
             random_state: Optional[int] = None,
             should_evaluate_using_aic: bool = True,
+            flip_orientation: bool = False,
     ):
         super().__init__(
             should_normalise=should_normalise,
@@ -426,6 +429,7 @@ class GMMStrategy(DenoisingStrategy):
             exclude_logp_vals_above=exclude_logp_vals_above,
             exclude_points_above_n_sigma=exclude_points_above_n_sigma,
             should_shuffle=should_shuffle,
+            flip_orientation=flip_orientation,
         )
         self._clusterer = GMMClusterer(
             number_of_clusters_upper_bound=number_of_clusters_upper_bound,
@@ -454,6 +458,7 @@ class DBSCANStrategy(DenoisingStrategy):
             leaf_size: int = 30,
             n_jobs: int = -1,
             metric_params: Optional[dict] = None,
+            flip_orientation: bool = False,
     ):
         super().__init__(
             should_normalise=should_normalise,
@@ -461,7 +466,8 @@ class DBSCANStrategy(DenoisingStrategy):
             should_max_pool=should_max_pool,
             exclude_logp_vals_above=exclude_logp_vals_above,
             exclude_points_above_n_sigma=exclude_points_above_n_sigma,
-            should_shuffle=should_shuffle
+            should_shuffle=should_shuffle,
+            flip_orientation = flip_orientation,
         )
         self._clusterer = DBSCANClusterer(
             eps=eps,
@@ -495,6 +501,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             seeds: Optional[int] = None,
             min_bin_freq: int = 1,
             n_jobs: int = -1,
+            flip_orientation: bool = False,
     ):
         super().__init__(
             should_normalise=should_normalise,
@@ -503,6 +510,7 @@ class MeanShiftStrategy(DenoisingStrategy):
             exclude_logp_vals_above=exclude_logp_vals_above,
             exclude_points_above_n_sigma=exclude_points_above_n_sigma,
             should_shuffle=should_shuffle,
+            flip_orientation=flip_orientation,
         )
         self._clusterer = MeanShiftClusterer(
             bandwidth=bandwidth,
