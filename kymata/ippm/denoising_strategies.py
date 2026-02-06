@@ -203,7 +203,7 @@ class DenoisingStrategy(ABC):
 
             # Apply filters
             if logp_threshold is not None:
-                points = self._filter_out_insignificant_points(points, logp_threshold)
+                points = self._filter_out_insignificant_points(points, logp_threshold, self._flip_orientation)
             if self._should_shuffle:
                 # shuffle to remove correlations between rows
                 shuffle(points)
@@ -230,7 +230,7 @@ class DenoisingStrategy(ABC):
         return spikes
 
     @staticmethod
-    def _filter_out_insignificant_points(points: list[ExpressionPoint], threshold_logp: float) -> list[ExpressionPoint]:
+    def _filter_out_insignificant_points(points: list[ExpressionPoint], threshold_logp: float, flip_orientation: bool) -> list[ExpressionPoint]:
         """
         For a list of ExpressionPoints, remove all that are not statistically significant and return a list of those
         that remain.
@@ -242,10 +242,17 @@ class DenoisingStrategy(ABC):
         Returns:
             list[ExpressionPoint]: A new list containing points with significant log p-values.
         """
+        def passes_threshold(logp: float, threshold: float) -> bool:
+            if flip_orientation:
+                # Higher is better
+                return logp > threshold
+            else:
+                # Lower is better
+                return logp < threshold
+
         return [
             p for p in points
-            # Lower is better
-            if p.logp_value < threshold_logp
+            if passes_threshold(p.logp_value, threshold_logp)
         ]
 
     def _preprocess(self, points: list[ExpressionPoint]) -> NDArray:
