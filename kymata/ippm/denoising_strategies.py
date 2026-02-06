@@ -242,13 +242,12 @@ class DenoisingStrategy(ABC):
         Returns:
             list[ExpressionPoint]: A new list containing points with significant log p-values.
         """
-        def passes_threshold(logp: float, threshold: float) -> bool:
-            if flip_orientation:
-                # Higher is better
-                return logp > threshold
-            else:
-                # Lower is better
-                return logp < threshold
+        if flip_orientation:
+            # Higher is better
+            def passes_threshold(logp: float, threshold: float) -> bool: return logp > threshold
+        else:
+            # Lower is better
+            def passes_threshold(logp: float, threshold: float) -> bool: return logp < threshold
 
         return [
             p for p in points
