@@ -109,7 +109,12 @@ class IPPM:
 
         elif isinstance(expression_set, list):
             if denoising_strategy is not None:
-                points = denoising_strategy.denoise_points(expression_set)
+                points = denoising_strategy.denoise_points(expression_set,
+                                                           # FIXME: this only works with the list case because we happen
+                                                           #  to know that denoising_strategy._logp_threshold_from_expression_set
+                                                           #  returns a constant value. This is horrible brittle code
+                                                           #  and shouldn't be used!!
+                                                           logp_threshold=denoising_strategy._logp_threshold_from_expression_set(expression_set))
             else:
                 points = expression_set
             all_points = {BLOCK_SCALP: points}
