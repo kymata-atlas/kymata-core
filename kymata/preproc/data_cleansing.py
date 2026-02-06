@@ -75,7 +75,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 raw_fif_data = mne.io.Raw(
                     Path(
-                        raw_emeg_path, participant, 'meg', f"{participant}_task-movie_meg.fif"
+                        raw_emeg_path, participant, 'meg', f"{participant}_task-story_meg.fif"
                     ),
                     preload=True,
                 )
@@ -108,12 +108,15 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 raw_fif_data.info["bads"] = recording_config["bad_channels"]
 
-                response = input_with_color(
-                    "Would you like to see the raw data? Recommended if you want to confirm"
-                    + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    + " (y/n)",
-                    Fore.MAGENTA,
-                )
+                # response = input_with_color(
+                #     "Would you like to see the raw data? Recommended if you want to confirm"
+                #     + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                #     + " (y/n)",
+                #     Fore.MAGENTA,
+                # )
+
+                response = "n"  # supress prompt for automated runs
+
                 if response == "y":
                     print("...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
@@ -251,10 +254,11 @@ def run_second_pass_cleansing_and_eog_removal(
                 )
 
                 if not supress_excessive_plots_and_prompts:
-                    response = input_with_color(
-                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
-                        Fore.MAGENTA,
-                    )
+                    # response = input_with_color(
+                    #     "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                    #     Fore.MAGENTA,
+                    # )
+                    response = "n"  # supress prompt for automated runs
                     if response == "y":
                         print("...Plotting Raw data.")
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
@@ -667,7 +671,10 @@ def create_trialwise_data(
         cleaned_raws = []
 
         for run in range(1, number_of_runs + 1):
-            raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
+            if 'Camcan' in dataset_directory_name:
+                raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
+            else:
+                raw_path = Path(cleaned_dir, p + '_ses-movie_task-movie' + "_run-0" + str(run) + "_meg.fif")
             print(f"Loading {raw_path}...")
             if os.path.isfile(raw_path):
                 raw = mne.io.Raw(raw_path, preload=True)
@@ -675,10 +682,20 @@ def create_trialwise_data(
 
         raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
-        raw_events = mne.find_events(
-            raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
-        )
-        repetition_events = raw_events[0].reshape(1,3)
+        if 'Camcan' in dataset_directory_name:
+            raw_events = mne.find_events(
+                raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
+            )
+            repetition_events = raw_events[0].reshape(1,3)
+            assert repetition_events[0][2] == TRIGGER_REP_ONSET
+        else:
+            raw_events = mne.find_events(
+                raw, stim_channel='UPPT001', shortest_event=1
+            )
+            repetition_events = raw_events[0].reshape(1,3)
+            assert repetition_events[0][2] == 255
+
+        # import ipdb; ipdb.set_trace()
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed

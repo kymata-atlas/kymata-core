@@ -297,6 +297,19 @@ def main():
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(
         combined_expression_set,
+        color={
+                "IL": "#b11e34",
+                "IL1": "#a201e9",
+                "IL2": "#a201e9",
+                "IL3": "#a201e9",
+                "IL4": "#a201e9",
+                "IL5": "#a201e9",
+                "IL6": "#a201e9",
+                "IL7": "#a201e9",
+                "IL8": "#a201e9",
+                "IL9": "#a201e9",
+                "STL": "#d388b5",
+            },
         paired_axes=channel_space == "source",
         save_to=fig_save_path,
         overwrite=args.overwrite,

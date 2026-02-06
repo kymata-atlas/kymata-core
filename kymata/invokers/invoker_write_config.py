@@ -2,8 +2,11 @@ import os
 import yaml
 
 # Paths
-raw_emeg_dir = r'\\cbsu\data\Imaging\projects\cbu\kymata\data\open-source\Camcan_movie\raw_emeg'
-config_path = r'C:\Users\cy02\Documents\GitHub\camcan\kymata-core\dataset_config\camcan.yaml'
+# raw_emeg_dir = r'\\cbsu\data\Imaging\projects\cbu\kymata\data\open-source\Camcan_story\raw_emeg'
+# config_path = r'C:\Users\cy02\Documents\GitHub\camcan\kymata-core\dataset_config\camcan_story.yaml'
+
+raw_emeg_dir = r'/imaging/projects/cbu/kymata/data/open-source/Camcan_story/raw_emeg'
+config_path = r'/imaging/projects/cbu/kymata/analyses/tianyi/camcan/kymata-core/dataset_config/camcan_story.yaml'
 
 # Get folder names (participants)
 participants = [

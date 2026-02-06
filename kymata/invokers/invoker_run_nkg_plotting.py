@@ -10,15 +10,16 @@ from kymata.plot.color import constant_color_dict
 
 def main():
     function_family_type = "standard"  # 'standard' or 'ANN'
-    path_to_nkg_files = Path(
-        Path(__file__).parent.parent.parent, "kymata-core-data", "output"
-    )
+    # path_to_nkg_files = Path(
+    #     Path(__file__).parent.parent.parent, "kymata-core-data", "output"
+    # )
+    path_to_nkg_files = Path('/imaging/projects/cbu/kymata/analyses/tianyi/camcan/kymata-core/kymata-core-data/output/camcan_movie/no_countdown/0.03_0.0005404')
 
     # template invoker for printing out expression set .nkgs
 
     if function_family_type == "standard":
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, "combined_TVL_gridsearch.nkg")
+            Path(path_to_nkg_files, "11_transforms_gridsearch.nkg")
         )
 
         fig = expression_plot(
@@ -36,8 +37,9 @@ def main():
                 "IL9": "#a201e9",
                 "STL": "#d388b5",
             },
-            minimap="standard",
-            ylim=-200,
+            # minimap="standard",
+            minimap=None,
+            # ylim=-200,
         )
 
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
