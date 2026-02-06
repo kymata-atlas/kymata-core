@@ -244,10 +244,12 @@ class DenoisingStrategy(ABC):
         """
         if flip_orientation:
             # Higher is better
-            def passes_threshold(logp: float, threshold: float) -> bool: return logp > threshold
+            def passes_threshold(logp: float, threshold: float) -> bool:
+                return logp > threshold
         else:
             # Lower is better
-            def passes_threshold(logp: float, threshold: float) -> bool: return logp < threshold
+            def passes_threshold(logp: float, threshold: float) -> bool:
+                return logp < threshold
 
         return [
             p for p in points
