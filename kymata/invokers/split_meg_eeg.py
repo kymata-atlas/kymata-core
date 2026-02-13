@@ -5,6 +5,7 @@ from kymata.entities.expression import SensorExpressionSet
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import load_expression_set, save_expression_set
 
+
 _logger = getLogger(__file__)
 
 
@@ -13,7 +14,6 @@ def main(input_file: Path, output_dir: Path):
     es = load_expression_set(input_file)
     if not isinstance(es, SensorExpressionSet):
         raise ValueError("Can only split sensor types for sensor expression sets")
-    assert isinstance(es, SensorExpressionSet)
 
     meg_sensors, eeg_sensors = split_meg_eeg_sensors(es)
 
