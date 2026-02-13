@@ -21,8 +21,8 @@ def main(input_file: Path, output_dir: Path):
     es_eeg = es.subset_sensors(eeg_sensors)
 
     _logger.info(f"Saving MEG and EEG expression sets separately")
-    save_expression_set(es_meg, output_dir / f"{input_file.stem}_meg{input_file.suffix}", overwrite=True)
-    save_expression_set(es_eeg, output_dir / f"{input_file.stem}_eeg{input_file.suffix}", overwrite=True)
+    save_expression_set(es_meg, output_dir / f"{input_file.stem}_meg{input_file.suffix}", overwrite=False)
+    save_expression_set(es_eeg, output_dir / f"{input_file.stem}_eeg{input_file.suffix}", overwrite=False)
 
 
 def split_meg_eeg_sensors(es: SensorExpressionSet) -> tuple[list[str], list[str]]:
