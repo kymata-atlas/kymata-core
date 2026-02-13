@@ -21,3 +21,22 @@ def get_stds(x, n):
     y = y[:, :, -n - 1 : -1] - y[:, :, :n]
     z = z[:, :, -n - 1 : -1] - z[:, :, :n]
     return (y - ((z**2) / n)) ** 0.5
+
+
+def index_in(v1: NDArray, v2: NDArray) -> NDArray:
+    """
+    For each element of v1, returns its index in v2.
+    Raises a ValueError if an element of v1 is not found in v2.
+
+    (Thanks https://stackoverflow.com/a/8251757)
+    """
+    index_v2 = np.argsort(v2)
+    sorted_v2 = v2[index_v2]
+    sorted_index = np.searchsorted(sorted_v2, v1)
+
+    v1_index = np.take(index_v2, sorted_index, mode="clip")
+    mask = v2[v1_index] != v1
+
+    result = v1_index.copy()
+    result[mask] = -1
+    return result

@@ -23,6 +23,7 @@ from kymata.entities.datatypes import (
 from kymata.io.layouts import SensorLayout, get_meg_sensors, get_eeg_sensors
 from kymata.entities.iterables import all_equal
 from kymata.entities.sparse_data import expand_dims, densify_data_block, sparsify_log_pmatrix
+from kymata.math.vector import index_in
 
 _InputDataArray = Union[ndarray, SparseArray]  # Type alias for data which can be accepted
 
@@ -827,6 +828,26 @@ class SensorExpressionSet(ExpressionSet):
             data=self._data[BLOCK_SCALP].isel({DIM_LATENCY: array(new_latency_idxs)}).data.copy(),
             sensor_layout=self.sensor_layout,
         )
+
+    def subset_sensors(self, sensors: Sequence[Sensor]):
+        # Validate input
+        for sensor in sensors:
+            if sensor not in self.sensors:
+                raise ValueError(f"Sensor {sensor} not found")
+        if len(sensors) != len(set(sensors)):
+            raise ValueError("Duplicate sensors supplied")
+
+        # Get indices of selected sensors
+        sensor_indices = index_in(array(sensors), self.sensors)
+
+        return SensorExpressionSet(
+            transforms=self.transforms.copy(),
+            sensors=sensors,
+            latencies=self.latencies.copy(),
+            data=self._data[BLOCK_SCALP].isel({DIM_SENSOR: sensor_indices}).data.copy(),
+            sensor_layout=self.sensor_layout,
+        )
+
 
     def best_transforms(self) -> list[ExpressionPoint]:
         """
