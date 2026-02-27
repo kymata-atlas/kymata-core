@@ -262,6 +262,7 @@ def do_gridsearch(
             log_pvalues=log_pvalues,
             overwrite=overwrite,
         )
+        del auto_corrs
 
     if channel_space == "sensor":
         es = SensorExpressionSet(
@@ -284,7 +285,7 @@ def do_gridsearch(
     else:
         raise NotImplementedError(channel_space)
     
-    del corrs, auto_corrs, log_pvalues
+    del corrs, log_pvalues
     gc.collect()
 
     return es

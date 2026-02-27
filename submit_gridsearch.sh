@@ -33,4 +33,5 @@ python kymata/invokers/run_gridsearch.py \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \
   --morph \
   --n-derangements 6 \
-  --n-splits 400
+  --n-splits 400 \
+  --selected-chan 6768
