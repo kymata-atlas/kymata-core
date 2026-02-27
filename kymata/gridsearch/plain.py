@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 from scipy import stats
 
+from kymata.entities.datatypes import Channel, Latency
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
 from kymata.io.layouts import SensorLayout
@@ -35,6 +36,9 @@ def do_gridsearch(
     n_reps: int = 1,
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
+    selected_chan: Optional[Channel] = None,
+    selected_lat: Optional[Latency] = None,
+    save_selected_distribution_to: Optional[Path] = None,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given transform.
@@ -67,6 +71,12 @@ def do_gridsearch(
         plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
             five channels in the gridsearch. Default is False.
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
+        selected_chan (Channel, optional): If provided and not None: extract the distribution of z-transformed r values
+            at the selected channel
+        selected_lat (Latency, optional): If provided and not None: extract the distribution of z-transformed r values
+            at the selected latench. If None (the default), use the best latency.
+        save_selected_distribution_to (Path, optional): If provided and not None: save the distribution to the specified
+            file or directory. If None (the default), don't save.
 
     Returns:
         ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
@@ -199,6 +209,33 @@ def do_gridsearch(
         n_trans_samples_per_split + 1,
     )[:-1]
 
+    if selected_chan is not None:
+        # Use z-transformed Rs to compare specified transforms at specified channels
+        corrs_z = 0.5 * np.log((1 + corrs) / (1 - corrs))
+
+        # Get the distribution over splits of the corr of the peak value
+        chan = channel_names.index(selected_chan)
+        # Get the best lat or the specified lat
+        selected_lat = np.argmin(log_pvalues[chan, :]) if selected_lat is None else selected_lat
+        distribution = corrs_z[chan, 0, :, selected_lat].flatten()
+
+        _logger.info(f"Peak Z(R) distribution for {transform.name}"
+                     f" at channel {selected_chan}"
+                     f" and latency {latencies_ms[selected_lat]}ms:"
+                     f" {distribution}")
+        if save_selected_distribution_to is not None:
+            if save_selected_distribution_to.is_dir():
+                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_chan}_t{latencies_ms[selected_lat]}.csv"
+            else:
+                loc = save_selected_distribution_to
+            if loc.exists() and not overwrite:
+                raise FileExistsError(loc)
+            with open(loc, "w") as f:
+                f.writelines([
+                    f"{val}\n"
+                    for val in distribution
+                ])
+
     if plot_top_five_channels:
         # work out autocorrelation for channel-by-channel plots
         noise = normalize(np.random.randn(trans.shape[0], trans.shape[1])) * 0
@@ -249,7 +286,7 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> NDArray:
     """
     Perform a vectorized Welch's t-test on correlation matrices.
 
@@ -272,7 +309,7 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
 
     Returns:
     --------
-    ArrayLike
+    NDArray
         A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
         of the t-tests for each channel and time step.
 
