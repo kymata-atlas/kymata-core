@@ -1,4 +1,3 @@
-from os.path import isfile
 from pathlib import Path
 from typing import Optional
 from logging import getLogger
@@ -8,18 +7,16 @@ import numpy as np
 from numpy.typing import NDArray
 import mne
 
+from kymata.io.exceptions import FileFormatError
 from kymata.io.file import PathType
-from kymata.preproc.premorph import (
-    pick_channels_inverse_operator,
-    premorph_inverse_operator,
-)
+from kymata.preproc.premorph import pick_channels_inverse_operator, premorph_inverse_operator
+
 
 _logger = getLogger(__name__)
 
 
 def load_single_emeg(
     emeg_path: Path,
-    need_names=False,
     inverse_operator_path: Optional[Path] = None,
     snr=4,
     morph_path: Optional[Path] = None,
@@ -32,26 +29,14 @@ def load_single_emeg(
 
     old_morph: forces loading of mne morph map
     """
-    emeg_path_npy = emeg_path.with_suffix(".npy")
-    emeg_path_fif = emeg_path.with_suffix(".fif")
+    if not emeg_path.suffix == ".fif":
+        raise FileFormatError(f"Only .fif files supported: {emeg_path.name}")
 
     if inverse_operator_path is None:
         ch_names_path = Path(emeg_path.parent, "ch_names.npy")
 
-    if (
-        isfile(emeg_path_npy)
-        and (not need_names)
-        and (inverse_operator_path is None)
-        and (morph_path is None)
-    ):
-        # Load npy-format sensor data
-        channel_names: list[str] = np.load(ch_names_path)
-        emeg = np.load(emeg_path_npy)
-
-        return emeg, channel_names
-
-    _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
-    evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
+    _logger.info(f"Reading EMEG evokeds from {emeg_path}")
+    evoked = mne.read_evokeds(emeg_path, verbose=False)
     assert len(evoked) == 1
     evoked = evoked[0]
 
@@ -76,11 +61,7 @@ def load_single_emeg(
         return emeg, morph_hexel_names
 
     if premorphed_inverse_operator_path is not None:
-        common_channels_path = Path(
-            premorphed_inverse_operator_path.parent,
-            Path(premorphed_inverse_operator_path.name).stem
-            + "_list_of_common_channels",
-        )
+        common_channels_path = premorphed_inverse_operator_path.parent / (premorphed_inverse_operator_path.stem + "_list_of_common_channels")
         if not Path(premorphed_inverse_operator_path).exists():
             # Compute premorphed operator path
             inverse_operator, premorphed_inverse_operator, morph_hexel_names = (
@@ -308,7 +289,6 @@ def load_emeg_pack(
     inverse_operator_dir: Optional[PathType],
     ch_names_path: Path,
     morph_dir: Optional[PathType] = None,
-    need_names=False,
     ave_mode=None,
     inverse_operator_suffix=None,
     snr=4,
@@ -325,7 +305,6 @@ def load_emeg_pack(
         inverse_operator_dir:
         ch_names_path:
         morph_dir:
-        need_names:
         ave_mode: "ave" or "concatenate"
             "ave" = average over all repetitions
             "concatenate" = treat all repetitions as if it's a single continuous stimulus
@@ -368,7 +347,6 @@ def load_emeg_pack(
     try:
         emeg, emeg_names = load_single_emeg(
             emeg_paths[0],
-            need_names,
             inverse_operator_paths[0],
             snr,
             morph_paths[0],
@@ -389,7 +367,6 @@ def load_emeg_pack(
         for i in range(1, len(emeg_paths)):
             new_emeg, _ch_names = load_single_emeg(
                 emeg_paths[i],
-                need_names,
                 inverse_operator_paths[i],
                 snr,
                 morph_paths[i],
@@ -405,7 +382,6 @@ def load_emeg_pack(
         for i in range(1, len(emeg_paths)):
             new_emeg, _ch_names = load_single_emeg(
                 emeg_paths[i],
-                need_names,
                 inverse_operator_paths[i],
                 snr,
                 morph_paths[i],
