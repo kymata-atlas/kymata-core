@@ -1,3 +1,4 @@
+#!/bin/bash
 in="/Users/cai/Dox/Work/Kymata lab/Code/kymata-core/kymata-core-data/tianyi/sensor/logs_split/"
 out="/Users/cai/Dox/Work/Kymata lab/Code/kymata-core/kymata-core-data/tianyi/sensor/scatter_split/"
 
