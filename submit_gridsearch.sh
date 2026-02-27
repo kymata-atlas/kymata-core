@@ -25,7 +25,6 @@ python kymata/invokers/run_gridsearch.py \
   --input-stream tactile \
   --transform-path 'predicted_function_contours/touchsim_indent_lstm' \
   --transform-name LH_ident_lstm RH_ident_lstm  \
-  --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
   --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
   --save-plot-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
