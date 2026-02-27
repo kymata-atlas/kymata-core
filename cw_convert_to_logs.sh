@@ -1,5 +1,6 @@
-in="/Users/cai/Dox/Work/Kymata lab/Code/kymata-core/kymata-core-data/tianyi/sensor/expression_sets_split/"
-out="/Users/cai/Dox/Work/Kymata lab/Code/kymata-core/kymata-core-data/tianyi/sensor/logs_split/"
+#!/bin/bash
+in="/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/tianyi/sensor/expression_sets_split/"
+out="/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/tianyi/sensor/logs_split/"
 
 declare -a modalities=("eeg" "meg")
 
