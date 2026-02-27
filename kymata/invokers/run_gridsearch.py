@@ -193,7 +193,6 @@ def main():
         emeg_filenames,
         emeg_dir=emeg_path,
         morph_dir=morph_dir if args.morph else None,
-        need_names=True,
         ave_mode=args.ave_mode,
         inverse_operator_dir=inverse_operator_dir
         if args.use_inverse_operator
@@ -301,7 +300,7 @@ def main():
     expression_plot(
         combined_expression_set,
         color={
-                "IL": "#b11e34",
+                "IL":  "#b11e34",
                 "IL1": "#a201e9",
                 "IL2": "#a201e9",
                 "IL3": "#a201e9",
