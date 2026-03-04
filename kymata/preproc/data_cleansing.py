@@ -108,14 +108,14 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 raw_fif_data.info["bads"] = recording_config["bad_channels"]
 
-                # response = input_with_color(
-                #     "Would you like to see the raw data? Recommended if you want to confirm"
-                #     + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                #     + " (y/n)",
-                #     Fore.MAGENTA,
-                # )
+                response = input_with_color(
+                    "Would you like to see the raw data? Recommended if you want to confirm"
+                    + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                    + " (y/n)",
+                    Fore.MAGENTA,
+                )
 
-                response = "n"  # supress prompt for automated runs
+                # response = "n"  # supress prompt for automated runs
 
                 if response == "y":
                     print("...Plotting Raw data.")
@@ -254,11 +254,11 @@ def run_second_pass_cleansing_and_eog_removal(
                 )
 
                 if not supress_excessive_plots_and_prompts:
-                    # response = input_with_color(
-                    #     "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
-                    #     Fore.MAGENTA,
-                    # )
-                    response = "n"  # supress prompt for automated runs
+                    response = input_with_color(
+                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                        Fore.MAGENTA,
+                    )
+                    # response = "n"  # supress prompt for automated runs
                     if response == "y":
                         print("...Plotting Raw data.")
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
@@ -686,8 +686,14 @@ def create_trialwise_data(
             raw_events = mne.find_events(
                 raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
             )
-            repetition_events = raw_events[0].reshape(1,3)
-            assert repetition_events[0][2] == TRIGGER_REP_ONSET
+            # repetition_events = raw_events[0].reshape(1,3)
+            # assert repetition_events[0][2] == TRIGGER_REP_ONSET
+            # stimulus_length_1 = (raw_events[1][0] - raw_events[0][0]) / 1000
+            # stimulus_length_2 = (raw_events[3][0] - raw_events[2][0]) / 1000
+            stimulus_length_1 = 291.15
+            stimulus_length_2 = 325.169
+            repetition_events_1 = raw_events[0].reshape(1,3)
+            repetition_events_2 = raw_events[2].reshape(1,3)
         else:
             raw_events = mne.find_events(
                 raw, stim_channel='UPPT001', shortest_event=1
@@ -710,39 +716,85 @@ def create_trialwise_data(
             f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
         )
 
-        # Extract trial instances ('epochs')
-        _tmin = latency_range[0]
-        _tmax = (
-            stimulus_length
-            # extra padding at the end to accommodate range of latencies
-            + latency_range[1]
-            # Extra space to account for audio latency drift
-            + 2
-        )
+        if 'Camcan' in dataset_directory_name:
+            # Extract trial instances ('epochs')
+            _tmin = latency_range[0]
+            _tmax_1 = (
+                stimulus_length_1
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[0]
+            )
 
-        epochs = mne.Epochs(
-            raw,
-            repetition_events,
-            None,
-            _tmin,
-            _tmax,
-            picks=picks,
-            baseline=(None, None),
-            preload=True,
-        )
-        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+            epochs_1 = mne.Epochs(
+                raw,
+                repetition_events_1,
+                None,
+                _tmin,
+                _tmax_1,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
 
-        # Log which channels are worst
-        dropfig = epochs.plot_drop_log(subject=p)
-        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+            _tmax_2 = (
+                stimulus_length_2
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2
+            )
 
-        # Average over repetitions
-        evoked = epochs.average()
-        _logger.info(
-            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-        )
+            epochs_2 = mne.Epochs(
+                raw,
+                repetition_events_2,
+                None,
+                _tmin,
+                _tmax_2,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
 
-        evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
+            epochs_1_data = epochs_1.get_data()[0]
+            epochs_2_data = epochs_2.get_data()[0]
+            # Concatenate the two epoch objects into a single Epochs
+            np.save(Path(evoked_path, f"{p}-ave.npy"), np.concatenate((epochs_1_data, epochs_2_data), axis=1))
+
+
+        else:
+            # Extract trial instances ('epochs')
+            _tmin = latency_range[0]
+            _tmax = (
+                stimulus_length
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2
+            )
+
+            epochs = mne.Epochs(
+                raw,
+                repetition_events,
+                None,
+                _tmin,
+                _tmax,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )            
+            _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+            # Log which channels are worst
+            dropfig = epochs.plot_drop_log(subject=p)
+            dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+
+            # Average over repetitions
+            evoked = epochs.average()
+            _logger.info(
+                f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+            )
+
+            evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
 
 
 def apply_automatic_bad_channel_detection(
