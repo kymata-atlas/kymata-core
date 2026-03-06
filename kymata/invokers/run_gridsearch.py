@@ -441,8 +441,8 @@ def main():
                     plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     emeg_layout=sensor_layout,
-                    selected_chan=selected_chan,
-                    selected_lat=selected_lat,
+                    selected_chan=args.selected_chan,
+                    selected_lat=args.selected_lat,
                     save_selected_distribution_to=Path(args.save_expression_set_location),
                 )
 
