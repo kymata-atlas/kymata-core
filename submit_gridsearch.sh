@@ -34,4 +34,4 @@ python kymata/invokers/run_gridsearch.py \
   --morph \
   --n-derangements 6 \
   --n-splits 400 \
-  --selected-chan 6768
+  --selected-chan L6768

@@ -37,7 +37,8 @@ def do_gridsearch(
     n_reps: int = 1,
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
-    selected_chan: Optional[Channel] = None,
+    selected_hemi: Optional[str] = None,
+    selected_chan: Optional[int] = None,
     selected_lat: Optional[Latency] = None,
     save_selected_distribution_to: Optional[Path] = None,
 ) -> ExpressionSet:
@@ -72,7 +73,8 @@ def do_gridsearch(
         plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
             five channels in the gridsearch. Default is False.
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
-        selected_chan (Channel, optional): If provided and not None: extract the distribution of z-transformed r values
+        selected_hemi (str, optional): If provided and not None: look for channel on this hemisphere.
+        selected_chan (int, optional): If provided and not None: extract the distribution of z-transformed r values
             at the selected channel
         selected_lat (Latency, optional): If provided and not None: extract the distribution of z-transformed r values
             at the selected latench. If None (the default), use the best latency.
@@ -215,10 +217,13 @@ def do_gridsearch(
         corrs_z = 0.5 * np.log((1 + corrs) / (1 - corrs))
 
         # Get the distribution over splits of the corr of the peak value
-        chan = channel_names.index(selected_chan)
+        # Assuming source space
+        hexels_l, hexels_r = channel_names
+        hexels = hexels_l if selected_hemi == "L" else hexels_r
+        chan_idx = hexels.index(selected_chan)
         # Get the best lat or the specified lat
-        selected_lat = np.argmin(log_pvalues[chan, :]) if selected_lat is None else selected_lat
-        distribution = corrs_z[chan, 0, :, selected_lat].flatten()
+        selected_lat = np.argmin(log_pvalues[chan_idx, :]) if selected_lat is None else selected_lat
+        distribution = corrs_z[chan_idx, 0, :, selected_lat].flatten()
 
         _logger.info(f"Peak Z(R) distribution for {transform.name}"
                      f" at channel {selected_chan}"
