@@ -233,7 +233,7 @@ def do_gridsearch(
             if save_selected_distribution_to.is_dir() or not save_selected_distribution_to.suffix:
                 # It's a directory
                 save_selected_distribution_to.mkdir(exist_ok=True)
-                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_chan}_t{latencies_ms[selected_lat]}.csv"
+                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_hemi}{selected_chan}_t{latencies_ms[selected_lat]}.csv"
             else:
                 # It's a file
                 loc = save_selected_distribution_to
