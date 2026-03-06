@@ -1,5 +1,6 @@
 from logging import basicConfig, INFO, getLogger
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +8,10 @@ import re
 from matplotlib import colors
 from statistics import NormalDist
 import argparse
+
+from numpy import dtype, ndarray
+from scipy.stats import linregress
+from sklearn.conftest import pyplot
 
 from kymata.io.logging import log_message, date_format
 from kymata.math.probability import p_to_logp, sidak_correct
@@ -142,6 +147,72 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     save_loc = output_dir / f"{dataset}_neuron_scatter_{x_axis}.png"
 
     plt.savefig(save_loc, dpi=600)
+    plt.close(fig)
+
+    # Plot line of best fit
+    if x_axis == "latency":
+        _plot_line_of_best_fit(layer, sig, output_dir, dataset)
+
+
+def _plot_line_of_best_fit(layer: int, sig: ndarray[Any, dtype[Any]], output_dir: Path, dataset: str) -> None:
+    fig, ax = plt.subplots()
+
+    x_layers = np.arange(layer)
+    # Per-layer aggregation: x = layer number, y = mean latency
+    mean_lat_by_layer = np.full(layer, np.nan, dtype=float)
+    n_sig_by_layer = np.zeros(layer, dtype=int)
+    for li in range(layer):
+        latencies = sig[sig[:, 4] == li, 0]
+        n_sig_by_layer[li] = int(latencies.size)
+        if latencies.size:
+            mean_lat_by_layer[li] = float(np.mean(latencies))
+
+    mask = np.isfinite(mean_lat_by_layer)
+    x_fit = x_layers[mask]
+    y_fit = mean_lat_by_layer[mask]
+
+    if x_fit.size >= 2:
+        lr = linregress(x_fit, y_fit)
+        y_pred = lr.slope * x_layers + lr.intercept
+        ax.plot(x_layers, y_pred, linestyle=':', linewidth=2, color='black')
+
+        # Pearson correlation (same as lr.rvalue) + p-value
+        r = float(lr.rvalue)
+        p = float(lr.pvalue)
+        ax.text(
+            0.02,
+            0.98,
+            f"Pearson r = {r:.3g}\np = {p:.3g}",
+            transform=ax.transAxes,
+            va='top',
+            ha='left',
+            fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
+        )
+    else:
+        ax.text(
+            0.02,
+            0.98,
+            "Not enough layers with data for regression",
+            transform=ax.transAxes,
+            va='top',
+            ha='left',
+            fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
+        )
+
+    ax.set_xlabel('Layer number')
+    ax.set_ylabel('Mean latency (ms)')
+    ax.set_xlim(-0.5, layer - 0.5)
+    ax.set_ylim(0, 500)
+
+    plt.tight_layout()
+
+    save_loc = output_dir / f"{dataset}_best_fit.png"
+
+    plt.savefig(save_loc, dpi=600)
+
+    plt.close(fig)
 
 
 if __name__ == '__main__':
