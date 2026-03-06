@@ -224,15 +224,18 @@ def do_gridsearch(
         # Get the best lat or the specified lat
         if selected_lat_ms is None:
             selected_lat_idx = np.argmin(log_pvalues[chan_idx, :])
+            _logger.info(f"No latency selected. Using best latency {latencies_ms[selected_lat_idx]}ms"
+                         f" ({selected_lat_idx=})")
         else:
             # Get idx by comparing strings up to 2sf
             selected_lat_idx = [f"{ms:.2f}" for ms in latencies_ms].index(f"{selected_lat_ms:.2f}")
+            _logger.info(f"Selected latency {selected_lat_ms}"
+                         f" ({selected_lat_idx} → {latencies_ms[selected_lat_idx]})")
         distribution = corrs_z[chan_idx, 0, :, selected_lat_idx].flatten()
 
         _logger.info(f"Peak Z(R) distribution for {transform.name}"
                      f" at channel {selected_chan}"
-                     f" and latency {latencies_ms[selected_lat_idx]}ms ({selected_lat_idx=}):"
-                     f" {distribution}")
+                     f" and latency {latencies_ms[selected_lat_idx]}ms ({selected_lat_idx=})")
         if save_selected_distribution_to is not None:
             if save_selected_distribution_to.is_dir() or not save_selected_distribution_to.suffix:
                 # It's a directory
