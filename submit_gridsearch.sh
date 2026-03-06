@@ -18,7 +18,7 @@ args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 export PATH="$HOME/.local/bin:$PATH"
-cd /imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/ # Change to your own path to kymata-core
+cd /imaging/projects/cbu/kymata/analyses/cai/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset5.yaml \
@@ -26,8 +26,8 @@ python kymata/invokers/run_gridsearch.py \
   --transform-path 'predicted_function_contours/touchsim_indent_lstm' \
   --transform-name LH_ident_lstm RH_ident_lstm  \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
   --overwrite \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \
