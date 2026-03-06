@@ -1,9 +1,8 @@
 cff-version: 1.2.0
-message: """\
-If you use this software, please cite it as below. \
-To cite the software as research, please use the paper citation. \
-To cite the software as a codebase, please use cite this repository. \
-"""
+message: >
+  If you use this software, please cite it as below. 
+  To cite the software as research, please use the paper citation. 
+  To cite the software as a codebase, please use cite this repository.
 title: "kymata-core"
 # Update version to match pyproject.toml
 version: 1.0.6
@@ -77,4 +76,4 @@ preferred-citation:
   #end: # last page number
   title: "The Kymata Atlas: A map of information processing in the human cortex"
   #volume: 
-  #year: 
+  year: 2026
