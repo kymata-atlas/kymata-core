@@ -1,0 +1,80 @@
+cff-version: 1.2.0
+message: """\
+If you use this software, please cite it as below. \
+To cite the software as research, please use the paper citation. \
+To cite the software as a codebase, please use cite this repository. \
+"""
+title: "kymata-core"
+# Update version to match pyproject.toml
+version: 1.0.6
+# Release date matches MAJOR release; doesn't need to be continually updated for PATCH releases
+date-released: 2024-08-04
+url: "https://github.com/kymata-atlas/kymata-core"
+authors:
+  - name: "Kymata Research Group"
+  - family-names: "Thwaites"
+    given-names: "Andrew"
+    orcid: "https://orcid.org/0000-0002-6237-7140"
+  - family-names: "Wieser"
+    given-names: "Eric"
+    orcid: "https://orcid.org/0000-0003-0412-4978"
+  - family-names: "Soltan"
+    given-names: "Andrew"
+    orcid: "https://orcid.org/0000-0003-2391-5361"
+  - family-names: "Parish"
+    given-names: "Oliver"
+  - family-names: "Yang"
+    given-names: "ChenTianyi"
+  - family-names: "Lakra"
+    given-names: "Anirudh"
+  - family-names: "Zulfiqar"
+    given-names: "Isma"
+  - family-names: "Nimmo-Smith"
+    given-names: "Ian"
+  - family-names: "Wingfield"
+    given-names: "Cai"
+    orcid: "https://orcid.org/0000-0002-0254-199X"
+  - family-names: "Zhang"
+    given-names: "Chao"
+  - family-names: "Woolgar"
+    given-names: "Alexandra"
+    orcid: "https://orcid.org/0000-0002-8453-7424"
+
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Thwaites"
+    given-names: "Andrew"
+    orcid: "https://orcid.org/0000-0002-6237-7140"
+  - family-names: "Wieser"
+    given-names: "Eric"
+    orcid: "https://orcid.org/0000-0003-0412-4978"
+  - family-names: "Soltan"
+    given-names: "Andrew"
+    orcid: "https://orcid.org/0000-0003-2391-5361"
+  - family-names: "Parish"
+    given-names: "Oliver"
+  - family-names: "Yang"
+    given-names: "ChenTianyi"
+  - family-names: "Lakra"
+    given-names: "Anirudh"
+  - family-names: "Zulfiqar"
+    given-names: "Isma"
+  - family-names: "Nimmo-Smith"
+    given-names: "Ian"
+  - family-names: "Wingfield"
+    given-names: "Cai"
+    orcid: "https://orcid.org/0000-0002-0254-199X"
+  - family-names: "Zhang"
+    given-names: "Chao"
+  - family-names: "Woolgar"
+    given-names: "Alexandra"
+    orcid: "https://orcid.org/0000-0002-8453-7424"
+  #doi: ""
+  journal: "In preparation"
+  #month: 
+  #start: # first page number
+  #end: # last page number
+  title: "The Kymata Atlas: A map of information processing in the human cortex"
+  #volume: 
+  #year: 
