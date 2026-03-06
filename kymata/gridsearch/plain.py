@@ -227,13 +227,13 @@ def do_gridsearch(
 
         _logger.info(f"Peak Z(R) distribution for {transform.name}"
                      f" at channel {selected_chan}"
-                     f" and latency {latencies_ms[selected_lat]}ms:"
+                     f" and latency {latencies_ms[selected_lat]}ms ({selected_lat=}):"
                      f" {distribution}")
         if save_selected_distribution_to is not None:
             if save_selected_distribution_to.is_dir() or not save_selected_distribution_to.suffix:
                 # It's a directory
                 save_selected_distribution_to.mkdir(exist_ok=True)
-                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_hemi}{selected_chan}_t{latencies_ms[selected_lat]}.csv"
+                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_hemi}{selected_chan}_t{latencies_ms[selected_lat]}({selected_lat}).csv"
             else:
                 # It's a file
                 loc = save_selected_distribution_to
