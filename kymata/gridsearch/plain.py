@@ -39,7 +39,7 @@ def do_gridsearch(
     overwrite: bool = True,
     selected_hemi: Optional[str] = None,
     selected_chan: Optional[int] = None,
-    selected_lat: Optional[Latency] = None,
+    selected_lat_ms: Optional[Latency] = None,
     save_selected_distribution_to: Optional[Path] = None,
 ) -> ExpressionSet:
     """
@@ -76,7 +76,7 @@ def do_gridsearch(
         selected_hemi (str, optional): If provided and not None: look for channel on this hemisphere.
         selected_chan (int, optional): If provided and not None: extract the distribution of z-transformed r values
             at the selected channel
-        selected_lat (Latency, optional): If provided and not None: extract the distribution of z-transformed r values
+        selected_lat_ms (Latency, optional): If provided and not None: extract the distribution of z-transformed r values
             at the selected latench. If None (the default), use the best latency.
         save_selected_distribution_to (Path, optional): If provided and not None: save the distribution to the specified
             file or directory. If None (the default), don't save.
@@ -222,18 +222,22 @@ def do_gridsearch(
         hexels = hexels_l if selected_hemi == "L" else hexels_r
         chan_idx = hexels.index(selected_chan)
         # Get the best lat or the specified lat
-        selected_lat = np.argmin(log_pvalues[chan_idx, :]) if selected_lat is None else selected_lat
-        distribution = corrs_z[chan_idx, 0, :, selected_lat].flatten()
+        if selected_lat_ms is None:
+            selected_lat_idx = np.argmin(log_pvalues[chan_idx, :])
+        else:
+            # Get idx by comparing strings up to 2sf
+            selected_lat_idx = [f"{ms:.2f}" for ms in latencies_ms].index(f"{selected_lat_ms:.2f}")
+        distribution = corrs_z[chan_idx, 0, :, selected_lat_idx].flatten()
 
         _logger.info(f"Peak Z(R) distribution for {transform.name}"
                      f" at channel {selected_chan}"
-                     f" and latency {latencies_ms[selected_lat]}ms ({selected_lat=}):"
+                     f" and latency {latencies_ms[selected_lat_idx]}ms ({selected_lat_idx=}):"
                      f" {distribution}")
         if save_selected_distribution_to is not None:
             if save_selected_distribution_to.is_dir() or not save_selected_distribution_to.suffix:
                 # It's a directory
                 save_selected_distribution_to.mkdir(exist_ok=True)
-                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_hemi}{selected_chan}_t{latencies_ms[selected_lat]}({selected_lat}).csv"
+                loc = save_selected_distribution_to / f"peak_zr_dist_{transform.name}_c{selected_hemi}{selected_chan}_t{latencies_ms[selected_lat_idx]}.csv"
             else:
                 # It's a file
                 loc = save_selected_distribution_to
