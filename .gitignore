@@ -33,3 +33,7 @@ scratch.*
 
 # Temp testing files
 /**/temp/*
+# remove this next one when bringing up to date with `main` branch
+/tests/test-data/*
+/kymata-core-data/*
+*.h5

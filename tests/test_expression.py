@@ -958,3 +958,44 @@ def test_latency_crop_outside_range():
 
     with pytest.raises(IndexError):
         es.crop(1, 2)
+
+
+def test_subset_sensor_subset(sensor_expression_set_4_sensors_3_latencies):
+    from numpy import array
+    from numpy.typing import NDArray
+
+    transform_a_data_subset: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    # 0   1   2  latencies
+                    [1, 1, 0.2],  # 1
+                    [0.2, 1, 1],  # 3 sensors
+                ]
+            )
+        )
+    )
+    transform_b_data_subset: NDArray = array(
+        p_to_logp(
+            array(
+                [
+                    [1, 0.1, 1],
+                    [1, 1, 0.1],
+                ]
+            )
+        )
+    )
+
+    expected = SensorExpressionSet(
+        transforms=["a", "b"],
+        sensors=["1", "3"],
+        latencies=range(3),
+        data=[transform_a_data_subset, transform_b_data_subset],
+    )
+    result = sensor_expression_set_4_sensors_3_latencies.subset_sensors(["1", "3"])
+    assert expected == result
+
+
+def test_subset_sensor_out_of_range(sensor_expression_set_4_sensors_3_latencies):
+    with pytest.raises(ValueError):
+        result = sensor_expression_set_4_sensors_3_latencies.subset_sensors(["1", "5"])
