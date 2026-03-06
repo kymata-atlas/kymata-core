@@ -9,10 +9,8 @@ from numpy.typing import NDArray
 import mne
 
 from kymata.io.file import PathType
-from kymata.preproc.premorph import (
-    pick_channels_inverse_operator,
-    premorph_inverse_operator,
-)
+from kymata.preproc.premorph import pick_channels_inverse_operator, premorph_inverse_operator
+
 
 _logger = getLogger(__name__)
 
@@ -103,9 +101,9 @@ def load_single_emeg(
 
         else:
             # Load precomputed
-            premorphed_inverse_operator = np.load(premorphed_inverse_operator_path)
-            morph_hexel_names = np.load(ch_names_path, allow_pickle=True)
-            common_channels = np.load(common_channels_path.with_suffix(".npy"))
+            premorphed_inverse_operator: NDArray = np.load(premorphed_inverse_operator_path)
+            morph_hexel_names: NDArray = np.load(ch_names_path, allow_pickle=True)
+            common_channels: NDArray = np.load(common_channels_path.with_suffix(".npy"))
 
         emeg = np.matmul(
             premorphed_inverse_operator,
@@ -118,7 +116,7 @@ def load_single_emeg(
     else:
         raise ValueError("Please supply premorphed_inverse_operator_path or old_morph.")
 
-    return emeg, morph_hexel_names
+    return emeg, morph_hexel_names.tolist()
 
 
 def inverse_operate(evoked, inverse_operator, snr=4, morph_map: Optional[mne.SourceMorph] = None):
