@@ -1,5 +1,3 @@
-from typing import NamedTuple
-
 from matplotlib import pyplot as plt
 from mne.io import Raw
 
@@ -32,12 +30,10 @@ def plot_eeg_sensor_positions(raw_fif: Raw):
     ax3d.view_init(azim=70, elev=15)
 
 
-class _AxisAssignment(NamedTuple):
-    axis_name: str
-    axis_channels: list
-
-
-def get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignment, _AxisAssignment]:
+def get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[set, set]:
+    """
+    Gets the left/right assignment of sensors to axes from a layout
+    """
     left_sensors, right_sensors = [], []
     if layout.meg is not None:
         left_sensors.extend([sensor for sensor, (x, y) in get_meg_sensor_xy(layout.meg).items() if x <= 0.5])
@@ -45,7 +41,7 @@ def get_sensor_left_right_assignment(layout: SensorLayout) -> tuple[_AxisAssignm
     if layout.eeg is not None:
         left_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x <= 0])
         right_sensors.extend([sensor for sensor, (x, y) in get_eeg_sensor_xy(layout.eeg).items() if x >= 0])
-    return _AxisAssignment("left", left_sensors), _AxisAssignment("right", right_sensors)
+    return set(left_sensors), set(right_sensors)
 
 
 def restrict_sensors_by_type(

@@ -1,4 +1,5 @@
 # Possible default location for downloaded data
+kymata-core-data/
 kymata-core-data/tutorial_nkg_data/
 kymata-core-data/emeg_study_data/
 kymata-core-data/output/
@@ -12,6 +13,9 @@ kymata-core-data/output/
 env/
 venv/
 ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

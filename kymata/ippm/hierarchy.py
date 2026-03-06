@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import Optional, Iterable
+from copy import copy
+from typing import Iterable
 
 from networkx import DiGraph
+from networkx.algorithms.components import weakly_connected_components
 
-from kymata.entities.expression import ExpressionPoint
 
 # Maps transforms to lists of names of parent/predecessor/upstream transforms
 TransformHierarchy = dict[str, list[str]]
 
-
-# transform_name → points
-GroupedPoints = dict[str, list[ExpressionPoint]]
+# A serial sequence of parallel transforms
+SerialSequence = tuple[frozenset[str], ...]
 
 
 class CandidateTransformList:
@@ -51,6 +50,12 @@ class CandidateTransformList:
                 graph.add_edge(parent, trans)
 
         self.graph: DiGraph = graph
+
+    def subgraph(self, transforms: Iterable[str]) -> CandidateTransformList:
+        """The CTL formed by restricting to the subset of transforms provided."""
+        new_graph = copy(self)
+        new_graph.graph = DiGraph(new_graph.graph.subgraph(transforms))
+        return new_graph
 
     def __eq__(self, other: CandidateTransformList) -> bool:
         # Check nodes and edges
@@ -93,7 +98,7 @@ class CandidateTransformList:
         return set(t for t in self.graph.nodes if self.graph.out_degree[t] == 0)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> SerialSequence:
         """
         The serial sequence of parallel transforms.
 
@@ -101,10 +106,10 @@ class CandidateTransformList:
         parallelizable transforms, ordered by serial dependency.
 
         Returns:
-            list[list[str]]: A list of lists representing batches of parallel transforms in execution order.
+            SerialSequence: A sequence of sets representing batches of parallel transforms in execution order.
         """
         # Add input nodes
-        seq = [sorted(self.inputs)]
+        seq = [frozenset(self.inputs)]
         parsed_transforms = self.inputs
         # Recursively add children
         remaining_transforms = self.transforms - self.inputs
@@ -121,9 +126,37 @@ class CandidateTransformList:
                             remaining_transforms.remove(candidate)
                         except KeyError:
                             pass
-            seq.append(sorted(batch))
+            seq.append(frozenset(batch))
             parsed_transforms.update(batch)
-        return seq
+        return tuple(seq)
+
+    @property
+    def connected_serial_sequences(self) -> set[SerialSequence]:
+        """
+        Returns the set of connected serial sequences for each of the connected components of the CTL.
+        """
+        serial_seq = self.serial_sequence
+        # for each component, run through the sequence and filter out those items
+        ret = set()
+        for component in self.connected_components:
+            seq = []
+            for step in serial_seq:
+                filtered = frozenset(trans for trans in step if trans in component)
+                if len(filtered) > 0:
+                    seq.append(filtered)
+            ret.add(tuple(seq))
+        return ret
+
+    @property
+    def connected_components(self) -> set[frozenset[str]]:
+        """
+        The set of transforms in each of the set of connected components of the CTL (which will typically be more than
+        one when the CTL is the result of combining multiple sub-CTLs.
+        """
+        return {
+            frozenset(component)
+            for component in weakly_connected_components(self.graph)
+        }
 
     def immediately_upstream(self, transform: str) -> set[str]:
         """
@@ -142,34 +175,3 @@ class CandidateTransformList:
             raise ValueError(transform)
 
         return set(self.graph.successors(transform))
-
-
-def group_points_by_transform(points: Iterable[ExpressionPoint],
-                              ctl: Optional[CandidateTransformList] = None,
-                              ) -> GroupedPoints:
-    """
-    Groups a list of expression points by their associated transforms.
-
-    This function organizes expression points into a dictionary, where each key is a transform, and each value is a list
-    of expression points associated with that transform.
-
-    If a CTL is provided, the function will initialize the dictionary with empty lists for all transforms in the CTL,
-    ensuring all transforms are represented, even if no expression points are associated with them.
-
-    Args:
-        points (list[ExpressionPoint]): A list of expression points to be grouped.
-        ctl (Optional[CandidateTransformList]): An optional transform list to initialize the dictionary with empty lists
-            for all transforms.
-
-    Returns:
-        GroupedPoints: A dictionary mapping transform names to lists of expression points associated with each
-            transform.
-    """
-    d = defaultdict(list)
-    if ctl is not None:
-        # Initialise with empty lists for transforms with no points
-        for t in ctl.transforms:
-            d[t] = []
-    for point in points:
-        d[point.transform].append(point)
-    return dict(d)

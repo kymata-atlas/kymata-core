@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kymata"
-version = "1.0.3"  # Also update CITATION.cff
+version = "1.0.6"  # Also update CITATION.cff
 description = "Core Kymata codebase, including statistical analysis and plotting tools"
 authors = [
     "Kymata Research Group <acgt2@cam.ac.uk>"
@@ -9,7 +9,12 @@ homepage = "https://kymata.org"
 repository = "https://github.com/kymata-atlas/kymata-core"
 documentation = "https://kymata-atlas.github.io/kymata-core/"
 readme = "README.md"
-packages = [{include = "kymata"}]
+packages = [
+    { include = "kymata" }
+]
+include = [
+    { path = "kymata/dataset_config", format = ["sdist", "wheel"] }
+]
 keywords = ["neuroscience", "neuroimaging"]
 classifiers = [
     "Intended Audience :: Science/Research",
@@ -44,6 +49,7 @@ mkdocs-material = "^9.5.24"
 mkdocstrings = {extras = ["python"], version = "^0.29.0"}
 twine = "^5.1.1"
 networkx = "^3.4.2"
+nilearn = "^0.12.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"

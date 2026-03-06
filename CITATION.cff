@@ -4,6 +4,12 @@ If you use this software, please cite it as below. \
 To cite the software as research, please use the paper citation. \
 To cite the software as a codebase, please use cite this repository. \
 """
+title: "kymata-core"
+# Update version to match pyproject.toml
+version: 1.0.6
+# Release date matches MAJOR release; doesn't need to be continually updated for PATCH releases
+date-released: 2024-08-04
+url: "https://github.com/kymata-atlas/kymata-core"
 authors:
   - name: "Kymata Research Group"
   - family-names: "Thwaites"
@@ -33,10 +39,6 @@ authors:
   - family-names: "Woolgar"
     given-names: "Alexandra"
     orcid: "https://orcid.org/0000-0002-8453-7424"
-title: "kymata-core"
-version: 1.0.3
-date-released: 2025-06-03
-url: "https://github.com/kymata-atlas/kymata-core"
 
 preferred-citation:
   type: article

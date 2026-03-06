@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from math import inf
-from typing import Collection, Optional
-
+from collections import defaultdict
 from copy import copy, deepcopy
+from dataclasses import dataclass
 from enum import StrEnum
 from logging import getLogger
-from collections import defaultdict
+from math import inf
+from typing import Collection, Optional, Iterable
 
 from networkx import DiGraph
 from networkx.utils import graphs_equal
 
 from kymata.entities.datatypes import Channel, Latency
-from kymata.entities.expression import ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP
-from kymata.ippm.hierarchy import CandidateTransformList, group_points_by_transform, TransformHierarchy
+from kymata.entities.expression import (
+    BLOCK_MERGED, ExpressionPoint, BLOCK_LEFT, BLOCK_RIGHT, BLOCK_SCALP, group_points_by_transform)
+from kymata.ippm.hierarchy import CandidateTransformList, TransformHierarchy, SerialSequence
 
 
 _logger = getLogger(__file__)
@@ -38,10 +38,10 @@ class IPPMNode:
     KID: Optional[str] = None
 
     def __repr__(self) -> str:
-        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', KID='{self.KID}')"
+        return f"IPPMNode(node_id='{self.node_id}', transform='{self.transform}', latency='{self.latency:.3f}', KID='{self.KID}')"
 
 
-def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
+def node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | None) -> str:
     """
     Canonical naming rules for IPPMNodes.
 
@@ -51,7 +51,7 @@ def _node_id_from_point(point: ExpressionPoint, block: str, input_idx: int | Non
         input_idx (int | None): Supply an int (the index/count of the input channel for this block) if this is
             an input block. Supply None if this is a non-input node.
     """
-    if block in {BLOCK_LEFT, BLOCK_RIGHT}:
+    if block in {BLOCK_LEFT, BLOCK_RIGHT, BLOCK_MERGED}:
         if input_idx is not None:
             return f"{block}_i{input_idx}"  # e.g. "left_i4"
         # Hexel
@@ -105,7 +105,7 @@ class IPPMGraph:
         graph = DiGraph()
 
         # Create nodes with metadata from real data points
-        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()  # for testing
+        self._points_by_transform: dict[str, dict[str, list[ExpressionPoint]]] = dict()
         for block, points in points_by_block.items():
             points_by_transform = group_points_by_transform(points)
             for transform, points_this_transform in points_by_transform.items():
@@ -113,7 +113,7 @@ class IPPMGraph:
                     raise ValueError(f"Points supplied for transform {transform}, not present in transform list.")
                 for point in sorted(points_this_transform, key=lambda p: p.latency):
                     graph.add_node(IPPMNode(
-                        node_id=_node_id_from_point(point=point, block=block, input_idx=None),
+                        node_id=node_id_from_point(point=point, block=block, input_idx=None),
                         is_input=False,
                         hemisphere=block,
                         channel=point.channel,
@@ -142,7 +142,7 @@ class IPPMGraph:
                 input_idx = input_node_idxs[block]
                 pseudo_point = input_stream_pseudo_expression_point(input_transform)
                 node = IPPMNode(
-                    node_id=_node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
+                    node_id=node_id_from_point(point=pseudo_point, block=block, input_idx=input_idx),
                     is_input=True,
                     hemisphere=block,
                     channel=input_idx,
@@ -203,7 +203,6 @@ class IPPMGraph:
 
         return IPPMGraph(ctl=copy(self.candidate_transform_list), points_by_block=reconstructed_points_by_block)
 
-
     def __eq__(self, other: IPPMGraph) -> bool:
         """
         Tests for equality of graphs.
@@ -216,6 +215,19 @@ class IPPMGraph:
             return False
         return graphs_equal(self.graph_full, other.graph_full)
 
+    def subgraph(self, transforms: Iterable[str]) -> IPPMGraph:
+        """The IPPMGraph formed by restricting to the subset of transforms provided."""
+        new_points = {
+            block: [
+                point
+                for _transform, points_this_transform in grouped_points_this_block.items()
+                for point in points_this_transform
+                if point.transform in transforms
+            ]
+            for block, grouped_points_this_block in self._points_by_transform.items()
+        }
+        return IPPMGraph(self.candidate_transform_list.subgraph(transforms), new_points)
+
     @property
     def transforms(self) -> set[str]:
         """
@@ -225,6 +237,52 @@ class IPPMGraph:
             set[str]: A set of transform names present in the graph.
         """
         return set(n.transform for n in self.graph_full.nodes)
+
+    def points_for_transform(self, transform: str) -> dict[str, list[ExpressionPoint]]:
+        """
+        Gets the list of points associated with a given transform.
+
+        If there are no points associated with the transform, but it is still in the CTL, an empty list is returned.
+
+        Mainly for testing!
+
+        Args:
+            transform (str): The transform name.
+
+        Raises:
+            KeyError: When transform is not present in the CTL.
+
+        Returns:
+            dict[str, list[ExpressionPoint]]: The list of points associated with the transform, for each hemisphere.
+        """
+        if transform not in self.candidate_transform_list.transforms:
+            raise KeyError(f"Transform {transform} not present in transform list.")
+        return {
+            block: self._points_by_transform[block][transform] if transform in self._points_by_transform[block] else []
+            for block, points_by_transform in self._points_by_transform.items()
+        }
+
+    def edges_between_transforms(self,
+                                 upstream_transform: str,
+                                 downstream_transform: str,
+                                 connection_style: IPPMConnectionStyle,
+                                 ) -> list[tuple[ExpressionPoint, ExpressionPoint]]:
+        """
+
+        Args:
+            upstream_transform (str): The upstream transform.
+            downstream_transform (str): The downstream transform.
+            connection_style (IPPMConnectionStyle): The connection style to use when building the graph.
+
+        Returns:
+            list[tuple[ExpressionPoint, ExpressionPoint]]: The list of edges between the two transforms.
+        """
+        return [
+            (source, target)
+            for source, target in self.graph_with_connection_style(connection_style).edges
+            if source.transform == upstream_transform
+            and target.transform == downstream_transform
+        ]
 
     @property
     def inputs(self) -> set[str]:
@@ -248,7 +306,7 @@ class IPPMGraph:
         return set(n.transform for n in terminal_nodes)
 
     @property
-    def serial_sequence(self) -> list[list[str]]:
+    def serial_sequence(self) -> SerialSequence:
         """
         The serial sequence of transforms in the graph.
 
@@ -256,14 +314,33 @@ class IPPMGraph:
         transforms.
 
         Returns:
-            list[list[str]]: A list of lists representing the ordered transforms in the serial sequence.
+            SerialSequence: A sequence of sets representing the ordered transforms in the serial sequence.
         """
         subsequence = [
-            [t for t in step if t in self.transforms]
+            frozenset(t for t in step if t in self.transforms)
             for step in self.candidate_transform_list.serial_sequence
         ]
         # Skip any steps which were completely excluded due to missing data
-        return [step for step in subsequence if len(step) > 0]
+        return tuple(step for step in subsequence if len(step) > 0)
+
+    def graph_with_connection_style(self, connection_style: IPPMConnectionStyle) -> DiGraph:
+        """
+        Returns the graph with the appropriate connection style.
+
+        Args:
+            connection_style (IPPMConnectionStyle): The connection style to use.
+
+        Returns:
+            DiGraph: A directed graph representing this version of the graph.
+        """
+        if connection_style == IPPMConnectionStyle.full:
+            return self.graph_full
+        if connection_style == IPPMConnectionStyle.last_to_first:
+            return self.graph_last_to_first
+        if connection_style == IPPMConnectionStyle.first_to_first:
+            return self.graph_first_to_first
+        else:
+            raise ValueError(f"Unknown connection style {connection_style}")
 
     @property
     def graph_last_to_first(self) -> DiGraph:

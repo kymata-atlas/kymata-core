@@ -1,2 +1,3 @@
 ignore:
   - "kymata/plot/*"  # For now, it is too difficult to test plotting code, so we don't enforce it.
+  - "kymata/invokers/*"

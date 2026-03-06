@@ -5,8 +5,11 @@ from matplotlib import pyplot
 from matplotlib.colors import ListedColormap
 import os # Import os for SUBJECTS_DIR
 
+from kymata.entities.expression import ExpressionPoint
 # Assuming brain.py is in the same directory or accessible via PYTHONPATH
-from kymata.plot.brain import _hexel_minimap_data, _get_colormap_for_cortical_minimap, plot_minimap_hexel
+from kymata.plot.brain import _hexel_minimap_data, _get_colormap_for_cortical_minimap, plot_minimap_hexel, \
+    _restrict_to_top_n_per_transform
+
 
 # Mocking necessary Kymata entities for testing
 class MockExpressionPoint:
@@ -172,6 +175,7 @@ class TestPlotMinimapHexel:
             expression_set=mock_expression_set,
             show_transforms=show_transforms,
             lh_minimap_axis=mock_axes,
+            main_minimap_axis=None,
             rh_minimap_axis=mock_axes,
             view='lateral',
             surface='inflated',
@@ -190,7 +194,8 @@ class TestPlotMinimapHexel:
             alpha_logp=-7.0,
             show_transforms=show_transforms,
             value_lookup={'transform_A': 0.5, 'transform_B': 1.0},
-            minimap_latency_range=(0.1, 0.5)
+            minimap_latency_range=(0.1, 0.5),
+            top_n=None,
         )
 
         assert mock_source_estimate.call_count == 1
@@ -234,3 +239,61 @@ class TestPlotMinimapHexel:
         assert mock_axes.imshow.call_count == 2
         # Now assert that imshow was called with the specific mock_screenshot_data object
         mock_axes.imshow.assert_any_call(mock_screenshot_data)
+
+
+@pytest.fixture
+def test_points_lh() -> list[ExpressionPoint]:
+    return [
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-1),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-5),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-2),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-9),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-3),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-2),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-7),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-6),
+    ]
+
+
+@pytest.fixture
+def test_points_rh() -> list[ExpressionPoint]:
+    return [
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-4),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-3),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-8),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-7),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-3),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-8),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-5),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-2),
+    ]
+
+
+def test_restrict_to_top_n_per_transform_1_block(test_points_lh):
+    best_transforms = (test_points_lh, )
+    actual = _restrict_to_top_n_per_transform(best_transforms, 2)
+    expected = ([
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-9),
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-5),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-7),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-6),
+    ], )
+
+    # Check points the same
+    assert set(expected[0]) == set(actual[0])
+
+
+def test_restrict_to_top_n_per_transform_2_block(test_points_lh, test_points_rh):
+    best_transforms = (test_points_lh, test_points_rh)
+    actual = _restrict_to_top_n_per_transform(best_transforms, 2)
+    expected = ([
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-9),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-7),
+    ], [
+        ExpressionPoint(channel=1, latency=1, transform="1", logp_value=-8),
+        ExpressionPoint(channel=1, latency=1, transform="2", logp_value=-8),
+    ])
+
+    # Check points the same
+    assert set(expected[0]) == set(actual[0])
+    assert set(expected[1]) == set(actual[1])

@@ -33,14 +33,14 @@ we welcome users using this codebase, we are unable to prioritise installation s
    ```sh
    $ git clone https://github.com/kymata-atlas/kymata-core.git
    ```
-3. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
+2. To install the python packages you will need to use Poetry. Assuming you have installed [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer), 
    type:
    ```sh
    $ poetry install
    ```
    to load the pakages needed.
 
-4. At this point, you should be able to either run the xx from the terminal
+3. At this point, you should be able to either run the xx from the terminal
    ```sh
    $ poetry run invokers/run_gridsearch.py
    ```
@@ -48,7 +48,7 @@ we welcome users using this codebase, we are unable to prioritise installation s
 
 ### Running tests, linting, and generating documentation
 
-This will be done automatically via Github actions.
+This will be done automatically via GitHub actions.
 
 To run the tests manually, run:
 ```
@@ -135,47 +135,13 @@ Host github.com
         IdentityFile /home/<username>/.ssh/<name of private key>
 ```
 
-- You can't install python versions using pyenv.
-
-This is becasue the login nodes don't have the right C++ compilers. To get around this, ignore pyenv, and instead use
-apptainer to install poetry:
-
-```shell
-module load apptainer
-apptainer shell /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
-mkdir ~/poetry
-export VENV_PATH=~/poetry/
-python3 -m venv $VENV_PATH
-$VENV_PATH/bin/pip install -U pip setuptools
-$VENV_PATH/bin/pip install poetry
-```
-
 - You see `ModuleNotFoundError: No module named 'numpy'`
 
 You are probably running `submit_gridsearch.sh`, and it currently has Andy's `kymata-core` location hard-coded.
 Update to point it at your copy.
 
-- You see `ModuleNotFoundError: No module named 'kymata'`
 
-You're not using the poetry environment.  You'll need to run this with Apptainer. First make sure `kymata-core` is installed with `poetry`, so the `kyamata` package is available within the virtual environment:
-
-  ```shell
-  module load apptainer
-  apptainer shell -B /imaging/projects/cbu/kymata /imaging/local/software/singularity_images/python/python_3.11.7-slim.sif
-  export VENV_PATH=~/poetry/
-  cd /path/to/kymata-core
-  
-  # Allow the CBU poetry to communicate with pip
-  export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-  
-  $VENV_PATH/bin/poetry install
-  ```
-
-Now (within the Apptainer) you can run it using `poetry`, e.g.:
-
-  ```shell
-  $VENV_PATH/bin/poetry run python invokers/invoker_create_trialwise_data.py
-  ```
+- You want to print offscreen.
 
 If plotting on the CBU cluster (off-screen), use
 

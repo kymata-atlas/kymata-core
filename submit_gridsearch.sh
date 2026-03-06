@@ -18,9 +18,12 @@ args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 export PATH="$HOME/.local/bin:$PATH"
-cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ # Change to your own path to kymata-core
+# Change this to your own path to where kymata is installed.
+# If running from kymata-core, this is the path to kymata-core.
+# If running with kymata as a dependency, it is the root directory of your project.
+cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/
 source $(poetry env info --path)/bin/activate
-python kymata/invokers/run_gridsearch.py \
+python -m kymata.invokers.run_gridsearch \
   --config dataset4.yaml \
   --input-stream auditory \
   --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \

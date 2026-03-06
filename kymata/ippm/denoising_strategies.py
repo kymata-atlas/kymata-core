@@ -10,8 +10,8 @@ from .cluster import (
     MaxPoolClusterer, AdaptiveMaxPoolClusterer, GMMClusterer, DBSCANClusterer, MeanShiftClusterer, CustomClusterer,
     ANOMALOUS_CLUSTER_TAG, points_to_matrix)
 from ..entities.expression import (
-    ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels)
-from .hierarchy import group_points_by_transform, GroupedPoints
+    ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet, get_n_channels, GroupedPoints,
+    group_points_by_transform)
 
 
 class DenoisingStrategy(ABC):
@@ -118,6 +118,16 @@ class DenoisingStrategy(ABC):
             return self._denoise_sensor_expression_set(expression_set)
         else:
             raise NotImplementedError()
+        
+    def merge_and_denoise(self, expression_set: HexelExpressionSet) -> list[ExpressionPoint]:
+        if isinstance(expression_set, HexelExpressionSet):
+            return self._merge_and_denoise_hexel_set(expression_set)
+        raise NotImplementedError()
+
+    def denoise_points(self, points: list[ExpressionPoint], logp_threshold: Optional[float] = None) -> list[ExpressionPoint]:
+        grouped_points = group_points_by_transform(points)
+        denoised_points = self._denoise_spikes(grouped_points, logp_threshold=logp_threshold)
+        return [p for trans, points in denoised_points.items() for p in points]
 
     def _denoise_sensor_expression_set(self, expression_set: SensorExpressionSet) -> list[ExpressionPoint]:
         expression_set = copy(expression_set)
@@ -142,10 +152,21 @@ class DenoisingStrategy(ABC):
         denoised_spikes_right = self._denoise_spikes(original_spikes_right, self._logp_threshold_from_expression_set(expression_set))
         denoised_spikes_left = self._denoise_spikes(original_spikes_left, self._logp_threshold_from_expression_set(expression_set))
 
-        denoised_points_right = [p for trans, points in denoised_spikes_right.items() for p in points]
-        denoised_points_left = [p for trans, points in denoised_spikes_left.items() for p in points]
+        denoised_points_right = [p for _, points in denoised_spikes_right.items() for p in points]
+        denoised_points_left = [p for _, points in denoised_spikes_left.items() for p in points]
 
         return denoised_points_left, denoised_points_right
+    
+    def _merge_and_denoise_hexel_set(self, expression_set: HexelExpressionSet) -> list[ExpressionPoint]:
+        expression_set = copy(expression_set)
+        expression_points_left, expression_points_right = expression_set.best_transforms()
+        expression_points_merged = expression_points_left + expression_points_right
+
+        original_spikes = group_points_by_transform(expression_points_merged)
+        denoised_spikes = self._denoise_spikes(original_spikes, self._logp_threshold_from_expression_set(expression_set))
+        denoised_points = [p for _, points in denoised_spikes.items() for p in points]
+
+        return denoised_points
 
     def _denoise_spikes(self, spikes: GroupedPoints, logp_threshold: float | None) -> GroupedPoints:
         """
@@ -167,6 +188,7 @@ class DenoisingStrategy(ABC):
         Args:
             spikes (GroupedPoints): A dictionary of ExpressionPoints grouped by transform name.
             logp_threshold (float | None): The log p-value threshold for excluding insignificant points.
+                Supply None to not filter points.
 
         Returns:
             GroupedPoints: A dictionary of ExpressionPoints grouped by transform name, containing the clustered
