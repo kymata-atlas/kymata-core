@@ -1,6 +1,11 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: """\
+If you use this software, please cite it as below. \
+To cite the software as research, please use the paper citation. \
+To cite the software as a codebase, please use cite this repository. \
+"""
 authors:
+  - name: "Kymata Research Group"
   - family-names: "Thwaites"
     given-names: "Andrew"
     orcid: "https://orcid.org/0000-0002-6237-7140"
@@ -20,9 +25,6 @@ authors:
     given-names: "Isma"
   - family-names: "Nimmo-Smith"
     given-names: "Ian"
-  - family-names: "Soltan"
-    given-names: "Andrew"
-    orcid: "https://orcid.org/0000-0003-2391-5361"
   - family-names: "Wingfield"
     given-names: "Cai"
     orcid: "https://orcid.org/0000-0002-0254-199X"
@@ -58,9 +60,6 @@ preferred-citation:
     given-names: "Isma"
   - family-names: "Nimmo-Smith"
     given-names: "Ian"
-  - family-names: "Soltan"
-    given-names: "Andrew"
-    orcid: "https://orcid.org/0000-0003-2391-5361"
   - family-names: "Wingfield"
     given-names: "Cai"
     orcid: "https://orcid.org/0000-0002-0254-199X"
@@ -70,7 +69,7 @@ preferred-citation:
     given-names: "Alexandra"
     orcid: "https://orcid.org/0000-0002-8453-7424"
   #doi: ""
-  #journal: ""
+  journal: "In preparation"
   #month: 
   #start: # first page number
   #end: # last page number
