@@ -38,7 +38,7 @@ _Kymata Core_ is the central codebase underlying the [Kymata Atlas](https://kyma
 The central pipeline includes:
 * Standard preprocessing and source localisation steps for neural sensor data (MEG, EEG, ECoG);
 * Gridsearch approaches for transform mapping;
-* Information Processing Pathway Map[^2] generation (both offline generation and evaluation);
+* Information Processing Pathway Map[^2] (IPPM) generation (both offline generation and evaluation);
 * Plotting functionality
 
 The codebase is released under an MIT license to ensure the transparency of the results in the Kymata Atlas. While
