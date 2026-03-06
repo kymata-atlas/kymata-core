@@ -1,20 +1,18 @@
 from logging import basicConfig, INFO, getLogger
 from pathlib import Path
 from typing import Any
+import re
+import argparse
+from statistics import NormalDist
 
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 from matplotlib import colors
-from statistics import NormalDist
-import argparse
-
-from numpy import dtype, ndarray
 from scipy.stats import linregress
-from sklearn.conftest import pyplot
 
 from kymata.io.logging import log_message, date_format
 from kymata.math.probability import p_to_logp, sidak_correct
+
 
 _logger = getLogger(__file__)
 
@@ -59,7 +57,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         r"^(?P<prefix>\S+):\s+"
         r"peak\s+lat:\s*(?P<lat>-?\d+(?:\.\d+)?),\s+"
         # r"peak\s+corr:\s*(?P<corr>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)(?:\s+|$)"
-        r"(?:\[sensor\]\s+ind:\s*(?P<ind>\d+),\s+)?"
+        r"(?:\[sensor]\s+ind:\s*(?P<ind>\d+),\s+)?"
         r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
     )
 
@@ -154,7 +152,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         _plot_line_of_best_fit(layer, sig, output_dir, dataset)
 
 
-def _plot_line_of_best_fit(layer: int, sig: ndarray[Any, dtype[Any]], output_dir: Path, dataset: str) -> None:
+def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str) -> None:
     fig, ax = plt.subplots()
 
     x_layers = np.arange(layer)
@@ -162,7 +160,8 @@ def _plot_line_of_best_fit(layer: int, sig: ndarray[Any, dtype[Any]], output_dir
     mean_lat_by_layer = np.full(layer, np.nan, dtype=float)
     n_sig_by_layer = np.zeros(layer, dtype=int)
     for li in range(layer):
-        latencies = sig[sig[:, 4] == li, 0]
+        #                      ↓ was 3 until I removed peak_corr
+        latencies = sig[sig[:, 3] == li, 0]
         n_sig_by_layer[li] = int(latencies.size)
         if latencies.size:
             mean_lat_by_layer[li] = float(np.mean(latencies))
