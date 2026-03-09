@@ -101,6 +101,9 @@ def main():
     parser.add_argument("--plot-top-channels", action="store_true",
                         help="Plots the p-values and correlations of the top channels in the gridsearch.")
 
+    parser.add_argument("--selected-chan", type=str, default=None)
+    parser.add_argument("--selected-lat-ms", type=float, default=None)
+
     args = parser.parse_args()
 
     specified_config_file = Path(args.config)
@@ -416,8 +419,8 @@ def main():
                 transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
                 if transform.sample_rate != transform_resample_rate:
                     _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
-                                f"({transform_resample_rate} Hz). Transform will be resampled to match. "
-                                f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+                                 f"({transform_resample_rate} Hz). Transform will be resampled to match. "
+                                 f"({transform.sample_rate} → {transform_resample_rate} Hz)")
                     transform = transform.resampled(transform_resample_rate)
 
                 es = do_gridsearch(
@@ -438,6 +441,10 @@ def main():
                     plot_top_five_channels=args.plot_top_channels,
                     overwrite=args.overwrite,
                     emeg_layout=sensor_layout,
+                    selected_hemi=args.selected_chan[0],
+                    selected_chan=int(args.selected_chan[1:]),
+                    selected_lat_ms=args.selected_lat_ms,
+                    save_selected_distribution_to=Path(args.save_expression_set_location),
                 )
 
                 if combined_expression_set is None:
