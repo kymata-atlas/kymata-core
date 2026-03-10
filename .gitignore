@@ -37,3 +37,6 @@ scratch.*
 /tests/test-data/*
 /kymata-core-data/*
 *.h5
+
+# Poetry lock file
+poetry.lock

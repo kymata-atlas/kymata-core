@@ -47,12 +47,19 @@ pyqt6 = "^6.6.1"
 h5io = "^0.1.9"
 mkdocs-material = "^9.5.24"
 mkdocstrings = {extras = ["python"], version = "^0.25.1"}
-torch = "^2.2.1"
-transformers = "^4.39.1"
-openai-whisper = "^20231117"
-librosa = "^0.10.1"
+# ML / speech stack:
+# - Optional so a base install works on Windows without GPU / triton wheels.
+# - Marked Linux-only to match typical cluster usage.
+torch = {version = "^2.2.1", optional = true, markers = "platform_system == 'Linux'"}
+transformers = {version = "^4.39.1", optional = true, markers = "platform_system == 'Linux'"}
+openai-whisper = {version = "^20231117", optional = true, markers = "platform_system == 'Linux'"}
+librosa = {version = "^0.10.1", optional = true, markers = "platform_system == 'Linux'"}
 ipywidgets = "^8.1.5"
 twine = "^5.1.1"
+
+[tool.poetry.extras]
+# Install with: `poetry install -E ml`
+ml = ["torch", "transformers", "openai-whisper", "librosa"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"

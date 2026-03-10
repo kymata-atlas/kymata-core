@@ -147,7 +147,7 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
                 eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                eeg_freqs = (50, 150, 250, 300, 350, 400, 450)
+                eeg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
