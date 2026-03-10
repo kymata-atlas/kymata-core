@@ -52,14 +52,13 @@ mkdocstrings = {extras = ["python"], version = "^0.25.1"}
 # - Marked Linux-only to match typical cluster usage.
 torch = {version = "^2.2.1", optional = true, markers = "platform_system == 'Linux'"}
 transformers = {version = "^4.39.1", optional = true, markers = "platform_system == 'Linux'"}
-openai-whisper = {version = "^20231117", optional = true, markers = "platform_system == 'Linux'"}
 librosa = {version = "^0.10.1", optional = true, markers = "platform_system == 'Linux'"}
 ipywidgets = "^8.1.5"
 twine = "^5.1.1"
 
 [tool.poetry.extras]
 # Install with: `poetry install -E ml`
-ml = ["torch", "transformers", "openai-whisper", "librosa"]
+ml = ["torch", "transformers", "librosa"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
