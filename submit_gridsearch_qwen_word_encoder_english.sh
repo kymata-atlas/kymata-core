@@ -16,6 +16,10 @@ done
 
 export PATH="$HOME/.local/bin:$PATH"
 
+export XDG_CONFIG_HOME="${TMPDIR:-/tmp}/xdg_config_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+export XDG_CACHE_HOME="${TMPDIR:-/tmp}/xdg_cache_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
+
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
 source $(poetry env info --path)/bin/activate
 # source /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/activate
