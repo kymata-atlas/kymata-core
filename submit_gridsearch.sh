@@ -11,28 +11,39 @@
 #SBATCH --ntasks=1
 #SBATCH --time=48:00:00
 #SBATCH --mem=240G
-#SBATCH --array=1-1
+#SBATCH --array=0-1
 #SBATCH --exclusive
 
 args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
+# For batch array
+paths=('predicted_function_contours/touchsim_indent_lstm' 'predicted_function_contours/touchsim_indent')
+lh_transforms=(LH_ident_lstm LH_ident_full)
+rh_transforms=(RH_ident_lstm RH_ident_full)
+
+# For loop
+channels=(L6768 R8874)
+latencies=(165.0 160.0)
+
 export PATH="$HOME/.local/bin:$PATH"
 cd /imaging/projects/cbu/kymata/analyses/cai/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
-python kymata/invokers/run_gridsearch.py \
-  --config dataset5.yaml \
-  --input-stream tactile \
-  --transform-path 'predicted_function_contours/touchsim_indent_lstm' \
-  --transform-name LH_ident_lstm RH_ident_lstm \
-  --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
-  --overwrite \
-  --use-inverse-operator \
-  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \
-  --morph \
-  --n-derangements 6 \
-  --n-splits 400 \
-  --selected-chan L6768
-  --selected-lat-ms 165.0 \
+for ((i=0; i<${#channels[@]}; i++)); do
+  python kymata/invokers/run_gridsearch.py \
+    --config dataset5.yaml \
+    --input-stream tactile \
+    --transform-path ${paths[$SLURM_ARRAY_TASK_ID]} \
+    --transform-name ${lh_transforms[$SLURM_ARRAY_TASK_ID]} ${rh_transforms[$SLURM_ARRAY_TASK_ID]} \
+    --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
+    --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
+    --save-plot-location '/imaging/projects/cbu/kymata/analyses/cai/kymata-core/kymata-core-data/output/tactile/new_fwd/indentation_lstm' \
+    --overwrite \
+    --use-inverse-operator \
+    --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \
+    --morph \
+    --n-derangements 6 \
+    --n-splits 400 \
+    --selected-chan "${channels[i]}" \
+    --selected-lat-ms "${latencies[i]}"
+done
