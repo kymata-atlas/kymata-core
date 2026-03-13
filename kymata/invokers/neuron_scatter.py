@@ -117,7 +117,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         color = "#FF9800"
     else:
         raise NotImplementedError()
-    sc = ax.scatter(
+    ax.scatter(
         x,
         y,
         c=color,
@@ -149,13 +149,15 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
     # Plot line of best fit
     if x_axis == "latency":
-        _plot_line_of_best_fit(layer, sig, output_dir, dataset)
+        _plot_line_of_best_fit(layer, sig, output_dir, dataset, axlim_ms=(-250, 850),
+                               min_count_for_average=0)
 
 
-def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str) -> None:
+def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str,
+                           axlim_ms=(None, None), min_count_for_average: int = 5) -> None:
     fig, ax = plt.subplots()
 
-    x_layers = np.arange(layer)
+    # Use only layers with at least `min_count_for_average` significant entries.
     # Per-layer aggregation: x = layer number, y = mean latency
     mean_lat_by_layer = np.full(layer, np.nan, dtype=float)
     n_sig_by_layer = np.zeros(layer, dtype=int)
@@ -163,17 +165,34 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
         #                      ↓ was 3 until I removed peak_corr
         latencies = sig[sig[:, 3] == li, 0]
         n_sig_by_layer[li] = int(latencies.size)
-        if latencies.size:
+        if latencies.size >= min_count_for_average:
             mean_lat_by_layer[li] = float(np.mean(latencies))
 
+    layers = np.arange(layer)
+
+    # Color-code points by number of significant neurons per layer
+    count_norm = colors.Normalize(vmin=0, vmax=300, clip=True)
+
     mask = np.isfinite(mean_lat_by_layer)
-    x_fit = x_layers[mask]
+    x_fit = layers[mask]
     y_fit = mean_lat_by_layer[mask]
 
     if x_fit.size >= 2:
+        ax.scatter(
+            mean_lat_by_layer,
+            layers,
+            c=n_sig_by_layer,
+            cmap='turbo',
+            norm=count_norm,
+            marker='o',
+            s=25,
+            edgecolors='black',
+            linewidths=0.3,
+        )
+
         lr = linregress(x_fit, y_fit)
-        y_pred = lr.slope * x_layers + lr.intercept
-        ax.plot(x_layers, y_pred, linestyle=':', linewidth=2, color='black')
+        x_pred = lr.slope * layers + lr.intercept
+        ax.plot(x_pred, layers, linestyle=':', linewidth=2, color='black')
 
         # Pearson correlation (same as lr.rvalue) + p-value
         r = float(lr.rvalue)
@@ -200,10 +219,10 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
         )
 
-    ax.set_xlabel('Layer number')
-    ax.set_ylabel('Mean latency (ms)')
-    ax.set_xlim(-0.5, layer - 0.5)
-    ax.set_ylim(0, 500)
+    ax.set_xlabel('Mean latency (ms)')
+    ax.set_ylabel('Layer number')
+    ax.set_xlim(axlim_ms)
+    ax.set_ylim(-1, layer)
 
     plt.tight_layout()
 
