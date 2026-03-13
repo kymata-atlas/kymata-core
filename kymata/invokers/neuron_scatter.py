@@ -117,7 +117,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         color = "#FF9800"
     else:
         raise NotImplementedError()
-    sc = ax.scatter(
+    ax.scatter(
         x,
         y,
         c=color,
@@ -149,7 +149,8 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
     # Plot line of best fit
     if x_axis == "latency":
-        _plot_line_of_best_fit(layer, sig, output_dir, dataset, axlim_ms=(-250, 850))
+        _plot_line_of_best_fit(layer, sig, output_dir, dataset, axlim_ms=(-250, 850),
+                               min_count_for_average=0)
 
 
 def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str,
