@@ -44,6 +44,6 @@ for ((i=0; i<${#channels[@]}; i++)); do
     --morph \
     --n-derangements 6 \
     --n-splits 400 \
-    --selected-chan "${channels[i]}}" \
+    --selected-chan "${channels[i]}" \
     --selected-lat-ms "${latencies[i]}"
 done
