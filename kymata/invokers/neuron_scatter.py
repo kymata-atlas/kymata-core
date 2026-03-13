@@ -221,7 +221,7 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
     ax.set_xlabel('Mean latency (ms)')
     ax.set_ylabel('Layer number')
     ax.set_xlim(axlim_ms)
-    ax.set_ylim(-0.5, layer - 0.5)
+    ax.set_ylim(-1, layer)
 
     plt.tight_layout()
 
