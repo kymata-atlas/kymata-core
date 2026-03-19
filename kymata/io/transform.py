@@ -366,12 +366,16 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
                         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.46, func.shape[1]), func[0, :, j])
                     elif 'english' in str(transform_path_without_suffix):
                         place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 401.52, func.shape[1]), func[0, :, j])
+                    else:
+                        place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 1799.98, func.shape[1]), func[0, :, j])
             else:
                 j = nn_neuron
                 if 'russian' in str(transform_path_without_suffix):
                     place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 412.46, func.shape[1]), func[0, :, j])
                 elif 'english' in str(transform_path_without_suffix):
                     place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 401.52, func.shape[1]), func[0, :, j])
+                else:
+                    place_holder[j] = np.interp(np.linspace(0, T_max, s_num + 1)[:-1], np.linspace(0, 1799.98, func.shape[1]), func[0, :, j])
 
             if nn_neuron in ('avr', 'ave', 'mean', 'all'):
                 func = np.mean(place_holder[:, :trans_len*1000], axis=0) #func[nn_neuron]

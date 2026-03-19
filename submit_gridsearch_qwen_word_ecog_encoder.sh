@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/ecog_language/qwen/log/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/ecog_language/qwen/log/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/ecog_language/qwen_encoder/log/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/ecog_language/qwen_encoder/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=10G
-#SBATCH --array=0-28
+#SBATCH --array=0-31
 
 layer_num=()
-for ((i=0; i<29; i++)); do
+for ((i=0; i<32; i++)); do
     layer_num+=("layer$i")
 done
 
@@ -28,16 +28,16 @@ python kymata/invokers/run_gridsearch.py \
   --input-stream auditory \
   --plot-top-channels \
   --emeg-t-start 0 \
-  --transform-path '/imaging/projects/cbu/kymata/data/open-source/ECoG/predicted_function_contours/asr_models/qwen/decoder_text' \
+  --transform-path '/imaging/projects/cbu/kymata/data/open-source/ECoG/predicted_function_contours/asr_models/qwen/encoder' \
   --transform-name "${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --n-derangements 5 \
   --asr-option 'all' \
-  --num-neurons 3584 \
+  --num-neurons 1280 \
   --mfa True \
   --n-splits 1798 \
   --single-participant-override 'sub-kmeans300' \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ecog_language/qwen/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ecog_language/qwen/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ecog_language/qwen_encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ecog_language/qwen_encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --overwrite
 
   # --low-level-function \
