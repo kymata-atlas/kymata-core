@@ -1,12 +1,12 @@
 #!/bin/bash
-in="/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/tianyi/sensor/expression_sets_split/"
-out="/imaging/projects/cbu/kymata/analyses/cai/kymata-core-tianyi-temp/kymata-core-data/tianyi/sensor/logs_split/"
+in="/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/decoder_text/nkg_split/"
+out="/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_russian/sensor/decoder_text/log_split/"
 
 declare -a modalities=("eeg" "meg")
 
-for i in {0..32}; do
+for i in {0..28}; do
   for emeg in "${modalities[@]}"; do
     poetry run python -m kymata.invokers.invoker_exp2log \
-      -o "${out}" -i "${in}/layer${i}_4095_gridsearch_${emeg}.nkg"
+      -o "${out}" -i "${in}/layer${i}_3583_gridsearch_${emeg}.nkg"
   done
 done

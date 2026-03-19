@@ -37,7 +37,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
 
     $ setenv SUBJECTS_DIR /imaging/projects/cbu/kymata/data/dataset_4.1-russian_narrative_english_native/raw_mri_structurals
     $ the previous command should look like this in bash:
-    $ export SUBJECTS_DIR=/imaging/projects/cbu/kymata/data/dataset_5-tactile_fingertips/raw_mri_structurals
+    $ export SUBJECTS_DIR=/imaging/projects/cbu/kymata/data/dataset_4.1-russian_narrative_english_native/raw_mri_structurals
     for all participants:
         $ mksubjdirs participant_01 # note - this appears to ignore SUBJECTS_DIR and uses the folder you are in.
         $ use the one below instead:

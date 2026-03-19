@@ -67,7 +67,10 @@ def load_single_emeg(
         evoked = mne.read_evokeds(emeg_path_fif, verbose=False)
         assert len(evoked) == 1
         evoked = evoked[0]
-
+        # if 'dataset_3' in str(emeg_path):
+        #     evoked = evoked.copy().drop_channels(
+        #         [ch for ch in ("EEG061", "EEG062", "EEG063", "EEG064", 'EEG065', 'EEG066', 'EEG067', 'EEG068', 'EEG069', 'EEG070', 'EEG071', 'EEG072', 'EEG073', 'EEG074') if ch in evoked.ch_names]
+        #     )
         if inverse_operator_path is None:
             # Want sensor data
             emeg = evoked.get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)

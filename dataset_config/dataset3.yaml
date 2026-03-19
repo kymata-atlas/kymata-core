@@ -10,7 +10,7 @@ random_seed: 17
 participants: [
                 "meg15_0045",
                 "meg15_0051",
-                # "meg15_0054", # This subject is missing source estimations
+                "meg15_0054", # This subject is missing source estimations
                 "meg15_0055",
                 "meg15_0056",
                 "meg15_0058",
@@ -22,7 +22,8 @@ participants: [
                 "meg15_0072",
                 "meg15_0079",
                 "meg15_0081",
-                "meg15_0082"
+                "meg15_0082",
+                # "participant_04_rus"
               ]
 number_of_runs: 2                    # number of runs  <- 15-minute recording block from scanner
 repetitions_per_runs: 2              # number of repetitions per run  <- repeated stimulus presentations per run

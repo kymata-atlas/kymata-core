@@ -32,8 +32,16 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
     _logger.info(f"Creating {x_axis} scatter for {dataset} from {log_dir!s}")
 
-    layer = 33  # 41 # 66 64 34 33
-    neuron = 4096  # 4096 5120
+    if 'qwen' in str(log_dir) and 'encoder' not in str(log_dir):
+        layer = 29  # 41 # 66 64 34 33
+        neuron = 3584  # 4096 5120
+    elif 'encoder' in str(log_dir) or 'large-v2' in str(log_dir):
+        layer = 32  # 41 # 66 64 34 33
+        neuron = 1280  # 4096 5120
+    else:
+        layer = 33  # 41 # 66 64 34 33
+        neuron = 4096  # 4096 5120
+        
     if dataset == "eeg":
         n_sensors = 64
     elif dataset == "meg":
@@ -41,7 +49,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     elif dataset == "emeg":
         n_sensors = 370
     elif dataset == "ecog":
-        n_sensors = 370  # really?
+        n_sensors = 300  # number of regions
     else:
         raise NotImplementedError()
 
@@ -61,9 +69,20 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
     )
 
+    line_emeg_re = re.compile(
+        r"^(?P<prefix>\S+):\s+"
+        r"peak\s+lat:\s*(?P<lat>-?\d+(?:\.\d+)?),\s+"
+        r"peak\s+corr:\s*(?P<corr>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)(?:\s+|$)"
+        r"(?:\[sensor\]\s+ind:\s*(?P<ind>\d+),\s+)?"
+        r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
+    )
+
     row = 0
     for li in range(layer):
-        log_file = log_dir / f'layer{li}_{neuron-1}_gridsearch_{dataset}_results.txt'
+        if dataset == "emeg":
+            log_file = log_dir / f'slurm_log_{li}.txt'
+        else:
+            log_file = log_dir / f'layer{li}_{neuron-1}_gridsearch_{dataset}_results.txt'
         with log_file.open("r") as f:
             all_text = [line for line in f.readlines() if '[sensor] ind' in line]
 
@@ -72,7 +91,10 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
         for k in range(neuron):
             line = all_text[k].strip()
-            m = line_re.match(line)
+            if dataset == "emeg":
+                m = line_emeg_re.match(line)
+            else:
+                m = line_re.match(line)
             if m is None:
                 raise ValueError(f"Could not parse log line (layer={li}, neuron={k}): {line!r}")
 
@@ -150,7 +172,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     # Plot line of best fit
     if x_axis == "latency":
         _plot_line_of_best_fit(layer, sig, output_dir, dataset, axlim_ms=(-250, 850),
-                               min_count_for_average=0)
+                               min_count_for_average=6)
 
 
 def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str,
