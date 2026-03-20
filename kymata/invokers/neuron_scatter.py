@@ -8,7 +8,6 @@ from statistics import NormalDist
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
-from statsmodels.base.model import LikelihoodModelResults
 from statsmodels.regression.linear_model import OLS, RegressionResults
 from statsmodels.tools import add_constant
 
