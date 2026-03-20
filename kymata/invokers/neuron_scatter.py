@@ -70,15 +70,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
     )
 
-    line_emeg_re = re.compile(
-        r"^(?P<prefix>\S+):\s+"
-        r"peak\s+lat:\s*(?P<lat>-?\d+(?:\.\d+)?),\s+"
-        r"peak\s+corr:\s*(?P<corr>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)(?:\s+|$)"
-        r"(?:\[sensor\]\s+ind:\s*(?P<ind>\d+),\s+)?"
-        r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
-    )
-
-    line_ecog_re = re.compile(
+    line_emeg_ecog_re = re.compile(
         r"^(?P<prefix>\S+):\s+"
         r"peak\s+lat:\s*(?P<lat>-?\d+(?:\.\d+)?),\s+"
         r"peak\s+corr:\s*(?P<corr>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)(?:\s+|$)"
@@ -100,10 +92,8 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
         for k in range(neuron):
             line = all_text[k].strip()
-            if dataset == "emeg":
-                m = line_emeg_re.match(line)
-            elif dataset == "ecog":
-                m = line_ecog_re.match(line)
+            if dataset in {"emeg", "ecog"}:
+                m = line_emeg_ecog_re.match(line)
             else:
                 m = line_re.match(line)
             if m is None:
@@ -246,7 +236,7 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
                 ]))
             ).fit()
             intercept, quadratic = fit_results.params
-            slope = 0  # Forcing stationary point at layer 0
+            slope = 0  # Stationary point forced to be at layer 0
             latency_prediction = intercept + slope * layers + quadratic * (layers ** 2)
         else:
             raise NotImplementedError()
