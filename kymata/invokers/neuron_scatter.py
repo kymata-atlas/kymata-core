@@ -240,11 +240,13 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
             fit_results = OLS(
                 latency_to_fit,
                 add_constant(np.column_stack([
-                    layers_to_fit,
+                    # We won't include the linear term, as we want to force the stationary point to be at layer 0
+                    # layers_to_fit,
                     layers_to_fit**2,
                 ]))
             ).fit()
-            intercept, slope, quadratic = fit_results.params
+            intercept, quadratic = fit_results.params
+            slope = 0  # Forcing stationary point at layer 0
             latency_prediction = intercept + slope * layers + quadratic * (layers ** 2)
         else:
             raise NotImplementedError()
