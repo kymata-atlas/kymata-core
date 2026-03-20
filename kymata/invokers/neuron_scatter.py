@@ -78,6 +78,14 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
     )
 
+    line_ecog_re = re.compile(
+        r"^(?P<prefix>\S+):\s+"
+        r"peak\s+lat:\s*(?P<lat>-?\d+(?:\.\d+)?),\s+"
+        r"peak\s+corr:\s*(?P<corr>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)(?:\s+|$)"
+        r"(?:\[sensor\]\s+ind:\s*(?P<ind>\d+),\s+)?"
+        r"-log\(pval\):\s*(?P<logp>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$"
+    )
+
     row = 0
     for li in range(layer):
         if dataset == "emeg" or dataset == "ecog":
@@ -94,6 +102,8 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
             line = all_text[k].strip()
             if dataset == "emeg":
                 m = line_emeg_re.match(line)
+            elif dataset == "ecog":
+                m = line_ecog_re.match(line)
             else:
                 m = line_re.match(line)
             if m is None:
