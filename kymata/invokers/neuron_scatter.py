@@ -79,7 +79,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
     row = 0
     for li in range(layer):
-        if dataset == "emeg":
+        if dataset == "emeg" or dataset == "ecog":
             log_file = log_dir / f'slurm_log_{li}.txt'
         else:
             log_file = log_dir / f'layer{li}_{neuron-1}_gridsearch_{dataset}_results.txt'
