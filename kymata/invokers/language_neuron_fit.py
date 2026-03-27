@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
         # Parse layer and neuron out of filename
         filename_re = re.compile(r"(?P<dataset>[^_]+)"
-                                 r"_significant_neurons"
+                                 r"_sig_neurons"
                                  r"_layer(?P<layer>[0-9]+)"
                                  r"_neuron(?P<neuron>[0-9]+)"
                                  r"\.npy")
@@ -189,12 +189,12 @@ if __name__ == '__main__':
         datasets.append(dataset)
 
         with sig_loc.open("rb") as sig_f:
-            # (peak_lat, sensor_idx, logp, layer, neuron_no)
+            # each row is (peak_lat, sensor_idx, logp, layer, neuron_no)
             sig = np.load(sig_f)
         sigs.append(sig)
 
-    # Stack sigs along the sensor axis
-    sig_unified = np.stack(sigs, axis=1)
+    # Concatenate rows from all sigs
+    sig_unified = np.concatenate(sigs, axis=0)
 
     linear_model = plot_line_of_best_fit(
         degree=1,
