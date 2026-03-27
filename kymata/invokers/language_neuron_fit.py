@@ -127,7 +127,7 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
         )
         fit_results = None
 
-    ax.set_title(dataset.capitalize())
+    ax.set_title(dataset_name.upper())
 
     ax.set_xlabel('Mean latency (ms)')
     ax.set_ylabel('Layer number')
