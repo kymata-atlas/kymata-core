@@ -127,13 +127,13 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
         )
         fit_results = None
 
+    ax.set_title(dataset.capitalize())
+
     ax.set_xlabel('Mean latency (ms)')
     ax.set_ylabel('Layer number')
     ax.set_xlim(axlim_ms)
     ax.set_ylim(-1, layer)
     ax.set_box_aspect(1)
-
-    plt.tight_layout()
 
     model_name = "linear" if degree == 1 else "quadratic"
     save_loc = output_dir / f"{dataset_name}_best_{model_name}_fit.png"
