@@ -55,6 +55,7 @@ transformers = {version = "^4.39.1", optional = true, markers = "platform_system
 librosa = {version = "^0.10.1", optional = true, markers = "platform_system == 'Linux'"}
 ipywidgets = "^8.1.5"
 twine = "^5.1.1"
+statsmodels = "^0.14.6"
 
 [tool.poetry.extras]
 # Install with: `poetry install -E ml`
