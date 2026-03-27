@@ -220,6 +220,9 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
     y = sig[:, 3]
 
     if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
+        # Cap to actual number of neurons
+        neuron_cutoff = (neuron_cutoff[0], min(neuron_cutoff[1], neuron))
+        # Apply the cutoff
         old_x, old_y = x, y
         x, y = [], []
         for i, xx in enumerate(old_x):
@@ -241,10 +244,10 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
     elif draw_mode == "dotgrid":
         # Plot grey dots for all neurons
         grid_x, grid_y = np.meshgrid(range(*neuron_cutoff), range(layer))
-        ax.scatter(grid_x, grid_y, c="grey", s=5, linewidths=0)
+        ax.scatter(grid_x, grid_y, c="grey", s=50, linewidths=0)
 
         # Plot colour for significant neurons
-        ax.scatter(x, y, c=_dataset_colour(dataset), s=20, linewidths=0)
+        ax.scatter(x, y, c=_dataset_colour(dataset), s=100)
 
         ax.set_xlim(neuron_cutoff[0] - 1, neuron_cutoff[1])
         ax.set_ylim(-1, layer)
@@ -256,7 +259,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
 
         # Plot grey dots for all neurons
         grid_x, grid_y = np.meshgrid(range(*neuron_cutoff), range(layer))
-        ax.scatter(grid_x, grid_y, c="lightgrey", s=6, linewidths=2, marker="|")
+        ax.scatter(grid_x, grid_y, c="grey", s=6, linewidths=2, marker="|")
 
         # Plot colour for significant neurons
         ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
@@ -272,8 +275,10 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
         heatmap_data = _convert_to_heatmap(x, y, neuron_cutoff, layer)
         heatmap(heatmap_data,
                 ax=ax,
-                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["white", _dataset_colour(dataset)]),
-                cbar=False)
+                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["grey", _dataset_colour(dataset)]),
+                cbar=False,
+                linewidths=0.5,
+                )
         ax.invert_yaxis()
 
     else:
