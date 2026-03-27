@@ -7,6 +7,7 @@ from statistics import NormalDist
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors
+from numpy.typing import NDArray
 
 from kymata.io.logging import log_message, date_format
 from kymata.math.probability import p_to_logp, sidak_correct
@@ -15,21 +16,7 @@ from kymata.math.probability import p_to_logp, sidak_correct
 _logger = getLogger(__file__)
 
 
-def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
-    """Recreate the original neuron-level scatter plot from the per-layer log files.
-
-    Reads slurm logs per layer, extracts (peak latency, peak corr, sensor ind, -log10(pval)),
-    filters significant neurons, then produces a scatter plot in the original style:
-
-    x = peak latency (ms) OR neuron index
-      y = layer index
-      color = -log10(pval)
-
-    Output is saved under further_analysis_results/.
-    """
-
-    _logger.info(f"Creating {x_axis} scatter for {dataset} from {log_dir!s}")
-
+def _get_data_shape(dataset: str, log_dir: Path) -> tuple[int, int, int]:
     if 'qwen' in str(log_dir) and 'encoder' not in str(log_dir):
         layer = 29  # 41 # 66 64 34 33
         neuron = 3584  # 4096 5120
@@ -39,7 +26,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     else:
         layer = 33  # 41 # 66 64 34 33
         neuron = 4096  # 4096 5120
-        
+
     if dataset == "eeg":
         n_sensors = 64
     elif dataset == "meg":
@@ -50,10 +37,12 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         n_sensors = 300  # number of regions
     else:
         raise NotImplementedError()
+    return layer, n_sensors, neuron
 
-    # Keep same thresholding approach as the other script
-    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
-    thres = -p_to_logp(sidak_correct(alpha, 200 * n_sensors * neuron * layer))
+
+def _get_significant_neurons(log_dir: Path, dataset: str, thres: float) -> NDArray:
+
+    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
 
     #                                   ↓ was 6 until I removed peak_corr
     lat_sig = np.zeros((layer * neuron, 5), dtype=float)
@@ -80,7 +69,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         if dataset == "emeg" or dataset == "ecog":
             log_file = log_dir / f'slurm_log_{li}.txt'
         else:
-            log_file = log_dir / f'layer{li}_{neuron-1}_gridsearch_{dataset}_results.txt'
+            log_file = log_dir / f'layer{li}_{neuron - 1}_gridsearch_{dataset}_results.txt'
         with log_file.open("r") as f:
             all_text = [line for line in f.readlines() if '[sensor] ind' in line]
 
@@ -108,6 +97,50 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
 
     # significant neurons only                       ↓ was 3 until I removed peak_corr
     sig = lat_sig[(lat_sig[:, 0] != 0) & (lat_sig[:, 2] > thres)]
+    return sig
+
+
+def _dataset_colour(dataset: str) -> str:
+    if dataset == "emeg":
+        color = '#79b15b'
+    elif dataset == "ecog":
+        color = '#b1835b'
+    elif dataset == "meg":
+        color = "#D71815"
+    elif dataset == "eeg":
+        color = "#FF9800"
+    else:
+        raise NotImplementedError()
+    return color
+
+
+def _get_threshold(layer: int, n_sensors: int, neuron: int) -> float:
+    # Keep same thresholding approach as the other script
+    alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
+    thres = -p_to_logp(sidak_correct(alpha, 200 * n_sensors * neuron * layer))
+    return thres
+
+
+def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
+    """Recreate the original neuron-level scatter plot from the per-layer log files.
+
+    Reads slurm logs per layer, extracts (peak latency, peak corr, sensor ind, -log10(pval)),
+    filters significant neurons, then produces a scatter plot in the original style:
+
+    x = peak latency (ms) OR neuron index
+      y = layer index
+      color = -log10(pval)
+
+    Output is saved under further_analysis_results/.
+    """
+
+    _logger.info(f"Creating latency scatter for {dataset} from {log_dir!s}")
+
+    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
+
+    thres = _get_threshold(layer, n_sensors, neuron)
+
+    sig = _get_significant_neurons(log_dir, dataset, thres)
 
     # Save dataset for this modality
     results_out_loc = output_dir / f"{dataset}_sig_neurons_layer{layer}_neuron{neuron}.npy"
@@ -122,27 +155,13 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     # Scatter: neuron index vs layer, colored by -log10(p)
     logp_norm = colors.Normalize(vmin=float(thres), vmax=70.0, clip=True)
 
-    if x_axis == 'latency':
-        x = sig[:, 0]
-        x_label = 'Latency (ms)'
-    elif x_axis in ('neuron', 'neuron_index', 'index'):
-        #          ↓ was 5 until I removed peak_corr
-        x = sig[:, 4]
-        x_label = 'Neuron index'
-    else:
-        raise ValueError("x_axis must be one of: 'latency', 'neuron' (aka 'neuron_index'/'index')")
+    x = sig[:, 0]
+    x_label = 'Latency (ms)'
+
     y = sig[:, 3]
 
-    if dataset == "emeg":
-        color = '#79b15b'
-    elif dataset == "ecog":
-        color = '#b1835b'
-    elif dataset == "meg":
-        color = "#D71815"
-    elif dataset == "eeg":
-        color = "#FF9800"
-    else:
-        raise NotImplementedError()
+    color = _dataset_colour(dataset)
+
     ax.scatter(
         x,
         y,
@@ -153,24 +172,81 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
         linewidths=0,
     )
 
-    # cbar = plt.colorbar(sc, ax=ax)
-    # cbar.set_label('-log10(p-value)')
-    # Use rounded, evenly spaced ticks (looks more natural than hard-coding)
-    # cbar.locator = MaxNLocator(nbins=5)
-    # cbar.update_ticks()
+    ax.set_ylabel('Layer number')
+    ax.set_ylim(-1, layer)
+
+    ax.set_xlabel(x_label)
+    ax.set_title(dataset.upper())
+    ax.set_xlim(0, 400)
+    ax.set_box_aspect(1)
+
+    plt.tight_layout()
+
+    save_loc = output_dir / f"{dataset}_neuron_scatter_latency.png"
+
+    plt.savefig(save_loc, dpi=600)
+    plt.close(fig)
+
+
+def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
+    """Recreate the original neuron-level scatter plot from the per-layer log files.
+
+    Reads slurm logs per layer, extracts (peak latency, peak corr, sensor ind, -log10(pval)),
+    filters significant neurons, then produces a scatter plot in the original style:
+
+    x = peak latency (ms) OR neuron index
+      y = layer index
+      color = -log10(pval)
+
+    Output is saved under further_analysis_results/.
+    """
+    _logger.info(f"Creating neuron scatter for {dataset} from {log_dir!s}")
+
+    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
+
+    thres = _get_threshold(layer, n_sensors, neuron)
+
+    sig = _get_significant_neurons(log_dir, dataset, thres)
+
+    # Save dataset for this modality
+    results_out_loc = output_dir / f"{dataset}_sig_neurons_layer{layer}_neuron{neuron}.npy"
+    with results_out_loc.open("wb") as f:
+        np.save(f, sig)
+        print(f"Saved {results_out_loc.name}")
+
+    # import ipdb; ipdb.set_trace()
+
+    fig, ax = plt.subplots()
+
+    # Scatter: neuron index vs layer, colored by -log10(p)
+    logp_norm = colors.Normalize(vmin=float(thres), vmax=70.0, clip=True)
+
+    #          ↓ was 5 until I removed peak_corr
+    x = sig[:, 4]
+    x_label = 'Neuron index'
+
+    y = sig[:, 3]
+
+    color = _dataset_colour(dataset)
+
+    ax.scatter(
+        x,
+        y,
+        c=color,
+        norm=logp_norm,
+        s=4,
+        alpha=0.9,
+        linewidths=0,
+    )
 
     ax.set_ylabel('Layer number')
     ax.set_ylim(-1, layer)
 
     ax.set_xlabel(x_label)
-    if x_axis == "latency":
-        ax.set_title(dataset.upper())
-        ax.set_xlim(0, 400)
-        ax.set_box_aspect(1)
 
     plt.tight_layout()
 
-    save_loc = output_dir / f"{dataset}_neuron_scatter_{x_axis}.png"
+    save_loc = output_dir / f"{dataset}_neuron_scatter_neuron.png"
 
     plt.savefig(save_loc, dpi=600)
     plt.close(fig)
@@ -197,4 +273,9 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    neuron_scatter(log_dir=args.log_dir, output_dir=args.output_dir, x_axis=args.x_axis, dataset=args.dataset)
+    if args.x_axis == "latency":
+        latency_scatter(log_dir=args.log_dir, output_dir=args.output_dir, dataset=args.dataset)
+    elif args.x_axis == "neuron":
+        neuron_scatter(log_dir=args.log_dir, output_dir=args.output_dir, dataset=args.dataset)
+    else:
+        raise NotImplementedError()
