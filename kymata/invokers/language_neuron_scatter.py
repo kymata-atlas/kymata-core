@@ -232,6 +232,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
     else:
         neuron_cutoff = (0, neuron)
 
+    # Select draw mode and apply
     if draw_mode == "dots":
         ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
 
@@ -256,7 +257,6 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
         ax.set_ylabel(y_label)
 
     elif draw_mode == "tickgrid":
-
         # Plot grey dots for all neurons
         grid_x, grid_y = np.meshgrid(range(*neuron_cutoff), range(layer))
         ax.scatter(grid_x, grid_y, c="grey", s=6, linewidths=2, marker="|")
@@ -271,7 +271,6 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
         ax.set_ylabel(y_label)
 
     elif draw_mode == "heatmap":
-
         heatmap_data = _convert_to_heatmap(x, y, neuron_cutoff, layer)
         heatmap(heatmap_data,
                 ax=ax,
