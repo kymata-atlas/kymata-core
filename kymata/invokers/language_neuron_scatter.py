@@ -110,7 +110,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     sig = lat_sig[(lat_sig[:, 0] != 0) & (lat_sig[:, 2] > thres)]
 
     # Save dataset for this modality
-    results_out_loc = output_dir / f"{dataset}_significant_neurons.npy"
+    results_out_loc = output_dir / f"{dataset}_significant_neurons_layer{layer}_neuron{neuron}.npy"
     with results_out_loc.open("wb") as f:
         np.save(f, sig)
         print(f"Saved {results_out_loc.name}")

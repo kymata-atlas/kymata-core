@@ -1,4 +1,5 @@
 import argparse
+import re
 from logging import basicConfig, INFO, getLogger
 from pathlib import Path
 from typing import Any, Literal
@@ -14,7 +15,7 @@ from kymata.io.logging import log_message, date_format
 _logger = getLogger(__file__)
 
 
-def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str,
+def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset_name: str,
                           degree: Literal[1, 2],
                           axlim_ms=(None, None), min_count_for_average: int = 5) -> RegressionResults:
     """
@@ -134,7 +135,7 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
     plt.tight_layout()
 
     model_name = "linear" if degree == 1 else "quadratic"
-    save_loc = output_dir / f"{dataset}_best_{model_name}_fit.png"
+    save_loc = output_dir / f"{dataset_name}_best_{model_name}_fit.png"
 
     plt.savefig(save_loc, dpi=600)
 
@@ -158,16 +159,55 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     
+    dataset: str = args.dataset
+    output_dir: Path = args.output_dir
 
+    sig_loc: Path
+    layer = None
+    neuron = None
+    sigs = []
+    datasets = []
+    for sig_loc in args.neuron_sig:
+
+        # Parse layer and neuron out of filename
+        filename_re = re.compile(r"(?P<dataset>[^_]+)"
+                                 r"_significant_neurons"
+                                 r"_layer(?P<layer>[0-9]+)"
+                                 r"_neuron(?P<neuron>[0-9]+)"
+                                 r"\.npy")
+        match = filename_re.match(sig_loc.name)
+        this_layer = int(match.group("layer"))
+        this_neuron = int(match.group("neuron"))
+
+        if layer is not None and this_layer != layer:
+            raise ValueError(f"Inconsistent layer in files: {layer} vs {this_layer}")
+        if neuron is not None and this_neuron != neuron:
+            raise ValueError(f"Inconsistent neuron in files: {neuron} vs {this_neuron}")
+
+        layer = this_layer
+        neuron = this_neuron
+        datasets.append(dataset)
+
+        with sig_loc.open("rb") as sig_f:
+            # (peak_lat, sensor_idx, logp, layer, neuron_no)
+            sig = np.load(sig_f)
+        sigs.append(sig)
+
+    # Stack sigs along the sensor axis
+    sig_unified = np.stack(sigs, axis=1)
 
     linear_model = plot_line_of_best_fit(
-        layer, sig, output_dir, dataset, degree=1,
-        axlim_ms=(-250, 850), min_count_for_average=0)
+        degree=1,
+        min_count_for_average=0, axlim_ms=(-250, 850),
+        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
+    )
     quadratic_model = plot_line_of_best_fit(
-        layer, sig, output_dir, dataset, degree=2,
-        axlim_ms=(-250, 850), min_count_for_average=0)
+        degree=2,
+        min_count_for_average=0, axlim_ms=(-250, 850),
+        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
+    )
     print(f"Linear BIC = {linear_model.bic:.2f}")
-    print(f"Quardatic BIC = {quadratic_model.bic:.2f}")
+    print(f"Quadratic BIC = {quadratic_model.bic:.2f}")
     delta_bic = quadratic_model.bic - linear_model.bic
     favoured = "quadratic" if delta_bic < 0 else "linear"
     if abs(delta_bic) > 10:
