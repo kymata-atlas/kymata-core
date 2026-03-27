@@ -19,7 +19,8 @@ from kymata.math.probability import p_to_logp, sidak_correct
 _logger = getLogger(__file__)
 
 
-def _get_data_shape(dataset: str, log_dir: Path) -> tuple[int, int, int]:
+def _get_expected_data_shape(dataset: str, log_dir: Path) -> tuple[int, int, int]:
+    """The shape of the data varies between models and modalities. This is the canonical logic for the sizes."""
     if 'qwen' in str(log_dir) and 'encoder' not in str(log_dir):
         layer = 29  # 41 # 66 64 34 33
         neuron = 3584  # 4096 5120
@@ -40,12 +41,28 @@ def _get_data_shape(dataset: str, log_dir: Path) -> tuple[int, int, int]:
         n_sensors = 300  # number of regions
     else:
         raise NotImplementedError()
-    return layer, n_sensors, neuron
+
+    return n_sensors, layer, neuron
 
 
-def _get_significant_neurons(log_dir: Path, dataset: str, thres: float) -> NDArray:
+def _dataset_colour(dataset: str) -> str:
+    """Canonical colour for each modality."""
+    if dataset == "emeg":
+        color = '#79b15b'
+    elif dataset == "ecog":
+        color = '#b1835b'
+    elif dataset == "meg":
+        color = "#D71815"
+    elif dataset == "eeg":
+        color = "#FF9800"
+    else:
+        raise NotImplementedError()
+    return color
 
-    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
+
+def _get_significant_neurons_from_logs(log_dir: Path, dataset: str, thres: float) -> NDArray:
+    """Extracts the significant (above threshold) neurons from the logs."""
+    n_sensors, layer, neuron = _get_expected_data_shape(dataset, log_dir)
 
     #                                   ↓ was 6 until I removed peak_corr
     lat_sig = np.zeros((layer * neuron, 5), dtype=float)
@@ -103,21 +120,8 @@ def _get_significant_neurons(log_dir: Path, dataset: str, thres: float) -> NDArr
     return sig
 
 
-def _dataset_colour(dataset: str) -> str:
-    if dataset == "emeg":
-        color = '#79b15b'
-    elif dataset == "ecog":
-        color = '#b1835b'
-    elif dataset == "meg":
-        color = "#D71815"
-    elif dataset == "eeg":
-        color = "#FF9800"
-    else:
-        raise NotImplementedError()
-    return color
-
-
 def _get_threshold(layer: int, n_sensors: int, neuron: int) -> float:
+    """Appropriate threshold based on data size."""
     # Keep same thresholding approach as the other script
     alpha = 1 - NormalDist(mu=0, sigma=1).cdf(5)
     thres = -p_to_logp(sidak_correct(alpha, 200 * n_sensors * neuron * layer))
@@ -139,10 +143,10 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
 
     _logger.info(f"Creating latency scatter for {dataset} from {log_dir!s}")
 
-    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
+    n_sensors, layer, neuron = _get_expected_data_shape(dataset, log_dir)
     thres = _get_threshold(layer, n_sensors, neuron)
     # Rows are (peak_lat, sensor_ind, logp, layer, neuron_no)
-    sig = _get_significant_neurons(log_dir, dataset, thres)
+    sig = _get_significant_neurons_from_logs(log_dir, dataset, thres)
 
     # Save dataset for this modality
     results_out_loc = output_dir / f"{dataset}_sig_neurons_layer{layer}_neuron{neuron}.npy"
@@ -177,7 +181,8 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
     plt.close(fig)
 
 
-def _convert_to_heatmap(x, y, neuron_cutoff, total_layers):
+def _convert_to_heatmap(x, y, neuron_cutoff, total_layers) -> DataFrame:
+    """Converts data in ordinate-vector form (x, y) to a heatmap dataframe in cartesian form."""
 
     data_vals = defaultdict(lambda: defaultdict(int))
     for neuron, layer in zip(x, y):
@@ -190,6 +195,23 @@ def _convert_to_heatmap(x, y, neuron_cutoff, total_layers):
     ])
 
     return heatmap_df.pivot(index="Layer", columns="Neuron", values="Value")
+
+
+def _apply_cutoff_xy(x: NDArray, y: NDArray, neuron_cutoff: tuple[int, int], neuron: int) -> tuple[NDArray, NDArray, tuple[int, int]]:
+    """Applies a specified cutoff of neurons to ordinate vectors, if appropriate."""
+    if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
+        # Cap to actual number of neurons
+        neuron_cutoff = (neuron_cutoff[0], min(neuron_cutoff[1], neuron))
+        # Apply the cutoff
+        old_x, old_y = x, y
+        x, y = [], []
+        for i, xx in enumerate(old_x):
+            if neuron_cutoff[0] <= xx < neuron_cutoff[1]:
+                x.append(xx)
+                y.append(old_y[i])
+    else:
+        neuron_cutoff = (0, neuron)
+    return x, y, neuron_cutoff
 
 
 def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str, neuron_cutoff: tuple[int, int]):
@@ -206,10 +228,10 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
     """
     _logger.info(f"Creating neuron scatter for {dataset} from {log_dir!s}")
 
-    layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
+    n_sensors, layer, neuron = _get_expected_data_shape(dataset, log_dir)
     thres = _get_threshold(layer, n_sensors, neuron)
     # Rows are (peak_lat, sensor_ind, logp, layer, neuron_no)
-    sig = _get_significant_neurons(log_dir, dataset, thres)
+    sig = _get_significant_neurons_from_logs(log_dir, dataset, thres)
 
     fig, ax = plt.subplots(figsize=(20, 5))
 
@@ -278,22 +300,6 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
 
     plt.savefig(output_dir / f"{dataset}_neuron_scatter_neuron_{draw_mode}.png", dpi=600)
     plt.close(fig)
-
-
-def _apply_cutoff_xy(x: NDArray, y: NDArray, neuron_cutoff: tuple[int, int], neuron: int) -> tuple[NDArray, NDArray, tuple[int, int]]:
-    if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
-        # Cap to actual number of neurons
-        neuron_cutoff = (neuron_cutoff[0], min(neuron_cutoff[1], neuron))
-        # Apply the cutoff
-        old_x, old_y = x, y
-        x, y = [], []
-        for i, xx in enumerate(old_x):
-            if neuron_cutoff[0] <= xx < neuron_cutoff[1]:
-                x.append(xx)
-                y.append(old_y[i])
-    else:
-        neuron_cutoff = (0, neuron)
-    return x, y, neuron_cutoff
 
 
 if __name__ == '__main__':
