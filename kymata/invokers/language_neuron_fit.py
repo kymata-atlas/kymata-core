@@ -178,6 +178,7 @@ if __name__ == '__main__':
         match = filename_re.match(sig_loc.name)
         this_layer = int(match.group("layer"))
         this_neuron = int(match.group("neuron"))
+        this_dataset = str(match.group("dataset"))
 
         if layer is not None and this_layer != layer:
             raise ValueError(f"Inconsistent layer in files: {layer} vs {this_layer}")
@@ -186,7 +187,7 @@ if __name__ == '__main__':
 
         layer = this_layer
         neuron = this_neuron
-        datasets.append(dataset)
+        datasets.append(this_dataset)
 
         with sig_loc.open("rb") as sig_f:
             # each row is (peak_lat, sensor_idx, logp, layer, neuron_no)
