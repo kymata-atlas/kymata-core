@@ -165,7 +165,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     ax.set_xlabel(x_label)
     if x_axis == "latency":
         ax.set_xlim(0, 400)
-        ax.set_aspect("equal")
+        ax.set_box_aspect(1)
 
     plt.tight_layout()
 

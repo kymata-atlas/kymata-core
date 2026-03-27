@@ -131,7 +131,7 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
     ax.set_ylabel('Layer number')
     ax.set_xlim(axlim_ms)
     ax.set_ylim(-1, layer)
-    ax.set_aspect("equal")
+    ax.set_box_aspect(1)
 
     plt.tight_layout()
 
