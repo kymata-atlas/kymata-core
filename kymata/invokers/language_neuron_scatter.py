@@ -219,18 +219,7 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
     y_label = "Layer number"
     y = sig[:, 3]
 
-    if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
-        # Cap to actual number of neurons
-        neuron_cutoff = (neuron_cutoff[0], min(neuron_cutoff[1], neuron))
-        # Apply the cutoff
-        old_x, old_y = x, y
-        x, y = [], []
-        for i, xx in enumerate(old_x):
-            if neuron_cutoff[0] <= xx < neuron_cutoff[1]:
-                x.append(xx)
-                y.append(old_y[i])
-    else:
-        neuron_cutoff = (0, neuron)
+    x, y, neuron_cutoff = _apply_cutoff_xy(x, y, neuron_cutoff, neuron)
 
     # Select draw mode and apply
     if draw_mode == "dots":
@@ -289,6 +278,22 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
 
     plt.savefig(output_dir / f"{dataset}_neuron_scatter_neuron_{draw_mode}.png", dpi=600)
     plt.close(fig)
+
+
+def _apply_cutoff_xy(x: NDArray, y: NDArray, neuron_cutoff: tuple[int, int], neuron: int) -> tuple[NDArray, NDArray, tuple[int, int]]:
+    if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
+        # Cap to actual number of neurons
+        neuron_cutoff = (neuron_cutoff[0], min(neuron_cutoff[1], neuron))
+        # Apply the cutoff
+        old_x, old_y = x, y
+        x, y = [], []
+        for i, xx in enumerate(old_x):
+            if neuron_cutoff[0] <= xx < neuron_cutoff[1]:
+                x.append(xx)
+                y.append(old_y[i])
+    else:
+        neuron_cutoff = (0, neuron)
+    return x, y, neuron_cutoff
 
 
 if __name__ == '__main__':
