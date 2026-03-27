@@ -159,12 +159,13 @@ def neuron_scatter(log_dir: Path, output_dir: Path, x_axis: str, dataset: str):
     # cbar.locator = MaxNLocator(nbins=5)
     # cbar.update_ticks()
 
-    if x_axis == "latency":
-        ax.set_xlim(-250, 850)
-
-    ax.set_xlabel(x_label)
     ax.set_ylabel('Layer number')
     ax.set_ylim(-1, layer)
+
+    ax.set_xlabel(x_label)
+    if x_axis == "latency":
+        ax.set_xlim(0, 400)
+        ax.set_aspect("equal")
 
     plt.tight_layout()
 
