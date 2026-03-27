@@ -177,7 +177,7 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
     plt.close(fig)
 
 
-def _convert_to_heatmap(x, y, total_neurons, total_layers):
+def _convert_to_heatmap(x, y, neuron_cutoff, total_layers):
 
     data_vals = defaultdict(lambda: defaultdict(int))
     for neuron, layer in zip(x, y):
@@ -185,14 +185,14 @@ def _convert_to_heatmap(x, y, total_neurons, total_layers):
 
     heatmap_df = DataFrame([
         {"Neuron": neuron, "Layer": layer, "Value": data_vals[layer][neuron]}
-        for neuron in range(total_neurons)
+        for neuron in range(*neuron_cutoff)
         for layer in range(total_layers)
     ])
 
     return heatmap_df.pivot(index="Layer", columns="Neuron", values="Value")
 
 
-def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
+def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str, neuron_cutoff: tuple[int, int]):
     """Recreate the original neuron-level scatter plot from the per-layer log files.
 
     Reads slurm logs per layer, extracts (peak latency, peak corr, sensor ind, -log10(pval)),
@@ -219,22 +219,20 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
     y_label = "Layer number"
     y = sig[:, 3]
 
-    draw_mode = "heatmap"
-
-    cutoff = None#100
-    if cutoff:
+    if neuron_cutoff is not None and min(neuron_cutoff) >= 0:
         old_x, old_y = x, y
         x, y = [], []
         for i, xx in enumerate(old_x):
-            if xx < cutoff:
+            if neuron_cutoff[0] <= xx < neuron_cutoff[1]:
                 x.append(xx)
                 y.append(old_y[i])
-        neuron = cutoff
+    else:
+        neuron_cutoff = (0, neuron)
 
     if draw_mode == "dots":
         ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
 
-        ax.set_xlim(-1, neuron)
+        ax.set_xlim(neuron_cutoff[0] - 1, neuron_cutoff[1])
         ax.set_ylim(-1, layer)
 
         ax.set_xlabel(x_label)
@@ -242,13 +240,13 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
 
     elif draw_mode == "dotgrid":
         # Plot grey dots for all neurons
-        grid_x, grid_y = np.meshgrid(range(neuron), range(layer))
+        grid_x, grid_y = np.meshgrid(range(*neuron_cutoff), range(layer))
         ax.scatter(grid_x, grid_y, c="grey", s=5, linewidths=0)
 
         # Plot colour for significant neurons
         ax.scatter(x, y, c=_dataset_colour(dataset), s=20, linewidths=0)
 
-        ax.set_xlim(-1, neuron)
+        ax.set_xlim(neuron_cutoff[0] - 1, neuron_cutoff[1])
         ax.set_ylim(-1, layer)
 
         ax.set_xlabel(x_label)
@@ -257,13 +255,13 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
     elif draw_mode == "tickgrid":
 
         # Plot grey dots for all neurons
-        grid_x, grid_y = np.meshgrid(range(neuron), range(layer))
+        grid_x, grid_y = np.meshgrid(range(*neuron_cutoff), range(layer))
         ax.scatter(grid_x, grid_y, c="lightgrey", s=6, linewidths=2, marker="|")
 
         # Plot colour for significant neurons
         ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
 
-        ax.set_xlim(-1, neuron)
+        ax.set_xlim(neuron_cutoff[0] - 1, neuron_cutoff[1])
         ax.set_ylim(-1, layer)
 
         ax.set_xlabel(x_label)
@@ -271,9 +269,11 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
 
     elif draw_mode == "heatmap":
 
-        heatmap_data = _convert_to_heatmap(x, y, neuron, layer)
-        heatmap(heatmap_data, ax=ax,
-                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["white", _dataset_colour(dataset)]), cbar=False)
+        heatmap_data = _convert_to_heatmap(x, y, neuron_cutoff, layer)
+        heatmap(heatmap_data,
+                ax=ax,
+                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["white", _dataset_colour(dataset)]),
+                cbar=False)
         ax.invert_yaxis()
 
     else:
@@ -306,11 +306,26 @@ if __name__ == '__main__':
         default='emeg',
         help="Dataset to use: 'emeg' or 'ecog'",
     )
+    parser.add_argument(
+        "--draw-mode",
+        type=str,
+        choices=["dots", "dotgrid", "tickgrid", "heatmap"],
+        default="dots",
+        help="How to draw the neuron scatter"
+    )
+    parser.add_argument(
+        "--neuron-cutoff",
+        nargs=2,
+        type=int,
+        default=(-1, -1),
+        help="Only show this range of neurons (first, last); supply -1 to either to skip cutoff"
+    )
     args = parser.parse_args()
 
     if args.x_axis == "latency":
         latency_scatter(log_dir=args.log_dir, output_dir=args.output_dir, dataset=args.dataset)
     elif args.x_axis == "neuron":
-        neuron_scatter(log_dir=args.log_dir, output_dir=args.output_dir, dataset=args.dataset)
+        neuron_scatter(log_dir=args.log_dir, output_dir=args.output_dir, dataset=args.dataset,
+                       draw_mode=args.draw_mode, neuron_cutoff=args.neuron_cutoff)
     else:
         raise NotImplementedError()
