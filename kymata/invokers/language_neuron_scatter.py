@@ -1,5 +1,6 @@
 import argparse
 import re
+from collections import defaultdict
 from logging import basicConfig, INFO, getLogger
 from pathlib import Path
 from statistics import NormalDist
@@ -7,11 +8,13 @@ from statistics import NormalDist
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors
+from matplotlib.colors import LinearSegmentedColormap
 from numpy.typing import NDArray
+from pandas import DataFrame
+from seaborn import heatmap
 
 from kymata.io.logging import log_message, date_format
 from kymata.math.probability import p_to_logp, sidak_correct
-
 
 _logger = getLogger(__file__)
 
@@ -137,9 +140,8 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
     _logger.info(f"Creating latency scatter for {dataset} from {log_dir!s}")
 
     layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
-
     thres = _get_threshold(layer, n_sensors, neuron)
-
+    # Rows are (peak_lat, sensor_ind, logp, layer, neuron_no)
     sig = _get_significant_neurons(log_dir, dataset, thres)
 
     # Save dataset for this modality
@@ -148,44 +150,46 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
         np.save(f, sig)
         print(f"Saved {results_out_loc.name}")
 
-    # import ipdb; ipdb.set_trace()
-
     fig, ax = plt.subplots()
 
     # Scatter: neuron index vs layer, colored by -log10(p)
     logp_norm = colors.Normalize(vmin=float(thres), vmax=70.0, clip=True)
 
-    x = sig[:, 0]
     x_label = 'Latency (ms)'
+    x = sig[:, 0]
 
+    y_label = "Layer number"
     y = sig[:, 3]
 
-    color = _dataset_colour(dataset)
+    ax.scatter(x, y, c=_dataset_colour(dataset), norm=logp_norm, s=4, alpha=0.9, linewidths=0)
 
-    ax.scatter(
-        x,
-        y,
-        c=color,
-        norm=logp_norm,
-        s=4,
-        alpha=0.9,
-        linewidths=0,
-    )
-
-    ax.set_ylabel('Layer number')
     ax.set_ylim(-1, layer)
+    ax.set_xlim(0, 400)
 
     ax.set_xlabel(x_label)
-    ax.set_title(dataset.upper())
-    ax.set_xlim(0, 400)
-    ax.set_box_aspect(1)
+    ax.set_ylabel(y_label)
 
+    ax.set_title(dataset.upper())
+    ax.set_box_aspect(1)
     plt.tight_layout()
 
-    save_loc = output_dir / f"{dataset}_neuron_scatter_latency.png"
-
-    plt.savefig(save_loc, dpi=600)
+    plt.savefig(save_loc = output_dir / f"{dataset}_neuron_scatter_latency.png", dpi=600)
     plt.close(fig)
+
+
+def _convert_to_heatmap(x, y, total_neurons, total_layers):
+
+    data_vals = defaultdict(lambda: defaultdict(int))
+    for neuron, layer in zip(x, y):
+        data_vals[layer][neuron] = 1
+
+    heatmap_df = DataFrame([
+        {"Neuron": neuron, "Layer": layer, "Value": data_vals[layer][neuron]}
+        for neuron in range(total_neurons)
+        for layer in range(total_layers)
+    ])
+
+    return heatmap_df.pivot(index="Layer", columns="Neuron", values="Value")
 
 
 def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
@@ -203,52 +207,83 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str):
     _logger.info(f"Creating neuron scatter for {dataset} from {log_dir!s}")
 
     layer, n_sensors, neuron = _get_data_shape(dataset, log_dir)
-
     thres = _get_threshold(layer, n_sensors, neuron)
-
+    # Rows are (peak_lat, sensor_ind, logp, layer, neuron_no)
     sig = _get_significant_neurons(log_dir, dataset, thres)
 
-    # Save dataset for this modality
-    results_out_loc = output_dir / f"{dataset}_sig_neurons_layer{layer}_neuron{neuron}.npy"
-    with results_out_loc.open("wb") as f:
-        np.save(f, sig)
-        print(f"Saved {results_out_loc.name}")
+    fig, ax = plt.subplots(figsize=(20, 5))
 
-    # import ipdb; ipdb.set_trace()
-
-    fig, ax = plt.subplots()
-
-    # Scatter: neuron index vs layer, colored by -log10(p)
-    logp_norm = colors.Normalize(vmin=float(thres), vmax=70.0, clip=True)
-
-    #          ↓ was 5 until I removed peak_corr
-    x = sig[:, 4]
     x_label = 'Neuron index'
+    x = sig[:, 4]
 
+    y_label = "Layer number"
     y = sig[:, 3]
 
-    color = _dataset_colour(dataset)
+    draw_mode = "heatmap"
 
-    ax.scatter(
-        x,
-        y,
-        c=color,
-        norm=logp_norm,
-        s=4,
-        alpha=0.9,
-        linewidths=0,
-    )
+    cutoff = None#100
+    if cutoff:
+        old_x, old_y = x, y
+        x, y = [], []
+        for i, xx in enumerate(old_x):
+            if xx < cutoff:
+                x.append(xx)
+                y.append(old_y[i])
+        neuron = cutoff
 
-    ax.set_ylabel('Layer number')
-    ax.set_ylim(-1, layer)
+    if draw_mode == "dots":
+        ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
 
-    ax.set_xlabel(x_label)
+        ax.set_xlim(-1, neuron)
+        ax.set_ylim(-1, layer)
+
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+
+    elif draw_mode == "dotgrid":
+        # Plot grey dots for all neurons
+        grid_x, grid_y = np.meshgrid(range(neuron), range(layer))
+        ax.scatter(grid_x, grid_y, c="grey", s=5, linewidths=0)
+
+        # Plot colour for significant neurons
+        ax.scatter(x, y, c=_dataset_colour(dataset), s=20, linewidths=0)
+
+        ax.set_xlim(-1, neuron)
+        ax.set_ylim(-1, layer)
+
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+
+    elif draw_mode == "tickgrid":
+
+        # Plot grey dots for all neurons
+        grid_x, grid_y = np.meshgrid(range(neuron), range(layer))
+        ax.scatter(grid_x, grid_y, c="lightgrey", s=6, linewidths=2, marker="|")
+
+        # Plot colour for significant neurons
+        ax.scatter(x, y, c=_dataset_colour(dataset), s=4, linewidths=0)
+
+        ax.set_xlim(-1, neuron)
+        ax.set_ylim(-1, layer)
+
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+
+    elif draw_mode == "heatmap":
+
+        heatmap_data = _convert_to_heatmap(x, y, neuron, layer)
+        heatmap(heatmap_data, ax=ax,
+                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["white", _dataset_colour(dataset)]), cbar=False)
+        ax.invert_yaxis()
+
+    else:
+        raise NotImplementedError()
+
+    plt.axis("off")
 
     plt.tight_layout()
 
-    save_loc = output_dir / f"{dataset}_neuron_scatter_neuron.png"
-
-    plt.savefig(save_loc, dpi=600)
+    plt.savefig(output_dir / f"{dataset}_neuron_scatter_neuron_{draw_mode}.png", dpi=600)
     plt.close(fig)
 
 
