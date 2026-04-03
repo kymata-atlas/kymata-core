@@ -146,9 +146,11 @@ def run_first_pass_cleansing_and_maxwell_filtering(
                 meg_freqs = (50, 100, 120, 150, 200, 240, 250, 360, 400, 450)
                 raw_fif_data = raw_fif_data.notch_filter(freqs=meg_freqs, picks=meg_picks)
 
-                eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
-                eeg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 450)
-                raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
+                if not (participant == "participant_11" and "4.1" in dataset_directory_name):
+
+                    eeg_picks = mne.pick_types(raw_fif_data.info, eeg=True)
+                    eeg_freqs = (50, 100, 150, 200, 250, 300, 350, 400, 450)
+                    raw_fif_data = raw_fif_data.notch_filter(freqs=eeg_freqs, picks=eeg_picks)
 
                 fig = raw_fif_data.compute_psd(tmax=1000000, fmax=500, average="mean").plot()
                 psd_checks_dir = Path(processed_path, "power_spectral_density_checks")
@@ -302,7 +304,8 @@ def run_second_pass_cleansing_and_eog_removal(
                 # Use common average reference, not the nose reference.
                 print_with_color("   Use common average EEG reference...", Fore.GREEN)
 
-                raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
+                if not (participant == "participant_11" and "4.1" in dataset_directory_name):
+                    raw_fif_data_sss_movecomp_tr = (raw_fif_data_sss_movecomp_tr.set_eeg_reference(ref_channels="average"))
 
                 # remove very slow drift
                 print_with_color("   Removing slow drift...", Fore.GREEN)
@@ -742,9 +745,14 @@ def create_trialwise_data(
             for i in range(len(repetition_events_bea)):
                 repetition_events_bea[i][2] = str(i)
             include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-            picks: NDArray = mne.pick_types(
-                raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
-            )
+            if p == "participant_11" and "4.1" in dataset_directory_name:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=False, stim=False, exclude="bads", include=include
+                )
+            else:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+                )
             _logger.info(
                 f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
             )
@@ -836,9 +844,14 @@ def create_trialwise_data(
 
             # Denote picks
             include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-            picks: NDArray = mne.pick_types(
-                raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
-            )
+            if p == "participant_11" and "4.1" in dataset_directory_name:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=False, stim=False, exclude="bads", include=include
+                )
+            else:
+                picks: NDArray = mne.pick_types(
+                    raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+                )
             _logger.info(
                 f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
             )
