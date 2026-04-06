@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/qwen_english_russian/sensor/encoder/log/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/qwen_english_russian/sensor/encoder/log/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/qwen_english_russian/sensor/all/encoder/log/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/qwen_english_russian/sensor/all/encoder/log/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=10G
@@ -15,16 +15,21 @@ done
 
 export PATH="$HOME/.local/bin:$PATH"
 
+VENV_PYTHON="/home/at03/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/python"
+
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
-source $(poetry env info --path)/bin/activate
+# source $(poetry env info --path)/bin/activate
 # source /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/activate
 
 # Now run your grid search with all layers and neurons
 # /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/python kymata/invokers/run_gridsearch.py \
-python kymata/invokers/run_gridsearch.py \
+# python kymata/invokers/run_gridsearch.py \
+
+"$VENV_PYTHON" kymata/invokers/run_gridsearch.py \
   --config dataset4.1.yaml \
   --input-stream auditory \
   --plot-top-channels \
+  --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/eng_rus/' \
   --transform-path '/imaging/projects/cbu/kymata/data/dataset_3-russian_narratives/predicted_function_contours/audio/asr_models/qwen2.5-omni-7b/encoder' \
   --transform-name "${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --n-derangements 5 \
@@ -32,8 +37,8 @@ python kymata/invokers/run_gridsearch.py \
   --num-neurons 1280 \
   --mfa True \
   --n-splits 400 \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_russian/sensor/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_russian/sensor/all/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_russian/sensor/all/encoder/expression/${layer_num[$SLURM_ARRAY_TASK_ID]}" \
   --overwrite
 
   # --low-level-function \

@@ -372,8 +372,7 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
-                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
         
     elif args.asr_option == 'some' and 'asr' in args.transform_path:
 
@@ -412,8 +411,7 @@ def main():
                 emeg_layout=sensor_layout,
             )
 
-            expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + f'_{nn_i}' + '_gridsearch.png'), overwrite=args.overwrite, 
-                            xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
+            expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + f'_{nn_i}' + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
 
             if combined_expression_set is None:
                 combined_expression_set = es
@@ -424,8 +422,7 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(combined_expression_set, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
-                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
+        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
         
     elif args.asr_option == 'one' and 'asr' in args.transform_path:
 
@@ -462,8 +459,7 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, 
-                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split], show_legend=False)
+        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
 
     else:
         combined_expression_set = None
@@ -524,8 +520,20 @@ def main():
         else:
             fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
         _logger.info(f"Saving expression plot to {fig_save_path!s}")
-        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=fig_save_path, overwrite=args.overwrite,
-                        xlims=[args.start_latency, args.start_latency+1000*args.seconds_per_split])
+        expression_plot(combined_expression_set, paired_axes=channel_space == "source", 
+                        color={
+                        "IL": "#b11e34",
+                        "IL1": "#a201e9",
+                        "IL2": "#a201e9",
+                        "IL3": "#a201e9",
+                        "IL4": "#a201e9",
+                        "IL5": "#a201e9",
+                        "IL6": "#a201e9",
+                        "IL7": "#a201e9",
+                        "IL8": "#a201e9",
+                        "IL9": "#a201e9",
+                        "STL": "#d388b5",
+                        }, save_to=fig_save_path, overwrite=args.overwrite)
 
     total_time_in_seconds = time.time() - start
     _logger.info(f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)')

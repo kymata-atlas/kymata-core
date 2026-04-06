@@ -177,7 +177,7 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
     ax.set_box_aspect(1)
     plt.tight_layout()
 
-    plt.savefig(save_loc = output_dir / f"{dataset}_neuron_scatter_latency.png", dpi=600)
+    plt.savefig(fname = output_dir / f"{dataset}_neuron_scatter_latency.png", dpi=600)
     plt.close(fig)
 
 
