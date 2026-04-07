@@ -919,6 +919,17 @@ def neuron_scatter(
         alpha=0.9,
         linewidths=0,
     )
+    # Save significant (layer, neuron) pairs to .npy
+    # sig columns: [peak_lat, sensor_ind, logp, layer_no, neuron_no]
+    layer_neuron_pairs = sig[:, [3, 4]].astype(int)
+    import ipdb; ipdb.set_trace()
+
+    save_path = Path(
+        "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/"
+        "kymata-core-data/output/qwen_english_russian/sensor/all/decoder_text/sig_neurons.npy"
+    )
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(save_path, layer_neuron_pairs)
 
     # cbar = plt.colorbar(sc, ax=ax)
     # cbar.set_label('-log10(p-value)')
