@@ -74,11 +74,12 @@ def load_single_emeg(
         if inverse_operator_path is None:
             # Want sensor data
             emeg = evoked.get_data()  # numpy array shape (sensor_num, N) = (370, 403_001)
-            if emeg.shape[0] != 370:
+            channel_names = evoked.ch_names
+            if emeg.shape[0] != 370 and len(channel_names) == 370:
                 pad = 370 - emeg.shape[0]
                 if pad > 0:
                     emeg = np.pad(emeg, ((0, pad), (0, 0)), mode="constant")
-            return emeg, evoked.ch_names
+            return emeg, channel_names
 
         if old_morph:
             # Load and apply fif-format morph data

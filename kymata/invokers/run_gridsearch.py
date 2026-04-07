@@ -306,7 +306,7 @@ def main():
 
 
 
-    if (args.asr_option == 'all' and 'asr' in args.transform_path) or 'linguistics' in args.transform_path:
+    if args.asr_option == 'all' or 'linguistics' in args.transform_path:
 
         if args.batch == 'first':
             neuron_indices = list(range(0, args.num_neurons[0]))
@@ -374,7 +374,7 @@ def main():
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
         expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
         
-    elif args.asr_option == 'some' and 'asr' in args.transform_path:
+    elif args.asr_option == 'some':
 
         combined_expression_set = None
 
@@ -424,7 +424,7 @@ def main():
             save_expression_set(combined_expression_set, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
         expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=False)
         
-    elif args.asr_option == 'one' and 'asr' in args.transform_path:
+    elif args.asr_option == 'one':
 
         function_values = load_transform(args.transform_path,
                             trans_name=args.transform_name[0],

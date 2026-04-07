@@ -433,6 +433,34 @@ def load_transform(transform_path_without_suffix: PathType, trans_name: str, rep
         except:
             func = func[:400_000]
 
+    elif 'camcan_movie' in str(transform_path_without_suffix):
+        for s in range(trans_len*5):
+            if s == 0:
+                func = np.full(
+                    (200,),
+                    torch.load(
+                        Path(transform_path_without_suffix, f"segment_{s}_{trans_name}.pt"),
+                        map_location=torch.device("cpu"),
+                    ).detach().numpy()[nn_neuron],
+                    dtype=np.float32,
+                )
+            else:
+                func = np.concatenate(
+                    (
+                        func,
+                        np.full(
+                            (200,),
+                            torch.load(
+                                Path(transform_path_without_suffix, f"segment_{s}_{trans_name}.pt"),
+                                map_location=torch.device("cpu"),
+                            ).detach().numpy()[nn_neuron],
+                            dtype=np.float32,
+                        ),
+                    )
+                )
+        trans_name += f'_{str(nn_neuron)}'
+                
+
     else:
         if not transform_path_without_suffix.with_suffix(".npz").exists():
             if transform_path_without_suffix.with_suffix(".mat").exists():
