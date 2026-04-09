@@ -96,7 +96,7 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 
@@ -104,7 +104,7 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, compare_log_dir, layer, neuron)
 
-    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
 
     overlap_1 = np.array([_lats[i, :] for i in range(_lats.shape[0]) if _lats[i, -2:].tolist() in _lats_base[:, -2:].tolist()])
     overlap_2 = np.array([_lats_base[i, :] for i in range(_lats_base.shape[0]) if _lats_base[i, -2:].tolist() in _lats[:, -2:].tolist()])
@@ -135,13 +135,13 @@ def asr_models_loop_full():
             if x_data == 'latency':
                 if exclude_tvl:
                     lat_sig = read_log_file_asr(n, tvl_log_dir, layer, neuron)
-                    _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+                    _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
                     lat_sig = read_log_file_asr(n, tvl_compare_log_dir, layer, neuron)
-                    _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+                    _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
                     lat_sig = read_log_file_asr(n, encoder_log_dir, 32, 1280)
-                    _lats_encoder = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_encoder)])
+                    _lats_encoder = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_encoder)])
                     lat_sig = read_log_file_asr(n, encoder_tvl_log_dir, 32, 1280)
-                    _lats_encoder_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_encoder)])
+                    _lats_encoder_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_encoder)])
 
                     mask_phone_enhanced = np.array([i for i in range(enhanced.shape[0]) if not np.any(np.all(enhanced[i, 4:] == _lats_tvl[:, 4:], axis=1))])
                     mask_phone_emerge = np.array([i for i in range(emerge.shape[0]) if not np.any(np.all(emerge[i, 4:] == _lats_tvl[:, 4:], axis=1))])

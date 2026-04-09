@@ -93,7 +93,7 @@ def asr_models_loop_full():
     if neuron_selection != 'no':
         lat_sig = selection(lat_sig, neuron_selection, layer)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 
@@ -105,7 +105,7 @@ def asr_models_loop_full():
     if neuron_selection != 'no':
         lat_sig = selection(lat_sig, neuron_selection, layer)
 
-    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
 
 
     overlap_1 = np.array([_lats[i, :] for i in range(_lats.shape[0]) if _lats[i, -2:].tolist() in _lats_base[:, -2:].tolist()])
@@ -146,14 +146,14 @@ def asr_models_loop_full():
 
         lat_sig = read_log_file_asr(n, tvl_log_base, layer, neuron)
 
-        _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+        _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
 
         reduced_tvl = np.array([reduced[i, :] for i in range(reduced.shape[0]) if reduced[i, -2:].tolist() in _lats_tvl_base[:, -2:].tolist()])
         demolish_tvl = np.array([demolish[i, :] for i in range(demolish.shape[0]) if demolish[i, -2:].tolist() in _lats_tvl_base[:, -2:].tolist()])
 
         lat_sig = read_log_file_asr(n, tvl_log, layer, neuron)
 
-        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
 
         enhanced_tvl = np.array([enhanced[i, :] for i in range(enhanced.shape[0]) if enhanced[i, -2:].tolist() in _lats_tvl[:, -2:].tolist()])
         emerge_tvl = np.array([emerge[i, :] for i in range(emerge.shape[0]) if emerge[i, -2:].tolist() in _lats_tvl[:, -2:].tolist()])

@@ -122,7 +122,7 @@ def load_sig_matrix(log_dir: Path, dataset: str) -> tuple[np.ndarray, int, int, 
             lat_sig[row] = [peak_lat, sensor_ind, logp, li, neuron_no]
             row += 1
 
-    sig = lat_sig[(lat_sig[:, 0] != 0) & (lat_sig[:, 2] > thres)]
+    sig = lat_sig[lat_sig[:, 2] > thres]
     return sig, n_layers, n_neurons, thres
 
 

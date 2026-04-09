@@ -79,7 +79,7 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 

@@ -195,7 +195,7 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 
@@ -203,7 +203,7 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, compare_log_dir, layer, neuron)
 
-    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
 
     overlap_1 = np.array([_lats[i, :] for i in range(_lats.shape[0]) if _lats[i, -2:].tolist() in _lats_base[:, -2:].tolist()])
     overlap_2 = np.array([_lats_base[i, :] for i in range(_lats_base.shape[0]) if _lats_base[i, -2:].tolist() in _lats[:, -2:].tolist()])
@@ -218,9 +218,9 @@ def asr_models_loop_full():
     demolish = selection(demolish, neuron_selection, layer)
 
     lat_sig = read_log_file_asr(n, tvl_log_dir, layer, neuron)
-    _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+    _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
     lat_sig = read_log_file_asr(n, tvl_compare_log_dir, layer, neuron)
-    _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+    _lats_tvl_base = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)])
 
     mask_phone_enhanced = np.array([i for i in range(enhanced.shape[0]) if not np.any(np.all(enhanced[i, 4:] == _lats_tvl[:, 4:], axis=1))])
     mask_phone_emerge = np.array([i for i in range(emerge.shape[0]) if not np.any(np.all(emerge[i, 4:] == _lats_tvl[:, 4:], axis=1))])
@@ -310,11 +310,11 @@ def asr_models_loop_full():
 
         lat_sig = read_log_file('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/word/brain/log/slurm_log_word.txt', 23, layer)
         thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*23)))))
-        word_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])      
+        word_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])      
 
         lat_sig = read_log_file('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/feats/syntax/brain/log/slurm_log_syntax.txt', 5, layer)
         thres = - np.log10(1 - ((1 - alpha)** (np.float128(1 / (200*370*5)))))
-        syntax_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])        
+        syntax_feats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])        
 
         man_feats = np.concatenate((word_feats, syntax_feats), axis=0)
 

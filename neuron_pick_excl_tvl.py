@@ -164,14 +164,14 @@ def asr_models_loop_full():
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if lat_sig[0, j, 3] > thres])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     stds.append(np.std(_lats[:, 0]))
 
     tvl_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large-v2/tvl/log/'
     # tvl_log_dir = '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/size/large/tvl/log/'
     lat_sig = read_log_file_asr(n, tvl_log_dir, layer, neuron)
-    _lats_tvl = np.array([[int(lat_sig[0, j, 4]), int(lat_sig[0, j, 5])] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats_tvl = np.array([[int(lat_sig[0, j, 4]), int(lat_sig[0, j, 5])] for j in range(lat_sig.shape[1]) if lat_sig[0, j, 3] > thres])
 
     neuron_picks = []
 

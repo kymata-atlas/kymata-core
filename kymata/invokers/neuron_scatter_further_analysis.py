@@ -184,7 +184,7 @@ def neuron_scatter(
             row += 1
 
     # significant neurons only                       ↓ was 3 until I removed peak_corr
-    sig = lat_sig[(lat_sig[:, 0] != 0) & (lat_sig[:, 2] > thres)]
+    sig = lat_sig[lat_sig[:, 2] > thres]
 
     # import ipdb; ipdb.set_trace()
 

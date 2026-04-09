@@ -186,7 +186,7 @@ def asr_models_loop_full(log_dir):
     #print(lat_sig[i, 0])
     # _lats = np.array([lat_sig[i, j, lat_i[j], :] for j in range(lat_sig.shape[1]) if lat_sig[i, j, lat_i[j], 0] != 0])
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if lat_sig[0, j, 3] > thres])
     # import ipdb;ipdb.set_trace()
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
     # stds.append(np.std(_lats[:, 0]))
@@ -210,7 +210,7 @@ def asr_models_loop_full(log_dir):
                             ia += 1
                         break        
         lat_sig = lat_sig.reshape(lat_sig.shape[0], -1, lat_sig.shape[3])
-        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)])
+        _lats_tvl = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if lat_sig[0, j, 3] > thres_tvl])
 
         mask = np.array([i for i in range(_lats.shape[0]) if np.any(np.all(_lats[i, 4:] == _lats_tvl[:, 4:], axis=1))])
         mask_non_tvl = np.array([i for i in range(_lats.shape[0]) if not np.any(np.all(_lats[i, 4:] == _lats_tvl[:, 4:], axis=1))])

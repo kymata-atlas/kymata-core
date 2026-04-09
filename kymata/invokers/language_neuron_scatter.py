@@ -116,7 +116,7 @@ def _get_significant_neurons_from_logs(log_dir: Path, dataset: str, thres: float
             row += 1
 
     # significant neurons only                       ↓ was 3 until I removed peak_corr
-    sig = lat_sig[(lat_sig[:, 0] != 0) & (lat_sig[:, 2] > thres)]
+    sig = lat_sig[lat_sig[:, 2] > thres]
     return sig
 
 

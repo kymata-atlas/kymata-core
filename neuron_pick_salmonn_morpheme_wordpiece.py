@@ -64,7 +64,7 @@ def process_lat_sig(n, log_dir, layer, neuron, thres, neuron_selection):
 
     lat_sig = read_log_file_asr(n, log_dir, layer, neuron)
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     # _lats : (point, (latency, corr, sensor, -log(pval), layer, neuron))
 
     selected = selection(_lats, neuron_selection, layer)
@@ -146,7 +146,7 @@ def asr_models_loop_full():
     # (peak lat, peak corr, ind, -log(pval), layer_no, neuron_no)
 
     lat_sig = read_log_file_asr(n, log_dir_morpheme_tvl, layer, neuron)
-    morpheme_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    morpheme_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)]
     neuron_picks_morpheme = [
         [int(neuron[4]), int(neuron[5])] 
         for neuron in morpheme_neurons 
@@ -154,7 +154,7 @@ def asr_models_loop_full():
     ]
 
     lat_sig = read_log_file_asr(n, log_dir_wordpiece_tvl, layer, neuron)
-    wordpiece_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    wordpiece_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)]
     neuron_picks_wordpiece = [
         [int(neuron[4]), int(neuron[5])] 
         for neuron in wordpiece_neurons 
@@ -162,14 +162,14 @@ def asr_models_loop_full():
     ]
 
     lat_sig = read_log_file_asr(n, log_dir_phone_tvl, layer, neuron)
-    phone_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    phone_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)]
     neuron_picks_phone = [
         [int(neuron[4]), int(neuron[5])] 
         for neuron in phone_neurons 
         if not any(np.array_equal(np.array(neuron[4:]), tvl) for tvl in phone_neurons_tvl)
     ]
     lat_sig = read_log_file_asr(n, log_dir_word_tvl, layer, neuron)
-    word_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres_tvl)]
+    word_neurons_tvl = [lat_sig[0, j, 4:] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres_tvl)]
     neuron_picks_word = [
         [int(neuron[4]), int(neuron[5])] 
         for neuron in word_neurons 

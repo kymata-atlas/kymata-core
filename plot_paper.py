@@ -89,7 +89,7 @@ def asr_models_loop_full():
     # _lats = np.array([lat_sig[i, j, lat_i[j], :] for j in range(lat_sig.shape[1]) if lat_sig[i, j, lat_i[j], 0] != 0])
 
     # import ipdb;ipdb.set_trace()
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 3] > thres)])
     stds.append(np.std(_lats[:, 0]))
 
     # import ipdb;ipdb.set_trace()

@@ -53,7 +53,7 @@ def process_log(layer, neuron, n, log_dir, neuron_selection, thres):
                         pass
         lat_sig = lat_sig[:, max_indices, :]
 
-    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if (lat_sig[0, j, 0] != 0 and lat_sig[0, j, 3] > thres)])
+    _lats = np.array([lat_sig[0, j, :] for j in range(lat_sig.shape[1]) if lat_sig[0, j, 3] > thres])
     
     return _lats
     
