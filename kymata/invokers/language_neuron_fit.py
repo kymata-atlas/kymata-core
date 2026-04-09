@@ -202,12 +202,12 @@ if __name__ == '__main__':
 
     linear_model = plot_line_of_best_fit(
         degree=1,
-        min_count_for_average=0, axlim_ms=(0, 400),
+        min_count_for_average=6, axlim_ms=(0, 400),
         layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
     )
     quadratic_model = plot_line_of_best_fit(
         degree=2,
-        min_count_for_average=0, axlim_ms=(0, 400),
+        min_count_for_average=6, axlim_ms=(0, 400),
         layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
     )
     print(f"Linear BIC = {linear_model.bic:.2f}")
