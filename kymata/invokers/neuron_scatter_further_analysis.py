@@ -15,8 +15,84 @@ from kymata.math.probability import p_to_logp, sidak_correct
 from scipy.stats import binomtest
 import torch
 
+from statsmodels.regression.linear_model import OLS
+from statsmodels.tools import add_constant
+
 
 _logger = getLogger(__file__)
+
+
+def _continuous_run_indices(
+    sig_arr: np.ndarray,
+    *,
+    min_run_len: int = 5,
+) -> tuple[list[int], dict[int, list[int]]]:
+    """Return indices with >=min_run_len consecutive significant layers.
+
+    sig_arr columns: [lat, sensor_ind, logp, layer_no, neuron_no]
+
+    Returns:
+        (indices, hits) where hits[idx] is the first qualifying run (list of layer ints).
+    """
+
+    layers_by_index: dict[int, list[int]] = {}
+    for idx_i, layer_i in zip(sig_arr[:, 4], sig_arr[:, 3]):
+        layers_by_index.setdefault(int(idx_i), []).append(int(layer_i))
+
+    # De-dup + sort layers per index
+    for idx_int, ls in layers_by_index.items():
+        layers_by_index[idx_int] = sorted(set(ls))
+
+    hits: dict[int, list[int]] = {}
+    for idx_int, ls in layers_by_index.items():
+        if len(ls) < min_run_len:
+            continue
+
+        run: list[int] = [ls[0]]
+        best: list[int] = []
+        for v in ls[1:]:
+            if v == run[-1] + 1:
+                run.append(v)
+                continue
+            if len(run) >= min_run_len:
+                best = run[:]  # first qualifying run
+                break
+            run = [v]
+        if not best and len(run) >= min_run_len:
+            best = run[:]
+
+        if best:
+            hits[idx_int] = best
+
+    return sorted(hits.keys()), hits
+
+
+def _resolve_idx_selection(
+    idx_spec: int | str | None,
+    *,
+    auto_indices: list[int],
+) -> int | list[int] | None:
+    """Interpret idx_to_plot.
+
+    - int / int-like str: analyze that one index
+    - 'auto'/'stats'/'all': analyze across auto_indices
+    - None/'none'/'off'/'skip': skip per-index analysis
+    """
+
+    if idx_spec is None:
+        return None
+    if isinstance(idx_spec, int):
+        return idx_spec
+
+    s = str(idx_spec).strip().lower()
+    if s in {"auto", "stats", "all"}:
+        return auto_indices
+    if s in {"none", "off", "skip"}:
+        return None
+    try:
+        return int(s)
+    except ValueError as ex:
+        raise ValueError("idx_to_plot must be int, 'auto'/'stats', or 'none'/'off'.") from ex
 
 
 def _is_emeg_like(dataset: str) -> bool:
@@ -90,6 +166,9 @@ def neuron_scatter(
     dataset: str,
     *,
     per_layer_scatter_color: str = "layer",
+    idx_to_plot: int | str | None = "auto",
+    best_fit: str = "linear",
+    min_count_for_average: int = 6,
 ):
     """Recreate the original neuron-level scatter plot from the per-layer log files.
 
@@ -200,40 +279,7 @@ def neuron_scatter(
         #          ↓ was 5 until I removed peak_corr
         x = sig[:, 4]
         x_label = 'Neuron index'
-
-        # Find neuron indices that are significant in >=5 continuous layers, and return the indices as a list
-        layers_by_index: dict[int, list[int]] = {}
-        for idx_i, layer_i in zip(sig[:, 4], sig[:, 3]):
-            idx_int = int(idx_i)
-            layer_int = int(layer_i)
-            layers_by_index.setdefault(idx_int, []).append(layer_int)
-
-        # De-dup + sort layers per index
-        for idx_int, ls in layers_by_index.items():
-            layers_by_index[idx_int] = sorted(set(ls))
-
-        hits: dict[int, list[int]] = {}
-        for idx_int, ls in layers_by_index.items():
-            if len(ls) < 5:
-                continue
-
-            run: list[int] = [ls[0]]
-            best_run: list[int] = []
-            for v in ls[1:]:
-                if v == run[-1] + 1:
-                    run.append(v)
-                else:
-                    if len(run) >= 5:
-                        best_run = run[:]  # first qualifying run
-                        break
-                    run = [v]
-            if not best_run and len(run) >= 5:
-                best_run = run[:]
-
-            if best_run:
-                hits[idx_int] = best_run
-
-        continuous_5plus_indices: list[int] = sorted(hits.keys())
+        continuous_5plus_indices, hits = _continuous_run_indices(sig, min_run_len=5)
 
         # --- Statistical test: is this proportion above chance? ---
         # Null: each layer is independently "significant" for a given neuron index with probability p0,
@@ -321,7 +367,7 @@ def neuron_scatter(
         # If it is a list of ints, we skip plotting and instead compute summary statistics
         # for Pearson r and its p-value across those indices.
         # By default we run list-mode stats over all qualifying indices.
-        idx_to_plot: int | list[int] = continuous_5plus_indices  # an int like 2624 or continuous_5plus_indices
+        idx_selection = _resolve_idx_selection(idx_to_plot, auto_indices=continuous_5plus_indices)
 
         def _per_index_series_and_regression(
             idx: int,
@@ -378,8 +424,10 @@ def neuron_scatter(
 
             return layers_used, lat_used, logp_used, slope, intercept, r, p
 
-        if isinstance(idx_to_plot, (list, tuple, np.ndarray)):
-            indices = [int(x) for x in idx_to_plot]
+        if idx_selection is None:
+            print("Skipping per-index analysis (idx_to_plot=none/off).")
+        elif isinstance(idx_selection, (list, tuple, np.ndarray)):
+            indices = [int(x) for x in idx_selection]
             rs: list[float] = []
             ps: list[float] = []
             slopes: list[float] = []
@@ -403,7 +451,9 @@ def neuron_scatter(
                 r_by_idx[int(idx)] = float(r)
                 p_by_idx[int(idx)] = float(p)
 
-            if len(rs) == 0:
+            if len(indices) == 0:
+                print("No indices to analyze (continuous_5plus_indices is empty).")
+            elif len(rs) == 0:
                 print(f"No indices had enough layers with data for regression (n_total={len(indices)}).")
             else:
                 r_arr = np.asarray(rs, dtype=float)
@@ -640,7 +690,7 @@ def neuron_scatter(
                                 f"Per-layer latencyΔ vs cos-dist plot: skipped {len(missing_idx)} indices due to missing/invalid data."
                             )
         else:
-            idx_int = int(idx_to_plot)
+            idx_int = int(idx_selection)
 
             out = _per_index_series_and_regression(idx_int)
             if out is None:
@@ -736,7 +786,7 @@ def neuron_scatter(
 
             if len(y_by_layer) >= 2:
                 Y = np.stack(y_by_layer, axis=0)  # (n_layers_valid, T)
-                sig_idx = sig[np.asarray(sig[:, 4], dtype=int) == int(idx_to_plot)]
+                sig_idx = sig[np.asarray(sig[:, 4], dtype=int) == int(idx_int)]
                 Y = Y[max(1, int(np.min(sig_idx[:, -2]))) : min(int(np.max(sig_idx[:, -2])), Y.shape[0])]  # focus on layers with significant hits for this index
                 valid_layers = valid_layers[max(1, int(np.min(sig_idx[:, -2]))) : min(int(np.max(sig_idx[:, -2])), len(valid_layers))]
 
@@ -922,12 +972,8 @@ def neuron_scatter(
     # Save significant (layer, neuron) pairs to .npy
     # sig columns: [peak_lat, sensor_ind, logp, layer_no, neuron_no]
     layer_neuron_pairs = sig[:, [3, 4]].astype(int)
-    import ipdb; ipdb.set_trace()
 
-    save_path = Path(
-        "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/"
-        "kymata-core-data/output/qwen_english_russian/sensor/all/decoder_text/sig_neurons.npy"
-    )
+    save_path = Path(output_dir / "sig_neurons.npy")
     save_path.parent.mkdir(parents=True, exist_ok=True)
     np.save(save_path, layer_neuron_pairs)
 
@@ -953,17 +999,34 @@ def neuron_scatter(
 
     # Plot line of best fit
     if x_axis == "latency":
-        _plot_line_of_best_fit(layer, sig, output_dir, dataset, axlim_ms=(-250, 850),
-                               min_count_for_average=6)
+        _plot_line_of_best_fit(
+            layer,
+            sig,
+            output_dir,
+            dataset,
+            axlim_ms=(-250, 850),
+            min_count_for_average=min_count_for_average,
+            best_fit=best_fit,
+        )
 
 
-def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], output_dir: Path, dataset: str,
-                           axlim_ms=(None, None), min_count_for_average: int = 5) -> None:
+def _plot_line_of_best_fit(
+    layer: int,
+    sig: np.ndarray[Any, np.dtype[Any]],
+    output_dir: Path,
+    dataset: str,
+    *,
+    axlim_ms=(None, None),
+    min_count_for_average: int = 5,
+    best_fit: str = "linear",
+) -> None:
     fig, ax = plt.subplots()
 
     # Use only layers with at least `min_count_for_average` significant entries.
     # Per-layer aggregation: x = layer number, y = mean latency
     mean_lat_by_layer = np.full(layer, np.nan, dtype=float)
+    q25_by_layer = np.full(layer, np.nan, dtype=float)
+    q75_by_layer = np.full(layer, np.nan, dtype=float)
     n_sig_by_layer = np.zeros(layer, dtype=int)
     for li in range(layer):
         #                      ↓ was 3 until I removed peak_corr
@@ -971,6 +1034,9 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
         n_sig_by_layer[li] = int(latencies.size)
         if latencies.size >= min_count_for_average:
             mean_lat_by_layer[li] = float(np.mean(latencies))
+            # Dispersion band: interquartile range (25%–75%). Robust + easy to interpret.
+            q25_by_layer[li] = float(np.quantile(latencies, 0.25))
+            q75_by_layer[li] = float(np.quantile(latencies, 0.75))
 
     layers = np.arange(layer)
 
@@ -980,6 +1046,20 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
     mask = np.isfinite(mean_lat_by_layer)
     x_fit = layers[mask]
     y_fit = mean_lat_by_layer[mask]
+
+    # Shaded dispersion band behind points: IQR by default (transparent).
+    # Note: axes are (x=latency, y=layer), so we fill between x-lower/x-upper as a function of layer.
+    band_mask = mask & np.isfinite(q25_by_layer) & np.isfinite(q75_by_layer)
+    if np.any(band_mask):
+        ax.fill_betweenx(
+            layers[band_mask],
+            q25_by_layer[band_mask],
+            q75_by_layer[band_mask],
+            color="black",
+            alpha=0.12,
+            linewidth=0,
+            label="IQR (25–75%)",
+        )
 
     if x_fit.size >= 2:
         ax.scatter(
@@ -994,66 +1074,59 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
             linewidths=0.3,
         )
 
-        lr = linregress(x_fit, y_fit)
-        x_pred = lr.slope * layers + lr.intercept
-        ax.plot(x_pred, layers, linestyle=':', linewidth=2, color='black')
+        fit_kind = (best_fit or "linear").strip().lower()
+        if fit_kind in {"linear", "lin", "1", "deg1"}:
+            fit_res = OLS(y_fit, add_constant(x_fit.astype(float))).fit()
+            intercept, slope = fit_res.params
+            x_pred = intercept + slope * layers
+            ax.plot(x_pred, layers, linestyle=":", linewidth=2, color="black")
 
-        # # --- Residual plot: (observed mean latency - fitted mean latency) per layer ---
-        # # Use only layers that contributed to the regression fit (mask).
-        # fitted_mean_lat_by_layer = lr.slope * x_fit + lr.intercept
-        # residual_by_layer = y_fit - fitted_mean_lat_by_layer
-
-        # fig_res, ax_res = plt.subplots()
-        # ax_res.axhline(0.0, linestyle=":", linewidth=1.5, color="black", alpha=0.7)
-        # ax_res.scatter(
-        #     residual_by_layer,
-        #     x_fit,
-        #     c=n_sig_by_layer[mask],
-        #     cmap="turbo",
-        #     norm=count_norm,
-        #     marker="o",
-        #     s=25,
-        #     edgecolors="black",
-        #     linewidths=0.3,
-        # )
-        # ax_res.plot(residual_by_layer, x_fit, linestyle="-", linewidth=1.0, color="black", alpha=0.6)
-
-        # # Reuse the same r/p reporting to contextualize the residuals.
-        # r = float(lr.rvalue)
-        # p = float(lr.pvalue)
-        # ax_res.text(
-        #     0.02,
-        #     0.98,
-        #     f"Residuals vs layer\nPearson r = {r:.3g}\np = {p:.3g}",
-        #     transform=ax_res.transAxes,
-        #     va="top",
-        #     ha="left",
-        #     fontsize=9,
-        #     bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="none"),
-        # )
-
-        # ax_res.set_xlabel("Residual mean latency (ms): observed - fitted")
-        # ax_res.set_ylabel("Layer number")
-        # ax_res.set_ylim(-1, layer)
-        # plt.tight_layout()
-
-        # save_loc_res = output_dir / f"{dataset}_best_fit_residuals.png"
-        # plt.savefig(save_loc_res, dpi=600)
-        # plt.close(fig_res)
-
-        # Pearson correlation (same as lr.rvalue) + p-value
-        r = float(lr.rvalue)
-        p = float(lr.pvalue)
-        ax.text(
-            0.02,
-            0.98,
-            f"Pearson r = {r:.3g}\np = {p:.3g}",
-            transform=ax.transAxes,
-            va='top',
-            ha='left',
-            fontsize=9,
-            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
-        )
+            r = float(np.sqrt(fit_res.rsquared) * np.sign(slope))
+            p = float(fit_res.pvalues[1])
+            bic = float(fit_res.bic)
+            ax.text(
+                0.02,
+                0.98,
+                f"Pearson r = {r:.3g}\n"
+                f"p = {p:.3g}\n"
+                f"R² = {float(fit_res.rsquared):.2g}\n"
+                f"BIC = {bic:.2g}",
+                transform=ax.transAxes,
+                va="top",
+                ha="left",
+                fontsize=9,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="none"),
+            )
+        elif fit_kind in {"quadratic", "quad", "2", "deg2"}:
+            # Constrained quadratic: latency = intercept + q * layer^2 (stationary point at layer=0)
+            fit_res = OLS(y_fit, add_constant((x_fit.astype(float) ** 2).reshape(-1, 1))).fit()
+            intercept, q = fit_res.params
+            x_pred = intercept + q * (layers.astype(float) ** 2)
+            ax.plot(x_pred, layers, linestyle=":", linewidth=2, color="black")
+            p = float(fit_res.pvalues[1])
+            bic = float(fit_res.bic)
+            ax.text(
+                0.02,
+                0.98,
+                "Quadratic fit (no linear term)\n"
+                f"p = {p:.3g}\nR² = {float(fit_res.rsquared):.2g}\nBIC = {bic:.2g}",
+                transform=ax.transAxes,
+                va="top",
+                ha="left",
+                fontsize=9,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="none"),
+            )
+        else:
+            ax.text(
+                0.02,
+                0.98,
+                f"Unknown best_fit={best_fit!r} (use 'linear' or 'quadratic')",
+                transform=ax.transAxes,
+                va="top",
+                ha="left",
+                fontsize=9,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="none"),
+            )
     else:
         ax.text(
             0.02,
@@ -1073,7 +1146,15 @@ def _plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outp
 
     plt.tight_layout()
 
-    save_loc = output_dir / f"{dataset}_best_fit.png"
+    fit_kind = (best_fit or "linear").strip().lower()
+    if fit_kind in {"linear", "lin", "1", "deg1"}:
+        fit_tag = "linear"
+    elif fit_kind in {"quadratic", "quad", "2", "deg2"}:
+        fit_tag = "quadratic"
+    else:
+        fit_tag = "unknown"
+
+    save_loc = output_dir / f"{dataset}_best_fit_{fit_tag}.png"
 
     plt.savefig(save_loc, dpi=600)
 
@@ -1109,6 +1190,35 @@ if __name__ == '__main__':
             "'r' (per-index latency-vs-layer regression Pearson r), or 'p' (per-index regression p-value)."
         ),
     )
+    parser.add_argument(
+        '--idx-to-plot',
+        default='auto',
+        help=(
+            "Control the per-index analysis mode. "
+            "Use an integer neuron index (e.g. 2624) to plot that index; "
+            "use 'auto' or 'stats' to run the aggregate regression/statistics across all indices with "
+            ">=5 consecutive significant layers; "
+            "use 'none' (or 'off') to skip the per-index analysis block entirely."
+        ),
+    )
+    parser.add_argument(
+        '--best-fit',
+        choices=['linear', 'quadratic'],
+        default='quadratic',
+        help=(
+            "Best-fit overlay for the mean-latency-vs-layer plot when x-axis is latency. "
+            "'quadratic' matches language_neuron_fit.py (OLS on layer^2 only, stationary at layer 0)."
+        ),
+    )
+    parser.add_argument(
+        '--min-count-for-average',
+        type=int,
+        default=6,
+        help=(
+            "Minimum number of significant entries required in a layer before that layer contributes "
+            "a mean latency point to the best-fit regression plot."
+        ),
+    )
     args = parser.parse_args()
 
     neuron_scatter(
@@ -1117,4 +1227,7 @@ if __name__ == '__main__':
         x_axis=args.x_axis,
         dataset=args.dataset,
         per_layer_scatter_color=args.per_layer_scatter_color,
+        idx_to_plot=args.idx_to_plot,
+        best_fit=args.best_fit,
+        min_count_for_average=args.min_count_for_average,
     )
