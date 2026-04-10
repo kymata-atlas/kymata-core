@@ -168,7 +168,7 @@ def latency_scatter(log_dir: Path, output_dir: Path, dataset: str):
     ax.scatter(x, y, c=_dataset_colour(dataset), norm=logp_norm, s=4, alpha=0.9, linewidths=0)
 
     ax.set_ylim(-1, layer)
-    ax.set_xlim(0, 400)
+    ax.set_xlim(-200, 800)
 
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
