@@ -71,8 +71,9 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
         ax.scatter(
             mean_lat_by_layer,
             layers,
-            c=n_sig_by_layer,
-            cmap='turbo',
+            # c=n_sig_by_layer,
+            # cmap='turbo',
+            c="black",
             norm=count_norm,
             marker='o',
             s=25,
