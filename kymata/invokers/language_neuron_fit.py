@@ -71,8 +71,9 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
         ax.scatter(
             mean_lat_by_layer,
             layers,
-            c=n_sig_by_layer,
-            cmap='turbo',
+            # c=n_sig_by_layer,
+            # cmap='turbo',
+            c="black",
             norm=count_norm,
             marker='o',
             s=25,
@@ -202,12 +203,12 @@ if __name__ == '__main__':
 
     linear_model = plot_line_of_best_fit(
         degree=1,
-        min_count_for_average=6, axlim_ms=(0, 400),
+        min_count_for_average=6, axlim_ms=(-200, 800),
         layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
     )
     quadratic_model = plot_line_of_best_fit(
         degree=2,
-        min_count_for_average=6, axlim_ms=(0, 400),
+        min_count_for_average=6, axlim_ms=(-200, 800),
         layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
     )
     print(f"Linear BIC = {linear_model.bic:.2f}")
