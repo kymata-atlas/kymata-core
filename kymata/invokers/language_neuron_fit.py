@@ -74,7 +74,6 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
             # c=n_sig_by_layer,
             # cmap='turbo',
             c="black",
-            norm=count_norm,
             marker='o',
             s=25,
             edgecolors='black',
@@ -155,6 +154,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Neuron-level scatter plot from slurm logs')
     parser.add_argument('--neuron-sig', '-i', nargs="+", type=Path, help="Path to neuron")
     parser.add_argument('--output-dir', '-o', type=Path, help="Path to figures")
+    parser.add_argument('--min-count',  '-m', type=int, default=4)
     parser.add_argument(
         '--dataset',
         choices=['emeg', 'ecog', 'eeg', 'meg'],
@@ -201,19 +201,30 @@ if __name__ == '__main__':
     # Concatenate rows from all sigs
     sig_unified = np.concatenate(sigs, axis=0)
 
+    combined_dataset_name = "+".join(datasets)
+
     linear_model = plot_line_of_best_fit(
         degree=1,
-        min_count_for_average=6, axlim_ms=(-200, 800),
-        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
+        min_count_for_average=args.min_count, axlim_ms=(-200, 800),
+        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name=combined_dataset_name,
     )
     quadratic_model = plot_line_of_best_fit(
         degree=2,
-        min_count_for_average=6, axlim_ms=(-200, 800),
-        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name="+".join(datasets),
+        min_count_for_average=args.min_count, axlim_ms=(-200, 800),
+        layer=layer, sig=sig_unified, output_dir=output_dir, dataset_name=combined_dataset_name,
     )
-    print(f"Linear BIC = {linear_model.bic:.2f}")
-    print(f"Quadratic BIC = {quadratic_model.bic:.2f}")
+    print(f"== Dataset: {combined_dataset_name} ==")
+
+    print("Linear")
+    print(f"    R² = {linear_model.rsquared:.4f}")
+    print(f"    p = {linear_model.pvalues[1]:.4E}")
+    print(f"    BIC = {linear_model.bic:.4f}")
+    print("Quadratic")
+    print(f"    R² = {quadratic_model.rsquared:.4f}")
+    print(f"    p = {quadratic_model.pvalues[1]:.4E}")
+    print(f"    BIC = {quadratic_model.bic:.4f}")
     delta_bic = quadratic_model.bic - linear_model.bic
+    print("Comparison")
     favoured = "quadratic" if delta_bic < 0 else "linear"
     if abs(delta_bic) > 10:
         strength = "very strong"
@@ -223,4 +234,5 @@ if __name__ == '__main__':
         strength = "positive"
     else:
         strength = "weak"
-    print(f"The {favoured} model is {strength}ly preferred")
+    print(f"    ΔBIC (quadratic) = {delta_bic:.4f}")
+    print(f"    The {favoured} model is {strength}ly preferred")
