@@ -6,6 +6,7 @@ from kymata.io.logging import log_message, date_format
 from kymata.preproc.data_cleansing import (
     run_first_pass_cleansing_and_maxwell_filtering,
     run_second_pass_cleansing_and_eog_removal,
+    run_resampling_and_cleansing
 )
 
 
@@ -26,7 +27,18 @@ def main(config_filename: str):
     #    supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
     #)
 
-    run_second_pass_cleansing_and_eog_removal(
+    #run_second_pass_cleansing_and_eog_removal(
+    #    data_root_dir=data_root_dir,
+    #    list_of_participants=config["participants"],
+    #    dataset_directory_name=config["dataset_directory_name"],
+    #    n_runs=config["number_of_runs"],
+    #    remove_ecg=config["remove_ECG"],
+    #    remove_veoh_and_heog=config["remove_VEOH_and_HEOG"],
+    #    skip_ica_if_previous_runs_exist=config["skip_ica_if_previous_runs_exist"],
+    #    supress_excessive_plots_and_prompts=config["supress_excessive_plots_and_prompts"],
+    #)
+
+    run_resampling_and_cleansing(
         data_root_dir=data_root_dir,
         list_of_participants=config["participants"],
         dataset_directory_name=config["dataset_directory_name"],
@@ -47,7 +59,7 @@ if __name__ == "__main__":
         "--config",
         type=str,
         help="Path to the appropriate dataset config .yaml file",
-        default="tiantan_beatles_test.yaml",
+        default="tiantan_sleep_pilot.yaml",
     )
     args = parser.parse_args()
 

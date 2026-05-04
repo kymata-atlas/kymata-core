@@ -77,17 +77,17 @@ def main():
                         help="inverse solution suffix")
 
     parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=250,
+    parser.add_argument("--resample", type=float, required=False, default=500,
                         help="Resample rate for both transform and EMEG data, in Hz. "
                              "(E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.")
 
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
                         help="Seconds in each split of the recording, also maximum range of latencies being checked")
-    parser.add_argument("--n-splits", type=int, default=1700,
+    parser.add_argument("--n-splits", type=int, default=650,
                         help="Number of splits to split the recording into, "
                              "(set to stimulus_length/seconds_per_split for full file)")
-    parser.add_argument("--n-derangements", type=int, default=7,
+    parser.add_argument("--n-derangements", type=int, default=9,
                         help="Number of deragements for the null distribution")
     parser.add_argument("--start-latency", type=float, default=-0.2,
                         help="Earliest latency to check in cross correlation")

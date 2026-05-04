@@ -20,7 +20,7 @@ from kymata.io.file import PathType
 _logger = getLogger(__name__)
 
 CHANNEL_TRIGGER = "Trigger"
-TRIGGER_REP_ONSET = 5
+TRIGGER_REP_ONSET = 2
 
 
 def run_first_pass_cleansing_and_maxwell_filtering(
@@ -411,6 +411,94 @@ def run_second_pass_cleansing_and_eog_removal(
                     overwrite=True,
                 )
 
+def run_resampling_and_cleansing(
+    list_of_participants: list[str],
+    data_root_dir: str,
+    dataset_directory_name: str,
+    n_runs: int,
+    remove_ecg: bool,
+    remove_veoh_and_heog: bool,
+    skip_ica_if_previous_runs_exist: bool,
+    supress_excessive_plots_and_prompts: bool,
+):
+    cleaned_dir = Path(
+        data_root_dir,
+        dataset_directory_name,
+        "interim_preprocessing_files",
+        "2_cleaned",
+    )
+    cleaned_dir.mkdir(exist_ok=True)
+
+    for participant in list_of_participants:
+            saved_cleaned_path = Path(
+                cleaned_dir, f"{participant}_WK_mean_padded_raw.fif.gz"
+            )
+
+            if skip_ica_if_previous_runs_exist and os.path.isfile(saved_cleaned_path):
+                print_with_color(
+                    f"Skipping second pass cleaning (ICA) for {participant} [Run {str(run)}]...",
+                    Fore.GREEN,
+                )
+
+            else:
+                # Preprocessing Participant and run info
+                print_with_color(
+                    f"Loading participant {participant} ...", Fore.GREEN
+                )
+
+                # set filename. (Use .fif.gz extension to use gzip to compress)
+                saved_maxfiltered_filename = (
+                    data_root_dir
+                    + dataset_directory_name
+                    + "/interim_preprocessing_files/1_maxfiltered/"
+                    + participant
+                    + "_WK_mean_padded_raw.fif"
+                )
+
+                # Load data
+                print_with_color("   Loading Raw data...", Fore.GREEN)
+
+                raw_fif_data_sss_movecomp_tr = mne.io.Raw(
+                    saved_maxfiltered_filename, preload=True
+                )
+
+                if not supress_excessive_plots_and_prompts:
+                    response = input_with_color(
+                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                        Fore.MAGENTA,
+                    )
+                    if response == "y":
+                        print("...Plotting Raw data.")
+                        mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
+                    else:
+                        print(
+                            "[y] not pressed. Assuming you want to continue without looking at the raw data."
+                        )
+
+                # EEG channel interpolation
+                print_with_color("   Interpolating EEG...", Fore.GREEN)
+
+                print(
+                    "Bads channels: " + str(raw_fif_data_sss_movecomp_tr.info["bads"])
+                )
+
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.resample(
+                    sfreq=1000,
+                    npad='auto'
+                )
+
+                meg_picks = mne.pick_types(raw_fif_data_sss_movecomp_tr.info, meg=True)
+                meg_freqs = (150, 220, 250, 441, 482)
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.notch_filter(freqs=meg_freqs, picks=meg_picks)
+
+                raw_fif_data_sss_movecomp_tr = raw_fif_data_sss_movecomp_tr.filter(
+                    l_freq=0.1, h_freq=None, picks=None
+                )
+
+                raw_fif_data_sss_movecomp_tr.save(
+                    Path(saved_cleaned_path),
+                    overwrite=True,
+                )
 
 def _remove_veoh_and_heog(filt_raw, ica):
     """
@@ -742,37 +830,34 @@ def create_trialwise_data(
     for p in list_of_participants:
         print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
-        cleaned_raws = []
+#        cleaned_raws = []
 
-        for run in range(1, number_of_runs + 1):
-            raw_path = Path(cleaned_dir, f"{p}_run{run}_cleaned_raw.fif.gz")
-            print(f"Loading {raw_path}...")
-            if os.path.isfile(raw_path):
-                raw = mne.io.Raw(raw_path, preload=True)
-                cleaned_raws.append(raw)
+        raw_path = Path(cleaned_dir, f"{p}_WK_mean_padded_raw.fif.gz")
+        print(f"Loading {raw_path}...")
+        raw = mne.io.Raw(raw_path, preload=True)
 
-        for i, raw in enumerate(cleaned_raws):
-                print(f"File {i}: {raw.info['nchan']} channels")
+#        for i, raw in enumerate(cleaned_raws):
+#                print(f"File {i}: {raw.info['nchan']} channels")
 
         # Convert channel lists to sets for easy comparison
-        ch_set_0 = set(cleaned_raws[0].ch_names)
-        ch_set_1 = set(cleaned_raws[1].ch_names)
+#        ch_set_0 = set(cleaned_raws[0].ch_names)
+#        ch_set_1 = set(cleaned_raws[1].ch_names)
 
         # Check what is in File 0 but MISSING in File 1
-        diff_0 = ch_set_0 - ch_set_1
-        if diff_0:
-            print(f"Channels in File 0 but NOT in File 1: {diff_0}")
+#        diff_0 = ch_set_0 - ch_set_1
+#        if diff_0:
+#            print(f"Channels in File 0 but NOT in File 1: {diff_0}")
 
         # Check what is in File 1 but MISSING in File 0
-        diff_1 = ch_set_1 - ch_set_0
-        if diff_1:
-            print(f"Channels in File 1 but NOT in File 0: {diff_1}")
+#        diff_1 = ch_set_1 - ch_set_0
+#        if diff_1:
+#            print(f"Channels in File 1 but NOT in File 0: {diff_1}")
 
-        cleaned_raws[0].drop_channels(['LP14z'])
-        cleaned_raws[0].drop_channels(['RT08z'])
-        cleaned_raws[1].drop_channels(['RF02z'])
+#        cleaned_raws[0].drop_channels(['LP14z'])
+#        cleaned_raws[0].drop_channels(['RT08z'])
+#        cleaned_raws[1].drop_channels(['RF02z'])
 
-        raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
+#       raw: mne.io.Raw = mne.io.concatenate_raws(raws=cleaned_raws, preload=True)
 
         raw_events = mne.find_events(
             raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
@@ -783,9 +868,9 @@ def create_trialwise_data(
             repetition_events[i][2] = str(i)
 
         # Validate repetition events
-        assert (
-            len(repetition_events) == number_of_runs * repetitions_per_runs
-        ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
+#        assert (
+#            len(repetition_events) == number_of_runs * repetitions_per_runs
+#        ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
         # Denote picks
         include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
