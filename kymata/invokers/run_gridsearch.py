@@ -6,6 +6,8 @@ from sys import stdout
 import os
 import numpy as np
 
+from matplotlib import pyplot
+
 import psutil
 import threading
 
@@ -380,7 +382,14 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=True)
+        fig = expression_plot(
+            es,
+            paired_axes=channel_space == "source",
+            save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'),
+            overwrite=args.overwrite,
+            show_legend=True,
+        )
+        pyplot.close(fig)
         
     elif args.asr_option == 'some':
 
@@ -419,7 +428,14 @@ def main():
                 emeg_layout=sensor_layout,
             )
 
-            expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + f'_{nn_i}' + '_gridsearch.png'), overwrite=args.overwrite, show_legend=True)
+            fig = expression_plot(
+                es,
+                paired_axes=channel_space == "source",
+                save_to=Path(args.save_plot_location, function_values.name + f'_{nn_i}' + '_gridsearch.png'),
+                overwrite=args.overwrite,
+                show_legend=True,
+            )
+            pyplot.close(fig)
 
             if combined_expression_set is None:
                 combined_expression_set = es
@@ -430,7 +446,14 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(combined_expression_set, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(combined_expression_set, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=True)
+        fig = expression_plot(
+            combined_expression_set,
+            paired_axes=channel_space == "source",
+            save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'),
+            overwrite=args.overwrite,
+            show_legend=True,
+        )
+        pyplot.close(fig)
         
     elif args.asr_option == 'one':
 
@@ -467,7 +490,14 @@ def main():
 
         if args.save_expression_set_location is not None:
             save_expression_set(es, to_path_or_file = Path(args.save_expression_set_location, function_values.name + '_gridsearch.nkg'), overwrite=args.overwrite)
-        expression_plot(es, paired_axes=channel_space == "source", save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'), overwrite=args.overwrite, show_legend=True)
+        fig = expression_plot(
+            es,
+            paired_axes=channel_space == "source",
+            save_to=Path(args.save_plot_location, function_values.name + '_gridsearch.png'),
+            overwrite=args.overwrite,
+            show_legend=True,
+        )
+        pyplot.close(fig)
 
     else:
         combined_expression_set = None
