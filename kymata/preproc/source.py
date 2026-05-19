@@ -45,8 +45,8 @@ def load_single_emeg(
         and (morph_path is None)
     ):
         # Load npy-format sensor data
-        # channel_names: list[str] = np.load(ch_names_path)
-        channel_names = mne.read_evokeds(emeg_path_fif, verbose=False)[0].ch_names
+        channel_names: list[str] = np.load(ch_names_path)
+        # channel_names = mne.read_evokeds(emeg_path_fif, verbose=False)[0].ch_names
         emeg = np.load(emeg_path_npy)
 
         return emeg, channel_names
