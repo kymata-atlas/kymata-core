@@ -68,45 +68,48 @@ def main():
         #                             | legend_display_dict(STL_name, 'Short Term Loudness transform'))
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/test.png")
 
-        expression_data_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_morpheme_source')
-        morpheme_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/morpheme_all.npy')
-        morpheme_name = [f'layer{i}_{j}' for i,j in morpheme_list]
-        expression_data_wordpiece = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_wordpiece_source')
-        wordpiece_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/wordpiece_all.npy')
-        wordpiece_name = [f'layer{i}_{j}' for i,j in wordpiece_list]
-        expression_data_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_phone_source')
-        expression_data_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
-        phone_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/phone_all.npy')
-        phone_name = [f'layer{i}_{j}' for i,j in phone_list]
-        expression_data_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_word_source')
-        expression_data_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
-        word_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/word_all.npy')
-        word_name = [f'layer{i}_{j}' for i,j in word_list]
+        # expression_data_morpheme = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_morpheme_source')
+        # morpheme_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/morpheme_all.npy')
+        # morpheme_name = [f'layer{i}_{j}' for i,j in morpheme_list]
+        # expression_data_wordpiece = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_wordpiece_source')
+        # wordpiece_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/wordpiece_all.npy')
+        # wordpiece_name = [f'layer{i}_{j}' for i,j in wordpiece_list]
+        # expression_data_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_phone_source')
+        # expression_data_phone += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
+        # phone_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/phone_all.npy')
+        # phone_name = [f'layer{i}_{j}' for i,j in phone_list]
+        # expression_data_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_word_source')
+        # expression_data_word += load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
+        # word_list = np.load('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/neuron_picks/all_cat/word_all.npy')
+        # word_name = [f'layer{i}_{j}' for i,j in word_list]
+        expression_data_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/expression')
+        word_name = expression_data_word.transforms
 
         # save_expression_set(expression_data_morpheme[morpheme_name] + expression_data_wordpiece[wordpiece_name] + expression_data_phone[phone_name] + expression_data_word[word_name], 
         #                     '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/all_language_transforms.nkg')
 
         # expression_data = expression_data_tvl + expression_data_morpheme[morpheme_name] + expression_data_wordpiece[wordpiece_name] + expression_data_phone[phone_name] + expression_data_word[word_name]
-        expression_data = expression_data_tvl + expression_data_morpheme[morpheme_name] + expression_data_phone[phone_name] + expression_data_word[word_name]
+        # expression_data = expression_data_tvl + expression_data_morpheme[morpheme_name] + expression_data_phone[phone_name] + expression_data_word[word_name]
+        expression_data = expression_data_tvl + expression_data_word
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
-        fig = expression_plot(expression_data, paired_axes=True, minimap='large', show_legend=True, show_only=morpheme_name + wordpiece_name,
+        fig = expression_plot(expression_data, paired_axes=True, minimap='large', show_legend=True,
         # fig = expression_plot(expression_data, paired_axes=True, minimap='large', show_legend=True,
                                 color=constant_color_dict(word_name, color= 'red')
                                     | constant_color_dict(IL_name, color= 'purple')
-                                    | constant_color_dict(STL_name, color= 'pink')
-                                    | constant_color_dict(phone_name, color='green')
-                                    | constant_color_dict(morpheme_name, color='blue')
-                                    | constant_color_dict(wordpiece_name, color='orange'),
-                                legend_display=legend_display_dict(word_name, 'SALMONN word features')
+                                    | constant_color_dict(STL_name, color= 'pink'),
+                                    # | constant_color_dict(phone_name, color='green')
+                                    # | constant_color_dict(morpheme_name, color='blue')
+                                    # | constant_color_dict(wordpiece_name, color='orange'),
+                                legend_display=legend_display_dict(word_name, 'Qwen decoder activations')
                                     | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
-                                    | legend_display_dict(STL_name, 'Short Term Loudness transform')
-                                    | legend_display_dict(phone_name, 'SALMONN phone features')
-                                    | legend_display_dict(morpheme_name, 'SALMONN morpheme features')
-                                    | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
+                                    | legend_display_dict(STL_name, 'Short Term Loudness transform'))
+                                    # | legend_display_dict(phone_name, 'SALMONN phone features')
+                                    # | legend_display_dict(morpheme_name, 'SALMONN morpheme features')
+                                    # | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
         
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/further_results/morpheme_vs_wordpiece.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/qwen_decoder.png")
 
     elif transform_family_type == 'all_level_sensor':
 

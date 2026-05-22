@@ -47,17 +47,18 @@ def _get_expected_data_shape(dataset: str, log_dir: Path) -> tuple[int, int, int
 
 def _dataset_colour(dataset: str) -> str:
     """Canonical colour for each modality."""
-    if dataset == "emeg":
-        color = '#79b15b'
-    elif dataset == "ecog":
-        color = '#b1835b'
-    elif dataset == "meg":
-        color = "#D71815"
-    elif dataset == "eeg":
-        color = "#FF9800"
-    else:
-        raise NotImplementedError()
-    return color
+    # if dataset == "emeg":
+    #     color = '#79b15b'
+    # elif dataset == "ecog":
+    #     color = '#b1835b'
+    # elif dataset == "meg":
+    #     color = "#D71815"
+    # elif dataset == "eeg":
+    #     color = "#FF9800"
+    # else:
+    #     raise NotImplementedError()
+    # return color
+    return "grey"
 
 
 def _get_significant_neurons_from_logs(log_dir: Path, dataset: str, thres: float) -> NDArray:
@@ -283,12 +284,44 @@ def neuron_scatter(log_dir: Path, output_dir: Path, dataset: str, draw_mode: str
 
     elif draw_mode == "heatmap":
         heatmap_data = _convert_to_heatmap(x, y, neuron_cutoff, layer)
-        heatmap(heatmap_data,
-                ax=ax,
-                cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["grey", _dataset_colour(dataset)]),
-                cbar=False,
-                linewidths=0.5,
-                )
+        # Use seaborn heatmap for the main plot (grey/white background)
+        heatmap(
+            heatmap_data,
+            ax=ax,
+            cmap=LinearSegmentedColormap.from_list(f"{dataset}_gradient", ["white", _dataset_colour(dataset)]),
+            cbar=False,
+            linewidths=0,
+        )
+        # Overlay red and green rectangles for special neurons
+        if sig.shape[0] > 0:
+            for idx in range(sig.shape[0]):
+                neuron_idx = int(x[idx])
+                layer_idx = int(y[idx])
+                if neuron_cutoff[0] <= neuron_idx < neuron_cutoff[1] and 0 <= layer_idx < layer:
+                    color = None
+                    if sig[idx, -1] == 2330:
+                        color = '#8095E4'
+                    elif sig[idx, -1] == 32:
+                        color = '#1BC0BA'
+                    elif sig[idx, -1] == 2718:
+                        color = '#FEBD17'
+                    elif sig[idx, -1] == 662:
+                        color = '#F94680'
+                    elif sig[idx, -1] == 96:
+                        color = '#FDB8D9'
+                    elif sig[idx, -1] == 698:
+                        color = '#FF6A00'  # bright complementary (orange)
+                    elif sig[idx, -1] == 2030:
+                        color = '#00C2FF'  # bright complementary (cyan/azure)
+                    elif sig[idx, -1] == 3577:
+                        color = '#00E676'  # bright complementary (green)
+                    if color:
+                        ax.add_patch(
+                            plt.Rectangle((neuron_idx - neuron_cutoff[0] - 0.5, layer_idx), 1, 1, fill=False, edgecolor=color, linewidth=2)
+                        )
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_aspect("auto")
         ax.invert_yaxis()
 
     else:
