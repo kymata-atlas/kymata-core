@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --time=140:00:00
 #SBATCH --mem=200G
-#SBATCH --array=0-35
+#SBATCH --array=4,6,7,8
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"
@@ -21,16 +21,27 @@ export NUMBA_CACHE_DIR="${TMPDIR:-/tmp}/numba_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK
 
 mkdir -p "$HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$MPLCONFIGDIR" "$NUMBA_CACHE_DIR"
 
-VENV_PYTHON="/home/cw04/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/python"
+# VENV_PYTHON="/home/cw04/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/python"
+
+# cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
 
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
+
+if [ -f "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/activate" ]; then
+  source "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/activate"
+else
+  echo "ERROR: expected venv not found at .venv/bin/activate" 1>&2
+  echo "Create it once on a login node (e.g. run 'poetry install') and re-submit." 1>&2
+  exit 1
+fi
 
 npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/sensor/encoder/analysis/sig_neurons.npy'
 
 echo "Reading neuron list from npy (subrange Cai: [19108, 28661))"
 
 # Single-pass extraction (loads the npy once).
-out=$("$VENV_PYTHON" kymata/invokers/read_npy.py "$npy_file" --range 19108 28661 --format bash)
+# out=$("$VENV_PYTHON" kymata/invokers/read_npy.py "$npy_file" --range 19108 28661 --format bash)
+out=$(python kymata/invokers/read_npy.py "$npy_file" --range 19108 28661 --format bash)
 
 all_layers_string=$(printf "%s\n" "$out" | sed -n 's/^layers=//p')
 all_neurons_string=$(printf "%s\n" "$out" | sed -n 's/^neurons=//p')
@@ -62,7 +73,8 @@ neurons_string=$(printf "%s " "${sel_neurons[@]}")
 
 echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$((end-start))"
 
-"$VENV_PYTHON" kymata/invokers/run_gridsearch.py \
+# "$VENV_PYTHON" kymata/invokers/run_gridsearch.py \
+python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
   --input-stream auditory \
   --plot-top-channels \
@@ -77,6 +89,7 @@ echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$(
   --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
-  --morph
+  --morph \
+  --overwrite
 
   # --low-level-function \

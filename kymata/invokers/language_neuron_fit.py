@@ -9,6 +9,8 @@ from matplotlib import colors, pyplot as plt
 from statsmodels.regression.linear_model import RegressionResults, OLS
 from statsmodels.tools import add_constant
 
+from scipy.stats import spearmanr
+
 from kymata.io.logging import log_message, date_format
 
 
@@ -80,23 +82,29 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
             linewidths=0.3,
         )
 
-        # Pearson correlation and p-value
+        # Pearson + Spearman correlations
         if degree == 1:
-            r = float(np.sqrt(fit_results.rsquared) * np.sign(slope))
-            p = float(fit_results.pvalues[1])
+            # Pearson correlation from linear regression
+            pearson_r = float(np.sqrt(fit_results.rsquared) * np.sign(slope))
+            pearson_p = float(fit_results.pvalues[1])
+
+            # Spearman rank correlation
+            spearman_rho, spearman_p = spearmanr(
+                layers_to_fit,
+                latency_to_fit,
+            )
+
             bic = float(fit_results.bic)
+
             ax.text(
                 0.02,
                 0.98,
-                f"Pearson r = {r:.3g}\n"
-                f"p = {p:.3g}\n"
+                f"Pearson r = {pearson_r:.3g}\n"
+                f"Pearson p = {pearson_p:.3g}\n"
+                f"Spearman ρ = {spearman_rho:.3g}\n"
+                f"Spearman p = {spearman_p:.3g}\n"
                 f"R² = {fit_results.rsquared:.2g}\n"
                 f"BIC = {bic:.2g}",
-                transform=ax.transAxes,
-                va='top',
-                ha='left',
-                fontsize=9,
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
             )
         elif degree == 2:
             p = float(fit_results.pvalues[1])

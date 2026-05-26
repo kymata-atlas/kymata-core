@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --time=140:00:00
 #SBATCH --mem=200G
-#SBATCH --array=0-35
+#SBATCH --array=8,9,11
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"

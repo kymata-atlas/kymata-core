@@ -130,8 +130,14 @@ def main():
 
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/word_source')
         # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron')
-        expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_word_source')
-        word_name = expression_data_salmonn_word.transforms
+        # expression_data_salmonn_word = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/all_word_source')
+        expression_data_qwen_encoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression')
+        encoder_name = expression_data_qwen_encoder.transforms
+        for i in range(len(encoder_name)):
+            expression_data_qwen_encoder.rename({encoder_name[i]:f'{encoder_name[i]}_encoder'})
+        encoder_name = expression_data_qwen_encoder.transforms
+        expression_data_qwen_decoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/decoder_text/expression')
+        decoder_name = expression_data_qwen_decoder.transforms
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/single_neuron_phone')
         # phone_name = expression_data_salmonn_phone.transforms
@@ -139,13 +145,15 @@ def main():
         tvl_name = expression_data_tvl.transforms
         IL_name = [i for i in tvl_name if i != 'STL']
         STL_name = ['STL']
-        fig = expression_plot(expression_data_salmonn_word, paired_axes=True, minimap='large', show_legend=True,
-                                color=constant_color_dict(word_name, color= 'red'),
+        fig = expression_plot(expression_data_qwen_encoder + expression_data_qwen_decoder, paired_axes=True, minimap='large', show_legend=True,
+                                color=constant_color_dict(encoder_name, color= 'blue')
+                                    | constant_color_dict(decoder_name, color= 'red'),
                                     # | constant_color_dict(tvl_name, color= 'yellow')
                                     # | constant_color_dict(IL_name, color= 'purple')
                                     # | constant_color_dict(STL_name, color= 'pink'),
                                     # | constant_color_dict(phone_name, color='green'),
-                                legend_display=legend_display_dict(word_name, 'SALMONN word features'))
+                                legend_display=legend_display_dict(encoder_name, 'QWEN encoder features')
+                                    | legend_display_dict(decoder_name, 'QWEN decoder features'))
                                     # | legend_display_dict(tvl_name, 'TVL transforms')
                                     # | legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
                                     # | legend_display_dict(STL_name, 'Short Term Loudness transform'))
@@ -157,7 +165,7 @@ def main():
         #                         legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
         #                             | legend_display_dict(STL_name, 'Short Term Loudness transform'))
 
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/qwen_source.png")
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/salmonn_word_vs_phone_vs_tvl_all_source_0_75_test.png")
 
 

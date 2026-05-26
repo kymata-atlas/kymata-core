@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --time=140:00:00
 #SBATCH --mem=200G
-#SBATCH --array=0-35
+#SBATCH --array=7,8,9
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"
@@ -82,6 +82,7 @@ echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$(
   --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
-  --morph
+  --morph \
+  --overwrite
 
   # --low-level-function \
