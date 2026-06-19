@@ -14,11 +14,8 @@ def plot_top_five_channels_of_gridsearch(
     transform: Transform,
     logp_values: NDArray,
     auto_corr: NDArray,
-    n_samples_per_split: int,
-    n_reps: int,
-    n_splits: int,
     top_n_to_plot = 5,
-    n_sigma_error_band = 3,
+    error_band_tuning_factor: float = 1.0,
     # I/O args
     save_to: Optional[Path] = None,
     overwrite: bool = True,
@@ -33,11 +30,8 @@ def plot_top_five_channels_of_gridsearch(
         logp_values (NDArray): Array of log-transformed p-values for each channel and time point with shape
             (n_channels, t_steps).
         auto_corr (NDArray): Auto-correlation values array used for plotting the transform auto-correlation.
-        n_samples_per_split (int): Number of samples per split used in the grid search.
-        n_reps (int): Number of repetitions in the grid search.
-        n_splits (int): Number of splits in the grid search.
         top_n_to_plot (int): The top-n channels to plot. Default is 5.
-        number of sigmas to use in the error band. Default is 3.
+        error_band_tuning_factor (float): Manually scale width of error regions. Default scale is 1.
         save_to (Optional[Path], optional): Path to save the generated plot. If None (the default), the plot is not
             saved.
         overwrite (bool, optional): If True, overwrite the existing file if it exists. Default is True.
@@ -63,7 +57,7 @@ def plot_top_five_channels_of_gridsearch(
     # (though not necessarily sorted ascending). It returns the permutation indices into arr rather than the permuted
     # arr itself.
     #
-    # Therefore, argpartition(arr, -dx)[-idx] gives indices to the (unsorted) lowest values in the array. These
+    # Therefore, argpartition(arr, idx)[:idx] gives indices to the (unsorted) lowest values in the array. These
     # correspond to the (indices of) the best channels.
     best_chan_idxs = np.argpartition(channel_min_logp_vals, top_n_to_plot)[:top_n_to_plot]
     
@@ -85,17 +79,14 @@ def plot_top_five_channels_of_gridsearch(
     # Timecourse of mean (over splits) correlation for other channels
     other_chan_corr_means = np.mean(corrs[best_chan_idxs, 0], axis=1)
 
-    # Convert n-sigma STD to SEM
-    best_chan_corr_n_sem  = np.std(best_chan_corrs, axis=0) * n_sigma_error_band / np.sqrt(n_reps * n_splits)
+    best_chan_corr_n_std  = np.std(best_chan_corrs, axis=0) * error_band_tuning_factor
 
-    # Null dist envelopes (n-siigma STD to SEM)
-    null_corrs = corrs[:, 1]  # shape (n_chans, n_splits, n_timesteps) for 1st derangement  TODO: why only the 1st?
-    null_corrs_mean = np.mean(np.mean(null_corrs, axis=1), axis=0)  # Average over splits and channels
+    # Null dist envelope for best channel (n-sigma STD to SEM)
+    null_corrs = corrs[best_chan_idx, 1:]  # shape (n_derangements, n_splits, n_timesteps)
+    null_corrs_mean = np.mean(np.mean(null_corrs, axis=1), axis=0)  # Average over splits and derangements
     # compute null std timecourse for each channel
-    #                                        ↓ splits dim
-    null_corrs_std = np.std(null_corrs, axis=1)  # shape (n_chans, n_timesteps)
-    # timecourse 3-sigma SEM of channel-average null dist variability, averaged over all channels
-    null_corr_n_sem = np.mean(null_corrs_std, axis=0) * n_sigma_error_band / np.sqrt(n_reps * n_splits)
+    #                                     splits dim ↓        ↓ derangements dim
+    null_corrs_std = np.mean(np.std(null_corrs, axis=1), axis=0) * error_band_tuning_factor
 
     mean_auto_corr = np.mean(auto_corr, axis=0)
     scaled_auto_corr = np.roll(mean_auto_corr, peak_latency_idx) * peak_corr / np.max(mean_auto_corr)
@@ -116,11 +107,12 @@ def plot_top_five_channels_of_gridsearch(
     axis[0].plot(latencies, other_chan_corr_means, label=best_chan_idxs)
 
     # Plot error regions
-    axis[0].fill_between(latencies, null_corrs_mean - null_corr_n_sem, null_corrs_mean + null_corr_n_sem, alpha=0.5, color="grey")
-    axis[0].fill_between(latencies, best_chan_corr_mean - best_chan_corr_n_sem, best_chan_corr_mean + best_chan_corr_n_sem, alpha=0.25, color="red")
+    axis[0].plot(latencies, null_corrs_mean, "k--", label="null distribution for best channel")
+    axis[0].fill_between(latencies, null_corrs_mean - null_corrs_std, null_corrs_mean + null_corrs_std, alpha=0.5, color="grey")
+    axis[0].fill_between(latencies, best_chan_corr_mean - best_chan_corr_n_std, best_chan_corr_mean + best_chan_corr_n_std, alpha=0.25, color="red")
 
     # Plot autocorr
-    axis[0].plot(latencies, scaled_auto_corr, "k--", label="trans auto-corr")
+    axis[0].plot(latencies, scaled_auto_corr, "g--", label="trans auto-corr")
 
     axis[0].axvline(0, color="k")
     axis[0].legend()
