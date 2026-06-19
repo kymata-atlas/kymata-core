@@ -56,8 +56,16 @@ def plot_top_five_channels_of_gridsearch(
     #                                                ↓ latency axis
     channel_min_logp_vals = np.min(logp_values, axis=1)
     
-    # Select top-n channels
-    best_chan_idxs = np.argpartition(channel_min_logp_vals, -top_n_to_plot)[-top_n_to_plot:]
+    # Select top-n channel
+    #
+    # argpartition(arr, idx) rearranges arr such that the value at idx is in the correct position when sorted ascending,
+    # and all values before that are lower (though not necessarily sorted ascending) and all values after it are higher
+    # (though not necessarily sorted ascending). It returns the permutation indices into arr rather than the permuted
+    # arr itself.
+    #
+    # Therefore, argpartition(arr, -dx)[-idx] gives indices to the (unsorted) lowest values in the array. These
+    # correspond to the (indices of) the best channels.
+    best_chan_idxs = np.argpartition(channel_min_logp_vals, top_n_to_plot)[:top_n_to_plot]
     
     # Select the best channel to highlight and remove from remaining-top list
     best_chan_idx, peak_latency_idx = np.unravel_index(np.argmin(logp_values), shape=logp_values.shape)
