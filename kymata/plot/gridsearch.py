@@ -104,7 +104,7 @@ def plot_top_five_channels_of_gridsearch(
     # Plot overall best chan
     axis[0].plot(latencies, best_chan_corr_mean, "r-", label=best_chan_idx)
     # Plot remaining best chans
-    axis[0].plot(latencies, other_chan_corr_means, label=best_chan_idxs)
+    axis[0].plot(latencies, other_chan_corr_means.T, label=best_chan_idxs)
 
     # Plot error regions
     axis[0].plot(latencies, null_corrs_mean, "k--", label="null distribution for best channel")
