@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 from scipy import stats
 
 from kymata.entities.transform import Transform
@@ -236,15 +236,15 @@ def do_gridsearch(
         del F_trans
 
         plot_top_five_channels_of_gridsearch(
+            latencies=latencies_ms,
             corrs=corrs,
-            auto_corrs=auto_corrs,
             transform=transform,
             n_reps=n_reps,
+            auto_corr=auto_corrs,
             n_splits=n_splits,
             n_samples_per_split=n_samples_per_split,
-            latencies=latencies_ms,
-            save_to=None,
-            log_pvalues=log_pvalues,
+            save_to=plot_location,
+            logp_values=log_pvalues,
             overwrite=overwrite,
         )
 
@@ -272,7 +272,7 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> NDArray:
     """
     Perform a vectorized Welch's t-test on correlation matrices.
 
@@ -295,7 +295,7 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
 
     Returns:
     --------
-    ArrayLike
+    NDArray
         A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
         of the t-tests for each channel and time step.
 
