@@ -68,32 +68,31 @@ def plot_top_five_channels_of_gridsearch(
     
     # Select the best channel to highlight and remove from remaining-top list
     best_chan_idx, peak_latency_idx = np.unravel_index(np.argmin(logp_values), shape=logp_values.shape)
-    best_chan_idxs = [i for i in best_chan_idxs if i != best_chan_idx]
+    other_chan_idxs = [i for i in best_chan_idxs if i != best_chan_idx]
+    del best_chan_idxs
 
     # Find peak
     peak_latency = latencies[peak_latency_idx]
 
     # Select best channel and derangement 0 for shape (n_splits, n_time_steps)
     best_chan_corrs = corrs[best_chan_idx, 0]
-    # Get the peak corr by averaging over splits (giving a time-course for the average correlation for the best channel
-    # and then selecting the peak latency idx
-    peak_corr = np.mean(best_chan_corrs, axis=0)[peak_latency_idx]
 
     # Timecourse of mean (over splits) correlation for best channel
     best_chan_corr_mean = np.mean(best_chan_corrs, axis=0)
-    # Timecourse of mean (over splits) correlation for other channels
-    other_chan_corr_means = np.mean(corrs[best_chan_idxs, 0], axis=1)
+    best_chan_corr_std_scaled  = np.std(best_chan_corrs, axis=0) * error_band_scaling_factor
 
-    best_chan_corr_n_std  = np.std(best_chan_corrs, axis=0) * error_band_scaling_factor
+    # Timecourse of mean (over splits) correlation for other channels
+    other_chan_corr_means = np.mean(corrs[other_chan_idxs, 0], axis=1)
 
     # Null dist envelope for best channel (n-sigma STD to SEM)
     null_corrs = corrs[best_chan_idx, 1:]  # shape (n_derangements, n_splits, n_timesteps)
     null_corrs_mean = np.mean(np.mean(null_corrs, axis=1), axis=0)  # Average over splits and derangements
     # compute null std timecourse for each channel
-    #                                     splits dim ↓        ↓ derangements dim
-    null_corrs_std = np.mean(np.std(null_corrs, axis=1), axis=0) * error_band_scaling_factor
+    #                                            splits dim ↓        ↓ derangements dim
+    null_corrs_std_scaled = np.mean(np.std(null_corrs, axis=1), axis=0) * error_band_scaling_factor
 
     mean_auto_corr = np.mean(auto_corr, axis=0)
+    peak_corr = best_chan_corr_mean[peak_latency_idx]
     scaled_auto_corr = np.roll(mean_auto_corr, peak_latency_idx) * peak_corr / np.max(mean_auto_corr)
 
     print(f"{transform.name}:\t"
@@ -109,15 +108,15 @@ def plot_top_five_channels_of_gridsearch(
     # Plot overall best chan
     axis[0].plot(latencies, best_chan_corr_mean, "r-", label=best_chan_idx)
     # Plot remaining best chans
-    axis[0].plot(latencies, other_chan_corr_means.T, label=best_chan_idxs)
+    axis[0].plot(latencies, other_chan_corr_means.T, label=other_chan_idxs)
 
     # Plot null mean
     axis[0].plot(latencies, null_corrs_mean, "k--", label="null distribution for best channel")
 
     # Plot error regions
-    axis[0].fill_between(latencies, null_corrs_mean - null_corrs_std, null_corrs_mean + null_corrs_std,
+    axis[0].fill_between(latencies, null_corrs_mean - null_corrs_std_scaled, null_corrs_mean + null_corrs_std_scaled,
                          alpha=0.5, color="grey", label="Null distribution STD" + error_band_message)
-    axis[0].fill_between(latencies, best_chan_corr_mean - best_chan_corr_n_std, best_chan_corr_mean + best_chan_corr_n_std,
+    axis[0].fill_between(latencies, best_chan_corr_mean - best_chan_corr_std_scaled, best_chan_corr_mean + best_chan_corr_std_scaled,
                          alpha=0.25, color="red", label="Best channel STD"+ error_band_message)
 
     # Plot autocorr
@@ -130,7 +129,7 @@ def plot_top_five_channels_of_gridsearch(
     axis[0].set_ylabel("Corr coef.")
 
     axis[1].plot(latencies, -logp_values[best_chan_idx].T, "r-", label=best_chan_idx)
-    axis[1].plot(latencies, -logp_values[best_chan_idxs].T, label=best_chan_idxs)
+    axis[1].plot(latencies, -logp_values[other_chan_idxs].T, label=other_chan_idxs)
     axis[1].axvline(0, color="k")
     axis[1].legend()
     axis[1].set_title("p-values")
