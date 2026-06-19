@@ -243,7 +243,7 @@ def do_gridsearch(
             save_to=plot_location,
             logp_values=log_pvalues,
             overwrite=overwrite,
-            error_band_scaling_factor=0.25,  # For visualisation only
+            error_band_scaling_factor=0.1,  # @neukym: For visualisation only
         )
 
     if channel_space == "sensor":
