@@ -82,6 +82,7 @@ def plot_top_five_channels_of_gridsearch(
 
     # Null dist envelopes (n-siigma STD to SEM)
     null_corrs = corrs[:, 1]  # shape (n_chans, n_splits, n_timesteps) for 1st derangement  TODO: why only the 1st?
+    null_corrs_mean = np.mean(np.mean(null_corrs, axis=1), axis=0)  # Average over splits and channels
     # compute null std timecourse for each channel
     #                                        ↓ splits dim
     null_corrs_std = np.std(null_corrs, axis=1)  # shape (n_chans, n_timesteps)
@@ -107,7 +108,7 @@ def plot_top_five_channels_of_gridsearch(
     axis[0].plot(latencies, other_chan_corr_means, label=best_chan_idxs)
 
     # Plot error regions
-    axis[0].fill_between(latencies, 0 - null_corr_n_sem, 0 + null_corr_n_sem, alpha=0.5, color="grey")
+    axis[0].fill_between(latencies, null_corrs_mean - null_corr_n_sem, null_corrs_mean + null_corr_n_sem, alpha=0.5, color="grey")
     axis[0].fill_between(latencies, best_chan_corr_mean - best_chan_corr_n_sem, best_chan_corr_mean + best_chan_corr_n_sem, alpha=0.25, color="red")
 
     # Plot autocorr
