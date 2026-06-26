@@ -9,7 +9,7 @@ from scipy import stats
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
 from kymata.io.layouts import SensorLayout
-from kymata.math.vector import normalize, get_stds
+from kymata.math.vector import normalize, window_stds_unnorm
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
@@ -170,7 +170,7 @@ def do_gridsearch(
 
     # Fast cross-correlation using FFT
     normalize(emeg_reshaped, inplace=True)
-    emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
+    emeg_stds = window_stds_unnorm(emeg_reshaped, n_trans_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
     if n_reps > 1:

@@ -14,7 +14,7 @@ def plot_top_five_channels_of_gridsearch(
     transform: Transform,
     logp_values: NDArray,
     auto_corr: NDArray,
-    top_n_to_plot = 5,
+    top_n_to_plot: int = 5,
     error_band_scaling_factor: float = 1.0,
     # I/O args
     save_to: Optional[Path] = None,
