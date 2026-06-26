@@ -94,6 +94,9 @@ def main():
     parser.add_argument("--emeg-t-start", type=float, default=-0.2,
                         help="Start of the emeg evoked files relative to the start of the transform")
 
+    # Input paths
+    parser.add_argument("--data-root", type=str, required=False, default="/imaging/projects/cbu/kymata/data/", help="Root directory of kymata data.")
+
     # Output paths
     parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
     # Save locations are non-optional when running as a dependency
@@ -117,7 +120,7 @@ def main():
     # Config defaults
     participants = dataset_config.get("participants")
     base_dir = Path(
-        "/imaging/projects/cbu/kymata/data/",
+        args.data_root,
         dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
     )
     inverse_operator_dir = dataset_config.get("inverse_operator")
@@ -145,7 +148,7 @@ def main():
             print("Concatenating repetitions together")
             emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
     else:
-        emeg_filenames = [p + "-ave" for p in participants]
+        emeg_filenames = [p + "-ave.fif" for p in participants]
 
     start = time.time()
 
