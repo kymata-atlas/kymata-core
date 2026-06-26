@@ -15,6 +15,9 @@ stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
 
+# Seed (if needed)
+random_seed_gridsearch: None
+
 # Preprocessing pipeline
 meg_manufacturer: 'MEGIN'
 meg_sss_noise_estimate_year: 2023
