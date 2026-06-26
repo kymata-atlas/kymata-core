@@ -203,10 +203,12 @@ def do_gridsearch(
     )
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = (
-            np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
-            / emeg_stds[:, derangement]
-        )
+        # We should not be getting divide by zero errors here, so if we do we want to know about it
+        with np.errstate(divide="raise"):
+            corrs[:, der_i] = (
+                np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
+                / emeg_stds[:, derangement]
+            )
 
     del deranged_emeg, emeg_reshaped
 

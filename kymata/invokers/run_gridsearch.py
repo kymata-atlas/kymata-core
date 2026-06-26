@@ -115,6 +115,9 @@ def main():
     parser.add_argument('--snr',             type=float, default=3, help='inverse solution snr')
     parser.add_argument("--resample", type=float, required=False, default=200, help="Resample rate in Hz.")
 
+    # Input paths
+    parser.add_argument("--data-root", type=str, required=False, default="/imaging/projects/cbu/kymata/data/", help="Root directory of kymata data.")
+
     # General gridsearch
     parser.add_argument("--seconds-per-split", type=float, default=1,
                         help="Seconds in each split of the recording, also maximum range of latencies being checked")
@@ -148,7 +151,10 @@ def main():
 
     # Config defaults
     participants = dataset_config.get('participants')
-    base_dir = Path('/imaging/projects/cbu/kymata/data/', dataset_config.get('dataset_directory_name', 'dataset_4-english_narratives'))
+    base_dir = Path(
+        args.data_root,
+        dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
+    )
     inverse_operator_dir = dataset_config.get('inverse_operator')
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
@@ -167,7 +173,7 @@ def main():
         eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
-    start_memory_logging()
+    # start_memory_logging()
 
     if args.phonetics:
 
