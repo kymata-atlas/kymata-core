@@ -35,6 +35,7 @@ def do_gridsearch(
     n_reps: int = 1,
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
+    seed: int | None = None,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given transform.
@@ -67,6 +68,8 @@ def do_gridsearch(
         plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
             five channels in the gridsearch. Default is False.
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
+        seed: (int, optional): Use this random seed in the gridsearch. If None (the default), a random seed will not
+            be set.
 
     Returns:
         ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
@@ -82,7 +85,8 @@ def do_gridsearch(
 
     # Set random seed to keep derangement orderings
     # deterministic between runs
-    np.random.seed(17)
+    if seed is not None:
+        np.random.seed(seed)
 
     channel_space = channel_space.lower()
     if channel_space not in {"sensor", "source"}:

@@ -264,6 +264,7 @@ def main():
             plot_top_five_channels=args.plot_top_channels,
             overwrite=args.overwrite,
             emeg_layout=sensor_layout,
+            seed=dataset_config.get('random_seed_gridsearch', None),
         )
 
         if combined_expression_set is None:
