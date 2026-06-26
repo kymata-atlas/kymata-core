@@ -29,7 +29,11 @@ def load_single_emeg(
 
     old_morph: forces loading of mne morph map
     """
-    if not emeg_path.suffix == ".fif":
+    # If no suffix provided, use .fif
+    if emeg_path.suffix == "":
+        emeg_path = emeg_path.with_suffix(".fif")
+    # If non-fif suffix provided, error
+    elif not emeg_path.suffix == ".fif":
         raise FileFormatError(f"Only .fif files supported: {emeg_path.name}")
 
     if inverse_operator_path is None:
