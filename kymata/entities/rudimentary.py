@@ -19,7 +19,9 @@ def get_coerce(
         coerce: Callable[[Any], T_coerce],
         default: T_default,
 ) -> T_default | T_coerce:
-    """Return ``coerce(d[key])`` if ``key`` exists, otherwise ``default``."""
+    """
+    Return `coerce(d[key])` if `key` exists, otherwise `default`.
+    """
     if key in d:
         return coerce(d[key])
     else:
