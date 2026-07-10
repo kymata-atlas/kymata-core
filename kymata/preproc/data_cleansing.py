@@ -765,15 +765,34 @@ def create_trialwise_data(
     
                 difference_vals.append((p, i, drift_diff, delay_diff))
     
-                _logger.info(f"Detected drift for participant {p} repetition {i} was {drift_diff}, "
+                _logger.info(f"Detected drift for participant {p} repetition {i}/{len(repetition_events)} was {drift_diff} "
                              f"{describe_higher_lower_than(drift_diff)} the reference value of {reference_drift}")
-                _logger.info(f"Detected drift for participant {p} repetition {i} was {drift_diff}, "
+                _logger.info(f"Detected delay for participant {p} repetition {i}/{len(repetition_events)} was {delay_diff} "
                              f"{describe_higher_lower_than(delay_diff)} the reference value of {reference_delay}")
     
             # Save drift and delay vals to csv
-            DataFrame.from_records(
+            diffs_df = DataFrame.from_records(
                 difference_vals, columns=["Participant", "Repetition", "Drift difference", "Delay difference"]
-            ).to_csv(logs_path / f"drift_delay_diffs_{p}.csv", index=False)
+            )
+            diffs_path = logs_path / f"drift_delay_diffs_{p}.csv"
+            diffs_df.to_csv(diffs_path, index=False)
+
+            # Check any drifts are wrong.
+            # If they are, this is treated as a serious problem. Either all the diffs are nonzero and identical, in
+            # which case the config is wrong (for this participant); or they are not all the same and we don't yet have
+            # a way to apply individualised stretches to the emeg data before averaging.
+            if (diffs_df["Drift difference"].abs() > 1e-7).any():
+                raise RuntimeError(f"The differences on some drifts for participant {p} were too large. "
+                                   f"Does the drift value in the config need changing? "
+                                   f"Check the output in {diffs_path.name} to ensure constant drifts repetitions.")
+
+            # Check if individualised delays are approximately symmetric about zero.
+            # If they are, this is treated as a serious problem. A systematic bias in delays could mean the config may
+            # be set wrong.
+            if abs(diffs_df["Delay difference"].mean()) > 1e-3:  # Note: I am not sure this is the best tolerance to use; perhaps use 2e-3 or something to allow for some variance without erroring
+                raise RuntimeError(f"There seems to be a systematic error in the delays for participant {p}. "
+                                   f"Does the delay value in the config need changing? "
+                                   f"Check the output in {diffs_path.name}.")
 
         # Save individual repetitions
         for i in range(len(repetition_events)):
