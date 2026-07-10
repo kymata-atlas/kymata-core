@@ -5,6 +5,7 @@ from typing import Optional
 from colorama import Fore, Style
 import mne
 import numpy as np
+from mne import Epochs
 from numpy.typing import NDArray
 from pandas import DataFrame, Index
 from pathlib import Path
@@ -794,6 +795,13 @@ def create_trialwise_data(
                                    f"Does the delay value in the config need changing? "
                                    f"Check the output in {diffs_path.name}.")
 
+            # Apply delay_diffs to individual repetitions before saving and averaging, so that the config delay can now
+            # be used without error. We'll do this by editing the repetition events and recomputing the epochs
+            repetition_events = _apply_delays(repetition_events, data_sr=data_sample_rate, delays=diffs_df["Delay difference"].tolist())
+            epochs = mne.Epochs(raw, repetition_events, event_id=None,
+                                tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
+                                picks=picks)
+
         # Save individual repetitions
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
@@ -805,6 +813,12 @@ def create_trialwise_data(
         _logger.info(f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
 
         evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
+
+
+def _apply_delays(events: NDArray, data_sr: float, delays: list[float]) -> NDArray:
+    sample_shifts = np.round(np.array(delays) * data_sr).astype(int)  # seconds * samples-per-second
+    events[:, 0] += sample_shifts  # TODO: I'm I doing this in the right direction?!
+    return events
 
 
 def apply_automatic_bad_channel_detection(

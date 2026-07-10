@@ -89,6 +89,7 @@ def _hilbert_envolope(signal: NDArray) -> NDArray:
     return np.abs(hilbert(np.asarray(signal, dtype=float)))
 
 
+# TODO: Am I doing this in the right direction to fit with how it's done inside the gridsearch?
 def _stretch_signal(signal: NDArray, sample_rate: float, stretch: float, delay: float) -> NDArray:
     signal = np.asarray(signal, dtype=float)
     n_samples = len(signal)
