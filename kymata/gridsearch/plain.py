@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 
 import numpy as np
 from numpy.typing import NDArray
@@ -36,6 +36,7 @@ def do_gridsearch(
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
     seed: int | None = None,
+    precision_dtype: Type[np.number] = np.float32,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given transform.
@@ -70,6 +71,9 @@ def do_gridsearch(
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
         seed: (int, optional): Use this random seed in the gridsearch. If None (the default), a random seed will not
             be set.
+        precision_dtype (Type[np.number], optional): The numerical floating-point precision to use within the
+            gridsearch. Increasing this will increase accuracy at the expense of memory overhead. Default is
+            numpy.float32.
 
     Returns:
         ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
