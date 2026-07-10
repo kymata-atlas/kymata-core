@@ -1,6 +1,7 @@
-from argparse import ArgumentParser
 from logging import basicConfig, INFO
 from pathlib import Path
+
+from cyclopts import App
 
 from kymata.entities.rudimentary import get_coerce
 from kymata.io.config import load_config, get_root_dir
@@ -8,9 +9,24 @@ from kymata.io.logging import log_message, date_format
 from kymata.preproc.data_cleansing import create_trialwise_data
 
 
-def main(config_filename: str):
+_app = App()
+
+
+@_app.default
+def main(
+        config: str = "dataset4.yaml",
+        check_drift: bool = False,
+) -> None:
+    """
+    Create trialwise data
+
+    Args:
+        config:
+        check_drift (bool): Whether to check the config drift against the stimulus
+
+    """
     config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
+        str(Path(Path(__file__).parent.parent, "dataset_config", config))
     )
 
     create_trialwise_data(
@@ -22,7 +38,7 @@ def main(config_filename: str):
         stimulus_length=config["stimulus_length"],
         number_of_runs=config["number_of_runs"],
         latency_range=config["latency_range"],
-        check_drift_with_audio_stim=config["audio_stimulus_file"] if args.check_drift else None,
+        check_drift_with_audio_stim=config["audio_stimulus_file"] if check_drift else None,
         reference_drift=get_coerce(config, key="audio_delivery_drift_correction", coerce=float, default=None),
         reference_delay=get_coerce(config, key="audio_delivery_latency", coerce=float, default=None),
     )
@@ -30,8 +46,4 @@ def main(config_filename: str):
 
 if __name__ == "__main__":
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
-    parser = ArgumentParser(description="Create Trialwise Data")
-    parser.add_argument("--config", type=str, default="dataset4.yaml")
-    parser.add_argument("--check-drift", action="store_true")
-    args = parser.parse_args()
-    main(config_filename=args.config)
+    _app()
