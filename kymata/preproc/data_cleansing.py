@@ -5,7 +5,6 @@ from typing import Optional
 from colorama import Fore, Style
 import mne
 import numpy as np
-from mne import Epochs
 from numpy.typing import NDArray
 from pandas import DataFrame, Index
 from pathlib import Path
