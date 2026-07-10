@@ -714,17 +714,16 @@ def create_trialwise_data(
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
         # Extract trial instances ('epochs')
-        _tmin = latency_range[0]
-        _tmax = (
+        tmin = latency_range[0]
+        tmax = (
             stimulus_length
             # extra padding at the end to accommodate range of latencies
             + latency_range[1]
             # Extra space to account for audio latency drift
             + 2
         )
-
         epochs = mne.Epochs(raw, repetition_events, event_id=None,
-                            tmin=_tmin, tmax=_tmax, baseline=(None, None), preload=True,
+                            tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
                             picks=picks)
         _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
