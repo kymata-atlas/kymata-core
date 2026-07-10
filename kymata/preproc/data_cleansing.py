@@ -738,16 +738,13 @@ def create_trialwise_data(
 
         # check_audio_drift_and_delay
         if check_drift_with_audio_stim is not None:
-            check_drift_with_audio_stim = Path(
-                data_root_dir,
-                dataset_directory_name,
-                check_drift_with_audio_stim)
+            check_drift_with_audio_stim = Path(data_root_dir, dataset_directory_name, check_drift_with_audio_stim)
             _logger.info(f"Checking drift versus stimulus {check_drift_with_audio_stim!s}")
 
             assert reference_drift is not None, "reference drift required"
             assert reference_delay is not None, "reference delay required"
 
-            # Load stimulus
+            _logger.info(f"Loading stimulus file from {check_drift_with_audio_stim.name}")
             if check_drift_with_audio_stim.suffix == ".wav":
                 stimulus, stim_sr = load_wav_as_floats(check_drift_with_audio_stim, mix_to_mono=True)
             else:

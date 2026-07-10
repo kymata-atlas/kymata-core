@@ -25,9 +25,7 @@ def main(
         check_drift (bool): Whether to check the config drift against the stimulus
 
     """
-    config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config))
-    )
+    config = load_config(Path(__file__).parent.parent / "dataset_config" / config)
 
     create_trialwise_data(
         data_root_dir=get_root_dir(config),
