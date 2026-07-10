@@ -797,6 +797,7 @@ def create_trialwise_data(
 
             # Apply delay_diffs to individual repetitions before saving and averaging, so that the config delay can now
             # be used without error. We'll do this by editing the repetition events and recomputing the epochs
+            _logger.info("Applying individualised delays to EMEG data")
             repetition_events = _apply_delays(repetition_events, data_sr=data_sample_rate, delays=diffs_df["Delay difference"].tolist())
             epochs = mne.Epochs(raw, repetition_events, event_id=None,
                                 tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
