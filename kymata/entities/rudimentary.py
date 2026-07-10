@@ -21,6 +21,9 @@ def get_coerce(
 ) -> T_default | T_coerce:
     """
     Return `coerce(d[key])` if `key` exists, otherwise `default`.
+
+    This solves a problem were I want to do `float(d.get(key, None))` but I can't coerce the default. Now I can instead
+    do `get_coerce(d, key, float, None)`.
     """
     if key in d:
         return coerce(d[key])
