@@ -15,17 +15,16 @@ _app = App()
 @_app.default
 def main(
         config: str = "dataset4.yaml",
-        check_drift: bool = False,
 ) -> None:
     """
     Create trialwise data
 
     Args:
         config:
-        check_drift (bool): Whether to check the config drift against the stimulus
 
     """
     config = load_config(Path(__file__).parent.parent / "dataset_config" / config)
+    check_drift = config.get("check_drift_and_delay", False)
 
     create_trialwise_data(
         data_root_dir=get_root_dir(config),

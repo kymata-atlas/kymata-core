@@ -52,6 +52,7 @@ remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
+check_drift_and_delay: True
 
 # Inverse operator
 eeg: True
