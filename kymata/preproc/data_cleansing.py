@@ -699,7 +699,7 @@ def create_trialwise_data(
         ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
         # Denote picks
-        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
+        include = ['MISC006']  # MISC006, trigger channels etc, if needed
         picks: NDArray = mne.pick_types(
             raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
         )
@@ -739,7 +739,7 @@ def create_trialwise_data(
 
         # check_audio_drift_and_delay
         for i in range(len(repetition_events)):
-            xxx = check_audio_drift_and_delay()
+            xxx = check_audio_drift_and_delay(epochs[str(i)], "MISCO6", config_delay, config_drift)
             printout xxx
             save txt in xxx.
 
@@ -855,11 +855,11 @@ def _plot_bad_chans(auto_scores):
     # vmin=nanmin(limits) with vmax=nanmax(limits) to print flat channels
 
 
-def check_audio_drift_and_delay(epoch, audiochannel, config_delay, config_drift):
+def check_audio_drift_and_delay(epoch, audiochannel:string, config_delay, config_drift):
     # doc
 
-    xxx = extract audiochannel
+    xxx = extract audiochannel(audiochannel)
 
-    xxx = fit_drift_delay(xxx)
+    xxx = fit_drift_delay(xxx, x, x, x, x, x, x, x)
 
     return xxx
