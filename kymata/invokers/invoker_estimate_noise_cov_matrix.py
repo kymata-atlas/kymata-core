@@ -21,9 +21,7 @@ def main(
     Args:
         config (str): Name of the config .yaml file to use. 
     """
-    config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config))
-    )
+    config = load_config(Path(__file__).parent.parent / "dataset_config" / config)
 
     estimate_noise_cov(
         data_root_dir=get_root_dir(config),

@@ -22,7 +22,7 @@ def main(
     Args:
         config (str): Path to the appropriate dataset config .yaml file
     """
-    config = load_config(str(Path(Path(__file__).parent.parent, "dataset_config", config)))
+    config = load_config(Path(__file__).parent.parent / "dataset_config" / config)
 
     data_root_dir = get_root_dir(config)
 
