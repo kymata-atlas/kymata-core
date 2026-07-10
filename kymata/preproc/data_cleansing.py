@@ -709,7 +709,6 @@ def create_trialwise_data(
         picks = np.array(mne.pick_types(raw.info, meg=True,  eeg=True,  stim=False, exclude="bads",
                                         # add in trigger channels etc, if needed
                                         include=[]))
-        picks_audio_misc = np.array(mne.pick_types(raw.info, include=[CHANNEL_AUDIO_MISC_RECORDING]))
         _logger.info(f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}")
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
@@ -727,9 +726,6 @@ def create_trialwise_data(
         epochs = mne.Epochs(raw, repetition_events, event_id=None,
                             tmin=_tmin, tmax=_tmax, baseline=(None, None), preload=True,
                             picks=picks)
-        epochs_misc = mne.Epochs(raw, repetition_events, event_id=None,
-                                 tmin=_tmin, tmax=_tmax, baseline=(None, None), preload=True,
-                                 picks=picks_audio_misc)
         _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
         # Log which channels are worst
@@ -744,6 +740,10 @@ def create_trialwise_data(
             assert reference_drift is not None, "reference drift required"
             assert reference_delay is not None, "reference delay required"
 
+            picks_audio_misc = np.array(mne.pick_types(raw.info, include=[CHANNEL_AUDIO_MISC_RECORDING]))
+            epochs_misc = mne.Epochs(raw, repetition_events, event_id=None, baseline=(None, None), preload=True,
+                                     tmin=0, tmax=stimulus_length, picks=picks_audio_misc)
+
             _logger.info(f"Loading stimulus file from {check_drift_with_audio_stim.name}")
             if check_drift_with_audio_stim.suffix == ".wav":
                 stimulus, stim_sr = load_wav_as_floats(check_drift_with_audio_stim, mix_to_mono=True)
@@ -753,7 +753,7 @@ def create_trialwise_data(
             difference_vals = []
             for i in range(len(repetition_events)):
     
-                audio_chan_recording: NDArray = _extract_audio_chan(epochs_misc[str(i)], CHANNEL_AUDIO_MISC_RECORDING)
+                audio_chan_recording: NDArray = epochs_misc[str(i)].get_data().squeeze()
     
                 drift_diff, delay_diff = fit_drift_delay(
                     stim_actual=stimulus,
@@ -882,7 +882,3 @@ def _plot_bad_chans(auto_scores):
 
     # Replace the word “noisy” with “flat”, and replace
     # vmin=nanmin(limits) with vmax=nanmax(limits) to print flat channels
-
-
-def _extract_audio_chan(epoch, audio_chan):
-    return epoch[audio_chan]
