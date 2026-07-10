@@ -1,14 +1,28 @@
 from logging import basicConfig, INFO
 from pathlib import Path
 
+from cyclopts import App
+
 from kymata.io.config import load_config, get_root_dir
 from kymata.io.logging import log_message, date_format
 from kymata.preproc.data_cleansing import estimate_noise_cov
 
 
-def main(config_filename: str):
+_app = App()
+
+
+@_app.default
+def main(
+        config: str = "dataset4.yaml",
+):
+    """
+    Create Trialwise Data
+    
+    Args:
+        config (str): Name of the config .yaml file to use. 
+    """
     config = load_config(
-        str(Path(Path(__file__).parent.parent, "dataset_config", config_filename))
+        str(Path(Path(__file__).parent.parent, "dataset_config", config))
     )
 
     estimate_noise_cov(
@@ -24,11 +38,5 @@ def main(config_filename: str):
 
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
-
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
-
-    parser = ArgumentParser(description="Create Trialwise Data")
-    parser.add_argument("--config", type=str, default="dataset4.yaml")
-    args = parser.parse_args()
-    main(config_filename=args.config)
+    _app()
