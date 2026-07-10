@@ -10,10 +10,10 @@ def fit_drift_delay(
         stim_misc_recording: NDArray,
         stim_sr: float,
         misc_sr: float,
-        reference_drift: float = 0,
-        reference_delay: float = 0,
-        drift_range: float = 0.001,
-        delay_range: float = 0.01,
+        reference_drift: float = 0,   # seconds per second
+        reference_delay: float = 0,   # seconds
+        drift_range: float = 0.0001,  # seconds per second
+        delay_range: float = 0.01,    # seconds
         grid_n: int = 101,
 ) -> tuple[float, float]:
     """
@@ -27,7 +27,7 @@ def fit_drift_delay(
         misc_sr (float): sample rate of the misc channel (Hz)
         reference_drift (reference): a reference drift (s/s), usually taken from the config file
         reference_delay (reference): a reference delay (s), usually taken from the config file
-        drift_range (float): allowed values of actual drift are reference ± drift_range (seconds).
+        drift_range (float): allowed values of actual drift are reference ± drift_range (seconds per second).
         delay_range (float): allowed values of actual delay are reference ± delay_range (seconds).
         grid_n (int): Number of gridpoints to use in search.
 
