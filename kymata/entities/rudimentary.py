@@ -20,4 +20,7 @@ def get_coerce(
         default: T_default,
 ) -> T_default | T_coerce:
     """Return ``coerce(d[key])`` if ``key`` exists, otherwise ``default``."""
-    return default if key not in d else coerce(d[key])
+    if key in d:
+        return coerce(d[key])
+    else:
+        return default
