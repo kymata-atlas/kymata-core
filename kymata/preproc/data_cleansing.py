@@ -15,6 +15,7 @@ import numpy as np
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
 from kymata.io.file import PathType
+from kymata.preproc.sensor import fit_drift_delay
 
 _logger = getLogger(__name__)
 
@@ -736,6 +737,12 @@ def create_trialwise_data(
         dropfig = epochs.plot_drop_log(subject=p)
         dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
 
+        # check_audio_drift_and_delay
+        for i in range(len(repetition_events)):
+            xxx = check_audio_drift_and_delay()
+            printout xxx
+            save txt in xxx.
+
         # Save individual repetitions
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
@@ -846,3 +853,13 @@ def _plot_bad_chans(auto_scores):
 
     # Replace the word “noisy” with “flat”, and replace
     # vmin=nanmin(limits) with vmax=nanmax(limits) to print flat channels
+
+
+def check_audio_drift_and_delay(epoch, audiochannel, config_delay, config_drift):
+    # doc
+
+    xxx = extract audiochannel
+
+    xxx = fit_drift_delay(xxx)
+
+    return xxx
