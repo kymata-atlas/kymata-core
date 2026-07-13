@@ -30,7 +30,9 @@ def load_single_emeg(
     old_morph: forces loading of mne morph map
     """
     if not emeg_path.suffix == ".fif":
-        raise FileFormatError(f"Only .fif files supported: {emeg_path.name}")
+        emeg = np.load(emeg_path.with_suffix(".npy"))
+        ch_names = np.load(Path(emeg_path.parent, "ch_names.npy"), allow_pickle=True)
+        return emeg, ch_names
 
     if inverse_operator_path is None:
         ch_names_path = Path(emeg_path.parent, "ch_names.npy")

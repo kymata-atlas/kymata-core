@@ -108,12 +108,13 @@ def run_first_pass_cleansing_and_maxwell_filtering(
 
                 raw_fif_data.info["bads"] = recording_config["bad_channels"]
 
-                response = input_with_color(
-                    "Would you like to see the raw data? Recommended if you want to confirm"
-                    + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
-                    + " (y/n)",
-                    Fore.MAGENTA,
-                )
+                # response = input_with_color(
+                #     "Would you like to see the raw data? Recommended if you want to confirm"
+                #     + " ECG, HEOG, VEOG are correct, and to mark further EEG bads (they will be saved directly) "
+                #     + " (y/n)",
+                #     Fore.MAGENTA,
+                # )
+                response = "n"
                 if response == "y":
                     print("...Plotting Raw data.")
                     mne.viz.plot_raw(raw_fif_data, scalings="auto", block=True)
@@ -255,10 +256,11 @@ def run_second_pass_cleansing_and_eog_removal(
                 )
 
                 if not supress_excessive_plots_and_prompts:
-                    response = input_with_color(
-                        "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
-                        Fore.MAGENTA,
-                    )
+                    # response = input_with_color(
+                    #     "Would you like to see the SSS, movement compensated, raw data data? (y/n)",
+                    #     Fore.MAGENTA,
+                    # )
+                    response = "n"
                     if response == "y":
                         print("...Plotting Raw data.")
                         mne.viz.plot_raw(raw_fif_data_sss_movecomp_tr, block=True)
@@ -710,19 +712,35 @@ def create_trialwise_data(
             f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
         )
 
-        # Extract trial instances ('epochs')
+        stimulus_length += stimulus_length * 0.0005404
+
+        epoch_data = []
+        _tmin = latency_range[0]
+        for i in range(len(repetition_events) - 1):
+            _tmax = (
+                stimulus_length
+                + latency_range[0]
+            )
+            epochs = mne.Epochs(
+                raw,
+                repetition_events[i].reshape(1, 3),
+                None,
+                _tmin,
+                _tmax,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
+            epoch_data.append(epochs.get_data()[0])
         _tmin = latency_range[0]
         _tmax = (
             stimulus_length
-            # extra padding at the end to accommodate range of latencies
             + latency_range[1]
-            # Extra space to account for audio latency drift
             + 2
         )
-
         epochs = mne.Epochs(
             raw,
-            repetition_events,
+            repetition_events[-1].reshape(1, 3),
             None,
             _tmin,
             _tmax,
@@ -730,27 +748,16 @@ def create_trialwise_data(
             baseline=(None, None),
             preload=True,
         )
+        epoch_data.append(epochs.get_data()[0])
+
         _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
         # Log which channels are worst
         dropfig = epochs.plot_drop_log(subject=p)
         dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
 
-        # Save individual repetitions
-        for i in range(len(repetition_events)):
-            evoked = epochs[str(i)].average()
-            _logger.info(
-                f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-            )
-            evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
-
-        # Average over repetitions
-        evoked = epochs.average()
-        _logger.info(
-            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-        )
-
-        evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
+        np.save(Path(evoked_path, f"{p}-ave.npy"), np.concatenate(epoch_data, axis=1))
+        np.save(Path(evoked_path, "ch_names.npy"), epochs.ch_names)
 
 
 def apply_automatic_bad_channel_detection(
