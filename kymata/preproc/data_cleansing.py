@@ -670,7 +670,10 @@ def create_trialwise_data(
     )
     trialwise_sensorspace_dir.mkdir(exist_ok=True)
 
-    evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
+    if check_drift_with_audio_stim is None:
+        evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
+    else:
+        evoked_path = Path(trialwise_sensorspace_dir, "evoked_data_with_delay_correction")
     evoked_path.mkdir(exist_ok=True)
 
     logs_path = Path(trialwise_sensorspace_dir, "logs")
@@ -781,7 +784,7 @@ def create_trialwise_data(
             # If they are, this is treated as a serious problem. Either all the diffs are nonzero and identical, in
             # which case the config is wrong (for this participant); or they are not all the same and we don't yet have
             # a way to apply individualised stretches to the emeg data before averaging.
-            if (diffs_df["Drift difference"].abs() > 1e-7).any():
+            if (diffs_df["Drift difference"].abs() > 5e-3 * stimulus_length).any(): # I'm changing this to be consistent with the latency interval
                 raise RuntimeError(f"The differences on some drifts for participant {p} were too large. "
                                    f"Does the drift value in the config need changing? "
                                    f"Check the output in {diffs_path.name} to ensure constant drifts repetitions.")
@@ -789,7 +792,7 @@ def create_trialwise_data(
             # Check if individualised delays are approximately symmetric about zero.
             # If they are, this is treated as a serious problem. A systematic bias in delays could mean the config may
             # be set wrong.
-            if abs(diffs_df["Delay difference"].mean()) > 1e-3:  # Note: I am not sure this is the best tolerance to use; perhaps use 2e-3 or something to allow for some variance without erroring
+            if abs(diffs_df["Delay difference"].mean()) > 5e-3:  # I'm changing this to be consistent with the latency interval
                 raise RuntimeError(f"There seems to be a systematic error in the delays for participant {p}. "
                                    f"Does the delay value in the config need changing? "
                                    f"Check the output in {diffs_path.name}.")
@@ -817,7 +820,7 @@ def create_trialwise_data(
 
 def _apply_delays(events: NDArray, data_sr: float, delays: list[float]) -> NDArray:
     sample_shifts = np.round(np.array(delays) * data_sr).astype(int)  # seconds * samples-per-second
-    events[:, 0] += sample_shifts  # TODO: I'm I doing this in the right direction?!
+    events[:, 0] += sample_shifts
     return events
 
 

@@ -12,7 +12,7 @@ def fit_drift_delay(
         misc_sr: float,
         reference_drift: float = 0,   # seconds per second
         reference_delay: float = 0,   # seconds
-        drift_range: float = 0.0001,  # seconds per second
+        drift_range: float = 0.00001,  # seconds per second
         delay_range: float = 0.01,    # seconds
         grid_n: int = 101,
 ) -> tuple[float, float]:
@@ -89,13 +89,12 @@ def _hilbert_envolope(signal: NDArray) -> NDArray:
     return np.abs(hilbert(np.asarray(signal, dtype=float)))
 
 
-# TODO: Am I doing this in the right direction to fit with how it's done inside the gridsearch?
 def _stretch_signal(signal: NDArray, sample_rate: float, stretch: float, delay: float) -> NDArray:
     signal = np.asarray(signal, dtype=float)
     n_samples = len(signal)
 
     time_axis = np.arange(n_samples) / sample_rate
-    time_axis_stretched = (time_axis - delay) / stretch
+    time_axis_stretched = time_axis / stretch - delay
 
     interpolator = interp1d(time_axis, signal, kind="linear", bounds_error=False, fill_value=0.0, assume_sorted=True)
 
