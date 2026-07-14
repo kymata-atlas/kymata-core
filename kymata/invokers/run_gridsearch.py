@@ -2,9 +2,9 @@ from logging import getLogger, basicConfig, INFO
 from pathlib import Path
 import time
 from sys import stdout
-from typing import Optional, Literal
+from typing import Optional, Literal, Annotated
 
-from cyclopts import App
+from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -38,7 +38,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
 def main(
         config: str,
         # Transforms
-        transform_name: list[str],
+        transform_name: Annotated[list[str], Parameter(consume_multiple=True)],
         input_stream: Literal["auditory", "visual", "tactile"],
         transform_path: str = "predicted_function_contours/GMSloudness/stimulisig",
         transform_sample_rate: float = 1000,

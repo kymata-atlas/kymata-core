@@ -792,7 +792,7 @@ def create_trialwise_data(
             # Check if individualised delays are approximately symmetric about zero.
             # If they are, this is treated as a serious problem. A systematic bias in delays could mean the config may
             # be set wrong.
-            if abs(diffs_df["Delay difference"].mean()) > reference_delay:  # I'm using a relatively large threshold here because it will be correctly anyway
+            if abs(diffs_df["Delay difference"].mean()) > reference_delay:  # I'm using a relatively large threshold here because it will be corrected anyway
                 raise RuntimeError(f"There seems to be a systematic error in the delays for participant {p}. "
                                    f"Does the delay value in the config need changing? "
                                    f"Check the output in {diffs_path.name}.")

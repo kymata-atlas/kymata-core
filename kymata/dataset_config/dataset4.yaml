@@ -8,15 +8,15 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 participants: [
-                # 'pilot_01',       # 2 runs
+                'pilot_01',       # 2 runs
                 'pilot_02',
                 'participant_01',
                 'participant_01b',
                 'participant_02',
                 'participant_03',
-                # 'participant_04', # 6 repetitions
+                'participant_04', # 6 repetitions
                 'participant_05',
-                # 'participant_07', # 3 runs
+                'participant_07', # 3 runs
                 'participant_08',
                 'participant_09',
                 'participant_10',
@@ -38,7 +38,7 @@ mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
 
 # Seed (if needed)
-random_seed_gridsearch: None
+random_seed_gridsearch: 17
 
 # Preprocessing pipeline
 meg_manufacturer: 'MEGIN'
