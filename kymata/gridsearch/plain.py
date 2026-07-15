@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 from scipy import stats
 
 from kymata.entities.transform import Transform
@@ -203,10 +203,12 @@ def do_gridsearch(
     )
     for der_i, derangement in enumerate(derangements):
         deranged_emeg = emeg_reshaped[:, derangement, :]
-        corrs[:, der_i] = (
-            np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
-            / emeg_stds[:, derangement]
-        )
+        # We should not be getting divide by zero errors here, so if we do we want to know about it
+        with np.errstate(divide="raise"):
+            corrs[:, der_i] = (
+                np.fft.irfft(deranged_emeg * F_trans)[:, :, :n_trans_samples_per_split]
+                / emeg_stds[:, derangement]
+            )
 
     del deranged_emeg, emeg_reshaped
 
@@ -236,16 +238,14 @@ def do_gridsearch(
         del F_trans
 
         plot_top_five_channels_of_gridsearch(
-            corrs=corrs,
-            auto_corrs=auto_corrs,
-            transform=transform,
-            n_reps=n_reps,
-            n_splits=n_splits,
-            n_samples_per_split=n_samples_per_split,
             latencies=latencies_ms,
-            save_to=None,
-            log_pvalues=log_pvalues,
+            corrs=corrs,
+            transform=transform,
+            auto_corr=auto_corrs,
+            save_to=plot_location,
+            logp_values=log_pvalues,
             overwrite=overwrite,
+            error_band_scaling_factor=0.1,  # @neukym: For visualisation only
         )
 
     if channel_space == "sensor":
@@ -272,7 +272,7 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> NDArray:
     """
     Perform a vectorized Welch's t-test on correlation matrices.
 
@@ -295,7 +295,7 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
 
     Returns:
     --------
-    ArrayLike
+    NDArray
         A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
         of the t-tests for each channel and time step.
 
