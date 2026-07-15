@@ -6,14 +6,14 @@ from scipy.signal import hilbert, resample
 
 
 def fit_drift_delay(
-        stimulus: NDArray,
-        misc: NDArray,
-        stimulus_sr: float,
+        stim_actual: NDArray,
+        stim_misc_recording: NDArray,
+        stim_sr: float,
         misc_sr: float,
-        reference_drift: float = 0,
-        reference_delay: float = 0,
-        drift_range: float = 0.001,
-        delay_range: float = 0.01,
+        reference_drift: float = 0,   # seconds per second
+        reference_delay: float = 0,   # seconds
+        drift_range: float = 0.00001,  # seconds per second
+        delay_range: float = 0.01,    # seconds
         grid_n: int = 101,
 ) -> tuple[float, float]:
     """
@@ -21,13 +21,13 @@ def fit_drift_delay(
     delay and drift of the EMEG recording.
 
     Args:
-        stimulus (NDArray): a (samples,)-sized array of the actual stimulus
-        misc (NDArray): a (samples,)-sized array of the misc channel
-        stimulus_sr (float): sample rate of the stimulus (Hz)
+        stim_actual (NDArray): a (samples,)-sized array of the actual stimulus
+        stim_misc_recording (NDArray): a (samples,)-sized array of the misc channel recording the stimulus presentation
+        stim_sr (float): sample rate of the stimulus (Hz)
         misc_sr (float): sample rate of the misc channel (Hz)
         reference_drift (reference): a reference drift (s/s), usually taken from the config file
         reference_delay (reference): a reference delay (s), usually taken from the config file
-        drift_range (float): allowed values of actual drift are reference ± drift_range (seconds).
+        drift_range (float): allowed values of actual drift are reference ± drift_range (seconds per second).
         delay_range (float): allowed values of actual delay are reference ± delay_range (seconds).
         grid_n (int): Number of gridpoints to use in search.
 
@@ -37,23 +37,23 @@ def fit_drift_delay(
             [1]: The actual delay, relative to the reference (actual - reference).
     """
 
-    stimulus_envelope = _hilbert_envolope(stimulus)
-    misc_envelope = _hilbert_envolope(misc)
+    actual_envelope = _hilbert_envolope(stim_actual)
+    recorded_envelope = _hilbert_envolope(stim_misc_recording)
 
     # Remove DC and normalise
-    stimulus_envelope -= stimulus_envelope.mean()
-    misc_envelope -= misc_envelope.mean()
+    actual_envelope -= actual_envelope.mean()
+    recorded_envelope -= recorded_envelope.mean()
     with np.errstate(divide="raise"):
-        stimulus_envelope /= norm(stimulus_envelope)
-        misc_envelope /= norm(misc_envelope)
+        actual_envelope /= norm(actual_envelope)
+        recorded_envelope /= norm(recorded_envelope)
 
     # Resample to same sample rate
-    if misc_sr > stimulus_sr:
-        raise ValueError(f"Highly unexpected for misc sample rate ({misc_sr}) to be higher than stimulus sample rate ({stimulus_sr})")
-    if misc_sr < stimulus_sr:
-        resampled_n = round(len(stimulus_envelope) * misc_sr / stimulus_sr)
-        stimulus_envelope = resample(stimulus_envelope, resampled_n)
-        stimulus_sr = misc_sr
+    if misc_sr > stim_sr:
+        raise ValueError(f"Highly unexpected for misc recording sample rate ({misc_sr}) to be higher than actual stimulus sample rate ({stim_sr})")
+    if misc_sr < stim_sr:
+        resampled_n = round(len(actual_envelope) * misc_sr / stim_sr)
+        actual_envelope = resample(actual_envelope, resampled_n)
+        stim_sr = misc_sr
 
     candidate_drifts = np.linspace(start=reference_drift - drift_range, stop=reference_drift + drift_range, num=grid_n)
     candidate_delays = np.linspace(start=reference_delay - delay_range, stop=reference_delay + delay_range, num=grid_n)
@@ -65,13 +65,13 @@ def fit_drift_delay(
     for drift in candidate_drifts:
         for delay in candidate_delays:
 
-            stretched_stimulus_envelope = _stretch_signal(stimulus_envelope, sample_rate=stimulus_sr, stretch=1 + drift, delay=delay)
+            stretched_stimulus_envelope = _stretch_signal(actual_envelope, sample_rate=stim_sr, stretch=1 + drift, delay=delay)
 
             # Score is correlation in overlapping region
-            overlap_length = min(len(stretched_stimulus_envelope), len(misc_envelope))
+            overlap_length = min(len(stretched_stimulus_envelope), len(recorded_envelope))
             score = np.corrcoef(
                 stretched_stimulus_envelope[:overlap_length],
-                misc_envelope[:overlap_length],
+                recorded_envelope[:overlap_length],
             )[0][1]
 
             if score > best_score:
@@ -94,7 +94,7 @@ def _stretch_signal(signal: NDArray, sample_rate: float, stretch: float, delay: 
     n_samples = len(signal)
 
     time_axis = np.arange(n_samples) / sample_rate
-    time_axis_stretched = (time_axis - delay) / stretch
+    time_axis_stretched = time_axis / stretch - delay
 
     interpolator = interp1d(time_axis, signal, kind="linear", bounds_error=False, fill_value=0.0, assume_sorted=True)
 
