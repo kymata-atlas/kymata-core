@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 from scipy import stats
 
 from kymata.entities.transform import Transform
 from kymata.math.combinatorics import generate_derangement
 from kymata.io.layouts import SensorLayout
-from kymata.math.vector import normalize, get_stds
+from kymata.math.vector import normalize, window_stds_unnorm
 from kymata.entities.expression import ExpressionSet, SensorExpressionSet, HexelExpressionSet
 from kymata.math.probability import LOGP_BASE, p_to_logp
 from kymata.plot.gridsearch import plot_top_five_channels_of_gridsearch
@@ -35,6 +35,7 @@ def do_gridsearch(
     n_reps: int = 1,
     plot_top_five_channels: bool = False,
     overwrite: bool = True,
+    seed: int | None = None,
 ) -> ExpressionSet:
     """
     Perform a grid search over all hexels for all latencies using EMEG data and a given transform.
@@ -67,6 +68,8 @@ def do_gridsearch(
         plot_top_five_channels (bool, optional): Plots the p-values and correlation values of the top
             five channels in the gridsearch. Default is False.
         overwrite (bool, optional): Whether to overwrite existing plot files. Default is True.
+        seed: (int, optional): Use this random seed in the gridsearch. If None (the default), a random seed will not
+            be set.
 
     Returns:
         ExpressionSet: An ExpressionSet object (either SensorExpressionSet or HexelExpressionSet)
@@ -82,7 +85,8 @@ def do_gridsearch(
 
     # Set random seed to keep derangement orderings
     # deterministic between runs
-    np.random.seed(17)
+    if seed is not None:
+        np.random.seed(seed)
 
     channel_space = channel_space.lower()
     if channel_space not in {"sensor", "source"}:
@@ -170,7 +174,7 @@ def do_gridsearch(
 
     # Fast cross-correlation using FFT
     normalize(emeg_reshaped, inplace=True)
-    emeg_stds = get_stds(emeg_reshaped, n_trans_samples_per_split)
+    emeg_stds = window_stds_unnorm(emeg_reshaped, n_trans_samples_per_split)
     emeg_reshaped = np.fft.rfft(emeg_reshaped, n=n_samples_per_split, axis=-1)
     F_trans = np.conj(np.fft.rfft(trans, n=n_samples_per_split, axis=-1))
     if n_reps > 1:
@@ -213,16 +217,14 @@ def do_gridsearch(
         del F_trans
 
         plot_top_five_channels_of_gridsearch(
-            corrs=corrs,
-            auto_corrs=auto_corrs,
-            transform=transform,
-            n_reps=n_reps,
-            n_splits=n_splits,
-            n_samples_per_split=n_samples_per_split,
             latencies=latencies_ms,
+            corrs=corrs,
+            transform=transform,
+            auto_corr=auto_corrs,
             save_to=plot_location,
-            log_pvalues=log_pvalues,
+            logp_values=log_pvalues,
             overwrite=overwrite,
+            error_band_scaling_factor=0.1,  # @neukym: For visualisation only
         )
 
     if channel_space == "sensor":
@@ -249,7 +251,7 @@ def do_gridsearch(
     return es
 
 
-def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
+def _ttest(corrs: NDArray, use_all_lats: bool = True) -> NDArray:
     """
     Perform a vectorized Welch's t-test on correlation matrices.
 
@@ -272,7 +274,7 @@ def _ttest(corrs: NDArray, use_all_lats: bool = True) -> ArrayLike:
 
     Returns:
     --------
-    ArrayLike
+    NDArray
         A 2D array of log p-values with shape (n_channels, t_steps), representing the log p-values
         of the t-tests for each channel and time step.
 

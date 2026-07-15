@@ -8,15 +8,15 @@ mri_structurals_directory: "raw_mri_structurals"
 
 # General information related to the dataset
 participants: [
-                'pilot_01',
+                'pilot_01',       # 2 runs
                 'pilot_02',
                 'participant_01',
                 'participant_01b',
                 'participant_02',
                 'participant_03',
-                'participant_04',
+                'participant_04', # 6 repetitions
                 'participant_05',
-                'participant_07',
+                'participant_07', # 3 runs
                 'participant_08',
                 'participant_09',
                 'participant_10',
@@ -32,9 +32,13 @@ participants: [
               ]
 number_of_runs: 4                    # number of runs
 repetitions_per_runs: 2              # number of repetitions per run
+audio_stimulus_file: "stimuli/audio/stimulus.wav"
 stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
+
+# Seed (if needed)
+random_seed_gridsearch: 17
 
 # Preprocessing pipeline
 meg_manufacturer: 'MEGIN'
@@ -48,6 +52,7 @@ remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
+check_drift_and_delay: True
 
 # Inverse operator
 eeg: True
@@ -60,10 +65,10 @@ duration:   1                      # in seconds for the duration of the empty ro
 reg_method: 'empirical'            # None | 'auto'
 
 # Creation of evoked trial pipeline
-audio_delivery_latency:   0.026     # the audio stimulus is delayed by this amount in seconds
+audio_delivery_latency:   0.019     # 0.026     # the audio stimulus is delayed by this amount in seconds
 visual_delivery_latency:  0.017     # the visual stimulus is delayed by this amount in seconds
 tactile_delivery_latency: null      # the tactile stimulus is delayed by this amount in seconds
-audio_delivery_drift_correction:   0.0005404  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
+audio_delivery_drift_correction:   0.0005388  # 0.0005404  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
 visual_delivery_drift_correction:  0.0004937  # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
 tactile_delivery_drift_correction: null       # drift - in seconds per second (minus number means stimulus is shorter than it should be relative to the acquisition computer)
 latency_range: [ -0.2 , 0.8 ]  # range of latencies to check, in seconds
