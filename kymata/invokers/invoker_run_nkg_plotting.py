@@ -18,29 +18,82 @@ def main():
 
     if function_family_type == "standard":
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, "combined_TVL_gridsearch.nkg")
+            Path(path_to_nkg_files, 'no_06_11', 'left', "combined_TVL_gridsearch_left.nkg")
+        )
+        expression_data.rename({'IL': 'IL_left',
+                                'IL1': 'IL1_left',
+                                'IL2': 'IL2_left',
+                                'IL3': 'IL3_left',
+                                'IL4': 'IL4_left',
+                                'IL5': 'IL5_left',
+                                'IL6': 'IL6_left',
+                                'IL7': 'IL7_left',
+                                'IL8': 'IL8_left',
+                                'IL9': 'IL9_left',
+                                'STL': 'STL_left'
+                                })
+        expression_data += load_expression_set(
+            Path(path_to_nkg_files, 'no_06_11', 'right', "combined_TVL_gridsearch_right.nkg")
+        )
+        expression_data.rename({'IL': 'IL_right',
+                                'IL1': 'IL1_right',
+                                'IL2': 'IL2_right',
+                                'IL3': 'IL3_right',
+                                'IL4': 'IL4_right',
+                                'IL5': 'IL5_right',
+                                'IL6': 'IL6_right',
+                                'IL7': 'IL7_right',
+                                'IL8': 'IL8_right',
+                                'IL9': 'IL9_right',
+                                'STL': 'STL_right'
+                                })
+        expression_data += load_expression_set(
+            Path(path_to_nkg_files, 'no_06_11', 'added', "combined_TVL_gridsearch_added.nkg")
         )
 
         fig = expression_plot(
             expression_data,
             color={
-                "IL": "#b11e34",
-                "IL1": "#a201e9",
-                "IL2": "#a201e9",
-                "IL3": "#a201e9",
-                "IL4": "#a201e9",
-                "IL5": "#a201e9",
-                "IL6": "#a201e9",
-                "IL7": "#a201e9",
-                "IL8": "#a201e9",
-                "IL9": "#a201e9",
-                "STL": "#d388b5",
+                "IL_left": "#b11e34",
+                "IL1_left": "#b11e34",
+                "IL2_left": "#b11e34",
+                "IL3_left": "#b11e34",
+                "IL4_left": "#b11e34",
+                "IL5_left": "#b11e34",
+                "IL6_left": "#b11e34",
+                "IL7_left": "#b11e34",
+                "IL8_left": "#b11e34",
+                "IL9_left": "#b11e34",
+                "STL_left": "#b11e34",
+                "IL_right": "#1e6fb1",
+                "IL1_right": "#1e6fb1",
+                "IL2_right": "#1e6fb1",
+                "IL3_right": "#1e6fb1",
+                "IL4_right": "#1e6fb1",
+                "IL5_right": "#1e6fb1",
+                "IL6_right": "#1e6fb1",
+                "IL7_right": "#1e6fb1",
+                "IL8_right": "#1e6fb1",
+                "IL9_right": "#1e6fb1",
+                "STL_right": "#1e6fb1",
+                "IL": "#b1a71e",
+                "IL1": "#b1a71e",
+                "IL2": "#b1a71e",
+                "IL3": "#b1a71e",
+                "IL4": "#b1a71e",
+                "IL5": "#b1a71e",
+                "IL6": "#b1a71e",
+                "IL7": "#b1a71e",
+                "IL8": "#b1a71e",
+                "IL9": "#b1a71e",
+                "STL": "#b1a71e",
             },
-            minimap="standard",
-            ylim=-200,
+            use_sensor_layout='CBU',
+            # minimap="standard",
+            # ylim=-200,
         )
 
-        fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
+        fig.savefig(Path(path_to_nkg_files, "expression_plot_left_right_added.png"))
 
     elif function_family_type == "ANN":
         path_to_nkg_files = Path(path_to_nkg_files, "whisper/encoder_all_der_5")
