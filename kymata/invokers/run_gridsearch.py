@@ -153,7 +153,7 @@ def main(
             print("Concatenating repetitions together")
             emeg_filenames = [single_participant_override + r for r in reps[:-1]]
     else:
-        emeg_filenames = [p + "-ave.fif" for p in participants]
+        emeg_filenames = [p + "-ave" for p in participants]
 
     start = time.time()
 

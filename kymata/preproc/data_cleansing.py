@@ -683,6 +683,8 @@ def create_trialwise_data(
 
     print(f"{Fore.GREEN}{Style.BRIGHT}Starting trials and {Style.RESET_ALL}")
 
+    stimulus_length_correct = stimulus_length * (1 + reference_drift)
+
     for p in list_of_participants:
         print(f"{Fore.GREEN}{Style.BRIGHT}...Concatenating trials{Style.RESET_ALL}")
 
@@ -718,55 +720,9 @@ def create_trialwise_data(
 
         print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
-        stimulus_length += stimulus_length * 0.0005404
-
-        epoch_data = []
-        _tmin = latency_range[0]
-        for i in range(len(repetition_events) - 1):
-            _tmax = (
-                stimulus_length
-                + latency_range[0]
-            )
-            epochs = mne.Epochs(
-                raw,
-                repetition_events[i].reshape(1, 3),
-                None,
-                _tmin,
-                _tmax,
-                picks=picks,
-                baseline=(None, None),
-                preload=True,
-            )
-            epoch_data.append(epochs.get_data()[0])
-        _tmin = latency_range[0]
-        _tmax = (
-            stimulus_length
-            + latency_range[1]
-            + 2
-        )
-        epochs = mne.Epochs(
-            raw,
-            repetition_events[-1].reshape(1, 3),
-            None,
-            _tmin,
-            _tmax,
-            picks=picks,
-            baseline=(None, None),
-            preload=True,
-        )
-        epoch_data.append(epochs.get_data()[0])
-
-        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
-
-        # Log which channels are worst
-        dropfig = epochs.plot_drop_log(subject=p)
-        dropfig.savefig(logs_path / f"drop-log_{p}.jpg")
-
         # check_audio_drift_and_delay
         if check_drift_with_audio_stim is not None:
-            check_drift_with_audio_stim = Path(data_root_dir, dataset_directory_name, check_drift_with_audio_stim)
-            _logger.info(f"Checking drift versus stimulus {check_drift_with_audio_stim!s}")
-
+            
             assert reference_drift is not None, "reference drift required"
             assert reference_delay is not None, "reference delay required"
 
@@ -774,14 +730,16 @@ def create_trialwise_data(
             epochs_misc = mne.Epochs(raw, repetition_events, event_id=None, baseline=(None, None), preload=True,
                                      tmin=0, tmax=stimulus_length, picks=picks_audio_misc)
 
-            _logger.info(f"Loading stimulus file from {check_drift_with_audio_stim.name}")
-            if check_drift_with_audio_stim.suffix == ".wav":
-                stimulus, stim_sr = load_wav_as_floats(check_drift_with_audio_stim, mix_to_mono=True)
-            else:
-                raise NotImplementedError()
-
             difference_vals = []
             for i in range(len(repetition_events)):
+
+                check_drift_with_audio_stim_one = Path(data_root_dir, dataset_directory_name, check_drift_with_audio_stim[i])
+                _logger.info(f"Checking drift versus stimulus {check_drift_with_audio_stim_one!s}")
+                _logger.info(f"Loading stimulus file from {check_drift_with_audio_stim_one.name}")
+                if check_drift_with_audio_stim_one.suffix == ".wav":
+                    stimulus, stim_sr = load_wav_as_floats(check_drift_with_audio_stim_one, mix_to_mono=True)
+                else:
+                    raise NotImplementedError()
     
                 audio_chan_recording: NDArray = epochs_misc[str(i)].get_data().squeeze()
     
@@ -796,14 +754,14 @@ def create_trialwise_data(
     
                 difference_vals.append((p, i, drift_diff, delay_diff))
     
-                _logger.info(f"Detected drift for participant {p} repetition {i}/{len(repetition_events)} was {drift_diff} "
+                _logger.info(f"Detected drift for participant {p} run {i}/{len(repetition_events)} was {drift_diff} "
                              f"{describe_higher_lower_than(drift_diff)} the reference value of {reference_drift}")
-                _logger.info(f"Detected delay for participant {p} repetition {i}/{len(repetition_events)} was {delay_diff} "
+                _logger.info(f"Detected delay for participant {p} run {i}/{len(repetition_events)} was {delay_diff} "
                              f"{describe_higher_lower_than(delay_diff)} the reference value of {reference_delay}")
     
             # Save drift and delay vals to csv
             diffs_df = DataFrame.from_records(
-                difference_vals, columns=["Participant", "Repetition", "Drift difference", "Delay difference"]
+                difference_vals, columns=["Participant", "Run", "Drift difference", "Delay difference"]
             )
             diffs_path = logs_path / f"drift_delay_diffs_{p}.csv"
             diffs_df.to_csv(diffs_path, index=False)
@@ -829,10 +787,48 @@ def create_trialwise_data(
             # be used without error. We'll do this by editing the repetition events and recomputing the epochs
             _logger.info("Applying individualised delays to EMEG data")
             repetition_events = _apply_delays(repetition_events, data_sr=data_sample_rate, delays=diffs_df["Delay difference"].tolist())
-            epochs = mne.Epochs(raw, repetition_events, event_id=None,
-                                tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
-                                picks=picks)
 
+        epoch_data = []
+        _tmin = latency_range[0]
+        for i in range(len(repetition_events) - 1):
+            _tmax = (
+                stimulus_length_correct
+                + latency_range[0]
+            )
+            epochs = mne.Epochs(
+                raw,
+                repetition_events[i].reshape(1, 3),
+                None,
+                _tmin,
+                _tmax,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
+            epoch_data.append(epochs.get_data()[0])
+        _tmin = latency_range[0]
+        _tmax = (
+            stimulus_length_correct
+            + latency_range[1]
+            + 2
+        )
+        epochs = mne.Epochs(
+            raw,
+            repetition_events[-1].reshape(1, 3),
+            None,
+            _tmin,
+            _tmax,
+            picks=picks,
+            baseline=(None, None),
+            preload=True,
+        )
+        epoch_data.append(epochs.get_data()[0])
+
+        _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+        # Log which channels are worst
+        dropfig = epochs.plot_drop_log(subject=p)
+        dropfig.savefig(logs_path / f"drop-log_{p}.jpg")
         np.save(Path(evoked_path, f"{p}-ave.npy"), np.concatenate(epoch_data, axis=1))
         np.save(Path(evoked_path, "ch_names.npy"), epochs.ch_names)
 
