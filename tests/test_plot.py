@@ -1,12 +1,15 @@
+# Some tests written with genai
+
 from pathlib import Path
 
 import pytest
+from matplotlib.colors import to_rgba
 from numpy import array, array_equal
 
 from kymata.datasets.sample import delete_dataset
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.io.nkg import load_expression_set
-from kymata.plot.color import gradient_color_dict
+from kymata.plot.color import gradient_color_dict, anchored_gradient_colormap
 from kymata.plot.expression import (
     _get_best_ylim,
     _MAJOR_TICK_SIZE,
@@ -508,3 +511,27 @@ def test_expression_set_plot_with_explicit_colour_for_hidden_transform():
         show_only=["d_IL1"],
         paired_axes=False,
     )
+
+
+def test_anchored_gradient_colormap_anchor_colours():
+    cmap = anchored_gradient_colormap(
+        "test",
+        [0, 1, 2],
+        ["blue", "white", "red"],
+    )
+
+    assert cmap(0.0) == pytest.approx(to_rgba("blue"), abs=1e-2)
+    assert cmap(0.5) == pytest.approx(to_rgba("white"), abs=1e-2)
+    assert cmap(1.0) == pytest.approx(to_rgba("red"), abs=1e-2)
+
+
+def test_anchored_gradient_colormap_uneven_spacing():
+    cmap = anchored_gradient_colormap(
+        "test",
+        [0, 1, 3],
+        ["blue", "white", "red"],
+    )
+
+    # White is at 1/3 of the range, so halfway to red is at 2/3.
+    expected = tuple((w + r) / 2 for w, r in zip(to_rgba("white"), to_rgba("red")))
+    assert cmap(2 / 3) == pytest.approx(expected, abs=1e-2)
