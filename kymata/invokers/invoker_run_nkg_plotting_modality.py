@@ -12,7 +12,7 @@ from matplotlib.colors import LinearSegmentedColormap, to_hex
 
 from kymata.datasets.data_root import data_root_path
 from kymata.io.logging import log_message, date_format
-from kymata.io.nkg import load_expression_set
+from kymata.io.nkg import load_expression_set, save_expression_set
 from kymata.plot.expression import expression_plot, legend_display_dict
 from kymata.plot.color import constant_color_dict, gradient_color_dict, anchored_gradient_colormap
 
@@ -149,7 +149,8 @@ def add_layer_colorbar(
 
 def load_all_expression_data(base_folder):
     expression_data = None
-    # Loop through each subdirectory inside the base folder
+    # Loop through each subdirectory inside the base folder to build file list
+    all_nkgs = []
     for subdir in os.listdir(base_folder):
         subdir_path = os.path.join(base_folder, subdir)
         if os.path.isdir(subdir_path):  # Ensure we are processing directories
@@ -157,13 +158,17 @@ def load_all_expression_data(base_folder):
             nkg_files = [f for f in os.listdir(subdir_path) if f.endswith('.nkg')]
             for nkg_file in nkg_files:
                 file_path = os.path.join(subdir_path, nkg_file)
-                print(f"Loading {file_path}")
-                if expression_data is None:
-                    # Load the first .nkg file
-                    expression_data = load_expression_set(file_path)
-                else:
-                    # Add data from subsequent .nkg files
-                    expression_data += load_expression_set(file_path)
+                all_nkgs.append(file_path)
+    # Load all files
+    all_nkgs = tqdm(all_nkgs)
+    for file_path in all_nkgs:
+        all_nkgs.set_description(f"Loading {file_path}")
+        if expression_data is None:
+            # Load the first .nkg file
+            expression_data = load_expression_set(file_path)
+        else:
+            # Add data from subsequent .nkg files
+            expression_data += load_expression_set(file_path)
     return expression_data
 
 def load_part_of_expression_data(base_folder, pick):
@@ -193,7 +198,8 @@ def main():
 
     # template invoker for printing out expression set .nkgs
 
-    save_loc = data_root_path()
+    save_loc = data_root_path() / "output" / "qwen_english_meg" / "encoder"
+    # save_loc = Path("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/")
 
     if transform_family_type == 'simple':
 
@@ -206,10 +212,15 @@ def main():
 
     elif transform_family_type == 'by_layer':
 
- 
         # expression_data_qwen_encoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression')
         # encoder_name = expression_data_qwen_encoder.transforms
-        expression_data_qwen_encoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/expression')
+        combined_expression_nkg_loc = save_loc / "all_meg_encoder.nkg"
+        if not combined_expression_nkg_loc.exists():
+            expression_data_qwen_encoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/expression')
+            assert expression_data_qwen_encoder is not None
+            save_expression_set(expression_data_qwen_encoder, combined_expression_nkg_loc)
+        else:
+            expression_data_qwen_encoder = load_expression_set(combined_expression_nkg_loc)
         encoder_name = expression_data_qwen_encoder.transforms
 
         # expression_data_salmonn_phone = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/paper/phone_source')
@@ -239,7 +250,7 @@ def main():
         #                             | legend_display_dict(STL_name, 'Short Term Loudness transform'))
 
     add_layer_colorbar(fig, n_layers=32, label="QWEN layer")
-    fig.savefig(save_loc / "output/qwen_english_meg/encoder/qwen_meg_encoder_source_by_layer_new_scale.png")
+    fig.savefig(save_loc / "qwen_meg_encoder_source_by_layer_new_scale.png")
 
 if __name__ == '__main__':
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
