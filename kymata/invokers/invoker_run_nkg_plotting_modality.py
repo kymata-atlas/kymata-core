@@ -10,10 +10,11 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap, to_hex
 
+from kymata.datasets.data_root import data_root_path
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import load_expression_set
 from kymata.plot.expression import expression_plot, legend_display_dict
-from kymata.plot.color import constant_color_dict, gradient_color_dict
+from kymata.plot.color import constant_color_dict, gradient_color_dict, anchored_gradient_colormap
 
 import time
 from tqdm import tqdm
@@ -35,6 +36,33 @@ def _extract_layer_index(transform_name: str) -> int | None:
         return int(m.group(1))
     except ValueError:
         return None
+
+
+meg_cmap = anchored_gradient_colormap("MEG Reds",   anchor_values=[0, 10, 28, 32], colors=["#F38B85", "#E62C46", "#83082C", "#57051D"])
+eeg_cmap = anchored_gradient_colormap("MEG Greens", anchor_values=[0, 10, 28, 32], colors=["#7BC682", "#3EA341", "#277C16", "#1D650F"])
+
+
+def _get_color_dict(cmap, transform_names: list[str], layer_minmax_for_cmap: tuple[int, int]):
+    lmin, lmax = layer_minmax_for_cmap
+    if lmax <= lmin:
+        raise ValueError("Layer range must be strictly increasing")
+    layer_idxs: list[tuple[str, int]] = []
+    for t in transform_names:
+        layer_idx = _extract_layer_index(t)
+        if layer_idx is None:
+            raise ValueError("Could not determine layer number")
+        layer_idxs.append((t, layer_idx))
+
+    d = dict()
+    for layer_name, layer_idx in layer_idxs:
+        if layer_idx < lmin:
+            cmap_value = 0.0
+        elif layer_idx > lmax:
+            cmap_value = 1.0
+        else:
+            cmap_value = (layer_idx - lmin) / (lmax - lmin)
+        d[layer_name] = cmap(cmap_value)
+    return d
 
 
 def red_gradient_color_dict(
@@ -163,6 +191,8 @@ def main():
 
     # template invoker for printing out expression set .nkgs
 
+    save_loc = data_root_path()
+
     if transform_family_type == 'simple':
 
         expression_data_qwen_decoder = load_all_expression_data('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_eeg/decoder/expression')
@@ -170,7 +200,7 @@ def main():
         fig = expression_plot(expression_data_qwen_decoder, paired_axes=True, minimap='large', show_legend=True,
                                 color=constant_color_dict(decoder_name, color='red'),
                                 legend_display=legend_display_dict(decoder_name, 'QWEN decoder features'))
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_eeg/decoder/qwen_eeg_decoder_source.png")
+        fig.savefig(save_loc / "output/qwen_english_eeg/decoder/qwen_eeg_decoder_source.png")
 
     elif transform_family_type == 'by_layer':
 
@@ -188,7 +218,7 @@ def main():
         # IL_name = [i for i in tvl_name if i != 'STL']
         # STL_name = ['STL']
         fig = expression_plot(expression_data_qwen_encoder, paired_axes=True, minimap='large', show_legend=True,
-                                color=red_gradient_color_dict(encoder_name),
+                                color=_get_color_dict(meg_cmap, encoder_name, (0, 32)),
                                     # | constant_color_dict(tvl_name, color= 'yellow')
                                     # | constant_color_dict(IL_name, color= 'purple')
                                     # | constant_color_dict(STL_name, color= 'pink'),
@@ -207,7 +237,7 @@ def main():
         #                             | legend_display_dict(STL_name, 'Short Term Loudness transform'))
 
     add_layer_colorbar(fig, n_layers=32, label="QWEN layer")
-    fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/qwen_meg_encoder_source_by_layer_new_scale.png")
+    fig.savefig(save_loc / "output/qwen_english_meg/encoder/qwen_meg_encoder_source_by_layer_new_scale.png")
 
 if __name__ == '__main__':
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
