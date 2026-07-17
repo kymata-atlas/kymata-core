@@ -157,6 +157,7 @@ def load_all_expression_data(base_folder):
             nkg_files = [f for f in os.listdir(subdir_path) if f.endswith('.nkg')]
             for nkg_file in nkg_files:
                 file_path = os.path.join(subdir_path, nkg_file)
+                print(f"Loading {file_path}")
                 if expression_data is None:
                     # Load the first .nkg file
                     expression_data = load_expression_set(file_path)
@@ -175,6 +176,7 @@ def load_part_of_expression_data(base_folder, pick):
             nkg_files = [f for f in os.listdir(subdir_path) if f.endswith('.nkg')]
             for nkg_file in nkg_files:
                 file_path = os.path.join(subdir_path, nkg_file)
+                print(f"Loading {file_path} (pick)")
                 if expression_data is None:
                     # Load the first .nkg file
                     expression_data = load_expression_set(file_path)
