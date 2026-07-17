@@ -38,8 +38,9 @@ def _extract_layer_index(transform_name: str) -> int | None:
         return None
 
 
-meg_cmap = anchored_gradient_colormap("MEG Reds",   anchor_values=[0, 10, 28, 32], colors=["#F38B85", "#E62C46", "#83082C", "#57051D"])
-eeg_cmap = anchored_gradient_colormap("MEG Greens", anchor_values=[0, 10, 28, 32], colors=["#7BC682", "#3EA341", "#277C16", "#1D650F"])
+meg_cmap  = anchored_gradient_colormap("MEG Reds",      anchor_values=[0, 10, 28, 32], colors=["#F38B85", "#E62C46", "#83082C", "#57051D"])
+eeg_cmap  = anchored_gradient_colormap("MEG Greens",    anchor_values=[0, 10, 28, 32], colors=["#7BC682", "#3EA341", "#277C16", "#1D650F"])
+ecog_cmap = anchored_gradient_colormap("ECoG Mustards", anchor_values=[0, 10, 28, 32], colors=["#FDF58E", "#FBDF4B", "#AB7110", "#83550D"])
 
 
 def _get_color_dict(cmap, transform_names: list[str], layer_minmax_for_cmap: tuple[int, int]):
