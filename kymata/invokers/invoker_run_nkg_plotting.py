@@ -18,7 +18,7 @@ def main():
 
     if function_family_type == "standard":
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, 'no_06_11', 'left', "combined_TVL_gridsearch_left.nkg")
+            Path(path_to_nkg_files, 'no_06_11_derange_10', 'left', "11_transforms_gridsearch.nkg")
         )
         expression_data.rename({'IL': 'IL_left',
                                 'IL1': 'IL1_left',
@@ -33,7 +33,7 @@ def main():
                                 'STL': 'STL_left'
                                 })
         expression_data += load_expression_set(
-            Path(path_to_nkg_files, 'no_06_11', 'right', "combined_TVL_gridsearch_right.nkg")
+            Path(path_to_nkg_files, 'no_06_11_derange_10', 'right', "11_transforms_gridsearch.nkg")
         )
         expression_data.rename({'IL': 'IL_right',
                                 'IL1': 'IL1_right',
@@ -48,7 +48,7 @@ def main():
                                 'STL': 'STL_right'
                                 })
         expression_data += load_expression_set(
-            Path(path_to_nkg_files, 'no_06_11', 'added', "combined_TVL_gridsearch_added.nkg")
+            Path(path_to_nkg_files, 'no_06_11_derange_10', 'added', "11_transforms_gridsearch.nkg")
         )
 
         fig = expression_plot(
