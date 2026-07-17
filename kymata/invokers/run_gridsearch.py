@@ -204,7 +204,8 @@ def main():
 
         ch_names = ['IL', 'STL', 'IL1', 'IL2', 'IL3', 'IL4', 'IL5', 'IL6', 'IL7', 'IL8', 'IL9']
 
-        emeg_values = np.zeros((len(ch_names), 1, 403001))
+        # emeg_values = np.zeros((len(ch_names), 1, 403001))
+        emeg_values = np.zeros((len(ch_names), 1, (args.n_splits + 3) * 1000 + 1))
         _logger.info(f"Loading TVL functions to replace the EMEG data")
         for i, transform_name in enumerate(ch_names):
             try:
@@ -221,7 +222,9 @@ def main():
                                                 bruce_neurons=(5, 10),
                                                 mfa=args.mfa,
                                                 trans_len=args.n_splits + 1)
-            emeg_values[i, 0, :400000] = func.values  # (400000,)
+            # emeg_values[i, 0, :400000] = func.values  # (400000,)
+            emeg_values[i, 0, :args.n_splits * 1000] = func.values[:(args.n_splits * 1000)]
+            emeg_sample_rate = func.sample_rate
 
         n_reps = 1
         args.emeg_t_start = 0

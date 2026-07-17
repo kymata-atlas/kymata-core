@@ -412,49 +412,82 @@ class ExpressionSet(ABC):
         for each channel in the block, the best transform and latency for that channel, and the associated log p-value
 
         Note that channels for which the best p-value is 1 will be omitted.
+
+        Implementation note:
+        This is computed in batches over transforms to avoid densifying extremely large sparse tensors.
         """
-        # Want, for each channel in the block:
-        #  - The name, f, of the transform which is best at any latency
-        #  - The latency, l, for which f is best
-        #  - The log p-value, p, for f at l
+        data: DataArray = self._data[block_name]
 
-        # sparse.COO doesn't implement argmin, so we have to do it in a few steps
+        n_chan = data.sizes[self.channel_coord_name]
+        n_lat = data.sizes[DIM_LATENCY]
+        n_tr = data.sizes[DIM_TRANSFORM]
 
-        data: DataArray = self._data[block_name].copy()
-        densify_data_block(data)
+        # Batch size: tune to control peak memory. 256–1024 is usually reasonable.
+        # Lower if you still see memory pressure.
+        batch_size = 256
 
-        # (channel, transform) → l, the best latency
-        best_latency = data.idxmin(dim=DIM_LATENCY)
-        # (channel, transform) → log p of best latency for each transform
-        logp_at_best_latency = data.min(dim=DIM_LATENCY)
+        # Track best-so-far per channel
+        best_logp = array([0.0] * n_chan, dtype=float64)  # start at logp=0 (p=1)
+        best_lat_idx = array([0] * n_chan, dtype=int)
+        best_tr_idx = array([0] * n_chan, dtype=int)
 
-        # (channel) → log p of best transform (at best latency)
-        logp_at_best_transform = logp_at_best_latency.min(dim=DIM_TRANSFORM)
-        # (channel) → f, the best transform
-        best_transform = logp_at_best_latency.idxmin(dim=DIM_TRANSFORM)
+        # We want min over latency+transform; logp values are <= 0 (more negative is better).
+        # Initialize best_logp at 0 so any significant negative value will replace it.
 
-        # (channel) -> logp of the best transform (at the best latency)
-        logp_vals = logp_at_best_transform.data
-        # (channel) -> best transform name (at the best latency)
-        best_transforms = best_transform.data
-        # (channel) -> latency of the best transform
-        best_latencies = best_latency.sel(
-            {
-                # e.g. hexels          -> array([0, ..., 10241])
-                self.channel_coord_name: self._channels[block_name],
-                #          -> DataArray((hexel) -> transform)
-                DIM_TRANSFORM: best_transform,
-            }
-        ).data
+        # Helper to update best arrays using a candidate batch result
+        def _merge_candidate(candidate_logp, candidate_lat_idx, candidate_tr_idx):
+            nonlocal best_logp, best_lat_idx, best_tr_idx
+            # candidate_logp etc are 1D arrays length n_chan
+            better = candidate_logp < best_logp
+            if better.any():
+                best_logp[better] = candidate_logp[better]
+                best_lat_idx[better] = candidate_lat_idx[better]
+                best_tr_idx[better] = candidate_tr_idx[better]
 
-        # Cut out channels which have a best log p-val of 0 (i.e. p = 1)
-        idxs = where(logp_vals < 0)[0]
+        # Iterate over transform batches
+        for start in range(0, n_tr, batch_size):
+            stop = min(start + batch_size, n_tr)
+            batch = data.isel({DIM_TRANSFORM: slice(start, stop)})
+
+            # Ensure we can operate even if sparse.COO lacks argmin:
+            # We do a two-stage reduction:
+            # 1) reduce over latency to get per-(channel, transform) minima + latency indices
+            # 2) reduce over transform to get per-channel minima + transform indices
+
+            # Convert to numpy for the reduced 2D intermediates only.
+            # Shape is (channel, transform_batch) which is manageable vs full 3D.
+            # Step 1: min over latency
+            batch_dense = batch.data.todense()  # (chan, lat, tr_batch)
+            # argmin over latency
+            lat_argmin = batch_dense.argmin(axis=1)  # (chan, tr_batch)
+            logp_min_lat = batch_dense.min(axis=1)   # (chan, tr_batch)
+
+            # Step 2: min over transform (within batch)
+            tr_argmin_in_batch = logp_min_lat.argmin(axis=1)  # (chan,)
+            logp_min_tr = logp_min_lat.min(axis=1)            # (chan,)
+
+            # Pick corresponding latency indices for the winning transform
+            chan_idx = array(range(n_chan))
+            lat_idx = lat_argmin[chan_idx, tr_argmin_in_batch]  # (chan,)
+
+            # Convert batch transform index -> global transform index
+            tr_idx_global = tr_argmin_in_batch + start
+
+            _merge_candidate(logp_min_tr.astype(float64), lat_idx.astype(int), tr_idx_global.astype(int))
+
+        # Build results
+        idxs = where(best_logp < 0)[0]
+        transforms = data.coords[DIM_TRANSFORM].values
+        latencies = data.coords[DIM_LATENCY].values
+        channels = self._channels[block_name]
 
         return [
-            ExpressionPoint(channel=self._channels[block_name][idx],
-                            transform=best_transforms[idx],
-                            latency=best_latencies[idx],
-                            logp_value=logp_vals[idx])
+            ExpressionPoint(
+                channel=channels[idx],
+                transform=str(transforms[best_tr_idx[idx]]),
+                latency=latencies[best_lat_idx[idx]],
+                logp_value=float(best_logp[idx]),
+            )
             for idx in idxs
         ]
 

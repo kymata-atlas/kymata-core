@@ -1,0 +1,10 @@
+/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata/io/nkg.py:218: UserWarning: This file uses an old format. Please consider re-saving the data to avoid future incompatibility.
+  warn("This file uses an old format. Please consider re-saving the data to avoid future incompatibility.")
+[['minimap top', 'minimap bottom'], ['top', 'top'], ['bottom', 'bottom']]
+Data root set at /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data.
+Consider setting this as environmental variable KYMATA_DATA_ROOT to ensure it's reused next time.
+Hint: $> KYMATA_DATA_ROOT="/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data"
+Downloading dataset: fsaverage
+0 files missing from root.txt in /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage
+0 files missing from bem.txt in /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/tutorial_nkg_data/fsaverage/fsaverage
+slurmstepd-node-j13: error: *** JOB 3631753 ON node-j13 CANCELLED AT 2026-05-26T14:40:38 ***

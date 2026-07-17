@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/qwen_english/source/log/andy/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/qwen_english/source/log/andy/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/qwen_english_meg/encoder/log/andy/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/qwen_english_meg/encoder/log/andy/slurm_log_%a.txt
 #SBATCH --ntasks=1
-#SBATCH --time=120:00:00
+#SBATCH --time=140:00:00
 #SBATCH --mem=200G
-#SBATCH --array=0-8
+#SBATCH --array=0-35
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"
@@ -25,33 +25,30 @@ VENV_PYTHON="/home/at03/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/p
 
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
 
-npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/sensor/decoder_text/analysis/sig_neurons.npy'
-    
-layers=()
-neurons=()
+npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/sig_neurons_meg.npy'
 
-echo "Starting to read the npy file"
+echo "Reading neuron list from npy (subrange Andy: [8000, 16000))"
 
-for i in {967..1933}; do
-  output=$("$VENV_PYTHON" kymata/invokers/read_npy.py $npy_file $i)
+# Single-pass extraction (loads the npy once).
+out=$("$VENV_PYTHON" kymata/invokers/read_npy.py "$npy_file" --range 8000 16000 --format bash)
 
-  a=$(echo $output | awk '{print $1}')
-  b=$(echo $output | awk '{print $2}')
+# bash format prints:
+#   layers=...
+#   neurons=...
+all_layers_string=$(printf "%s\n" "$out" | sed -n 's/^layers=//p')
+all_neurons_string=$(printf "%s\n" "$out" | sed -n 's/^neurons=//p')
 
-  layers+=("layer${a}")
-  neurons+=("${b}")
-done
-
-# Convert arrays to space-separated strings
-layers_string=$(printf "%s " "${layers[@]}")
-neurons_string=$(printf "%s " "${neurons[@]}")
+# Split into arrays (space-separated)
+read -r -a layers <<< "$all_layers_string"
+read -r -a neurons <<< "$all_neurons_string"
 
 echo "Number of elements in neurons: ${#neurons[@]}"
+
 echo "Starting doing gridsearch now"
 
-# Split work into 9 array tasks as evenly as possible.
+# Split work into 36 array tasks as evenly as possible.
 total=${#neurons[@]}
-n_jobs=9
+n_jobs=36
 chunk=$(( (total + n_jobs - 1) / n_jobs ))
 start=$(( SLURM_ARRAY_TASK_ID * chunk ))
 end=$(( start + chunk ))
@@ -74,17 +71,18 @@ echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$(
   --config dataset4.yaml \
   --input-stream auditory \
   --plot-top-channels \
-  --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/qwen/decoder_text' \
+  --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/qwen/encoder' \
   --num-neurons $neurons_string \
   --transform-name $layers_string \
   --n-derangements 5 \
   --asr-option 'some' \
   --mfa True \
   --n-splits 400 \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/expression/task_${SLURM_ARRAY_TASK_ID}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
   --use-inverse-operator \
-  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
-  --morph
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-fusion1-inv.fif' \
+  --morph \
+  --overwrite
 
   # --low-level-function \

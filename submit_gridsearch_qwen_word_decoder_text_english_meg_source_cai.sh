@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/qwen_english/source/log/cai/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/qwen_english/source/log/cai/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/qwen_english_meg/decoder/log/cai/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/qwen_english_meg/decoder/log/cai/slurm_log_%a.txt
 #SBATCH --ntasks=1
 #SBATCH --time=120:00:00
 #SBATCH --mem=200G
-#SBATCH --array=0-8
+#SBATCH --array=0-7
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"
@@ -25,33 +25,31 @@ VENV_PYTHON="/home/cw04/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/p
 
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
 
-npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/sensor/decoder_text/analysis/sig_neurons.npy'
+npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/sig_neurons_meg.npy'
     
 layers=()
 neurons=()
 
 echo "Starting to read the npy file"
 
-for i in {1934..2901}; do
-  output=$("$VENV_PYTHON" kymata/invokers/read_npy.py $npy_file $i)
+out=$("$VENV_PYTHON" kymata/invokers/read_npy.py "$npy_file" --range 1934 2902 --format bash)
 
-  a=$(echo $output | awk '{print $1}')
-  b=$(echo $output | awk '{print $2}')
+# bash format prints:
+#   layers=...
+#   neurons=...
+layers_string=$(printf "%s\n" "$out" | sed -n 's/^layers=//p')
+neurons_string=$(printf "%s\n" "$out" | sed -n 's/^neurons=//p')
 
-  layers+=("layer${a}")
-  neurons+=("${b}")
-done
-
-# Convert arrays to space-separated strings
-layers_string=$(printf "%s " "${layers[@]}")
-neurons_string=$(printf "%s " "${neurons[@]}")
+# Split into arrays (space-separated)
+read -r -a layers <<< "$layers_string"
+read -r -a neurons <<< "$neurons_string"
 
 echo "Number of elements in neurons: ${#neurons[@]}"
 echo "Starting doing gridsearch now"
 
-# Split work into 9 array tasks as evenly as possible.
+# Split work into 8 array tasks as evenly as possible.
 total=${#neurons[@]}
-n_jobs=9
+n_jobs=8
 chunk=$(( (total + n_jobs - 1) / n_jobs ))
 start=$(( SLURM_ARRAY_TASK_ID * chunk ))
 end=$(( start + chunk ))
@@ -81,10 +79,10 @@ echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$(
   --asr-option 'some' \
   --mfa True \
   --n-splits 400 \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/expression/task_${SLURM_ARRAY_TASK_ID}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
   --use-inverse-operator \
-  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-fusion1-inv.fif' \
   --morph
 
   # --low-level-function \

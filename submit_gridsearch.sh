@@ -20,18 +20,18 @@
 # done
 
 export PATH="$HOME/.local/bin:$PATH"
-source /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/.venv/bin/activate
+source .venv/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
   --input-stream auditory \
   --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
   --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
   --plot-top-channels \
-  --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data_last_four_reps/' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/test' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/test' \
+  --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/meg_source_tvl' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/meg_source_tvl' \
   --use-inverse-operator \
-  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-eegonly-fusion-inv.fif' \
   --morph \
   --overwrite
 

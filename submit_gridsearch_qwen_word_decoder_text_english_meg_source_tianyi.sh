@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #SBATCH --job-name=gridsearch
-#SBATCH --output=kymata-core-data/output/qwen_english/source/encoder/log/cai/slurm_log_%a.txt
-#SBATCH --error=kymata-core-data/output/qwen_english/source/encoder/log/cai/slurm_log_%a.txt
+#SBATCH --output=kymata-core-data/output/qwen_english_meg/decoder/log/tianyi/slurm_log_%a.txt
+#SBATCH --error=kymata-core-data/output/qwen_english_meg/decoder/log/tianyi/slurm_log_%a.txt
 #SBATCH --ntasks=1
-#SBATCH --time=140:00:00
+#SBATCH --time=120:00:00
 #SBATCH --mem=200G
-#SBATCH --array=4,6,7,8
+#SBATCH --array=0-7
 #SBATCH --exclusive
 
 ORIG_HOME="$HOME"
@@ -21,10 +21,6 @@ export NUMBA_CACHE_DIR="${TMPDIR:-/tmp}/numba_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK
 
 mkdir -p "$HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$MPLCONFIGDIR" "$NUMBA_CACHE_DIR"
 
-# VENV_PYTHON="/home/cw04/.cache/pypoetry/virtualenvs/kymata-YfOhN41B-py3.11/bin/python"
-
-# cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
-
 cd /imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/
 
 if [ -f "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/.venv/bin/activate" ]; then
@@ -35,26 +31,31 @@ else
   exit 1
 fi
 
-npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/sensor/encoder/analysis/sig_neurons.npy'
+npy_file='/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/sig_neurons_meg.npy'
+    
+layers=()
+neurons=()
 
-echo "Reading neuron list from npy (subrange Cai: [19108, 28661))"
+echo "Starting to read the npy file"
 
-# Single-pass extraction (loads the npy once).
-# out=$("$VENV_PYTHON" kymata/invokers/read_npy.py "$npy_file" --range 19108 28661 --format bash)
-out=$(python kymata/invokers/read_npy.py "$npy_file" --range 19108 28661 --format bash)
+out=$(python kymata/invokers/read_npy.py "$npy_file" --range 0 967 --format bash)
 
-all_layers_string=$(printf "%s\n" "$out" | sed -n 's/^layers=//p')
-all_neurons_string=$(printf "%s\n" "$out" | sed -n 's/^neurons=//p')
+# bash format prints:
+#   layers=...
+#   neurons=...
+layers_string=$(printf "%s\n" "$out" | sed -n 's/^layers=//p')
+neurons_string=$(printf "%s\n" "$out" | sed -n 's/^neurons=//p')
 
-read -r -a layers <<< "$all_layers_string"
-read -r -a neurons <<< "$all_neurons_string"
+# Split into arrays (space-separated)
+read -r -a layers <<< "$layers_string"
+read -r -a neurons <<< "$neurons_string"
 
 echo "Number of elements in neurons: ${#neurons[@]}"
 echo "Starting doing gridsearch now"
 
-# Split work into 36 array tasks as evenly as possible.
+# Split work into 8 array tasks as evenly as possible.
 total=${#neurons[@]}
-n_jobs=36
+n_jobs=8
 chunk=$(( (total + n_jobs - 1) / n_jobs ))
 start=$(( SLURM_ARRAY_TASK_ID * chunk ))
 end=$(( start + chunk ))
@@ -73,22 +74,21 @@ neurons_string=$(printf "%s " "${sel_neurons[@]}")
 
 echo "Task ${SLURM_ARRAY_TASK_ID}: processing indices [${start}, ${end}) => n=$((end-start))"
 
-# "$VENV_PYTHON" kymata/invokers/run_gridsearch.py \
 python kymata/invokers/run_gridsearch.py \
   --config dataset4.yaml \
   --input-stream auditory \
   --plot-top-channels \
-  --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/qwen/encoder' \
+  --transform-path '/imaging/projects/cbu/kymata/data/dataset_4-english_narratives/predicted_function_contours/asr_models/qwen/decoder_text' \
   --num-neurons $neurons_string \
   --transform-name $layers_string \
   --n-derangements 5 \
   --asr-option 'some' \
   --mfa True \
   --n-splits 400 \
-  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
-  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english/source/encoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-plot-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
+  --save-expression-set-location "/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/qwen_english_meg/decoder/expression/task_${SLURM_ARRAY_TASK_ID}" \
   --use-inverse-operator \
-  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-fusion-inv.fif' \
+  --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-fusion1-inv.fif' \
   --morph \
   --overwrite
 

@@ -88,48 +88,53 @@ def plot_line_of_best_fit(layer: int, sig: np.ndarray[Any, np.dtype[Any]], outpu
             pearson_r = float(np.sqrt(fit_results.rsquared) * np.sign(slope))
             pearson_p = float(fit_results.pvalues[1])
 
-            # Spearman rank correlation
-            spearman_rho, spearman_p = spearmanr(
-                layers_to_fit,
-                latency_to_fit,
-            )
+            # # Spearman rank correlation
+            # spearman_rho, spearman_p = spearmanr(
+            #     layers_to_fit,
+            #     latency_to_fit,
+            # )
 
             bic = float(fit_results.bic)
 
             ax.text(
-                0.02,
+                0.98,
                 0.98,
                 f"Pearson r = {pearson_r:.3g}\n"
                 f"Pearson p = {pearson_p:.3g}\n"
-                f"Spearman ρ = {spearman_rho:.3g}\n"
-                f"Spearman p = {spearman_p:.3g}\n"
+                # f"Spearman ρ = {spearman_rho:.3g}\n"
+                # f"Spearman p = {spearman_p:.3g}\n"
                 f"R² = {fit_results.rsquared:.2g}\n"
                 f"BIC = {bic:.2g}",
+                transform=ax.transAxes,
+                va='top',
+                ha='right',
+                fontsize=9,
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
             )
         elif degree == 2:
             p = float(fit_results.pvalues[1])
             bic = float(fit_results.bic)
             ax.text(
-                0.02,
+                0.98,
                 0.98,
                 f"p = {p:.3g}\n"
                 f"R² = {fit_results.rsquared:.2g}\n"
                 f"BIC = {bic:.2g}",
                 transform=ax.transAxes,
                 va='top',
-                ha='left',
+                ha='right',
                 fontsize=9,
                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
             )
 
     else:
         ax.text(
-            0.02,
-            0.98,
+                0.98,
+                0.98,
             "Not enough layers with data for regression",
             transform=ax.transAxes,
             va='top',
-            ha='left',
+            ha='right',
             fontsize=9,
             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='none'),
         )

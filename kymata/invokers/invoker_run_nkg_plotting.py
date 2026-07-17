@@ -50,7 +50,7 @@ def load_part_of_expression_data(base_folder, pick):
 
 def main():
 
-    transform_family_type = 'simple' # 'standard' or 'ANN' or 'simple' or 'all_level'
+    transform_family_type = 'all_level' # 'standard' or 'ANN' or 'simple' or 'all_level'
     path_to_nkg_files = Path(Path(path.abspath("")).parent, "kymata-core", "kymata-core-data", "output")
     # path_to_nkg_files = '/imaging/woolgar/projects/Tianyi/kymata-core/kymata-core-data/output'
 
@@ -261,7 +261,7 @@ def main():
 
         # import ipdb;ipdb.set_trace()
 
-        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ru_narr_en_native/tvl/11_transforms_gridsearch_gridsearch.nkg')
+        expression_data_tvl = load_expression_set('/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/eeg_source_tvl/11_transforms_gridsearch_gridsearch.nkg')
         tvl_name = expression_data_tvl.transforms
         IL_name = [i for i in tvl_name if i != 'STL']
         STL_name = ['STL']
@@ -306,7 +306,7 @@ def main():
         #                             | legend_display_dict(wordpiece_name, 'SALMONN wordpiece features'))
         # fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/first_speech_paper/morpheme_and_wordpiece/all_feats_test_4.png")
 
-        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap=None, show_legend=True, show_only=IL_name+STL_name,
+        fig = expression_plot(expression_data_tvl, paired_axes=True, minimap='large', show_legend=True, show_only=IL_name+STL_name,
                                 # color=constant_color_dict(IL_name, color= 'purple')
                                 #     | constant_color_dict(STL_name, color= 'pink'),
                                 # legend_display=legend_display_dict(IL_name, 'Instantaneous Loudness transforms')
@@ -324,7 +324,7 @@ def main():
                                         "IL9": "#a201e9",
                                         "STL": "#d388b5",
                                     })
-        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/ru_narr_en_native/tvl/english_russian_sensor.png")
+        fig.savefig("/imaging/projects/cbu/kymata/analyses/tianyi/russian-english/kymata-core/kymata-core-data/output/eeg_source_tvl/eeg_source_tvl.png")
 
 
     elif transform_family_type == 'standard':

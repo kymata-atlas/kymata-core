@@ -973,7 +973,7 @@ def neuron_scatter(
     # sig columns: [peak_lat, sensor_ind, logp, layer_no, neuron_no]
     layer_neuron_pairs = sig[:, [3, 4]].astype(int)
 
-    save_path = Path(output_dir / "sig_neurons.npy")
+    save_path = Path(output_dir / f"sig_neurons_{dataset}.npy")
     save_path.parent.mkdir(parents=True, exist_ok=True)
     np.save(save_path, layer_neuron_pairs)
 

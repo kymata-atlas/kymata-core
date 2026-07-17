@@ -20,6 +20,7 @@ def get_stds(x, n, eps: float = 1e-5):
     z = np.concatenate((np.zeros((d0, d1, 1)), np.cumsum(x, axis=-1)), axis=-1)
     y = y[:, :, -n - 1 : -1] - y[:, :, :n]
     z = z[:, :, -n - 1 : -1] - z[:, :, :n]
+    import ipdb;ipdb.set_trace()
     return (y - ((z**2) / n) + eps) ** 0.5
 
 
