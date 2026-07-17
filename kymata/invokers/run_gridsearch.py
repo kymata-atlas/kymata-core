@@ -1,8 +1,10 @@
 from logging import getLogger, basicConfig, INFO
 from pathlib import Path
-import argparse
 import time
 from sys import stdout
+from typing import Optional, Literal, Annotated
+
+from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
@@ -18,6 +20,7 @@ from kymata.system.reflection import kymata_installed_as_dependency
 
 _default_output_dir = Path(data_root_path(), "output")
 _logger = getLogger(__file__)
+_app = App()
 
 
 def get_config_value_with_fallback(config: dict, config_key: str, fallback):
@@ -31,101 +34,103 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
         return fallback
 
 
-def main():
-    _default_output_dir.mkdir(exist_ok=True, parents=False)
+@_app.default
+def main(
+        config: str,
+        # Transforms
+        transform_name: Annotated[list[str], Parameter(consume_multiple=True)],
+        input_stream: Literal["auditory", "visual", "tactile"],
+        transform_path: str = "predicted_function_contours/GMSloudness/stimulisig",
+        transform_sample_rate: float = 1000,
+        replace_nans: Optional[Literal["zero", "mean"]] = None,
+        # Paths
+        emeg_dir: str = "interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
+        data_root: Path = Path("/imaging/projects/cbu/kymata/data/"),
+        save_name: Optional[str] = None,
+        save_expression_set_location: Optional[Path] = None,
+        save_plot_location: Optional[Path] = None,
+        # Participants
+        single_participant_override: Optional[str] = None,
+        ave_mode: Literal["ave", "concatenate"] = "ave",
+        # Data
+        resample: float = 200,
+        seconds_per_split: float = 1,
+        n_splits: int = 400,
+        n_derangements: int = 6,
+        start_latency: float = -0.2,
+        emeg_t_start: float = -0.2,
+        # For source space
+        use_inverse_operator: bool = False,
+        inverse_operator_suffix: str = "_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
+        morph: bool = False,
+        snr: float = 3,
+        # Output options
+        plot_top_channels: bool = False,
+        # Analysis specific
+        overwrite: bool = False,
+) -> None:
+    """
+    Run the plain gridsearch.
+    
+    Args:
+        config: Either the path to the config file to be used, or the name of the config file to be used if included with kymata-core.
+        transform_name: "transform names in stimulisig".
+        input_stream: The input stream for the transforms being tested.
+        transform_path: Location of transform stimulisig. Either supply relative to the data dir, or as an absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.
+        transform_sample_rate: The original sample rate of the transform contour.
+        replace_nans: If the transform contour contains NaN values, this will replace them with the specified values.
+        emeg_dir: EMEG directory, relative to base dir
+        data_root: Root directory of kymata data
+        save_name: Specify the name of the saved .nkg file.
+        save_expression_set_location: Save the results of the gridsearch into an ExpressionSet .nkg file.
+        save_plot_location: Save an expression plots, and other plots, in this location.
+        single_participant_override: Supply to run only on one participant
+        ave_mode: `ave`: average over the list of repetitions. `concatenate`: treat them as extra data.
+        resample: Resample rate for both transform and EMEG data, in Hz. (E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.
+        seconds_per_split: Seconds in each split of the recording, also maximum range of latencies being checked
+        n_splits: Number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file).
+        n_derangements: Number of deragements for the null distribution.
+        start_latency: Earliest latency to check in cross correlation.
+        emeg_t_start: Start of the emeg evoked files relative to the start of the transform.
+        use_inverse_operator: Use inverse operator to conduct gridsearch in source space.
+        inverse_operator_suffix: Inverse solution suffix.
+        morph: Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.
+        snr: Inverse solution SNR.
+        plot_top_channels: Plots the p-values and correlations of the top channels in the gridsearch.
+        overwrite: Silently overwrite existing files.
+    """
 
-    parser = argparse.ArgumentParser(description="Gridsearch Params")
-
-    # Dataset specific
-    parser.add_argument("--config", type=str, required=True,
-                        help="Either the path to the config file to be used, or the name of the config file to be used "
-                             "if included with kymata-core.")
-
-    parser.add_argument("--emeg-dir", type=str,
-                        default="interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
-                        help="EMEG directory, relative to base dir")
-
-    # Analysis specific
-    parser.add_argument("--overwrite", action="store_true", help="Silently overwrite existing files.")
-
-    # Participants
-    parser.add_argument("--single-participant-override", type=str, default=None, required=False,
-                        help="Supply to run only on one participant")
-    parser.add_argument("--ave-mode", type=str, default="ave", choices=["ave", "concatenate"],
-                        help="`ave`: average over the list of repetitions. `concatenate`: treat them as extra data.")
-
-    # Transforms
-    parser.add_argument("--input-stream", type=str, required=True, choices=["auditory", "visual", "tactile"],
-                        help="The input stream for the transforms being tested.")
-    parser.add_argument("--transform-path", type=str, default="predicted_function_contours/GMSloudness/stimulisig",
-                        help="Location of transform stimulisig. Either supply relative to the data dir, or as an "
-                             "absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.")
-    parser.add_argument("--transform-name", type=str, nargs="+", help="transform names in stimulisig")
-    parser.add_argument("--replace-nans", type=str, required=False, choices=["zero", "mean"], default=None,
-                        help="If the transform contour contains NaN values, "
-                             "this will replace them with the specified values.")
-    parser.add_argument("--transform-sample-rate", type=float, required=False, default=1000,
-                        help="The original sample rate of the transform contour.")
-
-    # For source space
-    parser.add_argument("--use-inverse-operator", action="store_true",
-                        help="Use inverse operator to conduct gridsearch in source space.")
-    parser.add_argument("--morph", action="store_true",
-                        help="Morph hexel data to fs-average space prior to running gridsearch. "
-                             "Only has an effect if an inverse operator is specified.",)
-    parser.add_argument("--inverse-operator-suffix", type=str, default="_ico5-3L-loose02-cps-nodepth-fusion-inv.fif",
-                        help="inverse solution suffix")
-
-    parser.add_argument("--snr", type=float, default=3, help="Inverse solution SNR")
-    parser.add_argument("--resample", type=float, required=False, default=200,
-                        help="Resample rate for both transform and EMEG data, in Hz. "
-                             "(E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.")
-
-    # General gridsearch
-    parser.add_argument("--seconds-per-split", type=float, default=1,
-                        help="Seconds in each split of the recording, also maximum range of latencies being checked")
-    parser.add_argument("--n-splits", type=int, default=400,
-                        help="Number of splits to split the recording into, "
-                             "(set to stimulus_length/seconds_per_split for full file)")
-    parser.add_argument("--n-derangements", type=int, default=6,
-                        help="Number of deragements for the null distribution")
-    parser.add_argument("--start-latency", type=float, default=-0.2,
-                        help="Earliest latency to check in cross correlation")
-    parser.add_argument("--emeg-t-start", type=float, default=-0.2,
-                        help="Start of the emeg evoked files relative to the start of the transform")
-
-    # Input paths
-    parser.add_argument("--data-root", type=str, required=False, default="/imaging/projects/cbu/kymata/data/", help="Root directory of kymata data.")
-
-    # Output paths
-    parser.add_argument("--save-name", type=str, required=False, help="Specify the name of the saved .nkg file.")
     # Save locations are non-optional when running as a dependency
-    save_loc_default = dict(default=Path(_default_output_dir)) if not kymata_installed_as_dependency() else dict()
-    parser.add_argument("--save-expression-set-location", type=Path, help="Save the results of the gridsearch into an ExpressionSet .nkg file", **save_loc_default)
-    parser.add_argument("--save-plot-location", type=Path, help="Save an expression plots, and other plots, in this location", **save_loc_default)
+    if save_expression_set_location is None:
+        if kymata_installed_as_dependency():
+            raise ValueError("Must specify expression set save location when running kymata as a dependency")
+        else:
+            save_expression_set_location = _default_output_dir
+    if save_plot_location is None:
+        if kymata_installed_as_dependency():
+            raise ValueError("Must specify plot save location when running kymata as a dependency")
+        else:
+            save_plot_location = _default_output_dir
 
-    parser.add_argument("--plot-top-channels", action="store_true", help="Plots the p-values and correlations of the top channels in the gridsearch.")
-
-    args = parser.parse_args()
-
-    specified_config_file = Path(args.config)
+    # Get config
+    specified_config_file = Path(config)
     if specified_config_file.exists():
         _logger.info(f"Loading config file from {str(specified_config_file)}")
         dataset_config = load_config(str(specified_config_file))
     else:
-        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", args.config)
+        default_config_file = Path(Path(__file__).parent.parent, "dataset_config", config)
         _logger.info(f"Config specified by name. Loading config file from {str(default_config_file)}")
         dataset_config = load_config(str(default_config_file))
 
     # Config defaults
     participants = dataset_config.get("participants")
     base_dir = Path(
-        args.data_root,
+        data_root,
         dataset_config.get("dataset_directory_name", "dataset_4-english-narratives"),
     )
     inverse_operator_dir = dataset_config.get("inverse_operator")
 
-    input_stream = args.input_stream
+    input_stream = input_stream
     if input_stream == "auditory":
         stimulus_shift_correction = dataset_config["audio_delivery_drift_correction"]
         stimulus_delivery_latency = dataset_config["audio_delivery_latency"]
@@ -141,12 +146,12 @@ def main():
     reps = [f"_rep{i}" for i in range(8)] + [
         "-ave"
     ]  # most of the time we will only use the -ave, not the individual reps
-    if args.single_participant_override is not None:
-        if args.ave_mode == "ave":
-            emeg_filenames = [args.single_participant_override + "-ave"]
-        elif args.ave_mode == "concatenate":
+    if single_participant_override is not None:
+        if ave_mode == "ave":
+            emeg_filenames = [single_participant_override + "-ave"]
+        elif ave_mode == "concatenate":
             print("Concatenating repetitions together")
-            emeg_filenames = [args.single_participant_override + r for r in reps[:-1]]
+            emeg_filenames = [single_participant_override + r for r in reps[:-1]]
     else:
         emeg_filenames = [p + "-ave.fif" for p in participants]
 
@@ -154,9 +159,9 @@ def main():
 
     if (
         (len(emeg_filenames) > 1)
-        and (not args.morph)
-        and (args.ave_mode == "ave")
-        and args.use_inverse_operator
+        and (not morph)
+        and (ave_mode == "ave")
+        and use_inverse_operator
     ):
         raise ValueError(
             "Averaging source-space results without morphing to a common space. "
@@ -164,7 +169,7 @@ def main():
         )
 
     # Load data
-    emeg_path = Path(base_dir, args.emeg_dir)
+    emeg_path = Path(base_dir, emeg_dir)
     morph_dir = Path(
         base_dir,
         "interim_preprocessing_files",
@@ -179,15 +184,15 @@ def main():
     )
     inverse_operator_dir = Path(base_dir, inverse_operator_dir)
 
-    channel_space = "source" if args.use_inverse_operator else "sensor"
+    channel_space = "source" if use_inverse_operator else "sensor"
 
     _logger.info("Starting Kymata Gridsearch")
     _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
-    _logger.info(f"Transforms to be tested: {args.transform_name}")
+    _logger.info(f"Transforms to be tested: {transform_name}")
     _logger.info(f"Gridsearch will be applied in {channel_space} space")
-    if args.use_inverse_operator:
-        _logger.info(f"Inverse operator: {args.inverse_operator_suffix}")
-    if args.morph:
+    if use_inverse_operator:
+        _logger.info(f"Inverse operator: {inverse_operator_suffix}")
+    if morph:
         _logger.info("Morphing to common space")
 
     t0 = time.time()
@@ -195,13 +200,13 @@ def main():
     emeg_values, ch_names, n_reps = load_emeg_pack(
         emeg_filenames,
         emeg_dir=emeg_path,
-        morph_dir=morph_dir if args.morph else None,
-        ave_mode=args.ave_mode,
+        morph_dir=morph_dir if morph else None,
+        ave_mode=ave_mode,
         inverse_operator_dir=inverse_operator_dir
-        if args.use_inverse_operator
+        if use_inverse_operator
         else None,
-        inverse_operator_suffix=args.inverse_operator_suffix,
-        snr=args.snr,
+        inverse_operator_suffix=inverse_operator_suffix,
+        snr=snr,
         old_morph=False,
         invsol_npy_dir=invsol_npy_dir,
         ch_names_path=Path(invsol_npy_dir, "ch_names.npy"),
@@ -215,10 +220,10 @@ def main():
     combined_expression_set = None
 
     # Get stimulisig path
-    if Path(args.transform_path).exists():
-        transform_path = Path(args.transform_path)
+    if Path(transform_path).exists():
+        transform_path = Path(transform_path)
     else:
-        transform_path = Path(base_dir, args.transform_path)
+        transform_path = Path(base_dir, transform_path)
     _logger.info(f"Loading transforms from {str(transform_path)}")
 
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
@@ -228,18 +233,18 @@ def main():
         eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
-    for transform_name in args.transform_name:
+    for transform_name in transform_name:
         _logger.info(f"Running gridsearch on {transform_name}")
         transform = load_transform(
             transform_path,
             trans_name=transform_name,
-            replace_nans=args.replace_nans,
+            replace_nans=replace_nans,
             bruce_neurons=(5, 10),
-            sample_rate=args.transform_sample_rate,
+            sample_rate=transform_sample_rate,
         )
 
         # Resample transform to match target sample rate if specified, else emeg sample rate
-        transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
+        transform_resample_rate = resample if resample is not None else emeg_sample_rate
         if transform.sample_rate != transform_resample_rate:
             _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
                          f"({transform_resample_rate} Hz). Transform will be resampled to match. "
@@ -251,18 +256,18 @@ def main():
             channel_names=ch_names,
             channel_space=channel_space,
             transform=transform,
-            seconds_per_split=args.seconds_per_split,
-            n_derangements=args.n_derangements,
-            n_splits=args.n_splits,
+            seconds_per_split=seconds_per_split,
+            n_derangements=n_derangements,
+            n_splits=n_splits,
             n_reps=n_reps,
             emeg_sample_rate=emeg_sample_rate,
-            start_latency=args.start_latency,
-            plot_location=args.save_plot_location,
-            emeg_t_start=args.emeg_t_start,
+            start_latency=start_latency,
+            plot_location=save_plot_location,
+            emeg_t_start=emeg_t_start,
             stimulus_shift_correction=stimulus_shift_correction,
             stimulus_delivery_latency=stimulus_delivery_latency,
-            plot_top_five_channels=args.plot_top_channels,
-            overwrite=args.overwrite,
+            plot_top_five_channels=plot_top_channels,
+            overwrite=overwrite,
             emeg_layout=sensor_layout,
             seed=dataset_config.get('random_seed_gridsearch', None),
         )
@@ -275,31 +280,31 @@ def main():
     assert combined_expression_set is not None
 
     combined_names: str
-    if args.save_name is not None and len(args.save_name) > 0:
-        combined_names = args.save_name
-    elif len(args.transform_name) > 2:
-        combined_names = f"{len(args.transform_name)}_transforms_gridsearch"
+    if save_name is not None and len(save_name) > 0:
+        combined_names = save_name
+    elif len(transform_name) > 2:
+        combined_names = f"{len(transform_name)}_transforms_gridsearch"
     else:
-        combined_names = "_+_".join(args.transform_name) + "_gridsearch"
+        combined_names = "_+_".join(transform_name) + "_gridsearch"
 
-    if args.save_expression_set_location is not None:
+    if save_expression_set_location is not None:
         es_save_path = Path(
-            args.save_expression_set_location, combined_names
+            save_expression_set_location, combined_names
         ).with_suffix(".nkg")
         _logger.info(f"Saving expression set to {es_save_path!s}")
         save_expression_set(
             combined_expression_set,
             to_path_or_file=es_save_path,
-            overwrite=args.overwrite,
+            overwrite=overwrite,
         )
 
-    if args.single_participant_override is not None:
+    if single_participant_override is not None:
         fig_save_path = Path(
-            args.save_plot_location,
-            combined_names + f"_{args.single_participant_override}",
+            save_plot_location,
+            combined_names + f"_{single_participant_override}",
         ).with_suffix(".png")
     else:
-        fig_save_path = Path(args.save_plot_location, combined_names).with_suffix(".png")
+        fig_save_path = Path(save_plot_location, combined_names).with_suffix(".png")
     _logger.info(f"Saving expression plot to {fig_save_path!s}")
     expression_plot(
         combined_expression_set,
@@ -318,7 +323,7 @@ def main():
             },
         paired_axes=channel_space == "source",
         save_to=fig_save_path,
-        overwrite=args.overwrite,
+        overwrite=overwrite,
     )
 
     total_time_in_seconds = time.time() - start
@@ -329,4 +334,4 @@ def main():
 
 if __name__ == "__main__":
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
-    main()
+    _app()

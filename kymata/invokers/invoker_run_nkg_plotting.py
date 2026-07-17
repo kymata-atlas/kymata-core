@@ -215,7 +215,6 @@ def main():
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
 
 
-
 if __name__ == "__main__":
     basicConfig(format=log_message, datefmt=date_format, level=INFO)
     main()

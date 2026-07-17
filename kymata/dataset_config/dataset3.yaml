@@ -25,6 +25,7 @@ participants: [
               ]
 number_of_runs: 2                    # number of runs  <- 15-minute recording block from scanner
 repetitions_per_runs: 2              # number of repetitions per run  <- repeated stimulus presentations per run
+audio_stimulus_file: "stimuli/audio/F00C_dataset3.wav"
 stimulus_length: 400                 # seconds
 mri_structural_type: "T1"            # T1 | flash
 sample_rate: 1000                    # Hz
@@ -43,6 +44,7 @@ remove_VEOH_and_HEOG: True
 remove_ECG: True
 automatic_bad_channel_detection_requested: False
 supress_excessive_plots_and_prompts: True
+check_drift_and_delay: True
 
 # Inverse operator
 eeg: True

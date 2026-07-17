@@ -4,21 +4,25 @@ from typing import Optional
 
 from colorama import Fore, Style
 import mne
-from numpy import nanmin
+import numpy as np
 from numpy.typing import NDArray
 from pandas import DataFrame, Index
 from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
-import numpy as np
 
+from kymata.io.audio import load_wav_as_floats
 from kymata.io.cli import print_with_color, input_with_color
 from kymata.io.config import load_config, modify_param_config
 from kymata.io.file import PathType
+from kymata.io.logging import describe_higher_lower_than
+from kymata.preproc.sensor import fit_drift_delay
+
 
 _logger = getLogger(__name__)
 
 CHANNEL_TRIGGER = "STI101"
+CHANNEL_AUDIO_MISC_RECORDING = 'MISC006'  # MISC006 is local recording of audio stimulus presentation
 TRIGGER_REP_ONSET = 3
 
 
@@ -637,13 +641,17 @@ def estimate_noise_cov(
 
 
 def create_trialwise_data(
-    data_root_dir: PathType,
-    dataset_directory_name: str,
-    list_of_participants: list[str],
-    repetitions_per_runs: int,
-    stimulus_length: int,  # seconds
-    number_of_runs: int,
-    latency_range: tuple[float, float],  # seconds
+        data_root_dir: PathType,
+        dataset_directory_name: str,
+        list_of_participants: list[str],
+        repetitions_per_runs: int,
+        stimulus_length: int,  # seconds
+        number_of_runs: int,
+        latency_range: tuple[float, float],  # seconds
+        data_sample_rate: float,  # Hz
+        reference_drift: Optional[float] = None,
+        reference_delay: Optional[float] = None,
+        check_drift_with_audio_stim: Optional[str] = None,
 ):
     """Create trials objects from the raw data files (still in sensor space)"""
 
@@ -662,7 +670,10 @@ def create_trialwise_data(
     )
     trialwise_sensorspace_dir.mkdir(exist_ok=True)
 
-    evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
+    if check_drift_with_audio_stim is None:
+        evoked_path = Path(trialwise_sensorspace_dir, "evoked_data")
+    else:
+        evoked_path = Path(trialwise_sensorspace_dir, "evoked_data_with_delay_correction")
     evoked_path.mkdir(exist_ok=True)
 
     logs_path = Path(trialwise_sensorspace_dir, "logs")
@@ -697,60 +708,120 @@ def create_trialwise_data(
             len(repetition_events) == number_of_runs * repetitions_per_runs
         ), f"{len(repetition_events)=} but {number_of_runs * repetitions_per_runs=}"
 
-        # Denote picks
-        include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-        picks: NDArray = mne.pick_types(
-            raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
-        )
-        _logger.info(
-            f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
-        )
+        # Define picks
+        picks = np.array(mne.pick_types(raw.info, meg=True,  eeg=True,  stim=False, exclude="bads",
+                                        # add in trigger channels etc, if needed
+                                        include=[]))
+        _logger.info(f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}")
 
-        print(
-            f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
-        )
+        print(f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}")
 
         # Extract trial instances ('epochs')
-        _tmin = latency_range[0]
-        _tmax = (
+        tmin = latency_range[0]
+        tmax = (
             stimulus_length
             # extra padding at the end to accommodate range of latencies
             + latency_range[1]
             # Extra space to account for audio latency drift
             + 2
         )
-
-        epochs = mne.Epochs(
-            raw,
-            repetition_events,
-            None,
-            _tmin,
-            _tmax,
-            picks=picks,
-            baseline=(None, None),
-            preload=True,
-        )
+        epochs = mne.Epochs(raw, repetition_events, event_id=None,
+                            tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
+                            picks=picks)
         _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
 
         # Log which channels are worst
         dropfig = epochs.plot_drop_log(subject=p)
-        dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+        dropfig.savefig(logs_path / f"drop-log_{p}.jpg")
+
+        # check_audio_drift_and_delay
+        if check_drift_with_audio_stim is not None:
+            check_drift_with_audio_stim = Path(data_root_dir, dataset_directory_name, check_drift_with_audio_stim)
+            _logger.info(f"Checking drift versus stimulus {check_drift_with_audio_stim!s}")
+
+            assert reference_drift is not None, "reference drift required"
+            assert reference_delay is not None, "reference delay required"
+
+            picks_audio_misc = np.array(mne.pick_types(raw.info, include=[CHANNEL_AUDIO_MISC_RECORDING]))
+            epochs_misc = mne.Epochs(raw, repetition_events, event_id=None, baseline=(None, None), preload=True,
+                                     tmin=0, tmax=stimulus_length, picks=picks_audio_misc)
+
+            _logger.info(f"Loading stimulus file from {check_drift_with_audio_stim.name}")
+            if check_drift_with_audio_stim.suffix == ".wav":
+                stimulus, stim_sr = load_wav_as_floats(check_drift_with_audio_stim, mix_to_mono=True)
+            else:
+                raise NotImplementedError()
+
+            difference_vals = []
+            for i in range(len(repetition_events)):
+    
+                audio_chan_recording: NDArray = epochs_misc[str(i)].get_data().squeeze()
+    
+                drift_diff, delay_diff = fit_drift_delay(
+                    stim_actual=stimulus,
+                    stim_misc_recording=audio_chan_recording,
+                    stim_sr=stim_sr,
+                    misc_sr=data_sample_rate,
+                    reference_drift=reference_drift,
+                    reference_delay=reference_delay,
+                )
+    
+                difference_vals.append((p, i, drift_diff, delay_diff))
+    
+                _logger.info(f"Detected drift for participant {p} repetition {i}/{len(repetition_events)} was {drift_diff} "
+                             f"{describe_higher_lower_than(drift_diff)} the reference value of {reference_drift}")
+                _logger.info(f"Detected delay for participant {p} repetition {i}/{len(repetition_events)} was {delay_diff} "
+                             f"{describe_higher_lower_than(delay_diff)} the reference value of {reference_delay}")
+    
+            # Save drift and delay vals to csv
+            diffs_df = DataFrame.from_records(
+                difference_vals, columns=["Participant", "Repetition", "Drift difference", "Delay difference"]
+            )
+            diffs_path = logs_path / f"drift_delay_diffs_{p}.csv"
+            diffs_df.to_csv(diffs_path, index=False)
+
+            # Check any drifts are wrong.
+            # If they are, this is treated as a serious problem. Either all the diffs are nonzero and identical, in
+            # which case the config is wrong (for this participant); or they are not all the same and we don't yet have
+            # a way to apply individualised stretches to the emeg data before averaging.
+            if (diffs_df["Drift difference"].abs() > 5e-3 * stimulus_length).any(): # I'm changing this to be consistent with the latency interval
+                raise RuntimeError(f"The differences on some drifts for participant {p} were too large. "
+                                   f"Does the drift value in the config need changing? "
+                                   f"Check the output in {diffs_path.name} to ensure constant drifts repetitions.")
+
+            # Check if individualised delays are approximately symmetric about zero.
+            # If they are, this is treated as a serious problem. A systematic bias in delays could mean the config may
+            # be set wrong.
+            if abs(diffs_df["Delay difference"].mean()) > 5e-3:  # I'm changing this to be consistent with the latency interval
+                raise RuntimeError(f"There seems to be a systematic error in the delays for participant {p}. "
+                                   f"Does the delay value in the config need changing? "
+                                   f"Check the output in {diffs_path.name}.")
+
+            # Apply delay_diffs to individual repetitions before saving and averaging, so that the config delay can now
+            # be used without error. We'll do this by editing the repetition events and recomputing the epochs
+            _logger.info("Applying individualised delays to EMEG data")
+            repetition_events = _apply_delays(repetition_events, data_sr=data_sample_rate, delays=diffs_df["Delay difference"].tolist())
+            epochs = mne.Epochs(raw, repetition_events, event_id=None,
+                                tmin=tmin, tmax=tmax, baseline=(None, None), preload=True,
+                                picks=picks)
 
         # Save individual repetitions
         for i in range(len(repetition_events)):
             evoked = epochs[str(i)].average()
-            _logger.info(
-                f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-            )
+            _logger.info(f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
             evoked.save(Path(evoked_path, f"{p}_rep{i}.fif"), overwrite=True)
 
         # Average over repetitions
         evoked = epochs.average()
-        _logger.info(
-            f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
-        )
+        _logger.info(f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})")
 
         evoked.save(Path(evoked_path, f"{p}-ave.fif"), overwrite=True)
+
+
+def _apply_delays(events: NDArray, data_sr: float, delays: list[float]) -> NDArray:
+    sample_shifts = np.round(np.array(delays) * data_sr).astype(int)  # seconds * samples-per-second
+    events[:, 0] += sample_shifts
+    return events
 
 
 def apply_automatic_bad_channel_detection(
@@ -830,7 +901,7 @@ def _plot_bad_chans(auto_scores):
     # Now, adjust the color range to highlight segments that exceeded the limit.
     sns.heatmap(
         data=data_to_plot,
-        vmin=nanmin(limits),  # bads in input data have NaN limits
+        vmin=np.nanmin(limits),  # bads in input data have NaN limits
         cmap="Reds",
         cbar_kws=dict(label="Score"),
         ax=ax[1],
