@@ -737,7 +737,7 @@ def create_trialwise_data(
         raw_events = mne.find_events(
             raw, stim_channel=CHANNEL_TRIGGER, shortest_event=1
         )
-        if '4.1' in dataset_directory_name:
+        if '4.1' in dataset_directory_name and 'beat' not in p:
             repetition_events_rus = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
             repetition_events_bea = mne.pick_events(raw_events, include=6)
             for i in range(len(repetition_events_rus)):
@@ -831,6 +831,61 @@ def create_trialwise_data(
                 f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
             )
             evoked.save(Path(evoked_path, "beatles", f"{p}-ave.fif"), overwrite=True)
+        elif '4.1' in dataset_directory_name and 'beat' in p:
+            repetition_events_bea = mne.pick_events(raw_events, include=6)
+            for i in range(len(repetition_events_bea)):
+                repetition_events_bea[i][2] = str(i)
+            include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
+            picks: NDArray = mne.pick_types(
+                raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+            )
+            _logger.info(
+                f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
+            )
+
+            print(
+                f"{Fore.GREEN}{Style.BRIGHT}... extract and save evoked data{Style.RESET_ALL}"
+            )
+
+            # Extract trial instances ('epochs')
+            _tmin = latency_range[0]
+            _tmax = (
+                stimulus_length
+                # extra padding at the end to accommodate range of latencies
+                + latency_range[1]
+                # Extra space to account for audio latency drift
+                + 2
+            )
+            epochs = mne.Epochs(
+                raw,
+                repetition_events_bea,
+                None,
+                _tmin,
+                _tmax,
+                picks=picks,
+                baseline=(None, None),
+                preload=True,
+            )
+            _logger.info(f"Created epochs with {len(epochs.ch_names)} channels")
+
+            # Log which channels are worst
+            dropfig = epochs.plot_drop_log(subject=p)
+            dropfig.savefig(Path(logs_path, f"drop-log_{p}.jpg"))
+
+            # Save individual repetitions
+            for i in range(len(repetition_events_bea)):
+                evoked = epochs[str(i)].average()
+                _logger.info(
+                    f"Individual evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+                )
+                evoked.save(Path(evoked_path, "beatles", f"{p}_rep{i}.fif"), overwrite=True)
+
+            # Average over repetitions
+            evoked = epochs.average()
+            _logger.info(
+                f"Average evokeds created with {len(evoked.ch_names)} channels (i.e. {evoked.data.shape=})"
+            )
+            evoked.save(Path(evoked_path, "beatles", f"{p}-ave.fif"), overwrite=True)            
         else:
             repetition_events = mne.pick_events(raw_events, include=TRIGGER_REP_ONSET)
             # name repetitions
@@ -844,14 +899,9 @@ def create_trialwise_data(
 
             # Denote picks
             include = []  # ['MISC006']  # MISC05, trigger channels etc, if needed
-            if p == "participant_11" and "4.1" in dataset_directory_name:
-                picks: NDArray = mne.pick_types(
-                    raw.info, meg=True, eeg=False, stim=False, exclude="bads", include=include
-                )
-            else:
-                picks: NDArray = mne.pick_types(
-                    raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
-                )
+            picks: NDArray = mne.pick_types(
+                raw.info, meg=True, eeg=True, stim=False, exclude="bads", include=include
+            )
             _logger.info(
                 f"Picked {picks.shape} channels out of {len(raw.info['ch_names'])}"
             )
