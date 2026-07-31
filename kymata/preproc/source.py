@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 from logging import getLogger
 from warnings import warn
-from scipy.signal import resample
+from scipy import signal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -27,6 +27,7 @@ def load_single_emeg(
     old_morph=False,
     premorphed_inverse_operator_path: Optional[Path] = None,
     ch_names_path: Optional[Path] = None,
+    freq_band: Optional[str] = None,
 ) -> tuple[NDArray, list[str]]:
     """
     When using the inverse operator, returns left and right hemispheres concatenated.
@@ -42,7 +43,13 @@ def load_single_emeg(
         ch_names_path = Path(emeg_path.parent, f"ch_names_{sub}.npy")
         channel_names: list[str] = np.load(ch_names_path, allow_pickle=True)
         emeg = np.load(emeg_path_npy)
-        emeg = resample(emeg, 360000, axis=1)
+        if freq_band == 'low':
+            sos = signal.butter(N=4, Wn=[1, 40], btype='bandpass', fs=512, output='sos')
+            emeg = signal.sosfiltfilt(sos, emeg, axis=1)
+        elif freq_band == 'high':
+            sos = signal.butter(N=4, Wn=[70, 200], btype='bandpass', fs=512, output='sos')
+            emeg = signal.sosfiltfilt(sos, emeg, axis=1)
+        emeg = signal.resample_poly(emeg, up=125, down=128, axis=1)
 
         return emeg, channel_names
 
@@ -60,7 +67,12 @@ def load_single_emeg(
             # Load npy-format sensor data
             channel_names: list[str] = np.load(ch_names_path)
             emeg = np.load(emeg_path_npy)
-
+            if freq_band == 'low':
+                sos = signal.butter(N=4, Wn=[1, 40], btype='bandpass', fs=1000, output='sos')
+                emeg = signal.sosfiltfilt(sos, emeg, axis=1)
+            elif freq_band == 'high':
+                sos = signal.butter(N=4, Wn=[70, 200], btype='bandpass', fs=1000, output='sos')
+                emeg = signal.sosfiltfilt(sos, emeg, axis=1)
             return emeg, channel_names
 
         _logger.info(f"Reading EMEG evokeds from {emeg_path_fif}")
@@ -79,6 +91,12 @@ def load_single_emeg(
                 pad = 370 - emeg.shape[0]
                 if pad > 0:
                     emeg = np.pad(emeg, ((0, pad), (0, 0)), mode="constant")
+            if freq_band == 'low':
+                sos = signal.butter(N=4, Wn=[1, 40], btype='bandpass', fs=1000, output='sos')
+                emeg = signal.sosfiltfilt(sos, emeg, axis=1)
+            elif freq_band == 'high':
+                sos = signal.butter(N=4, Wn=[70, 200], btype='bandpass', fs=1000, output='sos')
+                emeg = signal.sosfiltfilt(sos, emeg, axis=1)
             return emeg, channel_names
 
         if old_morph:
@@ -335,6 +353,7 @@ def load_emeg_pack(
     snr=4,
     old_morph=False,
     invsol_npy_dir=None,
+    freq_band: Optional[str] = None
 ):
     """
 
@@ -354,6 +373,7 @@ def load_emeg_pack(
         snr:
         old_morph:
         invsol_npy_dir:
+        freq_band:
 
     Returns:
         emeg: NDArray
@@ -396,6 +416,7 @@ def load_emeg_pack(
             old_morph=old_morph,
             premorphed_inverse_operator_path=invsol_paths[0],
             ch_names_path=ch_names_path,
+            freq_band=freq_band
         )
     except Exception as ex:
         _logger.error(f"Error loading EMEG data from {str(emeg_paths[0])}")
