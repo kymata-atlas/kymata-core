@@ -1,7 +1,5 @@
 # Possible default location for downloaded data
-kymata-core-data/tutorial_nkg_data/
-kymata-core-data/emeg_study_data/
-kymata-core-data/output/
+kymata-core-data/
 
 # Testing and coverage
 .coverage*
