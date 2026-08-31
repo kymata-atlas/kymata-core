@@ -18,17 +18,18 @@ args=(5) # 2 3 4 5 6 7 8 9 10)
 ARG=${args[$SLURM_ARRAY_TASK_ID - 1]}
 
 export PATH="$HOME/.local/bin:$PATH"
-cd /imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/ # Change to your own path to kymata-core
+cd /imaging/projects/cbu/kymata/analyses/tianyi/touch/kymata-core/ # Change to your own path to kymata-core
 source $(poetry env info --path)/bin/activate
 python kymata/invokers/run_gridsearch.py \
   --config dataset5.yaml \
   --input-stream tactile \
-  --transform-path 'predicted_function_contours/stimulisig_new' \
-  --transform-name LHSquareVib LHslowfluct RHSquareVib RHslowfluct  \
+  --transform-path 'predicted_function_contours/touchsim_ra' \
+  --transform-name LH_RA RH_RA \
   --plot-top-channels \
   --emeg-dir 'interim_preprocessing_files/3_trialwise_sensorspace/evoked_data' \
-  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/two_reps_without_11_thumb' \
-  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/kymata-core/kymata-core-data/output/tactile/new_fwd/two_reps_without_11_thumb' \
+  --save-expression-set-location '/imaging/projects/cbu/kymata/analyses/tianyi/touch/kymata-core/kymata-core-data/output/all_participants/raw' \
+  --save-plot-location '/imaging/projects/cbu/kymata/analyses/tianyi/touch/kymata-core/kymata-core-data/output/all_participants/raw' \
+  --save-name 'ra' \
   --overwrite \
   --use-inverse-operator \
   --inverse-operator-suffix '_ico5-3L-loose02-cps-nodepth-megonly-emptyroom60-inv.fif' \

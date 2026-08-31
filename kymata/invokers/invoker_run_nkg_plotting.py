@@ -163,26 +163,30 @@ def main():
 
     elif function_family_type == "tactile":
 
-        path_to_nkg_files = Path(path_to_nkg_files, "tactile")
+        # expression_data = load_expression_set(
+        #     Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', "all_tactile.nkg")
+        # )
 
         expression_data = load_expression_set(
-            Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', "all_tactile.nkg")
-        )
+            Path(path_to_nkg_files, 'all_participants', 'raw', "all_tactile.nkg")
+        )  
 
         name = expression_data.transforms
+
+        # import ipdb; ipdb.set_trace()
 
         fig_1 = expression_plot(
             expression_data,
             # xlims=(-200, 800),
             # minimap = 'large',
             # show_legend=False,
-            color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
-            | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
-            | constant_color_dict(['LHSquareVib_3', 'RHSquareVib_3'], color="green")
-            | constant_color_dict(['LHSquareVib_4', 'RHSquareVib_4'], color="yellow")
-            | constant_color_dict(['LHSquareVib_5', 'RHSquareVib_5'], color="orange"),
-            show_only=[i for i in name if 'SquareVib' in i],
-            title = 'Vibration detection',
+            color=constant_color_dict(['LH_PC_1', 'RH_PC_1'], color="red")
+            | constant_color_dict(['LH_PC_2', 'RH_PC_2'], color="blue")
+            | constant_color_dict(['LH_PC_3', 'RH_PC_3'], color="green")
+            | constant_color_dict(['LH_PC_4', 'RH_PC_4'], color="yellow")
+            | constant_color_dict(['LH_PC_5', 'RH_PC_5'], color="orange"),
+            show_only=[i for i in name if 'PC' in i],
+            title = 'PC',
         )
 
         fig_2 = expression_plot(
@@ -190,13 +194,13 @@ def main():
             # xlims=(-200, 800),
             # minimap = 'large',
             # show_legend=False,
-            color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
-            | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
-            | constant_color_dict(['LHslowfluct_3', 'RHslowfluct_3'], color="green")
-            | constant_color_dict(['LHslowfluct_4', 'RHslowfluct_4'], color="yellow")
-            | constant_color_dict(['LHslowfluct_5', 'RHslowfluct_5'], color="orange"),
-            show_only=[i for i in name if 'slowfluct' in i],
-            title = 'Vertical displacement',
+            color=constant_color_dict(['LH_SA_1', 'RH_SA_1'], color="red")
+            | constant_color_dict(['LH_SA_2', 'RH_SA_2'], color="blue")
+            | constant_color_dict(['LH_SA_3', 'RH_SA_3'], color="green")
+            | constant_color_dict(['LH_SA_4', 'RH_SA_4'], color="yellow")
+            | constant_color_dict(['LH_SA_5', 'RH_SA_5'], color="orange"),
+            show_only=[i for i in name if 'SA' in i],
+            title = 'SA',
         )
 
         fig_3 = expression_plot(
@@ -206,13 +210,13 @@ def main():
             # minimap_view='dorsal',
             # minimap_surface = 'pial',
             # show_legend=False,
-            color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
-            | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
-            | constant_color_dict(['LHSquareVib_3', 'RHSquareVib_3'], color="green")
-            | constant_color_dict(['LHSquareVib_4', 'RHSquareVib_4'], color="yellow")
-            | constant_color_dict(['LHSquareVib_5', 'RHSquareVib_5'], color="orange"),
-            show_only=[i for i in name if 'SquareVib' in i],
-            title = 'Vibration detection',
+            color=constant_color_dict(['LH_PC_1', 'RH_PC_1'], color="red")
+            | constant_color_dict(['LH_PC_2', 'RH_PC_2'], color="blue")
+            | constant_color_dict(['LH_PC_3', 'RH_PC_3'], color="green")
+            | constant_color_dict(['LH_PC_4', 'RH_PC_4'], color="yellow")
+            | constant_color_dict(['LH_PC_5', 'RH_PC_5'], color="orange"),
+            show_only=[i for i in name if 'PC' in i],
+            title = 'PC',
         )
 
         fig_4 = expression_plot(
@@ -222,95 +226,95 @@ def main():
             # minimap_view='dorsal',
             # minimap_surface = 'pial',
             # show_legend=False,
-            color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
-            | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
-            | constant_color_dict(['LHslowfluct_3', 'RHslowfluct_3'], color="green")
-            | constant_color_dict(['LHslowfluct_4', 'RHslowfluct_4'], color="yellow")
-            | constant_color_dict(['LHslowfluct_5', 'RHslowfluct_5'], color="orange"),
-            show_only=[i for i in name if 'slowfluct' in i],
-            title = 'Vertical displacement',
+            color=constant_color_dict(['LH_SA_1', 'RH_SA_1'], color="red")
+            | constant_color_dict(['LH_SA_2', 'RH_SA_2'], color="blue")
+            | constant_color_dict(['LH_SA_3', 'RH_SA_3'], color="green")
+            | constant_color_dict(['LH_SA_4', 'RH_SA_4'], color="yellow")
+            | constant_color_dict(['LH_SA_5', 'RH_SA_5'], color="orange"),
+            show_only=[i for i in name if 'SA' in i],
+            title = 'SA',
         )
 
-        fig_1.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', "Vib_detect.png"))
-        fig_2.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', "Vert_disp.png"))
-        fig_3.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', "Vib_detect_brain.png"))
-        fig_4.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', "Vert_disp_brain.png"))
+        fig_1.savefig(Path(path_to_nkg_files, 'all_participants', 'plots', "PC.png"))
+        fig_2.savefig(Path(path_to_nkg_files, 'all_participants', 'plots', "SA.png"))
+        fig_3.savefig(Path(path_to_nkg_files, 'all_participants', 'plots', "PC_brain.png"))
+        fig_4.savefig(Path(path_to_nkg_files, 'all_participants', 'plots', "SA_brain.png"))
 
 
 
-        for i in range(1,6):
+        # for i in range(1,6):
 
-            expression_data_Vib_detect = expression_data[f'LHSquareVib_{i}', f'RHSquareVib_{i}']
-            expression_data_Vert_disp = expression_data[f'LHslowfluct_{i}', f'RHslowfluct_{i}']
+        #     expression_data_Vib_detect = expression_data[f'LH_PC_{i}', f'RH_PC_{i}']
+        #     expression_data_Vert_disp = expression_data[f'LH_SA_{i}', f'RH_SA_{i}']
 
-            fig_1 = expression_plot(
-                # expression_data,
-                expression_data_Vib_detect,
-                # xlims=(-200, 800),
-                # minimap = 'large',
-                # show_legend=False,
-                color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
-                | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
-                | constant_color_dict(['LHSquareVib_3', 'RHSquareVib_3'], color="green")
-                | constant_color_dict(['LHSquareVib_4', 'RHSquareVib_4'], color="yellow")
-                | constant_color_dict(['LHSquareVib_5', 'RHSquareVib_5'], color="orange"),
-                show_only=[i for i in name if 'SquareVib' in i],
-                title = 'Vibration detection',
-            )
+        #     fig_1 = expression_plot(
+        #         # expression_data,
+        #         expression_data_Vib_detect,
+        #         # xlims=(-200, 800),
+        #         # minimap = 'large',
+        #         # show_legend=False,
+        #         color=constant_color_dict(['LH_PC_1', 'RH_PC_1'], color="red")
+        #         | constant_color_dict(['LH_PC_2', 'RH_PC_2'], color="blue")
+        #         | constant_color_dict(['LH_PC_3', 'RH_PC_3'], color="green")
+        #         | constant_color_dict(['LH_PC_4', 'RH_PC_4'], color="yellow")
+        #         | constant_color_dict(['LH_PC_5', 'RH_PC_5'], color="orange"),
+        #         show_only=[i for i in name if 'SquareVib' in i],
+        #         title = 'Vibration detection',
+        #     )
 
-            fig_2 = expression_plot(
-                # expression_data,
-                expression_data_Vert_disp,
-                # xlims=(-200, 800),
-                # minimap = 'large',
-                # show_legend=False,
-                color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
-                | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
-                | constant_color_dict(['LHslowfluct_3', 'RHslowfluct_3'], color="green")
-                | constant_color_dict(['LHslowfluct_4', 'RHslowfluct_4'], color="yellow")
-                | constant_color_dict(['LHslowfluct_5', 'RHslowfluct_5'], color="orange"),
-                show_only=[i for i in name if 'slowfluct' in i],
-                title = 'Vertical displacement',
-            )
+        #     fig_2 = expression_plot(
+        #         # expression_data,
+        #         expression_data_Vert_disp,
+        #         # xlims=(-200, 800),
+        #         # minimap = 'large',
+        #         # show_legend=False,
+        #         color=constant_color_dict(['LH_SA_1', 'RH_SA_1'], color="red")
+        #         | constant_color_dict(['LH_SA_2', 'RH_SA_2'], color="blue")
+        #         | constant_color_dict(['LH_SA_3', 'RH_SA_3'], color="green")
+        #         | constant_color_dict(['LH_SA_4', 'RH_SA_4'], color="yellow")
+        #         | constant_color_dict(['LH_SA_5', 'RH_SA_5'], color="orange"),
+        #         show_only=[i for i in name if 'slowfluct' in i],
+        #         title = 'Vertical displacement',
+        #     )
 
-            fig_3 = expression_plot(
-                # expression_data,
-                expression_data_Vib_detect,
-                # xlims=(-200, 800),
-                minimap = 'large',
-                # minimap_view='dorsal',
-                # minimap_surface = 'pial',
-                # show_legend=False,
-                color=constant_color_dict(['LHSquareVib_1', 'RHSquareVib_1'], color="red")
-                | constant_color_dict(['LHSquareVib_2', 'RHSquareVib_2'], color="blue")
-                | constant_color_dict(['LHSquareVib_3', 'RHSquareVib_3'], color="green")
-                | constant_color_dict(['LHSquareVib_4', 'RHSquareVib_4'], color="yellow")
-                | constant_color_dict(['LHSquareVib_5', 'RHSquareVib_5'], color="orange"),
-                show_only=[i for i in name if 'SquareVib' in i],
-                title = 'Vibration detection',
-            )
+        #     fig_3 = expression_plot(
+        #         # expression_data,
+        #         expression_data_Vib_detect,
+        #         # xlims=(-200, 800),
+        #         minimap = 'large',
+        #         # minimap_view='dorsal',
+        #         # minimap_surface = 'pial',
+        #         # show_legend=False,
+        #         color=constant_color_dict(['LH_PC_1', 'RH_PC_1'], color="red")
+        #         | constant_color_dict(['LH_PC_2', 'RH_PC_2'], color="blue")
+        #         | constant_color_dict(['LH_PC_3', 'RH_PC_3'], color="green")
+        #         | constant_color_dict(['LH_PC_4', 'RH_PC_4'], color="yellow")
+        #         | constant_color_dict(['LH_PC_5', 'RH_PC_5'], color="orange"),
+        #         show_only=[i for i in name if 'SquareVib' in i],
+        #         title = 'Vibration detection',
+        #     )
 
-            fig_4 = expression_plot(
-                # expression_data,
-                expression_data_Vert_disp,
-                # xlims=(-200, 800),
-                minimap = 'large',
-                # minimap_view='dorsal',
-                # minimap_surface = 'pial',
-                # show_legend=False,
-                color=constant_color_dict(['LHslowfluct_1', 'RHslowfluct_1'], color="red")
-                | constant_color_dict(['LHslowfluct_2', 'RHslowfluct_2'], color="blue")
-                | constant_color_dict(['LHslowfluct_3', 'RHslowfluct_3'], color="green")
-                | constant_color_dict(['LHslowfluct_4', 'RHslowfluct_4'], color="yellow")
-                | constant_color_dict(['LHslowfluct_5', 'RHslowfluct_5'], color="orange"),
-                show_only=[i for i in name if 'slowfluct' in i],
-                title = 'Vertical displacement',
-            )
+        #     fig_4 = expression_plot(
+        #         # expression_data,
+        #         expression_data_Vert_disp,
+        #         # xlims=(-200, 800),
+        #         minimap = 'large',
+        #         # minimap_view='dorsal',
+        #         # minimap_surface = 'pial',
+        #         # show_legend=False,
+        #         color=constant_color_dict(['LH_SA_1', 'RH_SA_1'], color="red")
+        #         | constant_color_dict(['LH_SA_2', 'RH_SA_2'], color="blue")
+        #         | constant_color_dict(['LH_SA_3', 'RH_SA_3'], color="green")
+        #         | constant_color_dict(['LH_SA_4', 'RH_SA_4'], color="yellow")
+        #         | constant_color_dict(['LH_SA_5', 'RH_SA_5'], color="orange"),
+        #         show_only=[i for i in name if 'slowfluct' in i],
+        #         title = 'Vertical displacement',
+        #     )
 
-            fig_1.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vib_detect_{i}.png"))
-            fig_2.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vert_disp_{i}.png"))
-            fig_3.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vib_detect_brain_{i}.png"))
-            fig_4.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vert_disp_brain_{i}.png"))
+        #     fig_1.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vib_detect_{i}.png"))
+        #     fig_2.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vert_disp_{i}.png"))
+        #     fig_3.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vib_detect_brain_{i}.png"))
+        #     fig_4.savefig(Path(path_to_nkg_files, 'new_fwd', 'two_reps_without_11_thumb', 'plots', f"Vert_disp_brain_{i}.png"))
 
 
 

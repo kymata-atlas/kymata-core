@@ -322,7 +322,7 @@ def main():
             if num_reps > 1:
                 emeg_filenames = []
                 for p in participants:
-                    if not (i == 1 and '11' in p):
+                    if (not (i == 1 and '11' in p) and len(participants) >= 3) or len(participants) < 3:
                         if (
                             p.startswith("participant_")
                             and int(p.split("_")[1].rstrip("b")) > 10
@@ -404,13 +404,26 @@ def main():
 
             for transform_name in args.transform_name:
                 _logger.info(f"Running gridsearch on {transform_name}")
-                transform = load_transform(
-                    transform_path,
-                    trans_name=transform_name + f"_{i}",
-                    replace_nans=args.replace_nans,
-                    bruce_neurons=(5, 10),
-                    sample_rate=args.transform_sample_rate,
-                )
+
+                if transform_name == 'test':
+
+                    transform = load_transform(
+                        transform_path,
+                        trans_name=transform_name,
+                        replace_nans=args.replace_nans,
+                        bruce_neurons=(5, 10),
+                        sample_rate=args.transform_sample_rate,
+                    )
+                    
+                else:
+
+                    transform = load_transform(
+                        transform_path,
+                        trans_name=transform_name + f"_{i}",
+                        replace_nans=args.replace_nans,
+                        bruce_neurons=(5, 10),
+                        sample_rate=args.transform_sample_rate,
+                    )
 
                 # Resample transform to match target sample rate if specified, else emeg sample rate
                 transform_resample_rate = args.resample if args.resample is not None else emeg_sample_rate
@@ -451,6 +464,10 @@ def main():
                 all_es = combined_expression_set
             else:
                 all_es += combined_expression_set
+
+            if transform_name == 'test':
+                
+                break
 
             del emeg_values, ch_names, n_reps, combined_expression_set, transform
             gc.collect()
