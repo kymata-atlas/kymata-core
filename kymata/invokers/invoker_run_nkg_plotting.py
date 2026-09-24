@@ -9,7 +9,7 @@ from kymata.plot.color import constant_color_dict
 
 
 def main():
-    function_family_type = "standard"  # 'standard' or 'ANN'
+    function_family_type = "all"  # 'standard' or 'ANN' or 'all'
     path_to_nkg_files = Path(
         Path(__file__).parent.parent.parent, "kymata-core-data", "output"
     )
@@ -160,6 +160,42 @@ def main():
         )
 
         fig.savefig(Path(path_to_nkg_files, "expression_plot.png"))
+
+    elif function_family_type == "all":
+        nkg_files = sorted(path_to_nkg_files.glob("*.nkg"))
+        if not nkg_files:
+            raise FileNotFoundError(f"No .nkg files found in {path_to_nkg_files}")
+
+        expression_data = load_expression_set(nkg_files[0])
+        for nkg_file in nkg_files[1:]:
+            expression_data += load_expression_set(nkg_file)
+
+        neurogram_transforms = []
+        il1_to_il9_transforms = []
+        il_transforms = []
+        stl_transforms = []
+        for transform in expression_data.transforms:
+            name = str(transform)
+            if "neurogram" in name.lower():
+                neurogram_transforms.append(transform)
+            elif name in {f"IL{i}" for i in range(1, 10)}:
+                il1_to_il9_transforms.append(transform)
+            elif name == "IL":
+                il_transforms.append(transform)
+            elif name == "STL":
+                stl_transforms.append(transform)
+
+        expression_plot(
+            expression_data,
+            color=(
+                constant_color_dict(neurogram_transforms, color="#2cbf93")
+                | constant_color_dict(il1_to_il9_transforms, color="#a201e9")
+                | constant_color_dict(il_transforms, color="#b11e34")
+                | constant_color_dict(stl_transforms, color="#d388b5")
+            ),
+            show_legend=True,
+            save_to=Path(path_to_nkg_files, "expression_plot_all.png"),
+        )
 
 
 if __name__ == "__main__":
