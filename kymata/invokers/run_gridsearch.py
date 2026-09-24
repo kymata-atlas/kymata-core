@@ -43,6 +43,7 @@ def main(
         transform_path: str = "predicted_function_contours/GMSloudness/stimulisig",
         transform_sample_rate: float = 1000,
         replace_nans: Optional[Literal["zero", "mean"]] = None,
+        neurogram_range: Optional[tuple[int, int]] = (5, 11),
         # Paths
         emeg_dir: str = "interim_preprocessing_files/3_trialwise_sensorspace/evoked_data/",
         data_root: Path = Path("/imaging/projects/cbu/kymata/data/"),
@@ -239,7 +240,7 @@ def main(
             transform_path,
             trans_name=transform_name,
             replace_nans=replace_nans,
-            bruce_neurons=(5, 10),
+            bruce_neurons=neurogram_range,
             sample_rate=transform_sample_rate,
         )
 

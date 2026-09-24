@@ -57,6 +57,7 @@ def load_transform(
 
             trans = trans_dict[trans_name]
             trans = np.mean(trans[bruce_neurons[0] : bruce_neurons[1]], axis=0)
+        trans_name = trans_name + f"_{bruce_neurons[0]}_{bruce_neurons[1]}"
 
     else:
         if not transform_path_without_suffix.with_suffix(".npz").exists():
