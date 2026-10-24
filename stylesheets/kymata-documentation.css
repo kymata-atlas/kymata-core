@@ -1,0 +1,38 @@
+:root {
+  --md-primary-fg-color:        rgb(227, 157, 95);
+  --md-primary-fg-color--light: rgb(238, 206, 178);
+  --md-primary-fg-color--dark:  rgb(243, 130, 31);
+
+
+  --md-accent-fg-color:        rgb(137, 110, 183);
+  --md-accent-fg-color--light: rgb(191, 176, 217);
+  --md-accent-fg-color--dark:  rgb(128, 79, 214);
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-width: 0;
+  border-left-width: 4px;
+}
+
+.md-typeset .admonition.notes,
+.md-typeset details {
+  border-color: rgb(227, 157, 95);
+}
+.md-typeset .notes > .admonition-title,
+.md-typeset .algorithm > .admonition-title,
+.md-typeset .analysis > .admonition-title,
+.md-typeset .notes > summary,
+.md-typeset .algorithm > summary,
+.md-typeset .analysis > summary{
+  background-color: rgb(238, 206, 178);
+  color: white;
+}
+.md-typeset .notes > .admonition-title::before,
+.md-typeset .algorithm > .admonition-title::before,
+.md-typeset .analysis > .admonition-title::before,
+.md-typeset .notes > summary::before,
+.md-typeset .algorithm > summary::before,
+.md-typeset .analysis > summary::before{
+  background-color: rgb(227, 157, 95);
+}
