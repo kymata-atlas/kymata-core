@@ -3,13 +3,13 @@ import numpy as np
 import pytest
 from numpy import ones
 
-from kymata.entities.contours import Contours
+from kymata.entities.contours import ContourSet
 from kymata.io.contours import save_contours, load_contours
 
 
 @pytest.fixture
 def example_contours():
-    return Contours(
+    return ContourSet(
         {"TRANS1": ones((400,)),
          "TRANS2": 2*ones((1, 400))},
         author="Cai Wingfield <cai.wingfield@kymata.org>",
@@ -18,7 +18,7 @@ def example_contours():
     )
 
 
-def test_io_contours_save_load_roundtrip(example_contours: Contours, tmp_path):
+def test_io_contours_save_load_roundtrip(example_contours: ContourSet, tmp_path):
 
     file_path = tmp_path / "test.contours"
 
@@ -35,7 +35,7 @@ def test_io_contours_save_load_roundtrip(example_contours: Contours, tmp_path):
         np.testing.assert_array_equal(loaded[name], example_contours[name])
 
 
-def test_io_contours_replace_sample_rate(example_contours: Contours, tmp_path):
+def test_io_contours_replace_sample_rate(example_contours: ContourSet, tmp_path):
 
     file_path = tmp_path / "test.contours"
 

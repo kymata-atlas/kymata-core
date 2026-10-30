@@ -5,7 +5,7 @@ from numpy import squeeze, float32
 from numpy.typing import NDArray
 
 
-class Contours(Mapping):
+class ContourSet(Mapping):
     """
     Represents a collection of transform contours with associated metadata.
     """
@@ -69,7 +69,7 @@ class Contours(Mapping):
                 f"    {sep.join(self.names)}"
                 f") duration {self.duration_seconds:.2f} seconds")
 
-    def add_contour(self, transform_name: str, transform_contour: NDArray):
+    def add_contour(self, transform_name: str, transform_contour: NDArray) -> None:
         """Adds a contour with the specified name to the list."""
         transform_contour = _normalise_contour_format(transform_contour)
         if len(transform_contour) != self.duration_samples:
