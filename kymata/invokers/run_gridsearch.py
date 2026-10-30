@@ -4,12 +4,14 @@ import time
 from sys import stdout
 from typing import Optional, Literal, Annotated
 
+import numpy as np
 from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
+from kymata.entities.contours import Contour
 from kymata.gridsearch.plain import do_gridsearch
-from kymata.io.compatibility.transform import load_transform_legacy
 from kymata.io.config import load_config
+from kymata.io.contours import load_contours
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import save_expression_set
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
@@ -38,7 +40,7 @@ def get_config_value_with_fallback(config: dict, config_key: str, fallback):
 def main(
         config: str,
         # Transforms
-        transform_name: Annotated[list[str], Parameter(consume_multiple=True)],
+        transform_names: Annotated[list[str], Parameter(consume_multiple=True)],
         input_stream: Literal["auditory", "visual", "tactile"],
         transform_path: str = "predicted_function_contours/GMSloudness/stimulisig",
         transform_sample_rate: float = 1000,
@@ -73,10 +75,12 @@ def main(
     Run the plain gridsearch.
     
     Args:
-        config: Either the path to the config file to be used, or the name of the config file to be used if included with kymata-core.
-        transform_name: "transform names in stimulisig".
+        config: Either the path to the config file to be used, or the name of the config file to be used if included
+            with kymata-core.
+        transform_names: "transform names in stimulisig".
         input_stream: The input stream for the transforms being tested.
-        transform_path: Location of transform stimulisig. Either supply relative to the data dir, or as an absolute path. Both `.npz` and `.mat` extensions will be checked, in that order.
+        transform_path: Location of transform stimulisig. Either supply relative to the data dir, or as an absolute
+            path. Both `.npz` and `.mat` extensions will be checked, in that order.
         transform_sample_rate: The original sample rate of the transform contour.
         replace_nans: If the transform contour contains NaN values, this will replace them with the specified values.
         emeg_dir: EMEG directory, relative to base dir
@@ -86,7 +90,8 @@ def main(
         save_plot_location: Save an expression plots, and other plots, in this location.
         single_participant_override: Supply to run only on one participant
         ave_mode: `ave`: average over the list of repetitions. `concatenate`: treat them as extra data.
-        resample: Resample rate for both transform and EMEG data, in Hz. (E.g. if the transform sample rate is 1000Hz, this can be 100, 200, 250, 500, 1000.
+        resample: Resample rate for both transform and EMEG data, in Hz. (E.g. if the transform sample rate is 1000Hz,
+            this can be 100, 200, 250, 500, 1000.
         seconds_per_split: Seconds in each split of the recording, also maximum range of latencies being checked
         n_splits: Number of splits to split the recording into, (set to stimulus_length/seconds_per_split for full file).
         n_derangements: Number of deragements for the null distribution.
@@ -94,7 +99,8 @@ def main(
         emeg_t_start: Start of the emeg evoked files relative to the start of the transform.
         use_inverse_operator: Use inverse operator to conduct gridsearch in source space.
         inverse_operator_suffix: Inverse solution suffix.
-        morph: Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse operator is specified.
+        morph: Morph hexel data to fs-average space prior to running gridsearch. Only has an effect if an inverse
+            operator is specified.
         snr: Inverse solution SNR.
         plot_top_channels: Plots the p-values and correlations of the top channels in the gridsearch.
         overwrite: Silently overwrite existing files.
@@ -188,7 +194,7 @@ def main(
 
     _logger.info("Starting Kymata Gridsearch")
     _logger.info(f"Dataset: {dataset_config.get('dataset_directory_name')}")
-    _logger.info(f"Transforms to be tested: {transform_name}")
+    _logger.info(f"Transforms to be tested: {transform_names}")
     _logger.info(f"Gridsearch will be applied in {channel_space} space")
     if use_inverse_operator:
         _logger.info(f"Inverse operator: {inverse_operator_suffix}")
@@ -219,12 +225,14 @@ def main(
 
     combined_expression_set = None
 
-    # Get stimulisig path
+    # Load contours
     if Path(transform_path).exists():
         transform_path = Path(transform_path)
     else:
         transform_path = Path(base_dir, transform_path)
     _logger.info(f"Loading transforms from {str(transform_path)}")
+    # WHEN MODERNISING: shouldn't need to override this here; should be optional CLI argument
+    contours = load_contours(transform_path, replace_sample_rate=transform_sample_rate)
 
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
@@ -233,29 +241,25 @@ def main(
         eeg=EEGLayout(dataset_config["eeg_sensor_layout"]),
     )
 
-    for transform_name in transform_name:
+    for transform_name in transform_names:
         _logger.info(f"Running gridsearch on {transform_name}")
-        transform = load_transform_legacy(
-            transform_path,
-            trans_name=transform_name,
-            replace_nans=replace_nans,
-            bruce_neurons=(5, 10),
-            sample_rate=transform_sample_rate,
-        )
+        contour = contours[transform_name]
+        if replace_nans:
+            contour = _do_replace_nans(contour, replace_nans)
 
         # Resample transform to match target sample rate if specified, else emeg sample rate
         transform_resample_rate = resample if resample is not None else emeg_sample_rate
-        if transform.sample_rate_hz != transform_resample_rate:
-            _logger.info(f"Transform sample rate ({transform.sample_rate_hz} Hz) doesn't match target sample rate "
+        if contour.sample_rate_hz != transform_resample_rate:
+            _logger.info(f"Transform sample rate ({contour.sample_rate_hz} Hz) doesn't match target sample rate "
                          f"({transform_resample_rate} Hz). Transform will be resampled to match. "
-                         f"({transform.sample_rate_hz} → {transform_resample_rate} Hz)")
-            transform = transform.resampled(transform_resample_rate)
+                         f"({contour.sample_rate_hz} → {transform_resample_rate} Hz)")
+            contour = contour.resampled(transform_resample_rate)
 
         es = do_gridsearch(
             emeg_values=emeg_values,
             channel_names=ch_names,
             channel_space=channel_space,
-            transform=transform,
+            contour=contour,
             seconds_per_split=seconds_per_split,
             n_derangements=n_derangements,
             n_splits=n_splits,
@@ -282,10 +286,10 @@ def main(
     combined_names: str
     if save_name is not None and len(save_name) > 0:
         combined_names = save_name
-    elif len(transform_name) > 2:
-        combined_names = f"{len(transform_name)}_transforms_gridsearch"
+    elif len(transform_names) > 2:
+        combined_names = f"{len(transform_names)}_transforms_gridsearch"
     else:
-        combined_names = "_+_".join(transform_name) + "_gridsearch"
+        combined_names = "_+_".join(transform_names) + "_gridsearch"
 
     if save_expression_set_location is not None:
         es_save_path = Path(
@@ -330,6 +334,27 @@ def main(
     _logger.info(
         f'Time taken for code to run: {time.strftime("%H:%M:%S", time.gmtime(total_time_in_seconds))} ({total_time_in_seconds:.4f}s)'
     )
+
+
+def _do_replace_nans(contour: Contour, replace_nans: str | None) -> Contour:
+    n_nan = np.count_nonzero(np.isnan(contour.values))
+    if n_nan > 0:
+        nan_message = f"Transform contained {n_nan:,} NaNs, ({100 * n_nan / np.prod(contour.values.shape):.2f}%)"
+        if replace_nans is None:
+            raise ValueError(f"{nan_message}. Consider replacing small numbers of unavoidable NaNs with zeros or the "
+                             f"transform mean value.")
+        elif replace_nans == "zero":
+            _logger.warning(f"{nan_message}. Replacing with zeros.")
+            contour.values[np.isnan(contour.values)] = 0
+        elif replace_nans == "mean":
+            _logger.warning(f"{nan_message}. Replacing with the transform mean.")
+            contour.values[np.isnan(contour.values)] = np.nanmean(contour.values)
+        else:
+            raise NotImplementedError()
+
+    assert not np.isnan(contour.values).any()
+
+    return contour
 
 
 if __name__ == "__main__":

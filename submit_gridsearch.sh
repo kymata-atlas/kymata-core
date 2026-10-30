@@ -27,7 +27,7 @@ python -m kymata.invokers.run_gridsearch \
   --config dataset4.yaml \
   --input-stream auditory \
   --transform-path 'predicted_function_contours/GMSloudness/stimulisig' \
-  --transform-name IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
+  --transform-names IL STL IL1 IL2 IL3 IL4 IL5 IL6 IL7 IL8 IL9  \
   --plot-top-channels \
   --overwrite
 
