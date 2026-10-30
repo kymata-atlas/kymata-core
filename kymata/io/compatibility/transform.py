@@ -5,11 +5,10 @@ from typing import Optional
 import numpy as np
 
 from kymata.entities.contours import Contour
-from kymata.io.compatibility.neurogram import load_neurogram_mat, load_neurogram_npz
+from kymata.io.compatibility.neurogram import load_neurogram_npz, load_neurogram_mat
 from kymata.io.compatibility.stimulisig import load_stimulisig_mat
 from kymata.io.contours import load_contours
 from kymata.io.file import PathType
-
 
 _logger = getLogger(__file__)
 
@@ -52,15 +51,10 @@ def load_transform_legacy(
 
     n_nan = np.count_nonzero(np.isnan(trans))
     if n_nan > 0:
-        nan_message = (
-            f"Transform contained {n_nan:,} NaNs, ({100*n_nan/np.prod(trans.shape):.2f}%)"
-        )
+        nan_message = f"Transform contained {n_nan:,} NaNs, ({100*n_nan/np.prod(trans.shape):.2f}%)"
         if replace_nans is None:
-            raise ValueError(
-                f"{nan_message}. "
-                "Consider replacing small numbers of unavoidable NaNs with zeros or the transform mean "
-                "value."
-            )
+            raise ValueError(f"{nan_message}. Consider replacing small numbers of unavoidable NaNs with zeros or the "
+                             f"transform mean value.")
         elif replace_nans == "zero":
             _logger.warning(f"{nan_message}. Replacing with zeros.")
             trans[np.isnan(trans)] = 0
