@@ -220,7 +220,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
     # For each, delegate to the appropriate _load_data_x_y() function, then
     # ensure the keys are set correctly.
     if v <= version.parse("0.1"):
-        from kymata.io.nkg_compatibility import _load_data_0_1
+        from kymata.io.compatibility.nkg_versions import _load_data_0_1
 
         dict_0_1 = _load_data_0_1(from_path_or_file)
 
@@ -260,7 +260,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.2"):
-        from kymata.io.nkg_compatibility import _load_data_0_2
+        from kymata.io.compatibility.nkg_versions import _load_data_0_2
 
         dict_0_2 = _load_data_0_2(from_path_or_file)
 
@@ -302,7 +302,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.3"):
-        from kymata.io.nkg_compatibility import _load_data_0_3
+        from kymata.io.compatibility.nkg_versions import _load_data_0_3
 
         dict_0_3 = _load_data_0_3(from_path_or_file)
 
@@ -342,7 +342,7 @@ def _load_data(from_path_or_file: PathType | FileType) -> tuple[version.Version,
             _Keys.eeg_layout: None,
         }
     elif v <= version.parse("0.4"):
-        from kymata.io.nkg_compatibility import _load_data_0_4
+        from kymata.io.compatibility.nkg_versions import _load_data_0_4
 
         dict_0_4 = _load_data_0_4(from_path_or_file)
 
