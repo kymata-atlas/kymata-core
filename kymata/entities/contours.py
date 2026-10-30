@@ -23,7 +23,7 @@ class Contours(Mapping):
         # Validate and store contour dict
         self._contour_dict: OrderedDict[str, NDArray] = OrderedDict()
         validation_length = None
-        for contour_name, contour_array in contour_dict.values():
+        for contour_name, contour_array in contour_dict.items():
             contour: NDArray = _normalise_contour_format(contour_array)
 
             if contour.ndim > 1:
