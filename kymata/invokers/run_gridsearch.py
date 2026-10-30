@@ -245,10 +245,10 @@ def main(
 
         # Resample transform to match target sample rate if specified, else emeg sample rate
         transform_resample_rate = resample if resample is not None else emeg_sample_rate
-        if transform.sample_rate != transform_resample_rate:
-            _logger.info(f"Transform sample rate ({transform.sample_rate} Hz) doesn't match target sample rate "
+        if transform.sample_rate_hz != transform_resample_rate:
+            _logger.info(f"Transform sample rate ({transform.sample_rate_hz} Hz) doesn't match target sample rate "
                          f"({transform_resample_rate} Hz). Transform will be resampled to match. "
-                         f"({transform.sample_rate} → {transform_resample_rate} Hz)")
+                         f"({transform.sample_rate_hz} → {transform_resample_rate} Hz)")
             transform = transform.resampled(transform_resample_rate)
 
         es = do_gridsearch(
