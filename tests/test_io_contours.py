@@ -32,7 +32,7 @@ def test_io_contours_save_load_roundtrip(example_contours: ContourSet, tmp_path)
     assert loaded.author == example_contours.author
 
     for name in example_contours.names:
-        np.testing.assert_array_equal(loaded[name], example_contours[name])
+        np.testing.assert_array_equal(loaded[name].values, example_contours[name].values)
 
 
 def test_io_contours_replace_sample_rate(example_contours: ContourSet, tmp_path):
@@ -49,7 +49,7 @@ def test_io_contours_replace_sample_rate(example_contours: ContourSet, tmp_path)
     assert loaded.author == example_contours.author
 
     for name in example_contours.names:
-        np.testing.assert_array_equal(loaded[name], example_contours[name])
+        np.testing.assert_array_equal(loaded[name].values, example_contours[name].values)
 
 
 def test_save_contours_does_not_overwrite(example_contours, tmp_path):
@@ -77,4 +77,4 @@ def test_load_contours_npz(tmp_path):
     assert loaded.names == list(data.keys())
 
     for name, expected in data.items():
-        np.testing.assert_array_equal(loaded[name], expected)
+        np.testing.assert_array_equal(loaded[name].values, expected)
