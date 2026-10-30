@@ -35,9 +35,26 @@ def test_io_contours_save_load_roundtrip(example_contours: Contours, tmp_path):
         np.testing.assert_array_equal(loaded[name], example_contours[name])
 
 
+def test_io_contours_replace_sample_rate(example_contours: Contours, tmp_path):
+
+    file_path = tmp_path / "test.contours"
+
+    save_contours(example_contours, file_path)
+
+    loaded = load_contours(file_path, replace_sample_rate=10)
+
+    assert loaded.names == example_contours.names
+    assert loaded.sample_rate_hz == 10
+    assert loaded.description == example_contours.description
+    assert loaded.author == example_contours.author
+
+    for name in example_contours.names:
+        np.testing.assert_array_equal(loaded[name], example_contours[name])
+
+
 def test_save_contours_does_not_overwrite(example_contours, tmp_path):
     """Test that existing files are not overwritten by default."""
-    file_path = tmp_path / f"test.mysuffix"
+    file_path = tmp_path / "test.mysuffix"
 
     save_contours(example_contours, file_path)
 
