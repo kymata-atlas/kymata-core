@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy import stats
 
-from kymata.entities.transform import Transform
+from kymata.entities.contours import Contour
 from kymata.math.combinatorics import generate_derangement
 from kymata.io.layouts import SensorLayout
 from kymata.math.vector import normalize, window_stds_unnorm
@@ -19,7 +19,7 @@ _logger = getLogger(__name__)
 
 def do_gridsearch(
     emeg_values: NDArray,  # chans x reps x time
-    transform: Transform,
+    transform: Contour,
     channel_names: list,
     channel_space: str,
     start_latency: float,  # seconds
@@ -46,7 +46,7 @@ def do_gridsearch(
 
     Args:
         emeg_values (NDArray): A 2D array of EMEG values with shape (channels, reps, time).
-        transform (Transform): The transform against which the EMEG data will be correlated. It should
+        transform (Contour): The transform against which the EMEG data will be correlated. It should
             have a `values` attribute representing the transform's values and a `sample_rate`
             attribute indicating its sample rate.
         channel_names (list): List of channel names corresponding to the EMEG data. For 'sensor' space,
@@ -93,16 +93,16 @@ def do_gridsearch(
         raise NotImplementedError(channel_space)
 
     # We'll need to downsample the EMEG to match the transform's sample rate
-    if emeg_sample_rate != transform.sample_rate:
+    if emeg_sample_rate != transform.sample_rate_hz:
         _logger.warning(f"Data sample rate ({emeg_sample_rate} Hz) and "
-                        f"transform sample rate ({transform.sample_rate} Hz) differ. "
+                        f"transform sample rate ({transform.sample_rate_hz} Hz) differ. "
                         f"Data will be down-sampled.")
-    downsample_ratio = emeg_sample_rate / transform.sample_rate
+    downsample_ratio = emeg_sample_rate / transform.sample_rate_hz
     if downsample_ratio.is_integer():
-        downsample_rate: int = int(emeg_sample_rate / transform.sample_rate)
+        downsample_rate: int = int(emeg_sample_rate / transform.sample_rate_hz)
     else:
         raise ValueError(f"Data sample rate ({emeg_sample_rate} Hz) and "
-                         f"transform sample rate ({transform.sample_rate} Hz) are incompatible.")
+                         f"transform sample rate ({transform.sample_rate_hz} Hz) are incompatible.")
 
     n_samples_per_split = int(seconds_per_split * emeg_sample_rate * 2 // downsample_rate)
 
@@ -111,8 +111,8 @@ def do_gridsearch(
 
     _logger.info(f"Total EMEG length is {emeg_values.shape[2] / emeg_sample_rate:.2f} s"
                  f" @ {emeg_sample_rate} Hz")
-    _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate:.2f} s"
-                 f" @ {transform.sample_rate} Hz")
+    _logger.info(f"Total transform length is {transform.values.shape[0] / transform.sample_rate_hz:.2f} s"
+                 f" @ {transform.sample_rate_hz} Hz")
 
     trans_length = n_splits * n_trans_samples_per_split
     if trans_length < transform.values.shape[0]:
