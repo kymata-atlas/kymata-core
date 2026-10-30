@@ -219,7 +219,7 @@ def do_gridsearch(
         plot_top_five_channels_of_gridsearch(
             latencies=latencies_ms,
             corrs=corrs,
-            transform=transform,
+            transform_name=transform.name,
             auto_corr=auto_corrs,
             save_to=plot_location,
             logp_values=log_pvalues,
