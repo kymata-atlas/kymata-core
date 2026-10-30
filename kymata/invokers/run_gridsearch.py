@@ -8,7 +8,7 @@ from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
-from kymata.io.transform import load_transform
+from kymata.io.transform import load_transform_legacy
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import save_expression_set
@@ -235,7 +235,7 @@ def main(
 
     for transform_name in transform_name:
         _logger.info(f"Running gridsearch on {transform_name}")
-        transform = load_transform(
+        transform = load_transform_legacy(
             transform_path,
             trans_name=transform_name,
             replace_nans=replace_nans,
