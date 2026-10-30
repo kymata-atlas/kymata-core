@@ -112,12 +112,15 @@ def save_contours(contours: Contours, to_file: PathType, overwrite: bool = False
         overwrite:
     """
     to_file = Path(to_file)
-    if not to_file.suffix:
-        to_file = to_file.with_suffix(_contours_suffix)
+    supplied_suffix = to_file.suffix
+    if not supplied_suffix:
+        supplied_suffix = _contours_suffix
     if to_file.exists() and not overwrite:
         raise FileExistsError(str(to_file))
     np.savez_compressed(
-        file=to_file,
+        file=to_file.with_suffix(".npz"),
         allow_pickle=False,
         **_data_dict(contours),
     )
+    # Save with the suffix supplied
+    to_file.with_suffix(".npz").rename(to_file.with_suffix(supplied_suffix))
