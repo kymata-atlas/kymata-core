@@ -2,10 +2,14 @@ from pathlib import Path
 from typing import OrderedDict
 
 import numpy as np
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from kymata.entities.contours import Contours
 from kymata.io.file import PathType
+
+
+_contours_suffix = ".contours"
+_contours_format_version = "0.1"
 
 
 class _CArrKeys:
@@ -17,8 +21,7 @@ class _CArrKeys:
     author      = "_kymata-contours-author"
     order       = "_kymata-contours-order"
 
-
-_contours_suffix = ".contours"
+    version     = "_kymata-contours-format-version"
 
 
 def load_contours(
@@ -93,6 +96,8 @@ def _data_dict(contours: Contours) -> dict[str, str | NDArray]:
     if contours.author is not None:
         d[_CArrKeys.author] = contours.author
     d[_CArrKeys.order] = contours.names
+
+    d[_CArrKeys.version] = _contours_format_version
 
     return d
 
