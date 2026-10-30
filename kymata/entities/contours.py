@@ -63,6 +63,12 @@ class Contours(Mapping):
     def __iter__(self) -> Iterator:
         return iter(self._contour_dict)
 
+    def __str__(self) -> str:
+        sep = ",\n    "
+        return (f"Contours({self.description}): [\n"
+                f"    {sep.join(self.names)}"
+                f") duration {self.duration_seconds:.2f} seconds")
+
     def add_contour(self, transform_name: str, transform_contour: NDArray):
         """Adds a contour with the specified name to the list."""
         transform_contour = _normalise_contour_format(transform_contour)
