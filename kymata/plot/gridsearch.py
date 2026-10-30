@@ -3,15 +3,13 @@ from typing import Optional
 
 import numpy as np
 from matplotlib import pyplot
-from numpy._typing import NDArray
-
-from kymata.entities.transform import Transform
+from numpy.typing import NDArray
 
 
 def plot_top_five_channels_of_gridsearch(
     latencies: NDArray,
     corrs: NDArray,
-    transform: Transform,
+    transform_name: str,
     logp_values: NDArray,
     auto_corr: NDArray,
     top_n_to_plot: int = 5,
@@ -26,7 +24,7 @@ def plot_top_five_channels_of_gridsearch(
     Args:
         latencies (NDArray): Array of latency values (e.g., time points in milliseconds) for the x-axis of the plots.
         corrs (NDArray): Correlation coefficients array with shape (n_channels, n_derangements, n_splits, n_time_steps).
-        transform (Transform): The transform object whose name attribute will be used in the plot title.
+        transform_name (str): The name of the transform..
         logp_values (NDArray): Array of log-transformed p-values for each channel and time point with shape
             (n_channels, t_steps).
         auto_corr (NDArray): Auto-correlation values array used for plotting the transform auto-correlation.
@@ -95,7 +93,7 @@ def plot_top_five_channels_of_gridsearch(
     peak_corr = best_chan_corr_mean[peak_latency_idx]
     scaled_auto_corr = np.roll(mean_auto_corr, peak_latency_idx) * peak_corr / np.max(mean_auto_corr)
 
-    print(f"{transform.name}:\t"
+    print(f"{transform_name}:\t"
           f"peak lat: {peak_latency:.1f},\t"
           f"peak corr: {peak_corr:.4f},\t"
           f"[sensor] ind: {best_chan_idx},\t"
@@ -103,7 +101,7 @@ def plot_top_five_channels_of_gridsearch(
 
     # Create figure
     figure, axis = pyplot.subplots(1, 2, figsize=(15, 7))
-    figure.suptitle(f"{transform.name}: Plotting corrs and pvalues for top five channels")
+    figure.suptitle(f"{transform_name}: Plotting corrs and pvalues for top five channels")
 
     # Plot overall best chan
     axis[0].plot(latencies, best_chan_corr_mean, "r-", label=best_chan_idx)
@@ -139,7 +137,7 @@ def plot_top_five_channels_of_gridsearch(
     # Handle figure
     if save_to is not None:
         pyplot.rcParams["savefig.dpi"] = 300
-        save_to = Path(save_to, transform.name + f"_gridsearch_top_{top_n_to_plot}_channels.png")
+        save_to = Path(save_to, transform_name + f"_gridsearch_top_{top_n_to_plot}_channels.png")
 
         if overwrite or not save_to.exists():
             pyplot.savefig(Path(save_to))
