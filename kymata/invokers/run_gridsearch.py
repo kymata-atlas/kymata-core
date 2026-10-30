@@ -8,7 +8,7 @@ from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
 from kymata.gridsearch.plain import do_gridsearch
-from kymata.io.transform import load_transform_legacy
+from kymata.io.compatibility.transform import load_transform_legacy
 from kymata.io.config import load_config
 from kymata.io.logging import log_message, date_format
 from kymata.io.nkg import save_expression_set
