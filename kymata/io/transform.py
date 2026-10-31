@@ -13,7 +13,7 @@ from kymata.io.file import PathType
 _logger = getLogger(__file__)
 
 
-def load_transform(
+def load_transform_legacy(
     transform_path_without_suffix: PathType,
     trans_name: str,
     sample_rate: float,
