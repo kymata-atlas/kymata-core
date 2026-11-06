@@ -63,7 +63,7 @@ def plot_contours(
         contour = contours[contour_name]
         plot_values = contour.values[tmin_idx:tmax_idx]
         ax.plot(plot_values, color=color[contour_name])
-        ax.xaxis.set_major_formatter(FuncFormatter(_formatter_miliseconds(contours.sample_rate_hz, tmin_idx)))
+        ax.xaxis.set_major_formatter(FuncFormatter(_formatter_samples_to_H_M_S(contours.sample_rate_hz, tmin_idx)))
 
         ax.set_title(contour_name, fontsize="small")
 
@@ -77,7 +77,7 @@ def plot_contours(
     return fig
 
 
-def _formatter_miliseconds(sample_rate: float, tmin_samples: int) -> Callable[[float, float], str]:
+def _formatter_samples_to_H_M_S(sample_rate: float, tmin_samples: int) -> Callable[[float, float], str]:
     """Produces an axis formatter which converts samples into formatted time."""
     def inner_formatter(sample, pos):
         hours: int = 0
@@ -91,7 +91,7 @@ def _formatter_miliseconds(sample_rate: float, tmin_samples: int) -> Callable[[f
             mins %= 60
 
         string = f"{hours}:" if hours > 0 else ""
-        if mins > 0:
+        if mins > 0 or hours > 0:
             string += f"{mins:02}:"
         string += f"{secs:02.3}"
 
