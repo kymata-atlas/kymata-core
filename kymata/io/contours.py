@@ -81,7 +81,7 @@ def load_contours(
         )
 
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(f"Not supported for filename {from_path!s}")
 
 
 def _data_dict(contours: PredictedContourSet) -> dict[str, str | NDArray]:
