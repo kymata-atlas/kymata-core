@@ -8,7 +8,7 @@ from kymata.entities.contours import PredictedContourSet
 from kymata.io.file import PathType
 
 
-_contours_suffix = ".contours"
+_contours_suffix = ".ctr"
 _contours_format_version = "0.1"
 
 
