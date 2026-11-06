@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from scipy.io import loadmat
 
-from kymata.entities.contours import ContourSet
+from kymata.entities.contours import PredictedContourSet
 from kymata.io.file import PathType
 
 
@@ -11,20 +11,21 @@ def load_neurogram_npz(
         location: PathType,
         transform_name: str,
         bruce_neurons: tuple = (0, 10),
-) -> ContourSet:
+) -> PredictedContourSet:
     trans_dict = np.load(location)
     trans = trans_dict[transform_name]
     trans = np.mean(trans[bruce_neurons[0] : bruce_neurons[1]], axis=0)
-    return ContourSet(
+    return PredictedContourSet(
         contour_dict={transform_name: trans},
         sample_rate_hz=1000,  # This is assumed by these legacy filetypes
     )
+
 
 def load_neurogram_mat(
         location: PathType,
         transform_name: str,
         bruce_neurons: tuple = (0, 10),
-) -> ContourSet:
+) -> PredictedContourSet:
     """Load neurogram transforms from a (legacy) .mat file."""
     location = Path(location)
 
@@ -53,7 +54,7 @@ def load_neurogram_mat(
     trans = trans_dict[transform_name]
     trans = np.mean(trans[bruce_neurons[0]: bruce_neurons[1]], axis=0)
 
-    return ContourSet(
+    return PredictedContourSet(
         contour_dict={transform_name: trans},
         sample_rate_hz=1000,  # This is assumed by these legacy filetypes
     )

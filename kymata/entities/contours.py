@@ -6,7 +6,7 @@ from numpy import squeeze, float32, floor as np_floor, arange, zeros, zeros_like
 from numpy.typing import NDArray
 
 
-class Contour:
+class PredictedContour:
     """
     A class representing a single transform contour with a name, values, and a sample rate.
 
@@ -28,7 +28,7 @@ class Contour:
             rate_hz (float): The new sample rate in Hertz.
 
         Returns:
-            Contour: A new Transform instance with resampled values and the specified sample rate.
+            PredictedContour: A new Transform instance with resampled values and the specified sample rate.
         """
         ratio = self.sample_rate_hz / rate_hz
         if ratio > 1:  # Downsampling
@@ -48,7 +48,7 @@ class Contour:
                 # Use most recent sampling
                 resampled_values[i] = self.values[floor(i * ratio)]
 
-        return Contour(
+        return PredictedContour(
             name=self.name,
             values=resampled_values,
             sample_rate_hz=rate_hz)
@@ -77,7 +77,7 @@ class Contour:
         return len(self.values)
 
 
-class ContourSet(Mapping):
+class PredictedContourSet(Mapping):
     """
     Represents a collection of transform contours with associated metadata.
     """
@@ -126,10 +126,10 @@ class ContourSet(Mapping):
         """Duration of the contour in seconds."""
         return self.duration_samples / self.sample_rate_hz
 
-    def __getitem__(self, item: str) -> Contour:
+    def __getitem__(self, item: str) -> PredictedContour:
         if item not in self._contour_dict:
             raise KeyError(item)
-        return Contour(name=item, values=self._contour_dict[item], sample_rate_hz=self.sample_rate_hz)
+        return PredictedContour(name=item, values=self._contour_dict[item], sample_rate_hz=self.sample_rate_hz)
 
     def __len__(self):
         return len(self._contour_dict)

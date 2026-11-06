@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy import stats
 
-from kymata.entities.contours import Contour
+from kymata.entities.contours import PredictedContour
 from kymata.math.combinatorics import generate_derangement
 from kymata.io.layouts import SensorLayout
 from kymata.math.vector import normalize, window_stds_unnorm
@@ -19,7 +19,7 @@ _logger = getLogger(__name__)
 
 def do_gridsearch(
     emeg_values: NDArray,  # chans x reps x time
-    contour: Contour,
+    contour: PredictedContour,
     channel_names: list,
     channel_space: str,
     start_latency: float,  # seconds
@@ -46,7 +46,7 @@ def do_gridsearch(
 
     Args:
         emeg_values (NDArray): A 2D array of EMEG values with shape (channels, reps, time).
-        contour (Contour): The transform against which the EMEG data will be correlated. It should
+        contour (PredictedContour): The transform against which the EMEG data will be correlated. It should
             have a `values` attribute representing the transform's values and a `sample_rate`
             attribute indicating its sample rate.
         channel_names (list): List of channel names corresponding to the EMEG data. For 'sensor' space,
