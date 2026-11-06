@@ -8,7 +8,7 @@ import numpy as np
 from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
-from kymata.entities.contours import Contour
+from kymata.entities.contours import PredictedContour
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.config import load_config
 from kymata.io.contours import load_contours
@@ -336,7 +336,7 @@ def main(
     )
 
 
-def _do_replace_nans(contour: Contour, replace_nans: str | None) -> Contour:
+def _do_replace_nans(contour: PredictedContour, replace_nans: str | None) -> PredictedContour:
     n_nan = np.count_nonzero(np.isnan(contour.values))
     if n_nan > 0:
         nan_message = f"Transform contained {n_nan:,} NaNs, ({100 * n_nan / np.prod(contour.values.shape):.2f}%)"

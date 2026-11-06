@@ -1,19 +1,19 @@
 import pytest
 from numpy import ones, array, array_equal, zeros_like, isclose
 
-from kymata.entities.contours import Contour, ContourSet, shift_by
+from kymata.entities.contours import PredictedContour, PredictedContourSet, shift_by
 
 
 
 def test_resample_to_same_rate():
-    t = Contour("test", array(range(100)), sample_rate_hz=1000)
+    t = PredictedContour("test", array(range(100)), sample_rate_hz=1000)
     t_resampled = t.resampled(t.sample_rate_hz)
     assert t.sample_rate_hz == t_resampled.sample_rate_hz
     assert len(t.values) == len(t_resampled.values)
 
 
 def test_integer_subsample():
-    t = Contour("test", array(range(100)), sample_rate_hz=1000)
+    t = PredictedContour("test", array(range(100)), sample_rate_hz=1000)
     new_sample_rate = 500
     downsample_ratio = t.sample_rate_hz / new_sample_rate
     t_resampled = t.resampled(new_sample_rate)
@@ -25,7 +25,7 @@ def test_integer_subsample():
 def test_noninteger_downsample():
     from math import floor
 
-    t = Contour("test", array(range(10)), 5)
+    t = PredictedContour("test", array(range(10)), 5)
     t_downsampled = t.resampled(2)
     ratio = t_downsampled.sample_rate_hz / t.sample_rate_hz
     assert len(t_downsampled.values) == floor(len(t.values) * ratio)
@@ -33,13 +33,13 @@ def test_noninteger_downsample():
 
 
 def test_timestep():
-    t = Contour("test", array(range(10)), 500)
+    t = PredictedContour("test", array(range(10)), 500)
     assert isclose(t.time_step, 0.002)
 
 
 
 def test_upsample_integer_ratio():
-    t = Contour("test", array(range(5)), sample_rate_hz=1)
+    t = PredictedContour("test", array(range(5)), sample_rate_hz=1)
     t_upsampled = t.resampled(2)
     ratio = t_upsampled.sample_rate_hz / t.sample_rate_hz
     assert ratio.is_integer()
@@ -50,7 +50,7 @@ def test_upsample_integer_ratio():
 def test_upsample_noninteger_ratio():
     from math import floor
 
-    t = Contour("test", array(range(5)), sample_rate_hz=2)
+    t = PredictedContour("test", array(range(5)), sample_rate_hz=2)
     t_upsampled = t.resampled(3)
     ratio = t_upsampled.sample_rate_hz / t.sample_rate_hz
     assert len(t_upsampled.values) == floor(len(t.values) * ratio)
@@ -78,7 +78,7 @@ def test_shift_by_too_much():
 
 
 def test_duration_seconds():
-    c = ContourSet(
+    c = PredictedContourSet(
         {"TRANS1": ones((400,)),
          "TRANS2": ones((400,))},
         sample_rate_hz=200,
@@ -88,7 +88,7 @@ def test_duration_seconds():
 
 def test_validation_wrong_length():
     with pytest.raises(ValueError):
-        ContourSet(
+        PredictedContourSet(
             {"TRANS1": ones((400,)),
              "TRANS2": ones((401,))},
         )
@@ -96,14 +96,14 @@ def test_validation_wrong_length():
 
 def test_validation_not_a_vector():
     with pytest.raises(ValueError):
-        ContourSet(
+        PredictedContourSet(
             {"TRANS1": ones((400,2)),
              "TRANS2": ones((400,2))},
         )
 
 
 def test_add_contour_exists():
-    c = ContourSet(
+    c = PredictedContourSet(
         {"TRANS1": ones((400,)),
          "TRANS2": ones((400,))},
     )
@@ -112,7 +112,7 @@ def test_add_contour_exists():
 
 
 def test_add_remove_contour():
-    c = ContourSet(
+    c = PredictedContourSet(
         {"TRANS1": ones((400,)),
          "TRANS2": ones((400,))},
     )
@@ -130,7 +130,7 @@ def test_add_remove_contour():
 
 
 def test_add_contour_wrong_length():
-    c = ContourSet(
+    c = PredictedContourSet(
         {"TRANS1": ones((400,)),
          "TRANS2": ones((400,))},
     )

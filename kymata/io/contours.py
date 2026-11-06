@@ -4,7 +4,7 @@ from typing import OrderedDict
 import numpy as np
 from numpy.typing import NDArray
 
-from kymata.entities.contours import ContourSet
+from kymata.entities.contours import PredictedContourSet
 from kymata.io.file import PathType
 
 
@@ -27,7 +27,7 @@ class _CArrKeys:
 def load_contours(
         from_path: PathType,
         replace_sample_rate: float | None = None,
-) -> ContourSet:
+) -> PredictedContourSet:
     """
     Loads contours from a file.
 
@@ -73,7 +73,7 @@ def load_contours(
         if replace_sample_rate is not None:
             sample_rate = replace_sample_rate
 
-        return ContourSet(
+        return PredictedContourSet(
             contour_dict=data_dict,
             sample_rate_hz=sample_rate,
             description=description,
@@ -84,7 +84,7 @@ def load_contours(
         raise NotImplementedError()
 
 
-def _data_dict(contours: ContourSet) -> dict[str, str | NDArray]:
+def _data_dict(contours: PredictedContourSet) -> dict[str, str | NDArray]:
     """Converts a Contours object into a data dict suitable for saving."""
     d = dict()
     for name in contours.names:
@@ -102,7 +102,7 @@ def _data_dict(contours: ContourSet) -> dict[str, str | NDArray]:
     return d
 
 
-def save_contours(contours: ContourSet, to_file: PathType, overwrite: bool = False) -> None:
+def save_contours(contours: PredictedContourSet, to_file: PathType, overwrite: bool = False) -> None:
     """
     Write the contours to a file.
 
