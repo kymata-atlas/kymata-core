@@ -1,21 +1,19 @@
 from dataclasses import dataclass
-from itertools import cycle
 from pathlib import Path
-from typing import Optional, Sequence, Type, Literal
+from typing import Optional, Sequence, Type, Literal, Any
 
 import numpy as np
 from matplotlib import pyplot
-from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator
-from seaborn import color_palette
 
 from kymata.entities.expression import ExpressionPoint, HexelExpressionSet, SensorExpressionSet, ExpressionSet
 from kymata.io.layouts import SensorLayout, MEGLayout, EEGLayout
 from kymata.math.probability import p_to_logp, sidak_correct, p_threshold_for_sigmas
 from kymata.math.rounding import round_up, round_down
 from kymata.plot.brain import plot_minimap_hexel
+from kymata.plot.color import fallback_default_colors
 from kymata.plot.sensor import get_sensor_left_right_assignment, restrict_sensors_by_type
 
 # log scale: 10 ** -this will be the ytick interval and also the resolution to which the ylims will be rounded
@@ -349,11 +347,7 @@ def expression_plot(
     if minimap_kwargs is None:
         minimap_kwargs = dict()
 
-    # Default colours
-    cycol = cycle(color_palette("Set1"))
-    for transform in show_only:
-        if transform not in color:
-            color[transform] = to_hex(next(cycol))
+    fallback_default_colors(color_dict=color, check_for_transforms=show_only)
 
     # Default views
     if minimap_view is None:
