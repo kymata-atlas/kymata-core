@@ -1,8 +1,7 @@
 from itertools import cycle
-from typing import Any, Sequence
 
 from matplotlib.colors import to_rgb, to_hex, LinearSegmentedColormap
-from numpy import linspace, str_
+from numpy import linspace
 from seaborn import color_palette
 
 transparent = (0, 0, 0, 0)
