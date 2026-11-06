@@ -66,7 +66,7 @@ def plot_contours(
         ax.plot(plot_values, color=color[contour_name])
         ax.xaxis.set_major_formatter(FuncFormatter(_formatter_miliseconds(contours.sample_rate_hz, tmin_idx)))
 
-        ax.set_title(contour_name, fontsize="small", loc="left")
+        ax.set_title(contour_name, fontsize="small")
 
         # Add x-axis label to bottom-most axis
         if ax_idx == len(contours) - 1:
