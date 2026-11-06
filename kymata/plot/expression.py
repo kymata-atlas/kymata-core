@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Sequence, Type, Literal, Any
+from typing import Optional, Sequence, Type, Literal
 
 import numpy as np
 from matplotlib import pyplot
