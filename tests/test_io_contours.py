@@ -20,7 +20,7 @@ def example_contours():
 
 def test_io_contours_save_load_roundtrip(example_contours: PredictedContourSet, tmp_path):
 
-    file_path = tmp_path / "test.contours"
+    file_path = tmp_path / "test.ctr"
 
     save_contours(example_contours, file_path)
 
@@ -37,7 +37,7 @@ def test_io_contours_save_load_roundtrip(example_contours: PredictedContourSet, 
 
 def test_io_contours_replace_sample_rate(example_contours: PredictedContourSet, tmp_path):
 
-    file_path = tmp_path / "test.contours"
+    file_path = tmp_path / "test.ctr"
 
     save_contours(example_contours, file_path)
 

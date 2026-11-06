@@ -1,5 +1,8 @@
+from itertools import cycle
+
 from matplotlib.colors import to_rgb, to_hex, LinearSegmentedColormap
 from numpy import linspace
+from seaborn import color_palette
 
 transparent = (0, 0, 0, 0)
 
@@ -88,3 +91,20 @@ def anchored_gradient_colormap(name: str, anchor_values: list[float | int], colo
     positions = [(v - vmin) / (vmax - vmin) for v in anchor_values]
 
     return LinearSegmentedColormap.from_list(name, list(zip(positions, colors)))
+
+
+def fallback_default_colors(
+        color_dict: dict[str, str],
+        check_for_transforms: list[str],
+) -> None:
+    """
+    Set default colours into a colour dict.
+
+    Args:
+        color_dict (dict[str, str]): Existing color dict. Updated in place.
+        check_for_transforms (list[str]): Additional colours to check and set to default if missing.
+    """
+    cycol = cycle(color_palette("Set1"))
+    for transform in check_for_transforms:
+        if transform not in color_dict:
+            color_dict[transform] = to_hex(next(cycol))
