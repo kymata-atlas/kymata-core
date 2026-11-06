@@ -12,7 +12,6 @@ from kymata.plot.color import fallback_default_colors
 def plot_contours(
         contours: PredictedContourSet | PredictedContour,
         time_window_s: tuple[float, float] | None = (0.0, 1.0),
-        /,
         color: Optional[dict[str, str]] = None,
         figsize: tuple[float, float] = (12, 8),
 ) -> Figure:
