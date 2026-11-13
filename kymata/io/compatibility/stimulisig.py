@@ -19,6 +19,6 @@ def load_stimulisig_mat(location: PathType) -> PredictedContourSet:
         if key == "name":
             continue
         trans_dict[key] = np.array(mat[key][0, 0], dtype=np.float16)
-        trans_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
+        trans_dict[key] = trans_dict[key].reshape((1, -1))  # Unwrap if it's a split matlab stimulisig
 
     return PredictedContourSet(contour_dict=trans_dict)
