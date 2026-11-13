@@ -171,13 +171,16 @@ def main():
             expression_data += load_expression_set(nkg_file)
 
         neurogram_transforms = []
+        neurogram_il_transforms = []
         il1_to_il9_transforms = []
         il_transforms = []
         stl_transforms = []
         for transform in expression_data.transforms:
             name = str(transform)
-            if "neurogram" in name.lower():
+            if "neurogram" in name.lower() and name != "neurogram_mr_0_37":
                 neurogram_transforms.append(transform)
+            elif "neurogram" in name.lower() and name == "neurogram_mr_0_37":
+                neurogram_il_transforms.append(transform)
             elif name in {f"IL{i}" for i in range(1, 10)}:
                 il1_to_il9_transforms.append(transform)
             elif name == "IL":
@@ -189,12 +192,14 @@ def main():
             expression_data,
             color=(
                 constant_color_dict(neurogram_transforms, color="#2cbf93")
+                | constant_color_dict(neurogram_il_transforms, color="#171adb")
                 | constant_color_dict(il1_to_il9_transforms, color="#a201e9")
                 | constant_color_dict(il_transforms, color="#b11e34")
                 | constant_color_dict(stl_transforms, color="#d388b5")
             ),
+            use_sensor_layout='CBU',
             show_legend=True,
-            save_to=Path(path_to_nkg_files, "expression_plot_all.png"),
+            save_to=Path(path_to_nkg_files, "expression_plot_all_il.png"),
         )
 
 
