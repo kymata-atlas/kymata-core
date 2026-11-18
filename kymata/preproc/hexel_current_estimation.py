@@ -5,6 +5,7 @@ import numpy as np
 import nibabel as nib
 
 import mne
+import mne.bem
 
 _logger = getLogger(__file__)
 
