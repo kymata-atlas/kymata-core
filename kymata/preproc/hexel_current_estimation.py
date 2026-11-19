@@ -186,6 +186,7 @@ def create_current_estimation_prerequisites(data_root_dir, config: dict):
             conductivity=conductivity,
             subjects_dir=mri_structurals_directory,
         )
+        # Refer to https://mne.tools/stable/auto_tutorials/forward/80_fix_bem_in_blender.html if RuntimeError: Surface inner skull is not completely inside surface outer skull
         bem_sol = mne.make_bem_solution(model)
         output_filename = participant + "-5120-5120-5120-bem-sol.fif"
         mne.bem.write_bem_solution(
