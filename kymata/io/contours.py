@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import OrderedDict
 
@@ -128,7 +129,15 @@ def _fill_default_source_metadata(contours: PredictedContourSet) -> None:
     # If not supplied, attempt to get from the current checkout.
     if source.repository is None:
         # Path of *this* file in the checkout
-        source.repository = str(Path(__file__).resolve())
+        try:
+            source.repository = str(Path(__file__).resolve())
+        except NameError:
+            # If running inside a Jupyter notebook, this can fail because there is no way to get the path to a running
+            # notebook [1].
+            # [1]: https://stackoverflow.com/a/52119628/2883198
+            #
+            # The best we can do is this:
+            source.repository = os.path.abspath('')
     if source.commit is None:
         source.commit = get_current_git_commit_hash()
     contours.source = source
