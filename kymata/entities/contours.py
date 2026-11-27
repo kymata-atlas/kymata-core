@@ -1,9 +1,21 @@
+from __future__ import annotations
+
 from collections import OrderedDict
+from dataclasses import dataclass
 from math import floor
 from typing import Mapping, Optional, Iterator
 
 from numpy import squeeze, float32, floor as np_floor, arange, zeros, zeros_like
 from numpy.typing import NDArray
+
+
+@dataclass
+class ContoursSource:
+    """
+    Metadata about the source of a set of contours.
+    """
+    repository: str | None
+    commit: str | None
 
 
 class PredictedContour:
@@ -88,6 +100,7 @@ class PredictedContourSet(Mapping):
             sample_rate_hz: Optional[float] = None,
             description: Optional[str] = None,
             author: Optional[str] = None,
+            source: Optional[ContoursSource] = None,
     ):
         if sample_rate_hz is None:
             sample_rate_hz = 1000
@@ -110,6 +123,7 @@ class PredictedContourSet(Mapping):
         self.sample_rate_hz: float = sample_rate_hz
         self.description: str | None = description
         self.author: str | None = author
+        self.source: ContoursSource | None = source
 
     @property
     def names(self) -> list[str]:
@@ -151,6 +165,19 @@ class PredictedContourSet(Mapping):
         if transform_name in self._contour_dict.keys():
             raise ValueError(f"Contour named {transform_name} already exists")
         self._contour_dict[transform_name] = transform_contour
+
+    def add_contours_from(self, other: PredictedContourSet) -> None:
+        """
+        Adds contours from ``other: PredictedContourSet``, but does not copy associated metadata.
+
+        Raises:
+            KeyError if a contour of the same name already exists
+        """
+        contour: PredictedContour
+        for contour in other:
+            if contour.name in self.names:
+                raise ValueError(f"Cannot add contour called \"{contour.name}\": already exists")
+            self.add_contour(contour.name, contour.values)
 
     def remove_contour(self, transform_name: str):
         """Removes the contour named `name`."""

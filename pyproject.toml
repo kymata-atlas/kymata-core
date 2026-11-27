@@ -51,6 +51,7 @@ twine = "^5.1.1"
 networkx = "^3.4.2"
 nilearn = "^0.12.1"
 cyclopts = "^4.19.0"
+gitpython = "^3.2.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.3.2,<10.0.0"

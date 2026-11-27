@@ -4,12 +4,13 @@ from typing import OrderedDict
 import numpy as np
 from numpy.typing import NDArray
 
-from kymata.entities.contours import PredictedContourSet
+from kymata.entities.contours import PredictedContourSet, ContoursSource
 from kymata.io.file import PathType
+from kymata.system.git import get_current_git_commit_hash
 
 
 _contours_suffix = ".ctr"
-_contours_format_version = "0.1"
+_contours_format_version = "0.2"
 
 
 class _CArrKeys:
@@ -20,6 +21,9 @@ class _CArrKeys:
     description = "_kymata-contours-description"
     author      = "_kymata-contours-author"
     order       = "_kymata-contours-order"
+
+    source_repository = "_kymata-contours-source_repository"
+    source_commit     = "_kymata-contours-source_commit"
 
     version     = "_kymata-contours-format-version"
 
@@ -53,10 +57,16 @@ def load_contours(
 
     if from_path.suffix == _contours_suffix or from_path.suffix == ".npz":
         with np.load(from_path) as nz_data:
-            sample_rate = nz_data.get(_CArrKeys.sample_rate, None)
-            description = nz_data.get(_CArrKeys.description, None)
-            author      = nz_data.get(_CArrKeys.author,      None)
-            order       = nz_data.get(_CArrKeys.order,       None)
+            sample_rate   = nz_data.get(_CArrKeys.sample_rate,       None)
+            description   = nz_data.get(_CArrKeys.description,       None)
+            author        = nz_data.get(_CArrKeys.author,            None)
+            order         = nz_data.get(_CArrKeys.order,             None)
+            source_repo   = nz_data.get(_CArrKeys.source_repository, None)
+            source_commit = nz_data.get(_CArrKeys.source_commit,     None)
+            if source_repo is None and source_commit is None:
+                source = None
+            else:
+                source = ContoursSource(repository=source_repo, commit=source_commit)
 
             if order is None:
                 # Just use the non-reserved names in whatever order they arrive
@@ -78,6 +88,7 @@ def load_contours(
             sample_rate_hz=sample_rate,
             description=description,
             author=author,
+            source=source,
         )
 
     else:
@@ -96,10 +107,31 @@ def _data_dict(contours: PredictedContourSet) -> dict[str, str | NDArray]:
     if contours.author is not None:
         d[_CArrKeys.author] = contours.author
     d[_CArrKeys.order] = contours.names
+    if contours.source is not None:
+        if contours.source.repository is not None:
+            d[_CArrKeys.source_repository] = contours.source.repository
+        if contours.source.commit is not None:
+            d[_CArrKeys.source_commit] = contours.source.commit
 
     d[_CArrKeys.version] = _contours_format_version
 
     return d
+
+
+def _fill_default_source_metadata(contours: PredictedContourSet) -> None:
+    """
+    Updates a PredictedContourSet's source metadata in place with default values based on the current checkout.
+
+    Existing values are left untouched: only None values are updated.
+    """
+    source = contours.source if contours.source is not None else ContoursSource(None, None)
+    # If not supplied, attempt to get from the current checkout.
+    if source.repository is None:
+        # Path of *this* file in the checkout
+        source.repository = str(Path(__file__).resolve())
+    if source.commit is None:
+        source.commit = get_current_git_commit_hash()
+    contours.source = source
 
 
 def save_contours(contours: PredictedContourSet, to_file: PathType, overwrite: bool = False) -> None:
@@ -111,6 +143,8 @@ def save_contours(contours: PredictedContourSet, to_file: PathType, overwrite: b
         to_file:
         overwrite:
     """
+    _fill_default_source_metadata(contours)
+
     to_file = Path(to_file)
     supplied_suffix = to_file.suffix
     if not supplied_suffix:
