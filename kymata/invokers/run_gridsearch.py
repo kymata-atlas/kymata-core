@@ -8,7 +8,7 @@ import numpy as np
 from cyclopts import App, Parameter
 
 from kymata.datasets.data_root import data_root_path
-from kymata.entities.contours import PredictedContour
+from kymata.entities.contours import PredictedContour, PredictedContourSet
 from kymata.gridsearch.plain import do_gridsearch
 from kymata.io.config import load_config
 from kymata.io.contours import load_contours
@@ -233,6 +233,15 @@ def main(
     _logger.info(f"Loading transforms from {str(transform_path)}")
     # WHEN MODERNISING: shouldn't need to override this here; should be optional CLI argument
     contours = load_contours(transform_path, replace_sample_rate=transform_sample_rate)
+    # Add padding originally found in stimulisigs
+    contours = PredictedContourSet(
+        {
+            name: np.concatenate([np.zeros((200, )), contours[name].values])
+            for name in contours.names
+        },
+        author=contours.author,
+        description=contours.description
+    )
 
     emeg_sample_rate = float(dataset_config.get("sample_rate", 1000))
 
